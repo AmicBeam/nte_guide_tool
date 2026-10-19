@@ -431,17 +431,27 @@ class DeviceAuxiliaryCollector:
         except BaseException:
             if exc is None:raise
         return False
-    def run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150,continuation_budget=None):
+    def run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150,continuation_budget=None,
+                    defer_replay_proof=False):
+        """Replay/export once, optionally leaving only the final CPU proof pending.
+
+        The opt-in result stays unverified and cannot enter a clean ledger or
+        learning. Full previous-prefix verification and normal cleanup remain.
+        """
         if self._closed:raise RuntimeError('Auxiliary collector closed')
         try:
-            result=self._run_segment(metadata,deadline=deadline,resume=resume,seconds=seconds,soft_seconds=soft_seconds,continuation_budget=continuation_budget)
+            result=self._run_segment(metadata,deadline=deadline,resume=resume,seconds=seconds,soft_seconds=soft_seconds,continuation_budget=continuation_budget,
+                                     defer_replay_proof=defer_replay_proof)
         except BaseException:
             try:self.close()
             except BaseException:pass
             raise
         self.close()
         return result
-    def _run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150,continuation_budget=None):
+    def _run_segment(self,metadata,*,deadline,resume=None,seconds=90,soft_seconds=150,continuation_budget=None,
+                     defer_replay_proof=False):
+        if type(defer_replay_proof)is not bool:
+            raise TypeError('defer_replay_proof must be an explicit bool')
         metadata=_metadata(metadata);started=time.monotonic()
         if continuation_budget is not None:
             from .device_auxiliary_continuation import validate_auxiliary_continuation
@@ -512,7 +522,7 @@ class DeviceAuxiliaryCollector:
         loop.initialize=initialize
         ids=t.zeros((n,2),dtype=t.int64,**z);train=t.ones((n,2),dtype=t.bool,**z)
         remaining=_deadline(deadline,metadata,started,soft_seconds)
-        device_seconds=min(seconds,remaining-20)  # Reserve capture and postbatch proof time.
+        device_seconds=min(seconds,remaining-20)  # Reserve capture/export and optional postbatch proof time.
         if device_seconds<=0:raise TimeoutError('Insufficient bounded capture/proof window')
         loop._outer.budget_ns=loop._inner.budget_ns=int(device_seconds*1e9)
         loop.capture(parents,t.tensor([j['seed']for j in metadata.jobs],dtype=t.int64,**z),ids,ids,train)
@@ -525,6 +535,20 @@ class DeviceAuxiliaryCollector:
         export_memory=self._memory(enforce=False)
         outcome.attempts[-1]['device_used_bytes']=max(used,export_memory)
         outcome.attempts[-1]['memory_limit_exceeded']=max(used,export_memory)>self.max_device_bytes
+        return self._post_export_replay_proof(outcome,deadline=deadline,metadata=metadata,started=started,
+            soft_seconds=soft_seconds,defer_replay_proof=defer_replay_proof)
+
+    @staticmethod
+    def _post_export_replay_proof(outcome,*,deadline,metadata,started,soft_seconds,defer_replay_proof=False):
+        """A deferred actual export is audit-only until an independent CPU proof.
+
+        Resume ingress was still fully verified before any CUDA capture. This
+        boundary neither clears device/export errors nor grants labels/clean
+        ledger admission; replay_verified remains false even for natural rows.
+        """
+        if defer_replay_proof:
+            return replace(outcome,replay_verified=False,
+                reason=outcome.reason+'; pending_independent_cpu_proof')
         try:
             verify_auxiliary_segment(outcome,proof_deadline=time.monotonic()+_deadline(deadline,metadata,started,soft_seconds))
             outcome=replace(outcome,replay_verified=True)

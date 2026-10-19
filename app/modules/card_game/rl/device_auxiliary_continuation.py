@@ -692,8 +692,8 @@ def create_auxiliary_kernel_revalidation(segment,*,proof_deadline,original_check
     return migrated,auxiliary_kernel_lineage(migrated)[0]
 
 
-def dump_auxiliary_checkpoint(segment,path):
-    """Write a NEW bounded gzip JSON checkpoint; return exact file SHA256."""
+def dump_auxiliary_checkpoint_with_content(segment,path):
+    """Write once; return (file SHA256, exact encoded-content SHA256)."""
     path=Path(path)
     if path.exists():raise ValueError('New auxiliary checkpoint path required')
     payload=encode_auxiliary_payload(segment)
@@ -702,7 +702,12 @@ def dump_auxiliary_checkpoint(segment,path):
     path.parent.mkdir(parents=True,exist_ok=True)
     with path.open('xb')as raw:
         with gzip.GzipFile(fileobj=raw,mode='wb',mtime=0)as stream:stream.write(data)
-    return sha256(path.read_bytes()).hexdigest()
+    return sha256(path.read_bytes()).hexdigest(),sha256(data).hexdigest()
+
+
+def dump_auxiliary_checkpoint(segment,path):
+    """Write a NEW bounded gzip JSON checkpoint; return exact file SHA256."""
+    return dump_auxiliary_checkpoint_with_content(segment,path)[0]
 
 
 def load_auxiliary_checkpoint(path,*,expected_sha256,max_bytes=512<<20):

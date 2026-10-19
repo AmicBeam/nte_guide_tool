@@ -372,4 +372,93 @@ class AuxiliaryCollectionContractTests(unittest.TestCase):
         self.assertIn('RawActionPolicySink(sink,raw)',source)
         self.assertNotIn('allow_cpu_reference=True',source)
 
+class DeferredAuxiliaryProofTests(unittest.TestCase):
+    def finish(self,evidence,**options):
+        return aux.DeviceAuxiliaryCollector._post_export_replay_proof(evidence,deadline=time.time()+60,
+            metadata=evidence.metadata,started=time.monotonic(),soft_seconds=60,**options)
+
+    def test_default_runs_actual_independent_proof_and_keeps_existing_pause_reason(self):
+        oracle=Oracle();original=replace(segment(metadata(),oracle,steps=7),replay_verified=False,reason='incomplete')
+        real_verify=aux.verify_auxiliary_segment
+        with patch.object(aux,'_oracle',oracle.api),patch.object(aux,'verify_auxiliary_segment',wraps=real_verify)as proof:
+            result=self.finish(original)
+        self.assertEqual(proof.call_count,1);self.assertIs(proof.call_args.args[0],original)
+        self.assertTrue(result.replay_verified);self.assertEqual(result.reason,'planned_segment_pause')
+        self.assertFalse(original.replay_verified)
+        self.assertIs(result.raw_records,original.raw_records);self.assertIs(result.value_records,original.value_records)
+        for method in (aux.DeviceAuxiliaryCollector.run_segment,aux.DeviceAuxiliaryCollector._run_segment):
+            self.assertIs(inspect.signature(method).parameters['defer_replay_proof'].default,False)
+
+    def test_natural_deferred_export_stays_unverified_and_cannot_enter_learning_or_clean_ledger(self):
+        from app.modules.card_game.rl.device_auxiliary_calibration import DeviceAuxiliaryCalibrationLedger
+        original=replace(segment(metadata(),Oracle()),replay_verified=False,reason='natural')
+        with patch.object(aux,'verify_auxiliary_segment',side_effect=AssertionError('Deferred postproof must not run'))as proof:
+            result=self.finish(original,defer_replay_proof=True)
+        proof.assert_not_called();self.assertFalse(result.replay_verified)
+        self.assertEqual(result.reason,'natural; pending_independent_cpu_proof')
+        self.assertEqual(result.complete,(True,));self.assertEqual(result.errors,(0,))
+        self.assertIs(result.final,original.final);self.assertIs(result.value_records,original.value_records)
+        self.assertFalse(result.formal_training_qualified);self.assertFalse(result.gpu_qualified)
+        self.assertFalse(DeviceAuxiliaryCalibrationLedger._clean(result))
+        with self.assertRaisesRegex(ValueError,'verification required'):aux.verified_auxiliary_games(result)
+
+    def test_real_export_errors_guards_truncation_and_attempts_are_never_cleared(self):
+        from app.modules.card_game.rl.device_auxiliary_calibration import DeviceAuxiliaryCalibrationLedger
+        for code in (193,256):
+            original=replace(segment(metadata(),Oracle(),steps=7,errors=(code,),truncated=(True,)),
+                replay_verified=False,reason='device_error'if code==193 else'device_guard_stop',
+                export_errors=('raw decode failed',),attempts=({'errors':(code,),'memory_limit_exceeded':True},))
+            result=self.finish(original,defer_replay_proof=True)
+            self.assertFalse(result.replay_verified);self.assertTrue(result.reason.startswith(original.reason))
+            self.assertIn('pending_independent_cpu_proof',result.reason)
+            for name in('errors','truncated','export_errors','attempts','raw_records','audit_records','value_records'):
+                self.assertIs(getattr(result,name),getattr(original,name))
+            self.assertFalse(DeviceAuxiliaryCalibrationLedger._clean(result))
+            with self.assertRaises(ValueError):aux.verify_auxiliary_segment(result)
+
+    def test_default_failed_independent_proof_is_still_failed(self):
+        oracle=Oracle();original=replace(segment(metadata(),oracle),replay_verified=False,reason='natural')
+        original.audit_records[0]['chosen']=99
+        with patch.object(aux,'_oracle',oracle.api):result=self.finish(original)
+        self.assertFalse(result.replay_verified);self.assertIn('proof_failed:',result.reason)
+        self.assertIs(result.audit_records,original.audit_records)
+
+    def test_deferral_does_not_skip_full_resume_prefix_verification(self):
+        class GPUFixtureBoundary(RuntimeError):pass
+        oracle=Oracle();meta=metadata();previous=segment(meta,oracle,steps=7)
+        collector=aux.DeviceAuxiliaryCollector.__new__(aux.DeviceAuxiliaryCollector)
+        collector._used=False;collector._objects=[];collector.rows=1;collector.max_decisions=512
+        collector._source_binding=previous.source_binding;collector._memory=lambda **kw:0
+        collector.device='cpu';collector.t=torch;collector.raw_capacities=(1,1,1)
+        real_verify=aux.verify_auxiliary_segment
+        with patch.object(aux,'_oracle',oracle.api),patch.object(aux,'verify_auxiliary_segment',wraps=real_verify)as proof, \
+             patch('app.modules.card_game.rl.batched_search.device_raw_action_tape.DeviceRawActionTape',
+                   side_effect=GPUFixtureBoundary('Stop before any CUDA allocation'))as allocation:
+            with self.assertRaises(GPUFixtureBoundary):
+                collector._run_segment(meta,deadline=time.time()+60,resume=previous,defer_replay_proof=True)
+        self.assertEqual(proof.call_count,1);self.assertIs(proof.call_args.args[0],previous)
+        allocation.assert_called_once();self.assertEqual(oracle.initial_clean_calls,0)
+
+    def test_public_optin_forwards_flag_and_closes_owned_resources(self):
+        class Arena:
+            def __init__(self):self.closed=0
+            def close(self):self.closed+=1
+        collector=aux.DeviceAuxiliaryCollector.__new__(aux.DeviceAuxiliaryCollector)
+        collector._closed=False;collector._objects=[];collector._arenas=tuple(Arena()for _ in range(3))
+        arenas=collector._arenas;candidate=replace(segment(metadata(),Oracle()),replay_verified=False)
+        calls=[]
+        def run(meta,**kwargs):calls.append(kwargs);return candidate
+        collector._run_segment=run
+        result=collector.run_segment(candidate.metadata,deadline=time.time()+60,defer_replay_proof=True)
+        self.assertIs(result,candidate);self.assertIs(calls[0]['defer_replay_proof'],True)
+        self.assertTrue(collector._closed);self.assertEqual([a.closed for a in arenas],[1,1,1])
+
+    def test_nonboolean_optin_rejected_before_metadata_or_gpu_work(self):
+        collector=aux.DeviceAuxiliaryCollector.__new__(aux.DeviceAuxiliaryCollector)
+        with patch.object(aux,'_metadata',side_effect=AssertionError('No work before validating optin')):
+            for invalid in(0,1,None,'yes'):
+                with self.subTest(invalid=invalid),self.assertRaises(TypeError):
+                    collector._run_segment(None,deadline=time.time()+60,defer_replay_proof=invalid)
+
+
 if __name__=='__main__':unittest.main()

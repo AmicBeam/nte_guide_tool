@@ -1329,7 +1329,7 @@ SoA 验收 CLI 可显式传 `--defer-physical-presentation` 接入上述闭环�
 
 ### 设备辅助价值采样组件
 
-`rl/device_auxiliary_collection.py` 的 `DeviceAuxiliaryCollector` 组合真实规则策略、设备对局循环、原始动作与双视角价值记录；只在批后使用正式规则核验。调用方显式提供对局决策上限、绝对截止时间、显存预算和进程级超时保护。当前辅助价值合同绑定 512 次决策；其他上限仅可诊断，不能导出该合同的学习数据。
+`rl/device_auxiliary_collection.py` 的 `DeviceAuxiliaryCollector` 组合真实规则策略、设备对局循环、原始动作与双视角价值记录；只在批后使用正式规则核验。调用方显式提供对局决策上限、绝对截止时间、显存预算和进程级超时保护。当前辅助价值合同绑定 512 次决策；其他上限仅可诊断，不能导出该合同的学习数据。 显式 `defer_replay_proof=True` 只导出未证明候选；恢复前完整证明保留，另一个 CPU 进程完整核验后才能通过 ledger 的 `commit_phase_segment` 提交。未证明候选和 RUNNING／REJECTED 队列不能直接用于学习或原地重置。
 
 正常分段暂停不修改终局、截断或错误标记，也不提前生成终局标签。恢复核对原始动作前缀、完整状态与别名、PCG 状态、版本及源码绑定，上传原有 GPU 价值记录，并由最终 GPU 终局处理补齐整段历史标签。只有全批自然终局、完整核验且无历史错误的轨迹可导出价值样本。组件接管并释放调用方交入的三个独立存储区，借用的规则执行器仍由调用方管理。它不提供正式闭环 Gumbel driver、辅助模型 scope 或评估资格。
 
@@ -1350,7 +1350,7 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 
 ### H3 Gumbel 联合学习连接
 
-`rl/device_joint_training.py` 将辅助价值准备、主价值预检和真正策略／WDL 联合更新分开。`prepare_joint_training_inputs` 使用显式七队冻结起点（包含人工起点），依次收集辅助168／56／56局、选择温度并验收 scope，再执行既有主价值112／56／56局校准；各阶段使用独立种子与显式截止，辅助轨迹以4步短段推进。
+`rl/device_joint_training.py` 将辅助价值准备、主价值预检和真正策略／WDL 联合更新分开。`prepare_joint_training_inputs` 使用显式七队冻结起点（包含人工起点），依次收集辅助168／56／56局、选择温度并验收 scope，再执行既有主价值112／56／56局校准；各阶段使用独立种子与显式截止，辅助轨迹以显式有界步数短段推进（默认4步）。
 
 `seven_round.run_device_joint_smoke` 仅接收真实 `DeviceH3Collector` 与同执行器的 `DevicePureCollector`：完整自然终局的 Gumbel32／16候选／H3 记录通过独立核验后，调用原 `update_batch` 联合更新，核对策略及价值参数实际变化、冻结队伍不变、数值导出恢复和独立种子冻结评估。`DeviceChunkedGameLoop` 允许单根搜索跨短图重放保留完整设备状态；默认每段一个搜索 tick，未完成32次模拟不能提交物理动作。纯策略校准可显式使用 `segment_decisions` 保留完整前缀；历史错误与截断不能产生学习标签。
 

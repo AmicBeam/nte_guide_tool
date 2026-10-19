@@ -428,4 +428,134 @@ class AuxiliaryCalibrationLedgerTest(unittest.TestCase):
         self.assertTrue(all(not name.startswith('value_')for name in self.ledger.manifest['contract']))
 
 
+    def external_commit(self,entry,segment,**changes):
+        args=dict(offset=entry['offset'],segment=segment,
+            expected_parent_checkpoint_sha256=entry['checkpoints'][-1]['sha256'],
+            producer_report_sha256='c'*64,producer_checkpoint_sha256='d'*64,
+            authorization='independent full CPU reproof of actual GPU prefix')
+        args.update(changes)
+        return self.ledger.commit_phase_segment(entry['phase'],**args)
+
+    def continued_segment(self,old,steps):
+        from app.modules.card_game.rl.device_auxiliary_continuation import create_auxiliary_continuation
+        receipt=create_auxiliary_continuation(old,deadline=self.deadline,authorization='explicit continuation',
+            parent_report_sha256='e'*64,parent_checkpoint_sha256='f'*64)
+        return self.segment(receipt.new_metadata,steps,prior=old,receipt=receipt)
+
+    def test_external_commit_full_proof_terminal_targets_and_persistence(self):
+        old,entry=self.admit()
+        current=self.continued_segment(old,8)
+        from app.modules.card_game.rl import device_auxiliary_collection as aux
+        original=aux.verify_auxiliary_segment
+        with patch.object(aux,'_oracle',self.oracle.api),patch.object(aux,'verify_auxiliary_segment',wraps=original)as verify:
+            committed=self.external_commit(entry,current)
+        self.assertGreaterEqual(verify.call_count,1)
+        self.assertEqual(committed['status'],'COMPLETE')
+        self.assertEqual(len(committed['checkpoints']),2)
+        self.assertEqual(self.reopen().manifest,self.ledger.manifest)
+        event=self.ledger.manifest['events'][-1]
+        self.assertEqual(event['producer_report_sha256'],'c'*64)
+        self.assertEqual(event['producer_checkpoint_sha256'],'d'*64)
+        # A completed cohort cannot be used as a fresh external update entry.
+        with self.assertRaises(ValueError):self.external_commit(committed,current)
+
+    def test_external_commit_failure_never_changes_manifest_or_head(self):
+        old,entry=self.admit(steps=5);current=self.continued_segment(old,6)
+        from app.modules.card_game.rl import device_auxiliary_collection as aux
+        cases=[]
+        bad=deepcopy(current);bad.raw_records[0]['raw_action']['index']+=1;cases.append(bad)
+        bad=deepcopy(current);bad.audit_records[0]['chosen']+=1;cases.append(bad)
+        bad=deepcopy(current);bad.value_records[0]['context'][0]+=1;cases.append(bad)
+        bad=deepcopy(current);bad.value_records[0]['z'][0]=1;cases.append(bad)
+        cases.append(replace(current,steps=(4,6)))
+        cases.append(replace(current,replay_verified=False))
+        cases.append(replace(current,source_binding=dict(current.source_binding,image='f'*64)))
+        before=deepcopy(self.ledger.manifest);head=self.ledger._manifest_path.read_bytes()
+        # Exercise the boundary checks independently of an oracle which already
+        # rejects these corruptions. The actual success case above runs full proof.
+        with patch.object(aux,'verify_auxiliary_segment',return_value=True):
+            for invalid in cases:
+                with self.assertRaises(ValueError):self.external_commit(entry,invalid)
+                self.assertEqual(self.ledger.manifest,before);self.assertEqual(self.ledger._manifest_path.read_bytes(),head)
+            with self.assertRaises(ValueError):self.external_commit(entry,current,expected_parent_checkpoint_sha256='0'*64)
+        self.assertEqual(len(list((self.directory/'checkpoints').glob('*.gz'))),1)
+
+    def test_external_commit_unadvanced_state_pcg_and_sticky_status(self):
+        old,entry=self.admit(steps=5);same=self.continued_segment(old,5)
+        from app.modules.card_game.rl import device_auxiliary_collection as aux
+        for field in('final','pcg_states'):
+            bad=deepcopy(same);getattr(bad,field)[0]['changed']=True
+            with patch.object(aux,'verify_auxiliary_segment',return_value=True),self.assertRaises(ValueError):
+                self.external_commit(entry,bad)
+        for status in('RUNNING','REJECTED'):
+            self.ledger.manifest['cohorts'][0]['status']=status;self.ledger._persist()
+            before=deepcopy(self.ledger.manifest)
+            with self.assertRaises(ValueError):self.external_commit(entry,same)
+            self.assertEqual(self.ledger.manifest,before)
+            self.assertEqual(self.reopen().manifest['cohorts'][0]['status'],status)
+
+    def test_external_commit_full_proof_failure_blocks_save(self):
+        old,entry=self.admit(steps=5);current=self.continued_segment(old,6)
+        from app.modules.card_game.rl import device_auxiliary_collection as aux
+        before=deepcopy(self.ledger.manifest)
+        with patch.object(aux,'verify_auxiliary_segment',side_effect=ValueError('independent proof failed')):
+            with self.assertRaisesRegex(ValueError,'independent proof failed'):self.external_commit(entry,current)
+        self.assertEqual(self.ledger.manifest,before)
+
+
+    def test_external_commit_mixed_cohort_never_advances_completed_row(self):
+        metadata=self.metadata('training',0,2,deadline=time.time()-100)
+        partial=self.segment(metadata,7);terminal=self.segment(metadata,8)
+        def combine(name):
+            return tuple(r for r in getattr(terminal,name)if r['owner']==0)+tuple(r for r in getattr(partial,name)if r['owner']==1)
+        old=replace(partial,final=(terminal.final[0],partial.final[1]),steps=(8,7),complete=(True,False),
+            pcg_states=(terminal.pcg_states[0],partial.pcg_states[1]),
+            raw_records=combine('raw_records'),audit_records=combine('audit_records'),value_records=combine('value_records'))
+        from app.modules.card_game.rl import device_auxiliary_collection as aux
+        with patch.object(aux,'_oracle',self.oracle.api):
+            entry=self.ledger.admit_phase_prefix('training',offset=0,segment=old,parent_report_sha256='a'*64,
+                parent_checkpoint_sha256='b'*64,authorization='preserve actual mixed completed/paused cohort')
+        current=self.continued_segment(old,8)
+        before=deepcopy(self.ledger.manifest)
+        with patch.object(aux,'verify_auxiliary_segment',return_value=True):
+            with self.assertRaisesRegex(ValueError,'Previously complete'):
+                self.external_commit(entry,replace(current,steps=(9,8)))
+            changed=deepcopy(current);changed.value_records[0]['z'][0]=0
+            with self.assertRaises(ValueError):self.external_commit(entry,changed)
+        self.assertEqual(self.ledger.manifest,before)
+        with patch.object(aux,'_oracle',self.oracle.api):
+            self.assertEqual(self.external_commit(entry,current)['status'],'COMPLETE')
+
+
+    def test_pending_candidate_full_proof_once_preserves_original_and_marks_event(self):
+        old,entry=self.admit(steps=5);current=self.continued_segment(old,6)
+        pending=replace(current,replay_verified=False,reason='incomplete; pending_independent_cpu_proof')
+        from app.modules.card_game.rl import device_auxiliary_collection as aux
+        from app.modules.card_game.rl.device_auxiliary_continuation import auxiliary_content_sha256
+        before=auxiliary_content_sha256(pending);original=aux.verify_auxiliary_segment
+        with self.assertRaises(ValueError):self.external_commit(entry,pending)
+        with patch.object(aux,'_oracle',self.oracle.api),patch.object(aux,'verify_auxiliary_segment',wraps=original)as verify:
+            committed=self.external_commit(entry,pending,pending_candidate=True)
+        self.assertEqual(verify.call_count,1)
+        self.assertFalse(pending.replay_verified);self.assertEqual(auxiliary_content_sha256(pending),before)
+        restored=self.ledger._load_segment(committed,deadline=self.deadline,verify=False)
+        self.assertTrue(restored.replay_verified)
+        event=self.ledger.manifest['events'][-1]
+        self.assertTrue(event['pending_candidate']);self.assertTrue(event['full_replay_proof_applied'])
+        self.assertFalse(event['producer_replay_verified']);self.assertEqual(event['producer_reason'],pending.reason)
+
+    def test_pending_proof_error_and_actual_guard_never_change_head(self):
+        old,entry=self.admit(steps=5);current=self.continued_segment(old,6)
+        pending=replace(current,replay_verified=False,reason='incomplete; pending_independent_cpu_proof')
+        from app.modules.card_game.rl import device_auxiliary_collection as aux
+        before=deepcopy(self.ledger.manifest);head=self.ledger._manifest_path.read_bytes()
+        with patch.object(aux,'verify_auxiliary_segment',side_effect=TimeoutError('full independent proof exhausted')):
+            with self.assertRaises(TimeoutError):self.external_commit(entry,pending,pending_candidate=True)
+        for invalid in (replace(pending,errors=(256,0)),replace(pending,reason='incomplete; proof_failed:old'),
+                replace(pending,attempts=(dict(memory_limit_exceeded=True),)),replace(pending,replay_verified=True)):
+            with self.assertRaises(ValueError):self.external_commit(entry,invalid,pending_candidate=True)
+            self.assertEqual(self.ledger.manifest,before);self.assertEqual(self.ledger._manifest_path.read_bytes(),head)
+        self.assertEqual(pending.errors,(0,0));self.assertFalse(pending.replay_verified)
+
+
 if __name__=='__main__':unittest.main()

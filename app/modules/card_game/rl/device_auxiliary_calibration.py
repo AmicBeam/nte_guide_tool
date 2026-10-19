@@ -891,12 +891,12 @@ class DeviceAuxiliaryCalibrationLedger:
                 and not any(a.get('memory_limit_exceeded',False)for a in segment.attempts))
 
     def _save_segment(self,entry,segment):
-        from .device_auxiliary_continuation import dump_auxiliary_checkpoint,auxiliary_content_sha256,auxiliary_kernel_lineage
+        from .device_auxiliary_continuation import dump_auxiliary_checkpoint_with_content,auxiliary_content_sha256,auxiliary_kernel_lineage
         ordinal=len(entry['checkpoints'])
         name=f"checkpoints/{entry['phase']}-{entry['offset']:03d}-{entry['count']:02d}-{ordinal:05d}.json.gz"
         path=self._checkpoint_path(name)
-        digest=dump_auxiliary_checkpoint(segment,path)
-        item=dict(path=name,sha256=digest,content_sha256=auxiliary_content_sha256(segment),
+        digest,content_digest=dump_auxiliary_checkpoint_with_content(segment,path)
+        item=dict(path=name,sha256=digest,content_sha256=content_digest,
             steps=list(segment.steps),complete=list(segment.complete),errors=list(segment.errors),
             truncated=list(segment.truncated),metadata_sha256=auxiliary_content_sha256(segment.metadata),
             job_deadlines=[j['deadline']for j in segment.metadata.jobs],
@@ -956,6 +956,101 @@ class DeviceAuxiliaryCalibrationLedger:
         self.manifest['events'].append(dict(event='admit_prefix',phase=phase,offset=offset))
         self._persist()
         return deepcopy(entry)
+
+    def commit_phase_segment(self,phase,*,offset,segment,expected_parent_checkpoint_sha256,
+                             producer_report_sha256,producer_checkpoint_sha256,authorization,pending_candidate=False):
+        """Commit independently verified progress to an existing PAUSED cohort.
+
+        No execution or status repair occurs here. Uncertain/rejected records
+        remain sticky; every prefix check and full replay proof precedes writes.
+        """
+        from .device_auxiliary_continuation import auxiliary_content_sha256,_same
+        from dataclasses import replace
+        from .device_auxiliary_collection import AuxiliarySegment
+        if type(pending_candidate)is not bool:raise TypeError('Explicit pending-candidate boolean required')
+        self._assert_current()
+        if any(not self._sha(v)for v in(expected_parent_checkpoint_sha256,
+                producer_report_sha256,producer_checkpoint_sha256)):
+            raise ValueError('Exact expected parent and external producer evidence SHA256 required')
+        if not isinstance(authorization,str)or not authorization.strip():
+            raise ValueError('Explicit independently verified segment authorization required')
+        if any(e['status']in('RUNNING','REJECTED')for e in self.manifest['cohorts']):
+            raise ValueError('Sticky rejected/uncertain cohort cannot accept external progress')
+        if phase not in _PHASE_SEEDS or type(offset)is not int:
+            raise ValueError('Exact phase and integer physical cohort offset required')
+        entries=[e for e in self.manifest['cohorts']if e['phase']==phase and e['offset']==offset]
+        if len(entries)!=1 or entries[0]['status']!='PAUSED':
+            raise ValueError('Only an existing PAUSED physical cohort may accept a segment')
+        entry=entries[0]
+        if entry['checkpoints'][-1]['sha256']!=expected_parent_checkpoint_sha256:
+            raise ValueError('Latest actual parent checkpoint SHA differs')
+        old=self._load_segment(entry,deadline=self.deadline,verify=False)
+        producer_segment=segment
+        if not self._clean(old):raise ValueError('Actual latest parent is not a clean verified prefix')
+        if pending_candidate:
+            if (not isinstance(segment,AuxiliarySegment)or segment.replay_verified is not False
+                    or not isinstance(segment.reason,str)
+                    or not segment.reason.endswith('; pending_independent_cpu_proof')
+                    or not self._clean(replace(segment,replay_verified=True))):
+                raise ValueError('Only explicitly pending actual-clean GPU candidates may request independent full proof')
+            self._check_segment(entry,segment,deadline=self.deadline)
+            segment=replace(segment,replay_verified=True)
+        else:
+            if not self._clean(segment):
+                raise ValueError('Only clean independently replay-verified prefixes may be committed')
+            self._check_segment(entry,segment,deadline=self.deadline)
+        if (not _same(segment.initial,old.initial)
+                or not _same(segment.attempts[:len(old.attempts)],old.attempts)
+                or not _same(segment.budget_continuations[:len(old.budget_continuations)],old.budget_continuations)):
+            raise ValueError('Historical initial state/attempts/budget ancestry changed')
+        if not _same(segment.metadata,old.metadata):
+            old_sha=auxiliary_content_sha256(old)
+            if not any(r.old_segment_sha256==old_sha and _same(r.new_metadata,segment.metadata)
+                       for r in segment.budget_continuations[len(old.budget_continuations):]):
+                raise ValueError('Changed metadata requires a typed continuation of the actual latest parent')
+        if len(segment.steps)!=len(old.steps)or any(a<b for a,b in zip(segment.steps,old.steps)):
+            raise ValueError('Physical counters moved backwards')
+        for owner,n in enumerate(old.steps):
+            if old.complete[owner] and(segment.steps[owner]!=n or not segment.complete[owner]):
+                raise ValueError('Previously complete physical game cannot advance or reopen')
+            if segment.steps[owner]==n and(not _same(segment.final[owner],old.final[owner])
+                    or not _same(segment.pcg_states[owner],old.pcg_states[owner])
+                    or segment.complete[owner]!=old.complete[owner]):
+                raise ValueError('Unadvanced physical final state/PCG/outcome changed')
+        for name in('raw_records','audit_records'):
+            if not _same(getattr(segment,name)[:len(getattr(old,name))],getattr(old,name)):
+                raise ValueError('Historical auxiliary '+name+' prefix changed')
+        values={(r['owner'],r['step']):r for r in segment.value_records}
+        if len(values)!=len(segment.value_records):raise ValueError('Duplicate auxiliary value coordinates')
+        for previous in old.value_records:
+            key=(previous['owner'],previous['step']);actual=values.get(key)
+            if actual is None:raise ValueError('Historical auxiliary value prefix missing')
+            before={k:previous[k]for k in sorted(previous)if k not in('z','eligible')}
+            after={k:actual[k]for k in sorted(actual)if k not in('z','eligible')}
+            if not _same(before,after):raise ValueError('Historical x/context/value metadata changed')
+            if old.complete[key[0]]or not segment.complete[key[0]]:
+                if not _same(previous['z'],actual['z'])or not _same(previous['eligible'],actual['eligible']):
+                    raise ValueError('Only a new natural terminal may update historical finish targets')
+        # Work on a private manifest. Failed validation never changes the
+        # durable head or its in-memory counterpart. _persist retains its lock.
+        replacement=deepcopy(entry)
+        self._save_segment(replacement,segment)
+        replacement['status']='COMPLETE'if all(segment.complete)else'PAUSED'
+        updated=deepcopy(self.manifest)
+        updated['cohorts'][self.manifest['cohorts'].index(entry)]=replacement
+        updated['events'].append(dict(event='commit_verified_phase_segment',phase=phase,offset=offset,
+            expected_parent_checkpoint_sha256=expected_parent_checkpoint_sha256,
+            producer_report_sha256=producer_report_sha256,producer_checkpoint_sha256=producer_checkpoint_sha256,
+            authorization=authorization.strip(),checkpoint_sha256=replacement['checkpoints'][-1]['sha256'],
+            pending_candidate=pending_candidate,producer_replay_verified=producer_segment.replay_verified,
+            producer_reason=producer_segment.reason,full_replay_proof_applied=True))
+        original=self.manifest
+        self.manifest=updated
+        try:self._persist()
+        except BaseException:
+            self.manifest=original
+            raise
+        return deepcopy(replacement)
 
     def _next_entry(self,rows,deadline):
         if any(e['status']in('RUNNING','REJECTED')for e in self.manifest['cohorts']):

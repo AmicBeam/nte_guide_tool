@@ -137,4 +137,21 @@ class AuxiliaryContinuationTests(unittest.TestCase):
         with self.assertRaises(ValueError):budget.decode_auxiliary_payload(payload)
 
 
+    def test_single_encode_checkpoint_file_and_exact_content_identity(self):
+        import gzip,json,hashlib
+        with tempfile.TemporaryDirectory()as directory:
+            path=Path(directory)/'once.json.gz'
+            original=budget.encode_auxiliary_payload
+            with patch.object(budget,'encode_auxiliary_payload',wraps=original)as encode:
+                file_sha,content_sha=budget.dump_auxiliary_checkpoint_with_content(self.old,path)
+            self.assertEqual(encode.call_count,1)
+            self.assertEqual(file_sha,hashlib.sha256(path.read_bytes()).hexdigest())
+            self.assertEqual(content_sha,budget.auxiliary_content_sha256(self.old))
+            with gzip.open(path,'rb')as stream:
+                self.assertEqual(content_sha,hashlib.sha256(stream.read()).hexdigest())
+            restored=budget.load_auxiliary_checkpoint(path,expected_sha256=file_sha)
+            self.assertEqual(budget.auxiliary_content_sha256(restored),content_sha)
+            self.assertIsInstance(budget.dump_auxiliary_checkpoint(self.old,Path(directory)/'legacy.json.gz'),str)
+
+
 if __name__=='__main__':unittest.main()

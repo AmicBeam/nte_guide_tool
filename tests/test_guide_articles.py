@@ -140,6 +140,12 @@ class GuideArticlesTest(unittest.TestCase):
         self.assertIn('我要撰写', page.text)
         self.assertIn('通用攻略', page.text)
         self.assertIn('自建攻略', page.text)
+        general, authored = page.text.split('<section class="guide-self-articles">', 1)
+        self.assertNotIn('独立示例攻略', general)
+        self.assertIn('独立示例攻略', authored)
+        editor = self.client.get('/guide/write').text
+        self.assertIn('不挂载时仅展示在“自建攻略”', editor)
+        self.assertNotIn('通用攻略（不挂载）', editor)
         self.assertNotIn('萌新攻略档案', page.text)
         self.assertNotIn('<code>damage-mechanics</code>', page.text)
         self.assertNotIn('<code>getting-started</code>', page.text)

@@ -152,6 +152,12 @@ class FakeTiled(DeviceTiledSoARules):
         names=('metadata','decision','value','sample','clean','teacher','rule_decision','step','step_clean')
         self._sites={name:[FakeQueue(rows,lanes) for _ in range(3)] for name in names}
         self._site_index={name:0 for name in names};self._queues=[q for queues in self._sites.values() for q in queues]
+        self._output_sites={};self._choice_sites={}
+        def cpu_output_candidates(*args,**kwargs):
+            return _COMPACT_CLASS(*args,allow_cpu_reference=True,**kwargs)
+        with patch.object(t.cuda,'is_current_stream_capturing',return_value=False),patch.object(compact,'CompactDeviceCandidates',side_effect=cpu_output_candidates):
+            for kind in('metadata','value','sample','step','clean','teacher','step_clean','decision','rule_decision'):
+                self._prepare_output_sites(kind)
     @property
     def workspace_bytes(self):return self.inner.workspace_bytes+100
     def close(self):
@@ -239,7 +245,8 @@ class TieredSoARuleTests(unittest.TestCase):
         rules,roots,viewers,allocations=self.make();rules.fast.vm_errors[('decision',11)]=1
         out=rules.decision_device(roots,viewers)
         self.assertIs(out.states,roots);self.assertEqual(out.errors.tolist(),[0,0,77,0,0,0,0])
-        self.assertEqual(allocations.count(7),1) # No slow full-B candidate allocation.
+        self.assertEqual(allocations.count(7),0) # Both tiers prepare persistent full-B outputs before capture.
+        self.assertIs(out.candidates,rules.fast._output_sites['decision'][0].candidates)
         self.assertTrue(all(n in (2,3,7) for n in allocations))
         self.assertEqual(out.counts.tolist(),[3,0,0,2,3,2,3])
         self.assertEqual(out.action_refs[0].tolist(),[112,110,111])

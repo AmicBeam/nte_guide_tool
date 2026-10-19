@@ -3,7 +3,7 @@
 The host builds each static operation once. Nested CUDA WHILE nodes select
 leases and scatter results during replay; no host root/decision loop runs.
 """
-from dataclasses import fields
+from dataclasses import fields, replace
 
 from .device_soa_rules import DeviceSoARules
 from ..batched_duel.device_rule_protocol import DeviceStateBatch, DeviceMeta, DeviceDecision, DeviceValueObservation
@@ -118,6 +118,74 @@ class DeviceTiledSoARules(DeviceSoARules):
             for name in ('teacher','rule_decision'):
                 self._sites[name]=[self._new_queue()]
         self._site_index = {name: 0 for name in self._sites}
+        self._output_sites = {}
+        self._choice_sites = {}
+        for kind in ('metadata','value','sample','step','clean','teacher','decision','rule_decision'):
+            if kind in self._sites:self._prepare_output_sites(kind)
+
+    def _prepare_output_sites(self,kind):
+        """Own conditional-call outputs before any graph allocator is active."""
+        t=self.t
+        if t.cuda.is_current_stream_capturing():
+            raise RuntimeError('Persistent SoA output sites must be allocated outside capture')
+        if kind in self._output_sites:raise RuntimeError('Output sites already prepared')
+        def zeros(shape,dtype):return t.zeros(shape,dtype=dtype,device=self.device)
+        def make():
+            if kind in('decision','rule_decision'):
+                from ..batched_duel.gpu_seven_observation import OBS_DIM
+                raw=kind=='rule_decision'
+                if raw:
+                    counts=zeros(self.rows,t.int64);valid=zeros((self.rows,self.max_actions),t.bool)
+                    candidates=zeros((self.rows,self.max_actions,0),t.float32)
+                else:
+                    from .compact_device_candidates import CompactDeviceCandidates
+                    tokens=_empty_tokens(t,self.rows,self.max_actions,self.device,integer_dtype=self.candidate_integer_dtype)
+                    counts,valid=tokens.counts,tokens.mask
+                    candidates=CompactDeviceCandidates(tokens,scratch_rows=self.inference_rows,device=self.device,template_table=self.templates)
+                return DeviceDecision(None,self.action_store,
+                    t.full((self.rows,),-1,dtype=t.int64,device=self.device),zeros(self.rows,t.int64),
+                    t.full((self.rows,self.max_actions),-1,dtype=t.int32,device=self.device),
+                    t.full((self.rows,self.max_actions),-1 if raw else 0,dtype=t.int64,device=self.device),
+                    counts,valid,zeros((self.rows,0 if raw else OBS_DIM),t.float32),candidates,zeros(self.rows,t.int32))
+            if kind=='metadata':
+                return DeviceMeta(zeros(self.rows,t.int64),zeros(self.rows,t.int32),zeros(self.rows,t.int64),
+                    zeros(self.rows,t.bool),zeros(self.rows,t.int64),zeros(self.rows,t.int32))
+            if kind=='value':
+                from ..batched_duel.gpu_seven_observation import OBS_DIM
+                return DeviceValueObservation(zeros((self.rows,OBS_DIM),t.float32),zeros((self.rows,1),t.float32),
+                    zeros(self.rows,t.bool),zeros(self.rows,t.float64),zeros(self.rows,t.int32))
+            return DeviceStateBatch(self.store,t.full((self.rows,),-1,dtype=t.int64,device=self.device),
+                zeros(self.rows,t.int64),zeros(self.rows,t.int64),zeros(self.rows,t.bool),zeros(self.rows,t.int32))
+        self._output_sites[kind]=[make()for _ in self._sites[kind]]
+        if kind=='rule_decision':
+            self._choice_sites[kind]=[t.full((self.rows,),-1,dtype=t.int64,device=self.device)for _ in self._sites[kind]]
+
+    def _prepared_output(self,kind,states):
+        queue=self._site(kind)
+        output=self._output_sites[kind][self._site_index[kind]-1]
+        # Preserve the original per-call reset/copy operations in the captured
+        # branch. Storage itself also has deterministic values before that
+        # branch has ever run, and never belongs to a conditional graph pool.
+        if isinstance(output,DeviceDecision):
+            output.action_slots.fill_(-1);output.action_generations.zero_();output.action_refs.fill_(-1)
+            output.action_types.fill_(-1 if kind=='rule_decision'else 0)
+            output.counts.zero_();output.valid.zero_();output.observations.zero_();output.errors.copy_(states.errors)
+            if kind=='decision':
+                for field in fields(output.candidates.tokens):
+                    if field.name=='request_ids':continue
+                    value=getattr(output.candidates.tokens,field.name)
+                    value.fill_(-1 if field.name in('int_tokens','mulligan_cards','order_cards','select_cards')else 0)
+            else:self._choice_sites[kind][self._site_index[kind]-1].fill_(-1)
+            output=replace(output,states=states)
+        elif isinstance(output,DeviceStateBatch):
+            output.slots.fill_(-1);output.generations.zero_();output.owners.copy_(states.owners)
+            output.active.zero_();output.errors.copy_(states.errors)
+        else:
+            for field in fields(output):
+                value=getattr(output,field.name)
+                if field.name=='errors':value.copy_(states.errors)
+                else:value.zero_()
+        return queue,output
 
     def _new_queue(self):
         queue = _ActiveSoALanes(self.rows, self.work_rows, device=str(self.device), seconds=self.seconds)
@@ -135,13 +203,6 @@ class DeviceTiledSoARules(DeviceSoARules):
         self._site_index[name] += 1
         return self._sites[name][index]
 
-    def _state_output(self, states):
-        t = self.t
-        return DeviceStateBatch(self.store,
-            t.full((self.rows,), -1, dtype=t.int64, device=self.device),
-            t.zeros(self.rows, dtype=t.int64, device=self.device), states.owners.clone(),
-            t.zeros(self.rows, dtype=t.bool, device=self.device), states.errors.clone())
-
     def _check_states(self, states):
         if not isinstance(states, DeviceStateBatch) or states.pool is not self.store or len(states.slots) != self.rows:
             raise ValueError('Exact typed independent root cohort required')
@@ -154,10 +215,7 @@ class DeviceTiledSoARules(DeviceSoARules):
         return output
 
     def metadata_device(self, states):
-        self._check_states(states); t = self.t; queue = self._site('metadata')
-        make = lambda dtype: t.zeros(self.rows, dtype=dtype, device=self.device)
-        output = DeviceMeta(make(t.int64), make(t.int32), make(t.int64), make(t.bool),
-                            make(t.int64), states.errors.clone())
+        self._check_states(states); queue,output=self._prepared_output('metadata',states)
 
         def operation(local, ids, valid):
             result = self.inner.metadata_device(local)
@@ -167,19 +225,8 @@ class DeviceTiledSoARules(DeviceSoARules):
         return self._finish(queue, states, output)
 
     def decision_device(self, states, observers):
-        self._check_states(states); t = self.t; queue = self._site('decision')
-        from ..batched_duel.gpu_seven_observation import OBS_DIM
-        from .compact_device_candidates import CompactDeviceCandidates
-        tokens = _empty_tokens(t, self.rows, self.max_actions, self.device,integer_dtype=self.candidate_integer_dtype)
-        candidates = CompactDeviceCandidates(tokens, scratch_rows=self.inference_rows,
-                                              device=self.device, template_table=self.templates)
-        output = DeviceDecision(states, self.action_store,
-            t.full((self.rows,), -1, dtype=t.int64, device=self.device),
-            t.zeros(self.rows, dtype=t.int64, device=self.device),
-            t.full((self.rows, self.max_actions), -1, dtype=t.int32, device=self.device),
-            t.zeros((self.rows, self.max_actions), dtype=t.int64, device=self.device),
-            tokens.counts, tokens.mask,
-            t.zeros((self.rows, OBS_DIM), dtype=t.float32, device=self.device), candidates, states.errors.clone())
+        self._check_states(states); t=self.t; queue,output=self._prepared_output('decision',states)
+        candidates=output.candidates;tokens=candidates.tokens
 
         def operation(local, ids, valid):
             result = self.inner.decision_device(local, observers.index_select(0, ids))
@@ -198,13 +245,7 @@ class DeviceTiledSoARules(DeviceSoARules):
         return self._finish(queue, states, output)
 
     def value_observation_device(self, states, viewers):
-        self._check_states(states); t = self.t; queue = self._site('value')
-        from ..batched_duel.gpu_seven_observation import OBS_DIM
-        output = DeviceValueObservation(
-            t.zeros((self.rows, OBS_DIM), dtype=t.float32, device=self.device),
-            t.zeros((self.rows, 1), dtype=t.float32, device=self.device),
-            t.zeros(self.rows, dtype=t.bool, device=self.device),
-            t.zeros(self.rows, dtype=t.float64, device=self.device), states.errors.clone())
+        self._check_states(states); queue,output=self._prepared_output('value',states)
 
         def operation(local, ids, valid):
             result = self.inner.value_observation_device(local, viewers.index_select(0, ids))
@@ -214,7 +255,7 @@ class DeviceTiledSoARules(DeviceSoARules):
         return self._finish(queue, states, output)
 
     def _state_call(self, kind, states, operation):
-        self._check_states(states); queue = self._site(kind); output = self._state_output(states)
+        self._check_states(states); queue,output=self._prepared_output(kind,states)
 
         def body(local, ids, valid):
             result = operation(local, ids, valid)
@@ -241,17 +282,8 @@ class DeviceTiledSoARules(DeviceSoARules):
     def rule_decision_device(self,states,observers):
         if not self.require_teacher:
             raise RuntimeError('Rule opponent is absent from the SoA rule path')
-        self._check_states(states);t=self.t;queue=self._site('rule_decision')
-        output=DeviceDecision(states,self.action_store,
-            t.full((self.rows,),-1,dtype=t.int64,device=self.device),
-            t.zeros(self.rows,dtype=t.int64,device=self.device),
-            t.full((self.rows,self.max_actions),-1,dtype=t.int32,device=self.device),
-            t.full((self.rows,self.max_actions),-1,dtype=t.int64,device=self.device),
-            t.zeros(self.rows,dtype=t.int64,device=self.device),
-            t.zeros((self.rows,self.max_actions),dtype=t.bool,device=self.device),
-            t.empty((self.rows,0),dtype=t.float32,device=self.device),
-            t.empty((self.rows,self.max_actions,0),dtype=t.float32,device=self.device),states.errors.clone())
-        choices=t.full((self.rows,),-1,dtype=t.int64,device=self.device)
+        self._check_states(states);t=self.t;queue,output=self._prepared_output('rule_decision',states)
+        choices=self._choice_sites['rule_decision'][self._site_index['rule_decision']-1]
         def operation(local,ids,valid):
             result,chosen,errors=self.inner.rule_decision_device(local,observers.index_select(0,ids))
             for name in ('action_slots','action_generations','action_refs','action_types','counts','valid'):
@@ -281,6 +313,7 @@ class DeviceTiledSoARules(DeviceSoARules):
         if 'step_clean' not in self._sites:
             self._sites['step_clean']=[self._new_queue()]
             self._site_index['step_clean']=0
+            self._prepare_output_sites('step_clean')
 
     def _step_device(self, states, actors, decision, action_indices, *, physical=False,fused=False,_defer=False):
         if type(_defer) is not bool:
@@ -402,7 +435,16 @@ class DeviceTiledSoARules(DeviceSoARules):
 
     @property
     def workspace_bytes(self):
-        return self.inner.workspace_bytes+sum(v.numel()*v.element_size() for q in self._queues for v in
+        outputs=sum(value.numel()*value.element_size()for group in self._output_sites.values()for output in group
+            for field in fields(output)for value in (getattr(output,field.name),)if isinstance(value,self.t.Tensor))
+        outputs+=sum(output.candidates.allocated_bytes for group in self._output_sites.values()for output in group
+            if isinstance(output,DeviceDecision)and not isinstance(output.candidates,self.t.Tensor))
+        # counts/mask belong to tokens and are already counted by the decision.
+        outputs-=sum(output.counts.numel()*output.counts.element_size()+output.valid.numel()*output.valid.element_size()
+            for group in self._output_sites.values()for output in group
+            if isinstance(output,DeviceDecision)and not isinstance(output.candidates,self.t.Tensor))
+        outputs+=sum(value.numel()*value.element_size()for group in self._choice_sites.values()for value in group)
+        return self.inner.workspace_bytes+outputs+sum(v.numel()*v.element_size() for q in self._queues for v in
             (q.cursor,q.pending,q.ids,q.selected,q.valid,q.processed,q.peak,q.total_rows,
              q.total_dispatches,q.peak_selected,q.root_visits,q.tail_dispatches,q.errored_rows))
 
@@ -416,4 +458,4 @@ class DeviceTiledSoARules(DeviceSoARules):
                 close = getattr(obj, 'close', None)
                 if callable(close):
                     close()
-            self._keepalive.clear(); self._init_resources.clear(); self.closed = True
+            self._keepalive.clear(); self._output_sites.clear(); self._choice_sites.clear(); self._init_resources.clear(); self.closed = True

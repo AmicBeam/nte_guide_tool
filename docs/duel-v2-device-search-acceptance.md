@@ -321,3 +321,5 @@ SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、�
 `native_preview_arena=True, preview_program=program` 是独立的完整 SoA opt-in。仅对精确冻结的纯数值规则战斗预览保存／回收私有 typed slots：在真正返回处核四种评分键和独立数值结果，保留普通堆、字符串、旧对象及其身份。函数／全局／调用图、物理 schema、frame 与 GC 布局和全部编译单元不匹配均拒绝；不能与 hydration probe 同时启用。默认只派生一个规则单元，其余单元逐字节不变。显式 `preview_owner_functions=8` 进一步按完整函数边界拆分该单元，每片至多 8 个函数且函数体合计不超过 128 KiB，单个超限函数独片；其余 21 个原单元继续复用缓存。分片绑定记录完整函数、辅助函数与片段覆盖，实际编译单元数按完整清单核验，不能仍把分片称为 22 个物理单元。允许逐片预编译入缓存，但编译完成不代表已通过完整模块加载、GPU 对拍或训练。`canonical_rule_source_sha256` 保留未派生规则标识；启用后的 `rule_source_sha256` 使用完整派生绑定身份，profile 保存原／新单元清单，不能冒充旧后端。CPU合成回收与加载测试不授予GPU正确性或整局资格。
 
 原生条件子流的借用张量不登记到短命子流。`CudaModule` 只在实际图捕获且显式 capture-safe 时强引用保留全部张量参数；普通异步调用的 record-stream／事件次序不变。图停止后关闭模块须先同步设备，再释放引用及模块；同步失败保留引用，捕获期间拒绝关闭。按实际整卡显存限制验收保活后的容量，不把引用覆盖字节当作新增显存。
+
+Tiled SoA 的 metadata、价值观察、动作候选、规则选择和状态调用输出须按已准备站点在图捕获前分配并初始化，存储由规则对象持有；条件分支首次执行前也必须具备确定的值。捕获期间只原位重置、复制和写回，候选 counts／mask 与原始 tokens 的别名保持；完整 tokens、选择向量及持久输出均计入 workspace 显存，不能通过遗漏候选输出压低预算。跨进程验收继续逐字节比较所有语义存储，不因分支未执行而排除输出。CPU生命周期与容量契约见 `tests.test_duel_v2_tiled_output_lifetime`、`tests.test_duel_v2_tiered_soa_rules`；实际 CUDA 恢复和完整搜索仍须分别通过。

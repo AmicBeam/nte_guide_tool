@@ -15,7 +15,7 @@ from pathlib import Path
 import re
 from types import MappingProxyType
 
-from .native_compile_units import NativeCompileUnit, _LEXICAL, _end
+from .native_compile_units import NativeCompileUnit, _LEXICAL, _FUNCTION, _end
 from .record_soa import CompiledRecordSchema
 from .vm_image import VmImage
 
@@ -29,6 +29,13 @@ PREVIEW_SOURCE_SHA256 = '27253988b49c6af0944020ec2f8c70855e4d8612d86fe642bc58121
 TARGET_FUNCTION = 597
 TARGET_UNIT = 'rules_009'
 BACKEND_ABI = 'exact_scalar_preview_typed_arena_v1'
+SPLIT_BACKEND_ABI = 'exact_scalar_preview_typed_arena_partitioned_v2'
+_SPLIT_OWNER_SHA256 = '6adde8ea1f4a83794d28f3bc4d5cc68ffe195fa043544ac70bdd3324438b79e4'
+_SPLIT_FUNCTIONS_SHA256 = '19842d64b4b440ffcda7219d20c48e841749e924905d556c50b0768db0d61c3e'
+_SPLIT_HELPERS_SHA256 = '4be7a3ef2cdd7432b289ce4880eacf5f2a59b09392393e2018ef65b996fe17cf'
+_SPLIT_SKELETON_SHA256 = '579ce20be20dcb77d48879654b3ffb5c3100c9d16b375a48d990ae8fe99be1f4'
+_SPLIT_FUNCTIONS = 8
+_SPLIT_BODY_BYTES = 131072
 CANONICAL_UNIT_SHA256 = MappingProxyType({'runtime': '947f5e02d107e06b3ce75354c90e582cad8296ce8843a5d067c5b13550138ce6',
  'rules_000': 'aba2fb0caf9ef4e1a786d2558c40c59ac2cb628b6e29df4cf58f0234a1b690dc',
  'rules_001': '510a2e997239236dc56858ce57f892f8c064934f7a6b5668213591bb5eececde',
@@ -150,28 +157,22 @@ class PreviewArenaTransform:
 
     def verify(self):
         actual = _unit_hashes(self.units)
-        fixed = dict(backend=BACKEND_ABI, program=PROGRAM_IDENTITY, image=IMAGE_IDENTITY,
-                     schema=SCHEMA_IDENTITY, reclaim='private typed slots only; heap and strings retained',
-                     cuda_qualified=False)
-        if (set(self.binding) != set(fixed) | {'canonical_units', 'derived_units'}
-                or any(self.binding[k] != v for k, v in fixed.items())):
-            raise PreviewArenaError('Derived backend binding changed')
+        verify_preview_binding(dict(self.binding),self.identity)
         if actual != dict(self.binding['derived_units']):
             raise PreviewArenaError('Derived units changed')
-        if (dict(self.binding['canonical_units']) != dict(CANONICAL_UNIT_SHA256)
-                or set(actual) != set(CANONICAL_UNIT_SHA256)
-                or any(actual[k] != v for k, v in CANONICAL_UNIT_SHA256.items() if k != TARGET_UNIT)
-                or actual[TARGET_UNIT] == CANONICAL_UNIT_SHA256[TARGET_UNIT]):
-            raise PreviewArenaError('Canonical cache reuse boundary changed')
+        if self.binding['backend']==SPLIT_BACKEND_ABI:
+            _verify_partition_sources(self.units,self.binding['split_manifest'])
         return True
 
 
-def transform_units(units, image, schema, program, *, projection_source=None):
+def transform_units(units, image, schema, program, *, projection_source=None,preview_owner_functions=None):
     """Explicitly derive one unit; require all 22 canonical source SHA matches.
 
     Caller must use ``result.identity`` as a distinct backend/cache binding and
     compile/link the returned units. This function performs no compilation.
     """
+    if preview_owner_functions is not None and(type(preview_owner_functions)is not int or preview_owner_functions!=8):
+        raise PreviewArenaError('Only explicit8-function owner refinement is supported')
     entry = verify_frozen_preview(program, image, schema, projection_source=projection_source)
     units = tuple(units)
     if len(units) != 22 or _unit_hashes(units) != dict(CANONICAL_UNIT_SHA256):
@@ -187,7 +188,151 @@ def transform_units(units, image, schema, program, *, projection_source=None):
         cuda_qualified=False))
     result = PreviewArenaTransform(derived, binding)
     result.verify()
+    if preview_owner_functions is not None:return _partition_owner(result)
     return result
+
+
+def _fragment_groups(functions):
+    groups=[];group=[];size=0
+    for fn in functions:
+        if group and(len(group)>=_SPLIT_FUNCTIONS or size+fn['body_bytes']>_SPLIT_BODY_BYTES):
+            groups.append(group);group=[];size=0
+        group.append(fn['index']);size+=fn['body_bytes']
+        if fn['body_bytes']>_SPLIT_BODY_BYTES:
+            groups.append(group);group=[];size=0
+    if group:groups.append(group)
+    return groups
+
+
+def verify_preview_binding(binding,identity):
+    """Pure metadata ABI/physical-unit proof, never GPU execution approval.
+
+    V1 retains its22-unit interface. V2 replaces only rules009, exposes every
+    real physical fragment, and pins all64complete bodies plus the shared ABI.
+    """
+    binding=dict(binding)
+    backend=binding.get('backend')
+    if backend not in(BACKEND_ABI,SPLIT_BACKEND_ABI):raise PreviewArenaError('Unsupported preview backend ABI')
+    fixed=dict(backend=backend,program=PROGRAM_IDENTITY,image=IMAGE_IDENTITY,schema=SCHEMA_IDENTITY,
+        reclaim='private typed slots only; heap and strings retained',cuda_qualified=False)
+    extra={'canonical_units','derived_units'}|({'split_manifest'}if backend==SPLIT_BACKEND_ABI else set())
+    if set(binding)!=set(fixed)|extra or any(binding[k]!=v for k,v in fixed.items()):
+        raise PreviewArenaError('Exact preview derivation fields required')
+    canonical=dict(CANONICAL_UNIT_SHA256);actual=binding['derived_units']
+    if (binding['canonical_units']!=canonical or not isinstance(actual,dict)
+            or any(not isinstance(v,str)or not re.fullmatch('[0-9a-f]{64}',v)for v in actual.values())
+            or any(actual.get(k)!=v for k,v in canonical.items()if k!=TARGET_UNIT)):
+        raise PreviewArenaError('The other21 canonical source objects must stay identical')
+    if backend==BACKEND_ABI:
+        if set(actual)!=set(canonical)or actual[TARGET_UNIT]==canonical[TARGET_UNIT]:
+            raise PreviewArenaError('V1 requires exactly22objects with only rules009derived')
+    else:
+        manifest=binding['split_manifest']
+        fields={'schema','owner','parent_owner_sha256','declaration_skeleton_sha256','functions_per_fragment',
+                'max_body_bytes','functions','helpers','fragments'}
+        if (not isinstance(manifest,dict)or set(manifest)!=fields
+                or manifest['schema']!='native_preview_owner_split_v1'or manifest['owner']!=TARGET_UNIT
+                or manifest['parent_owner_sha256']!=_SPLIT_OWNER_SHA256
+                or manifest['declaration_skeleton_sha256']!=_SPLIT_SKELETON_SHA256
+                or type(manifest['functions_per_fragment'])is not int or manifest['functions_per_fragment']!=8
+                or type(manifest['max_body_bytes'])is not int or manifest['max_body_bytes']!=_SPLIT_BODY_BYTES
+                or _digest(manifest['functions'])!=_SPLIT_FUNCTIONS_SHA256
+                or _digest(manifest['helpers'])!=_SPLIT_HELPERS_SHA256):
+            raise PreviewArenaError('Exact frozen complete-function/helper coverage required')
+        functions=manifest['functions'];helpers=manifest['helpers']
+        if [f['index']for f in functions]!=list(range(576,640)):
+            raise PreviewArenaError('All64 frozen owner functions required in original order')
+        groups=_fragment_groups(functions);expected=[]
+        for ordinal,indexes in enumerate(groups):
+            expected.append(dict(name=f'{TARGET_UNIT}_part_{ordinal:03d}',function_indexes=indexes,
+                helper_symbols=[h['symbol']for h in helpers]if TARGET_FUNCTION in indexes else[]))
+        if manifest['fragments']!=expected or TARGET_UNIT in actual:
+            raise PreviewArenaError('Whole old owner cannot remain linked or overlap physical fragments')
+        if set(actual)!=(set(canonical)-{TARGET_UNIT})|{f['name']for f in expected}:
+            raise PreviewArenaError('Every actual physical fragment must be bound exactly once')
+    if not isinstance(identity,str)or not re.fullmatch('[0-9a-f]{64}',identity)or _digest(binding)!=identity:
+        raise PreviewArenaError('Derived preview source identity changed')
+    return dict(rule_source=identity,image=IMAGE_IDENTITY,schema=SCHEMA_IDENTITY)
+
+
+def _owner_definitions(source):
+    mask=_LEXICAL.sub(lambda m:re.sub(r'[^\n]',' ',m[0]),source)
+    definitions=[]
+    for match in _FUNCTION.finditer(mask):
+        if match['template']:raise PreviewArenaError('Owner refinement cannot relocate template definitions')
+        end=_end(mask,match.end()-1)
+        definitions.append(dict(start=match.start(),end=end,symbol=match['name'],
+            body=source[match.start():end],signature=source[match.start('signature'):match.end('signature')]))
+    if len({d['symbol']for d in definitions})!=len(definitions):raise PreviewArenaError('Duplicate owner function definition')
+    return definitions
+
+
+def _retain_definitions(source,definitions,owned):
+    parts=[];cursor=0
+    for fn in definitions:
+        parts.extend((source[cursor:fn['start']],fn['body']if fn['symbol']in owned else fn['signature']+';'))
+        cursor=fn['end']
+    parts.append(source[cursor:]);return ''.join(parts)
+
+
+def _coverage(definitions):
+    functions=[];helpers=[]
+    for fn in definitions:
+        row=dict(symbol=fn['symbol'],body_sha256=sha256(fn['body'].encode()).hexdigest())
+        native=re.fullmatch(r'native_function_(\d+)',fn['symbol'])
+        if native:functions.append(dict(index=int(native[1]),**row,body_bytes=len(fn['body'].encode())))
+        else:helpers.append(row)
+    return functions,helpers
+
+
+def _partition_owner(parent):
+    parent.verify();owner=next(u for u in parent.units if u.name==TARGET_UNIT)
+    definitions=_owner_definitions(owner.source);functions,helpers=_coverage(definitions)
+    skeleton=_retain_definitions(owner.source,definitions,set())
+    manifest=dict(schema='native_preview_owner_split_v1',owner=TARGET_UNIT,parent_owner_sha256=owner.sha256,
+        declaration_skeleton_sha256=sha256(skeleton.encode()).hexdigest(),functions_per_fragment=8,
+        max_body_bytes=_SPLIT_BODY_BYTES,functions=functions,helpers=helpers,fragments=[])
+    pieces=[]
+    for ordinal,indexes in enumerate(_fragment_groups(functions)):
+        name=f'{TARGET_UNIT}_part_{ordinal:03d}'
+        helper_symbols=[h['symbol']for h in helpers]if TARGET_FUNCTION in indexes else[]
+        owned={f'native_function_{index}'for index in indexes}|set(helper_symbols)
+        manifest['fragments'].append(dict(name=name,function_indexes=indexes,helper_symbols=helper_symbols))
+        pieces.append(NativeCompileUnit(name,_retain_definitions(owner.source,definitions,owned)))
+    units=tuple(part for unit in parent.units for part in(pieces if unit.name==TARGET_UNIT else(unit,)))
+    binding=dict(parent.binding);binding.update(backend=SPLIT_BACKEND_ABI,derived_units=_unit_hashes(units),split_manifest=manifest)
+    result=PreviewArenaTransform(units,MappingProxyType(binding));result.verify();return result
+
+
+def _verify_partition_sources(units,manifest):
+    """Rebuild the exact parent once, and prove every piece shares its skeleton."""
+    pieces={u.name:u.source for u in units if u.name not in CANONICAL_UNIT_SHA256}
+    definitions={};skeleton=None
+    for fragment in manifest['fragments']:
+        source=pieces[fragment['name']];owned=_owner_definitions(source);functions,helpers=_coverage(owned)
+        if ([f['index']for f in functions]!=fragment['function_indexes']
+                or [h['symbol']for h in helpers]!=fragment['helper_symbols']):
+            raise PreviewArenaError('A physical fragment dropped/duplicated/relocated a complete function')
+        current=_retain_definitions(source,owned,set())
+        if sha256(current.encode()).hexdigest()!=manifest['declaration_skeleton_sha256']:
+            raise PreviewArenaError('Fragment shared ABI/prefix/declarations changed')
+        if skeleton is None:skeleton=current
+        for fn in owned:
+            if fn['symbol']in definitions:raise PreviewArenaError('Duplicate linked device symbol')
+            definitions[fn['symbol']]=fn
+    functions,helpers=_coverage(list(definitions.values()))
+    functions.sort(key=lambda f:f['index'])
+    helper_order={h['symbol']:i for i,h in enumerate(manifest['helpers'])}
+    helpers.sort(key=lambda h:helper_order.get(h['symbol'],-1))
+    if functions!=manifest['functions']or helpers!=manifest['helpers']:
+        raise PreviewArenaError('Physical function/helper bodies differ from pinned owner')
+    restored=skeleton
+    for fn in definitions.values():
+        declaration=fn['signature']+';'
+        if restored.count(declaration)!=1:raise PreviewArenaError('Unique original declaration boundary required')
+        restored=restored.replace(declaration,fn['body'],1)
+    if sha256(restored.encode()).hexdigest()!=manifest['parent_owner_sha256']:
+        raise PreviewArenaError('Physical fragments do not reconstruct the exact derived owner')
 
 
 def _transform_owner(source, schema, entry):

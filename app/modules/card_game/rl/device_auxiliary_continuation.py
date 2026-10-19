@@ -298,18 +298,10 @@ _KERNEL_EVENT_KIND='kernel_revalidation'
 
 def _preview_derived_binding(binding,identity):
     from .batched_duel import native_preview_arena as arena
-    fixed=dict(backend=arena.BACKEND_ABI,program=arena.PROGRAM_IDENTITY,image=arena.IMAGE_IDENTITY,
-        schema=arena.SCHEMA_IDENTITY,reclaim='private typed slots only; heap and strings retained',cuda_qualified=False)
-    if (not isinstance(binding,dict)or set(binding)!=set(fixed)|{'canonical_units','derived_units'}
-            or any(binding.get(k)!=v for k,v in fixed.items())
-            or binding['canonical_units']!=dict(arena.CANONICAL_UNIT_SHA256)):
-        raise ValueError('Exact opt-in preview backend derivation required')
-    actual=binding['derived_units'];expected=dict(arena.CANONICAL_UNIT_SHA256)
-    if (not isinstance(actual,dict)or set(actual)!=set(expected)or not all(_sha(v)for v in actual.values())
-            or actual[arena.TARGET_UNIT]==expected[arena.TARGET_UNIT]
-            or any(actual[k]!=v for k,v in expected.items()if k!=arena.TARGET_UNIT)
-            or not _sha(identity)or arena._digest(binding)!=identity):
-        raise ValueError('Exactly21 unchanged units and independently bound derived unit required')
+    try:
+        arena.verify_preview_binding(binding,identity)
+    except (arena.PreviewArenaError,TypeError,KeyError) as error:
+        raise ValueError('Exact opt-in preview backend derivation required') from error
     return dict(rule_source=identity,image=arena.IMAGE_IDENTITY,schema=arena.SCHEMA_IDENTITY)
 
 
@@ -439,12 +431,13 @@ def verify_auxiliary_kernel_fix_snapshot(evidence,*,proof_deadline=None):
         raise ValueError('Original diagnostic raw-file receipt omitted')
     diagnostic=report.get('diagnostic',{});query=diagnostic.get('v85_rule_query',{})
     profile=diagnostic.get('rule_compilation',{});units=profile.get('compilation_units',[])
-    if (len(units)!=22 or len({u.get('name')for u in units})!=22
+    if (len(units)!=len(report['derived_binding']['derived_units'])
+            or len({u.get('name')for u in units})!=len(units)
             or {u.get('name'):u.get('source_sha256')for u in units}!=report['derived_binding']['derived_units']
-            or any(u.get('cache_status')!='hit'for u in units if u.get('name')!=arena.TARGET_UNIT)
+            or any(u.get('cache_status')!='hit'for u in units if u.get('name')in arena.CANONICAL_UNIT_SHA256 and u.get('name')!=arena.TARGET_UNIT)
             or any(u.get('cache_status')not in('hit','miss')for u in units)
             or profile.get('device_stack_bytes')!=131072):
-        raise ValueError('Actual22-unit profile/21 cache hits required')
+        raise ValueError('Actual complete physical-unit profile/21 canonical cache hits required')
     if (diagnostic.get('cpu_preflight')is not False or diagnostic.get('diagnostic_complete')is not True
             or diagnostic.get('parity_passed')is not True or diagnostic.get('cleanup_errors')
             or diagnostic.get('training_games_counted')!=0 or diagnostic.get('learning_updates')!=0

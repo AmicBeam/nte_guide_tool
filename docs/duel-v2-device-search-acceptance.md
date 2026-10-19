@@ -318,6 +318,6 @@ SoA工厂还默认开启 `reuse_root_observation`：只复用本次初始化、�
 
 条件循环须由 PyTorch 原生条件图接口创建并持有子图的分配池；独立后续图捕获不得使已捕获的大块临时张量失效。`CudaConditionalWhile` 保留设备 globaltimer、累计迭代上限、错误掩码及 uint8 输入谓词，通过共享存储的 bool 标量交给原生条件图。缺少该接口时拒绝启动，不退回原 raw 子图。统计与随机计划仅在静态捕获中登记实际、同设备、已绑定父流派生的子流，所有者线程与捕获范围检查保留。CPU契约测试与大块临时张量、第二次独立图捕获的GPU回归分别记账。
 
-`native_preview_arena=True, preview_program=program` 是独立的完整 SoA opt-in。仅对精确冻结的纯数值规则战斗预览保存／回收私有 typed slots：在真正返回处核四种评分键和独立数值结果，保留普通堆、字符串、旧对象及其身份。函数／全局／调用图、物理 schema、frame 与 GC 布局和全部编译单元不匹配均拒绝；不能与 hydration probe 同时启用。只派生一个规则单元，其余单元逐字节不变。`canonical_rule_source_sha256` 保留未派生规则标识；启用后的 `rule_source_sha256` 使用完整派生绑定身份，profile 保存原／新单元清单，不能冒充旧后端。CPU合成回收与加载测试不授予GPU正确性或整局资格。
+`native_preview_arena=True, preview_program=program` 是独立的完整 SoA opt-in。仅对精确冻结的纯数值规则战斗预览保存／回收私有 typed slots：在真正返回处核四种评分键和独立数值结果，保留普通堆、字符串、旧对象及其身份。函数／全局／调用图、物理 schema、frame 与 GC 布局和全部编译单元不匹配均拒绝；不能与 hydration probe 同时启用。默认只派生一个规则单元，其余单元逐字节不变。显式 `preview_owner_functions=8` 进一步按完整函数边界拆分该单元，每片至多 8 个函数且函数体合计不超过 128 KiB，单个超限函数独片；其余 21 个原单元继续复用缓存。分片绑定记录完整函数、辅助函数与片段覆盖，实际编译单元数按完整清单核验，不能仍把分片称为 22 个物理单元。允许逐片预编译入缓存，但编译完成不代表已通过完整模块加载、GPU 对拍或训练。`canonical_rule_source_sha256` 保留未派生规则标识；启用后的 `rule_source_sha256` 使用完整派生绑定身份，profile 保存原／新单元清单，不能冒充旧后端。CPU合成回收与加载测试不授予GPU正确性或整局资格。
 
 原生条件子流的借用张量不登记到短命子流。`CudaModule` 只在实际图捕获且显式 capture-safe 时强引用保留全部张量参数；普通异步调用的 record-stream／事件次序不变。图停止后关闭模块须先同步设备，再释放引用及模块；同步失败保留引用，捕获期间拒绝关闭。按实际整卡显存限制验收保活后的容量，不把引用覆盖字节当作新增显存。

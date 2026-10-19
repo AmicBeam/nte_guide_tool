@@ -29,7 +29,7 @@ class NativeSoACUDAQuery:
                  direct_type_queries=False, indexed_entity_queries=False,
                  runtime_primitive_compare=False,direct_deepcopy_calls=False,
                  native_hydration_probe=False,hydration_program=None,
-                 native_preview_arena=False,preview_program=None):
+                 native_preview_arena=False,preview_program=None,preview_owner_functions=None):
         if type(seconds) not in (int,float) or not 0<seconds<=3600:
             raise ValueError('Bounded CUDA diagnostic call budget required')
         for value in (max_nodes,max_edges,max_payload_bytes):
@@ -43,7 +43,8 @@ class NativeSoACUDAQuery:
             direct_type_queries=direct_type_queries, indexed_entity_queries=indexed_entity_queries,
             runtime_primitive_compare=runtime_primitive_compare,direct_deepcopy_calls=direct_deepcopy_calls,
             native_hydration_probe=native_hydration_probe,hydration_program=hydration_program,
-            native_preview_arena=native_preview_arena,preview_program=preview_program)
+            native_preview_arena=native_preview_arena,preview_program=preview_program,
+            preview_owner_functions=preview_owner_functions)
         self.image,self.schema,self.limits,self.seconds=image,schema,limits,seconds
         self.max_nodes,self.max_edges,self.max_payload_bytes=max_nodes,max_edges,max_payload_bytes
         self.source_sha256=self.executor.source_sha256

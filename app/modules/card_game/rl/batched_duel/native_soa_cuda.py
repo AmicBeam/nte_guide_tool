@@ -67,7 +67,10 @@ class CudaSoARules:
                  direct_type_queries=False, indexed_entity_queries=False,
                  runtime_primitive_compare=False,direct_deepcopy_calls=False,
                  native_hydration_probe=False,hydration_program=None,
-                 native_preview_arena=False,preview_program=None):
+                 native_preview_arena=False,preview_program=None,preview_owner_functions=None):
+        if preview_owner_functions is not None and(type(preview_owner_functions)is not int
+                or preview_owner_functions!=8 or native_preview_arena is not True):
+            raise ValueError('Explicit native preview arena is required for8-function owner refinement')
         if type(native_preview_arena) is not bool:
             raise ValueError('Explicit native preview arena bool required')
         if native_preview_arena:
@@ -126,6 +129,7 @@ class CudaSoARules:
         self.native_hydration_probe = native_hydration_probe
         self.hydration_probe_binding = None
         self.native_preview_arena = native_preview_arena
+        self.preview_owner_functions = preview_owner_functions
         self.preview_arena_binding = None
         self.preview_arena_identity = None
         if execute_only:
@@ -174,7 +178,8 @@ class CudaSoARules:
                     compiled_units, image, schema, program=hydration_program, enabled=True)
             if native_preview_arena:
                 from .native_preview_arena import transform_units
-                transform = transform_units(compiled_units,image,schema,preview_program)
+                transform = transform_units(compiled_units,image,schema,preview_program,
+                    preview_owner_functions=preview_owner_functions)
                 transform.verify()
                 compiled_units = transform.units
                 self.preview_arena_binding = dict(transform.binding)

@@ -2,6 +2,7 @@
 import copy
 import ast
 from dataclasses import replace
+from contextlib import ExitStack,contextmanager
 import json
 import re
 from pathlib import Path
@@ -175,6 +176,90 @@ class CompiledCPUHarnessTests(unittest.TestCase):
             self.assertEqual(compiled.returncode, 0, compiled.stderr)
             ran = subprocess.run([str(exe)], capture_output=True, text=True, timeout=5)
             self.assertEqual(ran.returncode, 0, ran.stderr)
+
+
+class OwnerPartitionTests(unittest.TestCase):
+    @contextmanager
+    def fixture(self,large=False):
+        # These source fixtures are deliberately not real GPU rule programs.
+        header=owner_fixture().split('__device__ __noinline__ void native_function_597',1)[0]
+        target=owner_fixture()[len(header):]
+        bodies=[]
+        for index in range(576,640):
+            if index==597:bodies.append(target)
+            else:
+                padding='/*'+'x'*140000+'*/'if large and index==594 else''
+                bodies.append('__device__ __noinline__ void native_function_'+str(index)+
+                    '(Context* c,int* f,const int* fn,int pc){'+padding+'return;}\n')
+        source=header+''.join(bodies)
+        units=tuple(NativeCompileUnit(name,source if name==arena.TARGET_UNIT else name)
+                    for name in arena.CANONICAL_UNIT_SHA256)
+        with ExitStack()as stack:
+            stack.enter_context(patch.object(arena,'CANONICAL_UNIT_SHA256',{u.name:u.sha256 for u in units}))
+            stack.enter_context(patch.object(arena,'verify_frozen_preview',return_value=10))
+            parent=arena.transform_units(units,None,small_schema(),None)
+            owner=next(u for u in parent.units if u.name==arena.TARGET_UNIT)
+            definitions=arena._owner_definitions(owner.source);functions,helpers=arena._coverage(definitions)
+            skeleton=arena._retain_definitions(owner.source,definitions,set())
+            for key,value in dict(_SPLIT_OWNER_SHA256=owner.sha256,_SPLIT_FUNCTIONS_SHA256=arena._digest(functions),
+                    _SPLIT_HELPERS_SHA256=arena._digest(helpers),
+                    _SPLIT_SKELETON_SHA256=arena.sha256(skeleton.encode()).hexdigest()).items():
+                stack.enter_context(patch.object(arena,key,value))
+            yield units,parent
+
+    def test_v1_compatibility_v2_exact_coverage_single_helper_owner_and_same21(self):
+        with self.fixture()as(units,parent):
+            result=arena.transform_units(units,None,small_schema(),None,preview_owner_functions=8)
+            self.assertEqual(len(parent.units),22);self.assertEqual(parent.binding['backend'],arena.BACKEND_ABI)
+            self.assertEqual(len(result.units),29);self.assertEqual(result.binding['backend'],arena.SPLIT_BACKEND_ABI)
+            self.assertTrue(result.verify());manifest=result.binding['split_manifest']
+            self.assertEqual([i for f in manifest['fragments']for i in f['function_indexes']],list(range(576,640)))
+            helpers=[f for f in manifest['fragments']if f['helper_symbols']]
+            self.assertEqual(len(helpers),1);self.assertIn(597,helpers[0]['function_indexes'])
+            actual={u.name:u for u in result.units}
+            self.assertNotIn(arena.TARGET_UNIT,actual)
+            for u in units:
+                if u.name!=arena.TARGET_UNIT:self.assertIs(actual[u.name],u)
+            self.assertEqual(arena.verify_preview_binding(result.binding,result.identity)['rule_source'],result.identity)
+            with self.assertRaises(arena.PreviewArenaError):
+                arena.transform_units(units,None,small_schema(),None,preview_owner_functions=4)
+
+    def test_oversize_function_remains_whole_in_its_own_fragment(self):
+        with self.fixture(large=True)as(units,parent):
+            result=arena.transform_units(units,None,small_schema(),None,preview_owner_functions=8)
+            parts=result.binding['split_manifest']['fragments']
+            self.assertEqual(next(f['function_indexes']for f in parts if 594 in f['function_indexes']),[594])
+            self.assertTrue(all(len(f['function_indexes'])<=8 for f in parts))
+            self.assertTrue(result.verify())
+
+    def test_metadata_and_source_forgery_rejected_even_with_recomputed_identity(self):
+        with self.fixture()as(units,parent):
+            result=arena.transform_units(units,None,small_schema(),None,preview_owner_functions=8)
+            changes=[]
+            a=copy.deepcopy(dict(result.binding));a['split_manifest']['functions'][0]['body_sha256']='0'*64;changes.append(a)
+            a=copy.deepcopy(dict(result.binding));a['split_manifest']['fragments'][0]['function_indexes'].reverse();changes.append(a)
+            a=copy.deepcopy(dict(result.binding));a['derived_units'][arena.TARGET_UNIT]=parent.binding['derived_units'][arena.TARGET_UNIT];changes.append(a)
+            a=copy.deepcopy(dict(result.binding));part=a['split_manifest']['fragments'].pop();a['derived_units'].pop(part['name']);changes.append(a)
+            for binding in changes:
+                with self.assertRaises(arena.PreviewArenaError):arena.verify_preview_binding(binding,arena._digest(binding))
+            changed=list(result.units);index=next(i for i,u in enumerate(changed)if u.name.startswith('rules_009_part_'))
+            changed[index]=replace(changed[index],source=changed[index].source+'\n// changed common ABI\n')
+            binding=copy.deepcopy(dict(result.binding));binding['derived_units']=arena._unit_hashes(changed)
+            with self.assertRaises(arena.PreviewArenaError):replace(result,units=tuple(changed),binding=binding).verify()
+
+    def test_query_forwards_only_explicit_partition_and_backend_rejects_bad_modes_without_cuda(self):
+        from types import SimpleNamespace
+        import numpy as np
+        from app.modules.card_game.rl.batched_duel import native_soa_cuda_query as query
+        from app.modules.card_game.rl.batched_duel.native_soa_cuda import CudaSoARules
+        fake=SimpleNamespace(source_sha256='a'*64,hydration_probe_binding=None,canonical_rule_source_sha256='b'*64,
+            rule_source_sha256='c'*64,preview_arena_binding={},preview_arena_identity='c'*64,close=lambda:None)
+        image=SimpleNamespace(nodes=np.empty((0,4),np.int32),edges=np.empty((0,2),np.int32),payload=np.empty(0,np.uint8))
+        with patch.object(query,'CudaSoARules',return_value=fake)as make:
+            backend=query.NativeSoACUDAQuery(image,None,native_preview_arena=True,preview_program=object(),preview_owner_functions=8)
+            self.assertEqual(make.call_args.kwargs['preview_owner_functions'],8);backend.close()
+        for options in(dict(preview_owner_functions=8),dict(native_preview_arena=True,preview_owner_functions=7)):
+            with self.assertRaises(ValueError):CudaSoARules(None,None,**options)
 
 
 _HARNESS_HEAD = r'''

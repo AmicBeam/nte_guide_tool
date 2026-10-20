@@ -72,10 +72,18 @@ def validate(config, available):
             if not isinstance(plan[key], str) or len(plan[key]) > limit:
                 raise ValueError('配装说明过长或格式无效。')
     for team in config['teams']:
-        if not isinstance(team, dict) or set(team) != {'name', 'members', 'note'}:
+        if not isinstance(team, dict) or set(team) != {'name', 'members', 'candidates', 'folded', 'note'}:
             raise ValueError('队伍字段无效。')
         if not isinstance(team['members'], list) or len(team['members']) != 4 or any(not isinstance(c, str) or c not in char_ids for c in team['members']):
             raise ValueError('队员须使用本站已收录的角色编号。')
+        if not isinstance(team['candidates'], list) or len(team['candidates']) != 4 or not isinstance(team['folded'], list) or len(team['folded']) != 4 or any(type(v) is not bool for v in team['folded']):
+            raise ValueError('每个格子须有候选列表及折叠开关。')
+        for i, candidates in enumerate(team['candidates']):
+            if not isinstance(candidates, list) or len(candidates) > len(available['characters']) or any(not isinstance(c, str) or c not in char_ids for c in candidates):
+                raise ValueError('候选须为本站已收录角色，每格可加入全部角色。')
+            selected = [c for c in [team['members'][i], *candidates] if c]
+            if len(selected) != len(set(selected)):
+                raise ValueError('同一格中的首选与候选不能重复。')
         if not isinstance(team['name'], str) or len(team['name']) > 40 or not isinstance(team['note'], str) or len(team['note']) > 500:
             raise ValueError('配队说明过长或格式无效。')
     return deepcopy(config)

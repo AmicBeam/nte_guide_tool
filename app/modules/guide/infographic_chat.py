@@ -17,7 +17,7 @@ def prompt(context):
         'art_scale': '0.7–1.6', 'radar': '6个0–100整数，分别对应radar_labels自定义维度名称',
         'radar_labels': '6个非空名称，每个最多12字', 'positions': '模块ID映射到{x,y}的画布坐标；空对象恢复自动排版。改orientation/layout时同时清空positions。',
         'plan_limits': '方案名称40字，main/sub各200字，note400字；两个方案',
-        'team_limits': '队名40字，note500字，每队4个角色ID或空串；两个队伍',
+        'team_limits': '队名40字，note500字，两个队伍；members为4格首选角色ID或空串，candidates为4格各自候选ID数组，可持续添加，同格不得重复含首选；folded为4个布尔值，true用小头像折叠在同格，false逐行展开。',
     }, ensure_ascii=False)
 
 

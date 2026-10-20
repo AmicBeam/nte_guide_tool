@@ -62,6 +62,10 @@
         const button=element('button');button.type='button';button.className='ig-text-target';button.dataset.path=field.path;button.title='双击编辑文字';button.setAttribute('aria-label',`编辑${document.querySelector(`[data-field="${field.path}"]`)?.parentElement.firstChild?.textContent||field.path}`);style(button,field);
         button.ondblclick=e=>{e.preventDefault();edit(field);};button.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();edit(field);}};layer.append(button);
       }
+      for(const slot of scene.slots||[]){
+        const button=element('button');button.type='button';button.className='ig-slot-toggle';button.setAttribute('aria-label',`${slot.folded?'展开':'折叠'}${slot.label}`);button.title=slot.folded?'展开本格候选':'折叠为小头像';style(button,slot);
+        button.onclick=()=>{const next=structuredClone(getConfig());const [,i,,j]=slot.path.split('.');next.teams[i].folded[j]=!next.teams[i].folded[j];change(next);};layer.append(button);
+      }
       select(selected);if(focusKey)layer.querySelector(`[data-key="${focusKey}"]`)?.focus({preventScroll:true});
     },close:finishEdit};
   }

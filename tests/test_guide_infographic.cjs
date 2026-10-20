@@ -40,3 +40,24 @@ test('canvas scene shares moved text bounds and renders custom radar names and i
   assert.ok(text.includes('自由维度'));assert.ok(images.includes('dark-icon'));assert.ok(images.includes('rank-icon'));
   assert.ok(result.scene.fields.every(f=>!f.path.includes('.arc')&&!f.path.includes('.core')&&!f.path.includes('.members')));
 });
+
+test('candidate lists use the full roster and migrate old single-member drafts',()=>{
+  const d={...data,characters:[...data.characters,...Array.from({length:12},(_,i)=>({id:String(i),name:`候选${i}`}))]};
+  const c=S.defaults(d);c.teams[0].candidates[0]=d.characters.slice(1).map(c=>c.id);
+  assert.equal(S.validate(c,d).teams[0].candidates[0].length,12);
+  assert.deepEqual(S.unpack(S.pack(c,d),d),c);
+  const duplicate=S.clone(c);duplicate.teams[0].candidates[0].push('1042');assert.throws(()=>S.validate(duplicate,d));
+  const legacy=S.pack(c,d);for(const t of legacy.config.teams){delete t.candidates;delete t.folded;}
+  const restored=S.unpack(legacy,d);assert.deepEqual(restored.teams[0].members,c.teams[0].members);assert.deepEqual(restored.teams[0].candidates,[[],[],[],[]]);
+});
+test('candidate groups stay in their slot, render every candidate, and fold compactly',async()=>{
+  const d={...data,characters:[{id:'1042',name:'黑羽',assets:{avatar:'main',fullbody:'portrait'},tags:[]},...Array.from({length:5},(_,i)=>({id:String(i),name:`候选${i}`,assets:{avatar:`candidate${i}`}}))],modules:Object.fromEntries(S.modules.map(k=>[k,k]))};
+  const c=S.defaults(d);c.teams[0].candidates[2]=d.characters.slice(1).map(c=>c.id);
+  const drawn=[];const ctx={measureText:v=>({width:String(v).length*11}),fillText:()=>{},drawImage:img=>drawn.push(img.url)};
+  for(const name of ['beginPath','roundRect','fill','rect','clip','save','restore','moveTo','lineTo','closePath','stroke','fillRect'])ctx[name]=()=>{};
+  const render=()=>window.GuideInfographicCanvas.render({getContext:()=>ctx},c,d);
+  const folded=await render();assert.equal(folded.scene.slots[0].path,'teams.0.folded.2');
+  for(let i=0;i<5;i++)assert.ok(drawn.includes(`candidate${i}`));
+  c.teams[0].folded[2]=false;const expanded=await render();
+  assert.ok(expanded.scene.boards.find(b=>b.key==='teams').h>folded.scene.boards.find(b=>b.key==='teams').h);
+});

@@ -13,7 +13,7 @@
       stats:'',skills:'',rotation:'',advice:'',
       plans:[{name:'主要方案',arc:data.recommended_arc,core:data.recommended_core,main:'',sub:'',note:''},
         {name:'备选方案',arc:'',core:'',main:'',sub:'',note:''}],
-      teams:[{name:'推荐队伍',members:[c.id,'','',''],note:''},{name:'备选队伍',members:['','','',''],note:''}]};
+      teams:[{name:'推荐队伍',members:[c.id,'','',''],candidates:[[],[],[],[]],folded:[true,true,true,true],note:''},{name:'备选队伍',members:['','','',''],candidates:[[],[],[],[]],folded:[true,true,true,true],note:''}]};
   }
   const exact = (v, keys) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length===keys.length && keys.every(k=>Object.hasOwn(v,k));
   const text = (v,limit) => typeof v==='string' && [...v].length<=limit;
@@ -35,7 +35,12 @@
       for(const [k,l] of [['name',40],['main',200],['sub',200],['note',400]]) if(!text(p[k],l)) fail();
     }
     for(const t of value.teams) {
-      if(!exact(t,['name','members','note'])||!text(t.name,40)||!text(t.note,500)||!Array.isArray(t.members)||t.members.length!==4||t.members.some(id=>![...data.characters.map(c=>c.id),''].includes(id))) fail();
+      if(!exact(t,['name','members','candidates','folded','note'])||!text(t.name,40)||!text(t.note,500)||!Array.isArray(t.members)||t.members.length!==4||t.members.some(id=>![...data.characters.map(c=>c.id),''].includes(id))) fail();
+      if(!Array.isArray(t.candidates)||t.candidates.length!==4||!Array.isArray(t.folded)||t.folded.length!==4||t.folded.some(v=>typeof v!=='boolean')) fail();
+      t.candidates.forEach((ids,i)=>{
+        if(!Array.isArray(ids)||ids.length>data.characters.length||ids.some(id=>typeof id!=='string'||![...data.characters.map(c=>c.id),''].includes(id))) fail();
+        const selected=[t.members[i],...ids].filter(Boolean);if(new Set(selected).size!==selected.length) fail();
+      });
     }
     return clone(value);
   }
@@ -50,6 +55,7 @@
     // Older browser drafts predate direct canvas editing.
     if(!Object.hasOwn(config,'positions'))config.positions={};
     if(!Object.hasOwn(config,'radar_labels'))config.radar_labels=[...(data.radar_labels||['爆发','持续','倾陷','生存','辅助','机动'])];
+    for(const t of config.teams||[]){if(!Object.hasOwn(t,'candidates'))t.candidates=[[],[],[],[]];if(!Object.hasOwn(t,'folded'))t.folded=[true,true,true,true];}
     return validate(config,data);
   }
   return {defaults,validate,patch,pack,unpack,modules,limits,clone};

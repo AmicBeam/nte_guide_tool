@@ -36,7 +36,7 @@
     } else if(id==='teams') {
       for(let i=0;i<2;i++) {
         fields.append(node('h3',i?'备选队伍':'推荐队伍'),input('队伍名称',`teams.${i}.name`,{limit:40}));
-        for(let j=0;j<4;j++)fields.append(input(`队员 ${j+1}`,`teams.${i}.members.${j}`,{choices:[['','留空'],...data.characters.map(c=>[c.id,`${c.name} · ${c.element}`])]}));
+        const slots=node('div');slots.id=`ig-team-slots-${i}`;fields.append(slots);
         fields.append(input('队伍职能 / 可替换角色 / 连携思路',`teams.${i}.note`,{type:'textarea',limit:500}));
       }
     } else if(id==='radar') {
@@ -47,7 +47,36 @@
       fields.append(input(labels[id],id,{type:'textarea',limit:Store.limits[id],rows:6}));
     }
   }
+  function refreshTeamSlots() {
+    config.teams.forEach((team,i)=>{
+      const container=$(`ig-team-slots-${i}`),opened=new Map([...container.querySelectorAll('details')].map(e=>[e.dataset.slot,e.open]));
+      container.replaceChildren();
+      team.members.forEach((primary,j)=>{
+        const details=node('details'),summary=node('summary'),contents=node('div');details.dataset.slot=String(j);details.open=opened.get(String(j))??j===0;
+        const count=team.candidates[j].filter(Boolean).length;
+        summary.textContent=`格子 ${j+1} · ${data.characters.find(c=>c.id===primary)?.name||'未选首选'}${count?` ＋${count}位候选`:''}`;
+        contents.className='ig-slot-fields';details.append(summary,contents);container.append(details);
+        const main=input('首选角色',`teams.${i}.members.${j}`,{choices:[['','留空'],...data.characters.map(c=>[c.id,`${c.name} · ${c.element}`])]});
+        main.querySelector('select').setAttribute('aria-label',`队伍${i+1}格子${j+1}首选`);contents.append(main);
+        contents.append(input('折叠候选为小头像',`teams.${i}.folded.${j}`,{type:'checkbox'}));
+        const candidates=team.candidates[j];
+        candidates.forEach((id,k)=>{
+          const row=node('div');row.className='ig-candidate-row';
+          const excluded=new Set([primary,...candidates.filter((_,n)=>n!==k)].filter(Boolean));
+          const selector=input(`候选 ${k+1}`,`teams.${i}.candidates.${j}.${k}`,{choices:[['','请选择角色'],...data.characters.filter(c=>!excluded.has(c.id)).map(c=>[c.id,c.name])]});
+          selector.querySelector('select').setAttribute('aria-label',`队伍${i+1}格子${j+1}候选${k+1}`);
+          const remove=node('button','移除');remove.type='button';remove.setAttribute('aria-label',`移除队伍${i+1}格子${j+1}候选${k+1}`);
+          remove.onclick=()=>{const next=Store.clone(config);next.teams[i].candidates[j].splice(k,1);commit(next);sync();};
+          row.append(selector,remove);contents.append(row);
+        });
+        const add=node('button','＋ 添加候选');add.type='button';add.setAttribute('aria-label',`队伍${i+1}格子${j+1}添加候选`);
+        add.disabled=candidates.length>=data.characters.length-(primary?1:0);
+        add.onclick=()=>{const next=Store.clone(config);next.teams[i].candidates[j].push('');commit(next);sync();};contents.append(add);
+      });
+    });
+  }
   function sync() {
+    refreshTeamSlots();
     for(const e of $('ig-form').querySelectorAll('[data-field]')) {
       const value=pathValue(e.dataset.field);if(e.type==='checkbox')e.checked=value;else e.value=value;
       if(e.type==='range'&&e.parentElement.querySelector('output'))e.parentElement.querySelector('output').textContent=value;
@@ -78,8 +107,11 @@
   $('ig-form').onsubmit=event=>event.preventDefault();
   $('ig-form').addEventListener('input',event=>{
     const e=event.target;if(!e.dataset.field)return;
-    try {const next=Store.clone(config);if(['orientation','layout'].includes(e.dataset.field))next.positions={};writePath(next,e.dataset.field,e.type==='checkbox'?e.checked:e.type==='range'?Number(e.value):e.value);commit(next);
-      if(e.type==='checkbox')sync();if(e.type==='range'&&e.parentElement.querySelector('output'))e.parentElement.querySelector('output').textContent=e.value;
+    try {const next=Store.clone(config);if(['orientation','layout'].includes(e.dataset.field))next.positions={};writePath(next,e.dataset.field,e.type==='checkbox'?e.checked:e.type==='range'?Number(e.value):e.value);if(/^teams\.\d+\.members\.\d+$/.test(e.dataset.field)){
+        const [,team,,slot]=e.dataset.field.split('.');next.teams[team].candidates[slot]=next.teams[team].candidates[slot].filter(id=>id!==e.value);
+      }
+      commit(next);
+      if(e.type==='checkbox'||e.dataset.field.startsWith('teams.'))sync();if(e.type==='range'&&e.parentElement.querySelector('output'))e.parentElement.querySelector('output').textContent=e.value;
     }catch(error){status(error.message);}
   });
   const board=window.GuideInfographicBoard.create({getConfig:()=>config,data,status,

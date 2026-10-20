@@ -57,6 +57,18 @@ class InfographicTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 infographic.validate(bad, self.options)
 
+    def test_candidates_accept_full_roster_and_reject_same_slot_duplicates(self):
+        config = copy.deepcopy(self.config)
+        config['teams'][0]['candidates'][0] = [c['id'] for c in self.options['characters'] if c['id'] != '1042']
+        self.assertEqual(infographic.validate(config, self.options), config)
+        config['teams'][0]['candidates'][0].append('1042')
+        with self.assertRaises(ValueError):
+            infographic.validate(config, self.options)
+        config = copy.deepcopy(self.config)
+        config['teams'][0]['folded'][0] = 'true'
+        with self.assertRaises(ValueError):
+            infographic.validate(config, self.options)
+
     def test_editor_scope_and_patch_are_transient(self):
         context = self.context()
         for path in ('/guide', '/guide/characters/1042', '/guide/characters/1057/infographic'):

@@ -15,14 +15,14 @@
   async function render(canvas, config, data) {
     const character = data.characters.find(c=>c.id===data.character_id), c=config, p=palettes[c.theme];
     const urls = [character.assets[c.portrait],character.element_icon,character.rarity_icon, ...c.plans.flatMap(plan=>[data.arcs.find(a=>a.id===plan.arc)?.image,data.cores.find(a=>a.id===plan.core)?.image]),
-      ...c.teams.flatMap(t=>t.members.map(id=>data.characters.find(a=>a.id===id)?.assets.avatar))];
+      ...c.teams.flatMap(t=>[...t.members,...t.candidates.flat()].map(id=>data.characters.find(a=>a.id===id)?.assets.avatar))];
     const images=new Map(await Promise.all(urls.filter(Boolean).map(async src=>[src,await image(src)])));
     const W=c.orientation==='landscape'?1600:1000, margin=40, gap=22;
     const sidebar=c.layout==='editorial' && c.orientation==='landscape';
     const x0=sidebar?450:margin, areaW=W-x0-margin;
     const columns=c.orientation==='portrait' && c.layout==='balanced'?1:c.layout==='compact' && c.orientation==='landscape'?3:2;
     const cardW=(areaW-gap*(columns-1))/columns;
-    const ctx=canvas.getContext('2d'), fields=[];
+    const ctx=canvas.getContext('2d'), fields=[],slots=[];
     function font(size=22,bold=false) {ctx.font=`${bold?'600':'400'} ${size}px ${FONT}`;}
     function lines(text,width,size=22,bold=false) {
       font(size,bold);const result=[];
@@ -69,17 +69,42 @@
           if(plan.note) body(plan.note,20,p.dim,false,`plans.${planIndex}.note`);
         });
       } else if(key==='teams') {
-        const selected=c.teams.filter(team=>team.members.some(Boolean)||team.note);
+        const selected=c.teams.filter(team=>team.members.some(Boolean)||team.candidates.flat().some(Boolean)||team.note);
         selected.forEach((team,index)=>{
           const teamIndex=c.teams.indexOf(team);
           if(index) cy+=20;body(team.name||`队伍 ${index+1}`,23,p.ink,true,`teams.${teamIndex}.name`);
-          const members=team.members.map(id=>data.characters.find(a=>a.id===id)).filter(Boolean);
+          const members=team.members.map(id=>data.characters.find(a=>a.id===id));
           const cell=(inner-12*3)/4;let namesH=0;
           members.forEach((member,i)=>{
-            if(draw) {rect(left+i*(cell+12),cy,cell,cell,p.bg,10);photo(member.assets.avatar,left+i*(cell+12),cy,cell,cell);}
-            namesH=Math.max(namesH,text(member.name,left+i*(cell+12),cy+cell+8,cell,18,p.ink,false,draw));
+            const sx=left+i*(cell+12);
+            if(draw) {rect(sx,cy,cell,cell,p.bg,10);if(member)photo(member.assets.avatar,sx,cy,cell,cell);}
+            namesH=Math.max(namesH,text(member?.name||'留空',sx,cy+cell+8,cell,18,member?p.ink:p.dim,false,draw));
           });
-          if(members.length)cy+=cell+8+namesH+14;
+          cy+=cell+8+namesH+10;
+          let stackH=0;
+          team.candidates.forEach((ids,i)=>{
+            const candidates=ids.map(id=>data.characters.find(a=>a.id===id)).filter(Boolean);if(!candidates.length)return;
+            const sx=left+i*(cell+12);let sy=cy;
+            const labelH=text(`候选 ${candidates.length}`,sx,sy,cell,15,p.accent,true,draw);
+            if(draw)slots.push({path:`teams.${teamIndex}.folded.${i}`,label:`${team.name||'队伍'}格子${i+1}候选`,folded:team.folded[i],x:sx,y:sy,w:cell,h:labelH});
+            sy+=labelH+8;
+            if(team.folded[i]){
+              const across=cell>=150?3:2,tile=Math.min(42,(cell-6*(across-1))/across);
+              for(let offset=0;offset<candidates.length;offset+=across){let rowH=0;
+                candidates.slice(offset,offset+across).forEach((candidate,j)=>{
+                  const tx=sx+j*(tile+6);if(draw){rect(tx,sy,tile,tile,p.bg,5);photo(candidate.assets.avatar,tx,sy,tile,tile);}
+                  rowH=Math.max(rowH,text(candidate.name,tx,sy+tile+4,tile,13,p.dim,false,draw));
+                });sy+=tile+4+rowH+8;
+              }
+            }else{
+              candidates.forEach(candidate=>{
+                if(draw)photo(candidate.assets.avatar,sx,sy,52,52);
+                sy+=Math.max(52,text(candidate.name,sx+58,sy,cell-58,16,p.dim,false,draw))+10;
+              });
+            }
+            stackH=Math.max(stackH,sy-cy);
+          });
+          cy+=stackH+4;
           if(team.note)body(team.note,21,p.dim,false,`teams.${teamIndex}.note`);
         });
         if(!selected.length)body('选择队员，补充战术职能与替代思路。',21,p.dim);
@@ -150,7 +175,7 @@
     const heights=parts.map((part,i)=>Array.isArray(part)?text(part[1],margin+i*(partW+20),fy,partW,20,p.dim,false,true,part[0]):text(part,margin+i*(partW+20),fy,partW,20,p.dim));
     fy+=Math.max(...heights)+10;
     text(c.disclaimer,margin,fy,footerWidth,18,p.dim,false,true,'disclaimer');
-    return {width:W,height:H,scene:{fields,boards:placements.map(item=>({...item,w:cardW}))},failed:[...images].filter(([,img])=>!img).length};
+    return {width:W,height:H,scene:{fields,slots,boards:placements.map(item=>({...item,w:cardW}))},failed:[...images].filter(([,img])=>!img).length};
   }
   window.GuideInfographicCanvas={render};
 }());

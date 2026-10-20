@@ -81,7 +81,4 @@ def site_header():
     version = metadata.get('game_version')
     if not isinstance(version, str) or not re.fullmatch(r'\d+(?:\.\d+){1,3}', version):
         version = None
-    logic = metadata.get('logic_version')
-    if not isinstance(logic, str) or not logic.isdecimal():
-        logic = None
-    return {'title': metadata['title'], 'game_version': version, 'logic_version': logic}
+    return {'title': metadata['title'], 'game_version': version}

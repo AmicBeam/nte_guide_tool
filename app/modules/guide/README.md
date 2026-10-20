@@ -415,4 +415,4 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 
 ## Wiki 顶部标题与游戏版本
 
-所有攻略模块页面共用顶部居中标题与游戏数据版本，独立于左侧工具站／返回入口和右侧首页／账号按钮。`data/site_metadata.json` 维护运行时展示的站点标题、`game_version` 和 `logic_version`；游戏版本显示在标题下方，数据逻辑版本放在版本说明中。版本不是接口 `schema_version`，不按当前日期或角色名单推断；更新采用的数据版本时同步维护这两个展示字段。网页请求不联网查询版本。手机端压缩左侧品牌文字与按钮间距，保留中间标题及版本，320px起不遮挡两侧导航。验证：`.venv/bin/python -m unittest tests.test_guide_header tests.test_guide -q`；浏览器核对320、390和桌面宽度下的居中、间距及横向溢出。
+所有攻略模块页面共用顶部居中标题与游戏数据版本，独立于左侧工具站／返回入口和右侧首页／账号按钮。`data/site_metadata.json` 维护运行时展示的站点标题、`game_version`；游戏版本显示在标题下方，不展示逻辑版本或相关悬停提示。版本不是接口 `schema_version`，不按当前日期或角色名单推断；更新采用的数据版本时同步维护游戏版本字段。网页请求不联网查询版本。手机端压缩左侧品牌文字与按钮间距，保留中间标题及版本，320px起不遮挡两侧导航。验证：`.venv/bin/python -m unittest tests.test_guide_header tests.test_guide -q`；浏览器核对320、390和桌面宽度下的居中、间距及横向溢出。

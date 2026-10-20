@@ -10,7 +10,7 @@
 {% endblock %}
 {% block body %}
 <main class="guide-page {% block page_class %}{% endblock %}">
-<header class="guide-fixed-header"><div class="guide-top"><a class="guide-brand" href="/">NTE <span>TOOLS</span></a>{% block guide_back %}{% endblock %}<div class="guide-header-title" aria-label="站点与游戏数据版本"><strong>{{ guide_header.title }}</strong><span{% if guide_header.logic_version %} title="国服 Windows · 数据逻辑版本 {{ guide_header.logic_version }}"{% endif %}>{% if guide_header.game_version %}游戏数据 v{{ guide_header.game_version }}{% else %}游戏数据版本待确认{% endif %}</span></div><nav class="guide-top-actions" aria-label="站点导航"><a href="/guide">首页</a><a href="/login" id="guide-account-link">登录</a></nav></div></header>
+<header class="guide-fixed-header"><div class="guide-top"><a class="guide-brand" href="/">NTE <span>TOOLS</span></a>{% block guide_back %}{% endblock %}<div class="guide-header-title" aria-label="站点与游戏数据版本"><strong>{{ guide_header.title }}</strong><span>{% if guide_header.game_version %}游戏数据 v{{ guide_header.game_version }}{% else %}游戏数据版本待确认{% endif %}</span></div><nav class="guide-top-actions" aria-label="站点导航"><a href="/guide">首页</a><a href="/login" id="guide-account-link">登录</a></nav></div></header>
 {% block content %}{% endblock %}
 <footer class="guide-footer">NTE Reference · 角色 / 弧盘 / 料理 / 轨外之境 / 全站深境 / 攻略 <a href="/guide/llms.txt">LLM 阅读入口 ↗</a></footer>
 </main>

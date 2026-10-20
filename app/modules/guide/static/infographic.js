@@ -132,11 +132,10 @@ window.startGuideInfographic=function (data,account,allowed) {
   $('ig-undo').onclick=()=>{if(!history.length)return;config=history.pop();revision++;sync();redraw();save();status('已撤销上一次修改。');};
   $('ig-reset').onclick=()=>{if(confirm('将当前一图流恢复为初始模板？可使用撤销恢复。')){commit(Store.defaults(data));sync();status('已恢复初始模板。');}};
   function download(blob,filename){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
-  $('ig-download-js').onclick=()=>{session();download(new Blob([config.script],{type:'text/javascript'}),`${data.character_id}-一图流模板.js`);};
   $('ig-export-json').onclick=()=>{session();download(new Blob([JSON.stringify(Store.pack(config,data),null,2)],{type:'application/json'}),`${data.character_id}-一图流模板.json`);status('配置文件已导出，可在此角色页面重新导入。');};
   $('ig-import').onchange=async event=>{
     const file=event.target.files?.[0];if(!file)return;
-    try{if(file.size>256*1024)throw new Error('模板文件须小于256KB。');const raw=await file.text();const next=/\.js$/i.test(file.name)?{...Store.clone(config),script:raw,script_params:Scripts.defaults(raw,config.script_params)}:Store.unpack(JSON.parse(raw),data);await verifiedApply(next,revision); status('配置已导入，原内容可撤销恢复。');}
+    try{if(file.size>256*1024)throw new Error('模板文件须小于256KB。');const raw=await file.text();const next=Store.unpack(JSON.parse(raw),data);await verifiedApply(next,revision); status('配置已导入，原内容可撤销恢复。');}
     catch(error){status(error.message || '配置导入失败。');}finally{event.target.value='';}
   };
   async function exportBlob() {

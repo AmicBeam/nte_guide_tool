@@ -10,6 +10,21 @@ from tests.test_duel_v2_soa_training_jobs import models, jobs
 
 
 class H3CollectionContractTest(unittest.TestCase):
+    def test_mctx_profile_keeps_scope_and_value_admission_checks(self):
+        from app.modules.card_game.rl.batched_search.device_h3_collection import h3_profile
+        submitted, bank = self.fixtures()
+        for job in submitted: job['q_scale'] = 'mctx_default'
+        with patch('app.modules.card_game.rl.seven_runtime.value_precheck_ok', return_value=False), \
+             patch('app.modules.card_game.rl.seven_covered_value.load_scope') as loader:
+            with self.assertRaisesRegex(ValueError, 'policy value-precheck'):
+                validate_h3_inputs(submitted, bank)
+            loader.assert_not_called()
+        with patch('app.modules.card_game.rl.seven_runtime.value_precheck_ok', return_value=True), \
+             patch('app.modules.card_game.rl.seven_covered_value.load_scope', return_value=({}, {'passed': True})):
+            metadata, _, _ = validate_h3_inputs(submitted, bank)
+        self.assertEqual(h3_profile(metadata), dict(PROFILE, q_scale='mctx_default'))
+        self.assertEqual(PROFILE['q_scale'], 'natural_wdl')
+
     def fixtures(self):
         submitted=jobs(teacher_mode='covered_value',covered_value_source='/tmp/explicit-covered-scope')[:2]
         return submitted,models()
@@ -60,7 +75,7 @@ class H3CollectionContractTest(unittest.TestCase):
             raise RuntimeError('capture failed')
         collector._collect=fail
         with patch('app.modules.card_game.rl.batched_search.device_h3_collection.validate_h3_inputs',
-                return_value=(NS(model_versions=()),{},dict(models={}))):
+                return_value=(NS(model_versions=(), search=dict(q_scale="natural_wdl")),{},dict(models={}))):
             with self.assertRaisesRegex(RuntimeError,'capture failed'):
                 collector.collect([dict(deadline=time.time()+30)],{})
         rules.close.assert_called_once();self.assertIsNone(rules.physical_loop)

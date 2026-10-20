@@ -29,7 +29,8 @@ class DeviceJointTrainingTest(unittest.TestCase):
         pure.last_diagnostics=None
         collector.collect=Mock(side_effect=RuntimeError('incomplete full-budget H3'))
         with TemporaryDirectory() as folder, \
-             patch('app.modules.card_game.rl.batched_search.device_h3_collection.validate_h3_inputs'), \
+             patch('app.modules.card_game.rl.batched_search.device_h3_collection.validate_h3_inputs',
+                   return_value=(NS(search=dict(q_scale='natural_wdl')), {}, {})), \
              patch('app.modules.card_game.rl.batched_search.soa_pure_jobs.adapt_pure_jobs'), \
              patch('app.modules.card_game.rl.seven_runtime.model',return_value=NS()), \
              patch('app.modules.card_game.rl.seven_round.update_batch') as update:
@@ -84,7 +85,8 @@ class DeviceJointTrainingTest(unittest.TestCase):
                 policies={s:(str(source),'starter')for s in ('a','b')})
             train=[dict(common,id='joint',seed=1,training=True,pure=False)]
             evaluation=[dict(common,id='eval',seed=2,training=False,pure=True)]
-            with patch('app.modules.card_game.rl.batched_search.device_h3_collection.validate_h3_inputs'), \
+            with patch('app.modules.card_game.rl.batched_search.device_h3_collection.validate_h3_inputs',
+                   return_value=(NS(search=dict(q_scale='natural_wdl')), {}, {})), \
                  patch('app.modules.card_game.rl.batched_search.soa_pure_jobs.adapt_pure_jobs'):
                 result=run_joint_training_smoke(Path(folder)/'out',collector=collector,pure_collector=pure,source=source,
                     train_jobs=train,evaluation_jobs=evaluation,deadline=deadline,policy_passes=4)
@@ -175,7 +177,8 @@ class DeviceJointPersistentStagesTest(unittest.TestCase):
             policies={s:(str(self.source),'starter')for s in('a','b')})
         self.train=[dict(common,id='joint',seed=1,training=True,pure=False)]
         self.evaluation=[dict(common,id='eval',seed=2,training=False,pure=True)]
-        self.h3validate=patch('app.modules.card_game.rl.batched_search.device_h3_collection.validate_h3_inputs').start()
+        self.h3validate=patch('app.modules.card_game.rl.batched_search.device_h3_collection.validate_h3_inputs',
+                   return_value=(NS(search=dict(q_scale='natural_wdl')), {}, {})).start()
         self.purevalidate=patch('app.modules.card_game.rl.batched_search.soa_pure_jobs.adapt_pure_jobs').start()
         self.addCleanup(patch.stopall)
 
@@ -199,6 +202,23 @@ class DeviceJointPersistentStagesTest(unittest.TestCase):
             max_chunks=1,evaluation_max_segments=1)
         args.update(kwargs)
         return run_joint_training_smoke(self.out,**args)
+
+    def test_q_profile_is_frozen_before_sampling_and_resume_rejects_switch(self):
+        import json
+        from app.modules.card_game.rl.batched_search.device_h3_segments import H3SegmentPaused
+        self.train[0]['q_scale'] = 'mctx_default'
+        self.h3validate.return_value = (NS(search=dict(q_scale='mctx_default')), {}, {})
+        with patch('app.modules.card_game.rl.seven_round.update_batch') as update:
+            self.run_stage(*self.collectors(sample=H3SegmentPaused('fixture-checkpoint')))
+            binding = json.loads((self.out/'input-binding.json').read_text())
+            self.assertEqual(binding['contract']['profile']['q_scale'], 'mctx_default')
+            self.train[0]['q_scale'] = 'natural_wdl'
+            self.h3validate.return_value = (NS(search=dict(q_scale='natural_wdl')), {}, {})
+            h3, pure = self.collectors()
+            with self.assertRaisesRegex(ValueError, 'source/model/profile'):
+                self.run_stage(h3, pure, resume=True)
+            update.assert_not_called()
+            h3.collect.assert_not_called()
 
     def test_new_process_sampling_update_once_evaluation_pause_cache_complete(self):
         from app.modules.card_game.rl.batched_search.device_h3_segments import H3SegmentPaused

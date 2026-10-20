@@ -39,6 +39,23 @@ def jobs(**kwargs):
 
 
 class SoATrainingJobsTests(unittest.TestCase):
+    def test_q_profiles_bind_explicitly_and_cannot_share_a_batch(self):
+        source = jobs(teacher_mode='covered_value', covered_value_source='/tmp/covered')[:2]
+        for profile in ('natural_wdl', 'mctx_default'):
+            batch = deepcopy(source)
+            for job in batch: job['q_scale'] = profile
+            result = adapt_training_jobs(batch, models())
+            self.assertEqual(result.search['q_scale'], profile)
+            self.assertTrue(all(row['search']['q_scale'] == profile for row in result.identities))
+            self.assertFalse(result.gpu_qualified)
+        source[0]['q_scale'] = 'mctx_default'
+        with self.assertRaisesRegex(ValueError, 'Q profile'):
+            adapt_training_jobs(source, models())
+        for invalid in (None, True, 'unknown'):
+            source[0]['q_scale'] = invalid
+            with self.assertRaisesRegex(ValueError, 'q_scale'):
+                adapt_training_jobs(source, models())
+
     def test_actual_seven_round_schedule_initializers_and_collection_identities(self):
         original = collection_jobs(FOLDER, DECKS, 10_000_000_000, 2_000_000_000,
                                    pure=False, cycle=7, replicas=2)

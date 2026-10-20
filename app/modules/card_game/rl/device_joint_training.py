@@ -27,7 +27,7 @@ def run_joint_training_smoke(output, *, collector, pure_collector, source, train
     import re
     import numpy as np
     import torch
-    from .batched_search.device_h3_collection import DeviceH3Collector, validate_h3_inputs, PROFILE
+    from .batched_search.device_h3_collection import DeviceH3Collector, validate_h3_inputs, h3_profile
     from .batched_search.device_h3_segments import H3SegmentPaused
     from .batched_search.device_pure_collection import DevicePureCollector
     from .batched_search.device_pure_segments import PureSegmentPaused
@@ -62,7 +62,9 @@ def run_joint_training_smoke(output, *, collector, pure_collector, source, train
     if any(Path(spec[0]).resolve()!=source for job in train_jobs+evaluation_jobs for spec in job['policies'].values()):
         raise ValueError('One exact original seven-team source bank required for this short run')
     models={policy_source_alias(str(source),key):rt.model(source,key)for key in ROSTER}
-    validate_h3_inputs(train_jobs,models);adapt_pure_jobs(evaluation_jobs,models)
+    metadata, _, _ = validate_h3_inputs(train_jobs,models)
+    profile = h3_profile(metadata)
+    adapt_pure_jobs(evaluation_jobs,models)
     if any(not isinstance(j.get('id'),str)or re.fullmatch('[A-Za-z0-9_-]+',j['id'])is None for j in train_jobs):
         raise ValueError('Safe exact training job filenames required')
     if len({j['id']for j in train_jobs})!=len(train_jobs):raise ValueError('Unique physical training job IDs required')
@@ -133,7 +135,7 @@ def run_joint_training_smoke(output, *, collector, pure_collector, source, train
                      for name in implementation_names}
     fixed=normal(dict(schema='device_joint_smoke_input_v1',source=str(source),source_files=source_signature,
         physical_train_jobs=physical(train_jobs),physical_evaluation_jobs=physical(evaluation_jobs),
-        profile=dict(PROFILE),policy_passes=policy_passes,rules=binding,auxiliary_scopes=auxiliary,
+        profile=profile,policy_passes=policy_passes,rules=binding,auxiliary_scopes=auxiliary,
         joint_driver_sha256=sha256(Path(__file__).read_bytes()).hexdigest(),
         implementation_files=implementations,
         training_checkpoint_dir=None if training_directory is None else str(training_directory),

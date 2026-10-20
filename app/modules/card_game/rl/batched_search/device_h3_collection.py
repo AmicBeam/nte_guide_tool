@@ -21,6 +21,14 @@ PROFILE = dict(simulations=32, gumbel_candidates=16, terminal_horizon=3,
                world_sampling='per_simulation', q_scale='natural_wdl')
 
 
+def h3_profile(metadata):
+    """Bind the admitted cohort profile without changing historical defaults."""
+    q_scale = metadata.search['q_scale']
+    if q_scale not in ('natural_wdl', 'mctx_default'):
+        raise ValueError('Unsupported H3 Q profile')
+    return dict(PROFILE, q_scale=q_scale)
+
+
 def _h3_work_tiles(rows,rule_lanes=None,inference_rows=None):
     if type(rows)is not int or not 1<=rows<=32:raise ValueError('One to32 logical H3 roots required')
     for name,value,maximum in (('rule_lanes',rule_lanes,64),('inference_rows',inference_rows,32)):
@@ -102,6 +110,7 @@ def _proof_references(initial, raw, policy_rows, metadata, models, inference,
     from .. import seven_runtime
     from ..recovery_search import search
     from .soa_training_results import _equal_array
+    profile = h3_profile(metadata)
     rows = {(r['owner'], r['step']): r for r in policy_rows}
     states, refs = deepcopy(initial), {}
     policy_oracle = _PostbatchPolicies(inference, models, deadline)
@@ -127,10 +136,10 @@ def _proof_references(initial, raw, policy_rows, metadata, models, inference,
         row = rows[owner, step]
         gpu = {name:value[owner,step] for name,value in diagnostics.items()}
         inputs=dict(state=state,raw=deepcopy(record),policy=row,information_hash=hashes[owner,step],
-                    original_gpu_statistics=gpu,profile=dict(PROFILE))
+                    original_gpu_statistics=gpu,profile=dict(profile))
         cached=None if checkpoint is None else checkpoint.proof(owner,step,inputs)
         if cached is not None:
-            if (cached.get('diagnostics',{}).get('profile')!=PROFILE
+            if (cached.get('diagnostics',{}).get('profile')!=profile
                     or cached['diagnostics'].get('independent_full_budget')is not True
                     or cached['diagnostics'].get('full_statistics_parity')is not True
                     or cached['diagnostics'].get('reference_choice')!=int(row['selected'])):
@@ -154,7 +163,7 @@ def _proof_references(initial, raw, policy_rows, metadata, models, inference,
             reference = search(state, actor, policies, seed=seed, runtime=seven_runtime,
                 simulations=32, gumbel_candidates=16, terminal_horizon=3, max_depth=10,
                 deadline=time.time()+max(0, root_deadline-time.monotonic()),
-                noise=job.get('exploration', job['training']), q_scale='natural_wdl',
+                noise=job.get('exploration', job['training']), q_scale=profile['q_scale'],
                 teacher_mode='covered_value', value_policies=values, world_sampling='per_simulation')
             if time.monotonic() >= root_deadline:
                 raise TimeoutError('Original full-budget H3 root proof window exhausted')
@@ -181,7 +190,7 @@ def _proof_references(initial, raw, policy_rows, metadata, models, inference,
                 visits=np.asarray(reference['visits']).copy(), diagnostics=dict(
                     independent_full_budget=True, full_statistics_parity=True, reference_pi=np.asarray(reference['pi']).tolist(),
                     reference_visits=np.asarray(reference['visits']).tolist(),
-                    reference_choice=reference['search_choice'], profile=dict(PROFILE)))
+                    reference_choice=reference['search_choice'], profile=dict(profile)))
         chosen = int(row['selected'])
         record.update(actor=actor, chosen=chosen, requested=int(row['requested']), completed=int(row['completed']))
         if record['raw_action'] != legal[chosen]:
@@ -304,7 +313,7 @@ class DeviceH3Collector:
         if min(j['deadline'] for j in jobs)-time.time() < self.seconds+self.proof_seconds+10:
             raise TimeoutError('Original deadline cannot contain bounded H3 replay and proof')
         owned = []
-        self.last_diagnostics = dict(complete=False, profile=dict(PROFILE), optimizer_steps=0,
+        self.last_diagnostics = dict(complete=False, profile=h3_profile(metadata), optimizer_steps=0,
             main_model_versions=metadata.model_versions, auxiliary_versions=scope['models'])
         options=dict(checkpoint_dir=checkpoint_dir,resume_checkpoint=resume_checkpoint,
                      max_chunks=max_chunks,continuation=continuation,process_seconds=process_seconds)
@@ -407,12 +416,14 @@ class DeviceH3Collector:
             max_decisions=decisions, max_bytes=64 << 20)
         keys = own(DeviceInformationKey(device=str(device), max_rows=rows))
         seeds = own(DeviceRootSeeds(device=str(device), max_rows=rows))
-        statistics = DeviceStatisticsPool(rows*33, width, device=str(device), max_batch=rows, max_path_len=10)
+        statistics = DeviceStatisticsPool(rows*33, width, device=str(device), max_batch=rows, max_path_len=10,
+            q_scale=metadata.search['q_scale'])
         noise = {j.get('exploration', j['training']) for j in metadata.jobs}
         if len(noise) != 1: raise ValueError('One explicit exploration setting per H3 cohort required')
         bundle = own(create_soa_covered_search_bundle(rules, inference, statistics, keys,
             auxiliary_scope=metadata.search['covered_value_source'], rows=rows, random=random,
-            max_actions=width, inference_rows=capacity.inference_tile, noise=noise.pop(), row_work_seconds=self.seconds))
+            max_actions=width, inference_rows=capacity.inference_tile, noise=noise.pop(), row_work_seconds=self.seconds,
+            q_scale=metadata.search['q_scale']))
         tape = create_training_tape(rules, capacity, decisions=decisions, max_bytes=capacity.training_tape_budget_mib << 20)
         audit = _H3AuditSink(tape, statistics, bundle.search, decisions=decisions)
         chunked = self.chunk_search_ticks is not None

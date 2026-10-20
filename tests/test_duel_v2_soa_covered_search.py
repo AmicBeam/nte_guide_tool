@@ -8,6 +8,13 @@ from app.modules.card_game.rl.batched_search.soa_covered_search import create_so
 
 
 class SoACoveredSearchBundleTests(unittest.TestCase):
+    def test_mctx_q_profile_is_forwarded_to_actual_search_constructor(self):
+        values = self.inputs()
+        _, _, search = self.mocks(values)
+        bundle = self.make(values, q_scale='mctx_default')
+        self.assertEqual(search.call_args.kwargs['q_scale'], 'mctx_default')
+        self.assertEqual(bundle.scope_receipt['q_scale'], 'mctx_default')
+
     def inputs(self):
         import torch
         from app.modules.card_game.rl.batched_search.device_soa_rules import DeviceSoARules

@@ -35,7 +35,7 @@ class H3ProofCacheTests(unittest.TestCase):
                 mean_values=np.zeros(n),root_gumbel=np.zeros(n),value=0.,visits=visits.copy(),pi=pi.copy(),search_choice=0))
             state=clean(apply_action(state,actor,deepcopy(legal[0])))
         job=dict(seed=41,training=True,deadline=time.time()+600,policies=dict(a=('/tmp/frozen','starter'),b=('/tmp/frozen','starter')))
-        metadata=NS(jobs=[job]);models={policy_source_alias('/tmp/frozen','starter'):NS()};auxiliary={'starter':NS()}
+        metadata=NS(jobs=[job],search=dict(q_scale="natural_wdl"));models={policy_source_alias('/tmp/frozen','starter'):NS()};auxiliary={'starter':NS()}
         binding=dict(metadata=dict(jobs=[deepcopy(job)]),main_versions=['frozen-main'],auxiliary_versions=['frozen-aux'])
         return initial,raw,rows,metadata,models,NS(),auxiliary,NS(),hashes,diagnostics,references,binding
 
@@ -76,6 +76,23 @@ class H3ProofCacheTests(unittest.TestCase):
             path=Path(root)/'proof-0000-0000'/'arrays.npz';content=bytearray(path.read_bytes());content[-1]^=1;path.write_bytes(content)
             with self.assertRaisesRegex(ValueError,'integrity'):
                 self.prove(data,H3CheckpointSession(root,None,data[-1]))
+
+    def test_mctx_reaches_independent_search_and_rejects_old_profile_cache(self):
+        data = self.fixture()
+        with tempfile.TemporaryDirectory() as root:
+            with patch('app.modules.card_game.rl.recovery_search.search', side_effect=data[-2]):
+                self.prove(data, H3CheckpointSession(root, None, data[-1]))
+            data[3].search['q_scale'] = 'mctx_default'
+            with patch('app.modules.card_game.rl.recovery_search.search') as oracle:
+                with self.assertRaisesRegex(ValueError, 'input/GPU'):
+                    self.prove(data, H3CheckpointSession(root, None, data[-1]))
+                oracle.assert_not_called()
+        with tempfile.TemporaryDirectory() as root:
+            with patch('app.modules.card_game.rl.recovery_search.search', side_effect=data[-2]) as oracle:
+                refs = self.prove(data, H3CheckpointSession(root, None, data[-1]))
+            self.assertEqual(oracle.call_count, 2)
+            self.assertTrue(all(call.kwargs['q_scale'] == 'mctx_default' for call in oracle.call_args_list))
+            self.assertTrue(all(ref['diagnostics']['profile']['q_scale'] == 'mctx_default' for ref in refs.values()))
 
     def test_actual_root_budget_exhaustion_is_not_a_planned_pause_or_cached_success(self):
         data=self.fixture()

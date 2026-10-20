@@ -214,7 +214,7 @@ def verified_training_games(dataset, *, initial, final, raw_records, metadata,
                 step=step, phase=view['phase'], value_actor=1, search_budget=budget,
                 search_algorithm=metadata.search['search_algorithm'], teacher_mode=metadata.search['teacher_mode'],
                 terminal_horizon=metadata.search['terminal_horizon'], q_scale=metadata.search['q_scale'],
-                policy_source='gumbel_q_natural_wdl'))
+                policy_source='gumbel_q_'+metadata.search['q_scale']))
             for side in ('a', 'b'):
                 value = values[owner, step, int(side == 'b')]
                 vx, _ = encode(view if side == actor else observe(state, side, include_previews=False), [])

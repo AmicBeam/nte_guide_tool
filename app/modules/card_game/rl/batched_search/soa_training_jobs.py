@@ -40,7 +40,7 @@ def policy_source_alias(folder, key):
 
 
 def _batch_profile(jobs):
-    """Preserve one declared teacher/scope; do not infer or load scope approval."""
+    """Preserve one declared teacher/scope/Q profile; never infer scope approval."""
     result = None
     for job in jobs:
         if not isinstance(job, dict):
@@ -48,7 +48,10 @@ def _batch_profile(jobs):
         mode = job.get('teacher_mode', 'network')
         if type(mode) is not str or mode not in ('network', 'covered_value'):
             raise ValueError('Unsupported teacher mode')
-        profile = dict(_PROFILE, teacher_mode=mode)
+        q_scale = job.get('q_scale', _PROFILE['q_scale'])
+        if type(q_scale) is not str or q_scale not in ('natural_wdl', 'mctx_default'):
+            raise ValueError('Unsupported formal search setting: q_scale')
+        profile = dict(_PROFILE, teacher_mode=mode, q_scale=q_scale)
         source = job.get('covered_value_source')
         if mode == 'covered_value':
             if not isinstance(source, str) or not source.strip() or '\0' in source:
@@ -57,7 +60,7 @@ def _batch_profile(jobs):
         elif source is not None:
             raise ValueError('Legacy network jobs cannot carry a covered-value scope')
         if result is not None and profile != result:
-            raise ValueError('One teacher mode and normalized covered scope required per batch')
+            raise ValueError('One teacher mode, normalized covered scope and Q profile required per batch')
         result = profile
     return result
 

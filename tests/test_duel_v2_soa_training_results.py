@@ -90,12 +90,13 @@ def dataset_from_component_states(metadata, bank, initial, oracle, steps):
                 metadata=metadata, models=bank, policy_reference=references)
 
 
-def fixture():
+def fixture(q_scale='natural_wdl'):
     bank = models()
     submitted = jobs()[:2]
     submitted[0]['train_sides'] = ['a']
     for job in submitted:
         job['value_precheck'] = precheck(bank)
+        job['q_scale'] = q_scale
     metadata = adapt_training_jobs(submitted, bank)
     initial = []
     for job in metadata.jobs:
@@ -108,6 +109,12 @@ def fixture():
 
 
 class SoATrainingResultsTests(unittest.TestCase):
+    def test_policy_source_records_the_actual_q_profile(self):
+        for profile in ('natural_wdl', 'mctx_default'):
+            games = self.checked(fixture(profile))
+            self.assertTrue(all(row['q_scale'] == profile and row['policy_source'] == 'gumbel_q_'+profile
+                                for game in games for row in game['rows']))
+
     def checked(self, arguments):
         with patch('app.modules.card_game.rl.batched_search.soa_training_results._oracle', return_value=STUB):
             return verified_training_games(**arguments)

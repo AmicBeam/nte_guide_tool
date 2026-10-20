@@ -189,3 +189,5 @@ GPU源程序需包含训练教师，真实设备规则／教师对拍和CUDA32�
 `rl/mctx_q.py` 提供完整合法候选轴的默认缩放数值参考；`recovery_search` 和协作遍历显式接受 `mctx_default`，批量及设备统计池保持同配置的根／内部／最终选择与改进策略目标。SoA covered 工厂显式透传配置，设备搜索拒绝池配置不匹配。旧 `natural_wdl` 默认和冻结任务不自动切换，旧模型数组不改写。
 
 `rl/mctx_validation.py` 与 `scripts/prepare_duel_v2_mctx.py` 提供仅计划、CPU 参考、实际 CUDA 统计与重复图重放三个边界；官方库仅在独立参考环境按同数值树及固定噪声对拍。测试入口为 `tests.test_duel_v2_mctx_profiles`，完整规则、独立价值校准、真实终局、GPU容量和学习效果仍单独验收。后续冻结 A/B 与等量短训步骤见[训练手册](duel-v2-public-training.md#numpy--cuda-的-mctx-q-配置对照准备)。
+
+完整 H3 入口从真实任务的 `q_scale` 绑定配置，显式支持 `natural_wdl` 与 `mctx_default`，同批混用或未知值拒绝。统计池、covered 搜索、独立复核、逐根证明缓存及联合流程的冻结输入使用同一配置；原默认仍为 `natural_wdl`。策略记录按实际配置写入 `policy_source`，不同配置的检查点和证明不能互相恢复。主价值预检、独立辅助 scope、完整预算与真实终局门槛保持不变；入口接通不表示完整 GPU 对局或胜率改善已通过。相关验证为 `tests.test_duel_v2_soa_training_jobs`、`tests.test_duel_v2_soa_training_results`、`tests.test_duel_v2_device_h3_collection`、`tests.test_duel_v2_device_h3_proof_cache` 与联合流程的配置冻结测试。

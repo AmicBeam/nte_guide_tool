@@ -75,7 +75,8 @@ class DeviceGumbelSearch:
                  allow_synthetic=False, value_batch_rows=32,queued_row_work=False,row_work_seconds=120,borrow_root_candidates=False,
                  reuse_root_policy_value=False, verify_root_value_reuse=False,
                  group_ready_leaves=False,reuse_interior_observation=False,reuse_root_observation=False,opponent_mode='rule',
-                 prior_guide=None, reuse_sampled_world=False, reuse_root_decision=False,fused_rule_steps=False):
+                 prior_guide=None, reuse_sampled_world=False, reuse_root_decision=False,fused_rule_steps=False,
+                 q_scale='natural_wdl'):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -152,7 +153,10 @@ class DeviceGumbelSearch:
         self.prior_guide = prior_guide
         if noise and (random is None or not callable(getattr(random, 'gumbel_device', None))):
             raise ValueError('Exact device Gumbel random stream required for exploration')
-        if (statistics.device != self.device or statistics.q_scale != 'natural_wdl'
+        if q_scale not in ('natural_wdl', 'mctx_default'):
+            raise ValueError('Explicit natural_wdl or mctx_default Q profile required')
+        self.q_scale = q_scale
+        if (statistics.device != self.device or statistics.q_scale != q_scale
                 or statistics.capacity < rows * (simulations + 1)
                 or statistics.max_actions != max_actions or statistics.max_batch < rows
                 or statistics.max_path_len < max_depth):

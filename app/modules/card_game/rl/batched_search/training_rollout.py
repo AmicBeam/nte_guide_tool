@@ -36,7 +36,7 @@ class UnsupportedTrainingMode(ValueError):
 
 
 SUPPORTED_TEACHER_MODES = frozenset({'network', 'covered_terminal', 'covered_expert', 'covered_value'})
-SUPPORTED_Q_SCALES = frozenset({'natural_wdl', 'legacy'})
+SUPPORTED_Q_SCALES = frozenset({'natural_wdl', 'legacy', 'mctx_default'})
 MAX_SEARCH_ROOTS = 1600
 DEFAULT_QUERY_BATCH_ROWS = 32
 DEFAULT_SIMULATIONS = 32
@@ -139,8 +139,8 @@ def validate_training_jobs(jobs):
         q_scale = job.get('q_scale', 'natural_wdl')
         if q_scale not in SUPPORTED_Q_SCALES:
             raise UnsupportedTrainingMode(f'UNSUPPORTED q_scale={q_scale!r}')
-        if teacher != 'network' and q_scale != 'natural_wdl':
-            raise UnsupportedTrainingMode('Covered teachers require natural_wdl')
+        if teacher != 'network' and q_scale not in ('natural_wdl', 'mctx_default'):
+            raise UnsupportedTrainingMode('Covered teachers require a WDL Q profile')
         if job.get('guided_policy') is not None:
             raise UnsupportedTrainingMode(
                 'UNSUPPORTED guided_policy; refusing to drop the guide or emulate it from frozen evaluation'
@@ -938,7 +938,7 @@ def rollout_from_config(config, models, *, inference=None, backend=None, statist
             )
             statistics = BatchedStatistics(
                 node_capacity, candidate_capacity, device=config.get('device', 'cuda'),
-                q_scale='natural_wdl',
+                q_scale=config.get('q_scale', 'natural_wdl'),
             )
             own_statistics = True
         if requested_statistics == 'cuda' and not str(getattr(getattr(statistics, 'pool', None), 'device', '')).startswith('cuda'):

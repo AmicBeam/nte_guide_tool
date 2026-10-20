@@ -2,6 +2,8 @@
 
 异能对决是仓库内的网页卡牌桌游，页面入口为 `/card-game`。登录后可构筑、查阅图鉴、进入单战场牌桌，并查看公开回放。默认主页、构筑、图鉴和牌桌使用四人轮替 V2；旧盖卡页面通过 `?legacy=1` 访问。
 
+NumPy／PyTorch 的 Mctx 算法适配可显式选择 `q_scale=mctx_default`，与历史 `natural_wdl` 做独立对照；网站与既有训练默认保持原配置。官方 JAX 仅作隔离数值 oracle，不进入 Windows CUDA 或网站运行。准备及验证入口：`python scripts/prepare_duel_v2_mctx.py`，实际 CUDA 组件核对使用 `--verify-cuda --output NEW_DIR`，细则见[Q 配置对照准备](../../../docs/duel-v2-public-training.md#numpy--cuda-的-mctx-q-配置对照准备)。验证：`python -m unittest tests.test_duel_v2_mctx_profiles`。
+
 本文件只说明模块范围、页面入口、代码边界和验证命令。训练先读[当前执行链路](../../../docs/duel-v2-public-training.md#当前训练链路与报告落点)和[完整评估规范](../../../docs/duel-v2-full-training-report-spec.md)；单轮报告存放在被Git忽略的 `artifacts/rl-evals/`，下文历史报告链接仅指向本机资料。规则、数值和角色职责以完整手册为准，不在这里另写一份。
 
 完整训练使用[轻量 agentic Flow](../../../docs/duel-v2-full-training-flow.md)：先确认候选换牌、精确截止和高级人机构筑范围，再由持续主 agent拆解步骤、默认 Grok 子 agent执行有界任务、登记证据并接受全新只读最终审计。`rl/training_flow*.py` 管理本轮训练证据与交接，不启动网站训练、不替换学习算法，不另设CLI。验证：`.venv/bin/python -m unittest tests.test_duel_v2_training_flow tests.test_duel_v2_training_flow_agents tests.test_duel_v2_training_flow_report tests.test_duel_v2_training_flow_integration`。

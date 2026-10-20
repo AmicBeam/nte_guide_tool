@@ -5,7 +5,7 @@ rule engine and not a full-game runtime. CUDA is the default device; CPU is
 allowed only with explicit allow_cpu_reference for numerical tests.
 
 Preserved formulas, matching recovery_search / search_stability / nodes.py:
-- natural_wdl completed-Q, including unvisited mixed-Q completion
+- natural_wdl or opt-in mctx_default completed-Q, including mixed-Q completion
 - full improved policy over every legal action (no top-k truncation)
 - root sequential-halving by visit-target eligibility
 - maximum-visit final selection plus roots_covered
@@ -105,8 +105,8 @@ class DeviceStatisticsPool:
             raise ValueError('max_batch must be an integer in 1..capacity')
         if type(max_path_len) is not int or max_path_len < 1:
             raise ValueError('Positive path depth capacity required')
-        if q_scale != 'natural_wdl':
-            raise ValueError('Device statistics implement natural_wdl completed-Q only')
+        if q_scale not in ('natural_wdl', 'mctx_default'):
+            raise ValueError('Explicit natural_wdl or mctx_default Q profile required')
         self.torch = torch
         self.capacity = capacity
         self.max_actions = max_actions
@@ -250,6 +250,11 @@ class DeviceStatisticsPool:
         q = t.where(seen, q, mixed[:, None])
         gain = 0.1 * (50 + visits.masked_fill(~legal, 0).max(-1).values.to(t.float64))
         range_error = (((q.abs() > 1 + 1e-6) | ~t.isfinite(q)) & legal).any(-1)
+        if self.q_scale == 'mctx_default':
+            low = q.masked_fill(~legal, float('inf')).min(-1).values
+            high = q.masked_fill(~legal, -float('inf')).max(-1).values
+            # Exclude padding before rescaling; an all-equal legal row is zero.
+            q = (q - low[:, None]) / (high - low).clamp_min(1e-8)[:, None]
         return (q * gain[:, None]).masked_fill(~legal, 0.), range_error
 
     def _gather_stats(self, safe):

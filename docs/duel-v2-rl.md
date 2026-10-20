@@ -182,3 +182,10 @@ python scripts/train_duel_v2.py --train --sample-public --deck starter \
 当前`train_duel_v2_current_round.py`默认seven，`seven_round.run`维护七队完整局学习、价值核验、历史对手、独立闸门、择优回退与两代恢复。GPU采样入口`batched_search/training_rollout.py`复用协作Gumbel、冻结VM规则、设备公开编码、FP32推理与设备统计，保持完整`pi`、真实终局WDL、探索和样本归属；覆盖教师及独立辅助价值按实际身份绑定。网络优化设备与规则后端分别指定，CPU默认路径保留。
 
 GPU源程序需包含训练教师，真实设备规则／教师对拍和CUDA32完整局、独立价值、梯度、数值／Adam／RNG恢复及独立行为证据后才能启动正式任务。七队自动预检不额外拟合策略容量副本；该工具保留为显式诊断，不单独决定真实候选能否学习或被接受。并发容量、显存与吞吐检查继续保留。1600根上限、32行工作区、设备预算与轨迹缓冲独立记录；标准七队一轮56局，历史轮112局，实际峰值据任务数计。源码或合成CPU验证不批准设备性能／强度，参数、命令和验证见[训练手册](duel-v2-public-training.md#七队-gpu-搜索训练采样)。
+
+
+## Mctx Q 配置的 NumPy / CUDA 对照
+
+`rl/mctx_q.py` 提供完整合法候选轴的默认缩放数值参考；`recovery_search` 和协作遍历显式接受 `mctx_default`，批量及设备统计池保持同配置的根／内部／最终选择与改进策略目标。SoA covered 工厂显式透传配置，设备搜索拒绝池配置不匹配。旧 `natural_wdl` 默认和冻结任务不自动切换，旧模型数组不改写。
+
+`rl/mctx_validation.py` 与 `scripts/prepare_duel_v2_mctx.py` 提供仅计划、CPU 参考、实际 CUDA 统计与重复图重放三个边界；官方库仅在独立参考环境按同数值树及固定噪声对拍。测试入口为 `tests.test_duel_v2_mctx_profiles`，完整规则、独立价值校准、真实终局、GPU容量和学习效果仍单独验收。后续冻结 A/B 与等量短训步骤见[训练手册](duel-v2-public-training.md#numpy--cuda-的-mctx-q-配置对照准备)。

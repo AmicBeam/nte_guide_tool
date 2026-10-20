@@ -1,5 +1,31 @@
 # 公开卡池训练、按需分析与录像
 
+## NumPy / CUDA 的 Mctx Q 配置对照准备
+
+`q_scale=mctx_default` 是官方 Gumbel 公式的 NumPy／PyTorch 适配，不是 Windows 上直接运行 JAX。主值和备份仍为固定观察者的真实终局 WDL；混合值补齐未访问动作后，在完整合法候选轴上按 `(Q-min)/(max-min)` 缩放，分母下限 `1e-8`，再乘 `0.1*(50+max_visit)`。候选 padding 不参与最小／最大值；等值候选得到零变换 Q。根淘汰、内部改进策略、最终最大访问层选点和学习目标使用同一个配置。历史 `natural_wdl` 不做范围缩放，默认值、旧实验和服务配置保持原身份。
+
+接入点为 `recovery_search`、协作遍历、批量节点池、`DeviceStatisticsPool`、`DeviceGumbelSearch` 和显式 SoA covered 工厂。设备搜索的 `q_scale` 必须与统计池相同；协作采集配置与每个 job 的配置也必须一致。正式训练的 closed-device、同源 CUDA、校准、完整终局与恢复门槛继续保留，新增配置不能借旧 `natural_wdl` 回执取得资格。
+
+准备命令默认仅输出计划，不加载 Torch/CUDA，不分配评估种子、不连接远端、不训练：
+
+```bash
+python scripts/prepare_duel_v2_mctx.py
+python scripts/prepare_duel_v2_mctx.py --verify-cpu --output artifacts/rl-evals/NEW_CPU_CHECK
+```
+
+Windows 明确上线后先运行组件检查：
+
+```powershell
+python scripts/prepare_duel_v2_mctx.py --verify-cuda --output artifacts/rl-evals/NEW_CUDA_CHECK
+python -m unittest tests.test_duel_v2_mctx_profiles tests.test_duel_v2_device_statistics tests.test_duel_v2_device_search
+```
+
+该入口验证两套配置的真实统计池，覆盖混合值、相同／极近 Q、低先验、非连续合法掩码、尾行、根／内部／最终选择、完整标签和完整32次根访问；单合法动作仍为1次。CUDA 路径另执行重复图重放。缺 CUDA 明确退出失败，不能回退 CPU；CPU 与合成树通过不表示完整游戏规则、H3 教师、吞吐或模型强度通过。单轮回执均进入指定的新 artifacts 目录，不覆盖旧记录。
+
+使用隔离 Python 3.13 环境安装 `requirements-mctx-reference.txt`（不加入网站或 Windows CUDA 依赖）。官方 JAX/Mctx 的参考环境可用 `validate_duel_v2_mctx_reference.py --run --exact --require-official --q-profile mctx_default` 检查保存的数值树；省略配置保留历史自然尺度。官方依赖缺失只能记未执行，不能用本地公式自对拍冒充官方通过。运行环境不要求 JAX；现有 NumPy 权重、Torch CUDA 推理／学习和网站文件不因本准备而切换。
+
+后续有效性实验须另外冻结实际权重、32张构筑、规则、教师、逐模拟世界采样、32/cap16/H3、样本／更新预算、独立种子和绝对截止。先做同源 CUDA 及8个真实根，再做同预算冻结 A/B；初筛通过后使用不同训练种子做等量学习，最后在独立确认集分别报告纯网络和搜索胜负。原用户案例只作回归，选择／确认数据不进入学习；不以修好一局、标签变化或 CPU 正确性批准模型。
+
 ## 七队默认学习与按需容量诊断
 
 七队默认流程为：带 Gumbel 搜索互搏，完整自然终局后执行策略／终局 WDL 联合学习，再以独立互搏选择和确认候选。规则／合法动作／隐藏信息边界、完整搜索标签、独立价值校准、有限梯度、真实参数更新、数值与恢复一致性、P0 和择优回退继续强制执行。

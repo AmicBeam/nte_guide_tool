@@ -309,7 +309,7 @@ def _unpack_response(response: Any, query: InferenceQuery, q_scale: str = 'natur
             raise ValueError('WDL must be a normalized nonnegative probability vector')
         val = float(wdl[2] - wdl[0])
 
-    if q_scale == 'natural_wdl' and abs(val) > 1.0 + 1e-6:
+    if q_scale in ('natural_wdl', 'mctx_default') and abs(val) > 1.0 + 1e-6:
         raise ValueError(f'Natural WDL search requires values in [-1,1], got {val}')
 
     return logits, val
@@ -497,12 +497,12 @@ def search_traversal(
     Terminates with a result dict matching recovery_search.search upon StopIteration.
     """
     if type(collect_diagnostics) is not bool:raise TypeError('Boolean diagnostics option required')
-    if q_scale not in ('legacy', 'natural_wdl'):
+    if q_scale not in ('legacy', 'natural_wdl', 'mctx_default'):
         raise ValueError('Unknown recovery Q scale')
     if teacher_mode not in ('network','covered_terminal','covered_expert','covered_value'):
         raise ValueError('Unknown teacher mode')
-    if teacher_mode!='network' and q_scale!='natural_wdl':
-        raise ValueError('Covered teacher requires natural_wdl')
+    if teacher_mode!='network' and q_scale not in ('natural_wdl', 'mctx_default'):
+        raise ValueError('Covered teacher requires a WDL Q profile')
     if teacher_mode!='network' and not callable(getattr(backend,'rule_decision',None)):
         raise ValueError('Backend lacks the canonical rule teacher')
     if teacher_mode=='covered_value':

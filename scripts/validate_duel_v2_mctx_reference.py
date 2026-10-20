@@ -26,6 +26,8 @@ def main(args):
         _write(report, args.output)
         return 0
     payload = load_records(args.records) if args.records else make_bandit_fixture()
+    for root in payload['roots']:
+        root['q_scale'] = args.q_profile
     report = compare_records(
         payload, exact=args.exact, run_official=True,
         statistical_trials=args.statistical_trials,
@@ -68,6 +70,8 @@ if __name__ == '__main__':
     parser.add_argument('--records', type=Path, help='JSON recurrent records or recorded tree')
     parser.add_argument('--output', type=Path, help='Directory for report.json')
     parser.add_argument('--statistical-trials', type=int, default=0)
+    parser.add_argument('--q-profile', choices=('natural_wdl', 'mctx_default'), default='natural_wdl',
+                        help='Explicit Q profile; historical records keep natural_wdl by default')
     parser.add_argument('--require-official', action='store_true',
                         help='Fail if official Mctx did not run and match; never installs')
     args = parser.parse_args()

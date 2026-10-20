@@ -29,7 +29,8 @@ _PERFORMANCE_OPTIONS={'queued_row_work','row_work_seconds','group_ready_leaves',
 
 
 def create_soa_covered_search_bundle(rules,inference,statistics,keys,*,auxiliary_scope,
-                                     rows,random,max_actions=800,inference_rows=2,noise=False,**options):
+                                     rows,random,max_actions=800,inference_rows=2,noise=False,
+                                     q_scale='natural_wdl',**options):
     """Bind verified seven-team auxiliary models to fixed h3 Gumbel32 search.
 
     Policy and auxiliary model indices are separate inputs to initialize().
@@ -38,6 +39,8 @@ def create_soa_covered_search_bundle(rules,inference,statistics,keys,*,auxiliary
     from .device_soa_rules import DeviceSoARules
     if not isinstance(rules,DeviceSoARules):
         raise TypeError('Actual DeviceSoARules owner required')
+    if q_scale not in ('natural_wdl', 'mctx_default'):
+        raise ValueError('Unknown covered search Q profile')
     if getattr(rules,'require_teacher',None) is not True or getattr(rules,'staged_teacher',None) is not True:
         raise ValueError('Covered search requires staged three-step SoA teacher rules')
     unknown=set(options)-_PERFORMANCE_OPTIONS
@@ -95,9 +98,9 @@ def create_soa_covered_search_bundle(rules,inference,statistics,keys,*,auxiliary
             teacher_mode='covered_value',terminal_horizon=3,opponent_mode='rule',
             prior_guide=None,random=random,noise=noise,device=str(rules.device),
             value_batch_rows=tile,reuse_sampled_world=False,reuse_root_decision=False,
-            reuse_root_policy_value=False,verify_root_value_reuse=False,**config)
+            reuse_root_policy_value=False,verify_root_value_reuse=False,q_scale=q_scale,**config)
         receipt={name:scope.get(name) for name in ('schema','objective','rule_hash','algorithm_sha256')}
-        receipt.update(scope_validated=True,models=dict(versions),world_sampling='per_simulation',
+        receipt.update(scope_validated=True,models=dict(versions),world_sampling='per_simulation',q_scale=q_scale,
                        gpu_qualified=False,full_search_qualified=False,training_qualified=False)
         return SoACoveredSearchBundle(search,auxiliary,receipt,auxiliary_keys,auxiliary_versions)
     except BaseException:

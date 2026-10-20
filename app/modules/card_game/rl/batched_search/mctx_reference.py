@@ -5,9 +5,10 @@ is not a JAX Mctx replacement, not hidden-info information-set search, and
 not real-game CUDA throughput. Official Mctx is an optional lazy dependency;
 missing JAX/Mctx is an explicit skip, never a pass.
 
-Comparable DeviceGumbelSearch axes, when records are perfect-info and use the
-natural-WDL backup contract: root sequential-halving, completed-Q without
-min-max rescale, full improved policy labels, and max-visit final selection.
+Comparable DeviceGumbelSearch axes on perfect-info records: root sequential
+halving, explicit natural_wdl or mctx_default completed-Q, full improved policy
+labels, and max-visit final selection. Ragged storage padding is not a legal
+action; official numeric fixtures must use the same comparable action axis.
 Exact equality requires explicit fixed Gumbel data. A different PRNG is
 statistical only. This module never installs packages.
 """
@@ -137,8 +138,13 @@ def _legal_vectors(prior, visits, total, legal):
     return prior, visits, total, legal
 
 
-def natural_completed_q(prior, visits, total, value, legal):
+def natural_completed_q(prior, visits, total, value, legal, *, q_scale="natural_wdl"):
     """DeviceStatisticsPool natural_wdl completed-Q, including unvisited mix."""
+    if q_scale == "mctx_default":
+        from ..mctx_q import completed_q
+        return completed_q(prior, visits, total, value, legal, q_scale=q_scale)
+    if q_scale != "natural_wdl":
+        raise ValueError("Unknown Mctx Q profile")
     prior, visits, total, legal = _legal_vectors(prior, visits, total, legal)
     if (not np.isfinite(prior).all() or (prior < 0).any()
             or not np.isfinite(total).all() or not np.isfinite(value)
@@ -160,10 +166,10 @@ def natural_completed_q(prior, visits, total, value, legal):
     return np.where(legal, q * gain, 0.0)
 
 
-def improved_policy(prior, visits, total, value, legal):
+def improved_policy(prior, visits, total, value, legal, *, q_scale="natural_wdl"):
     """Full legal improved policy; no top-k truncation."""
     prior, visits, total, legal = _legal_vectors(prior, visits, total, legal)
-    q = natural_completed_q(prior, visits, total, value, legal)
+    q = natural_completed_q(prior, visits, total, value, legal, q_scale=q_scale)
     logits = np.log(np.maximum(prior, 1e-300)) + q
     logits = np.where(legal, logits, -np.inf)
     shift = np.max(logits[legal])
@@ -181,14 +187,14 @@ def _argmax_masked(score, eligible):
     return int(np.argmax(masked))
 
 
-def select_root(prior, visits, total, value, legal, noise, visit_target):
+def select_root(prior, visits, total, value, legal, noise, visit_target, *, q_scale="natural_wdl"):
     prior, visits, total, legal = _legal_vectors(prior, visits, total, legal)
     noise = np.asarray(noise, dtype=np.float64).reshape(-1)
     if noise.shape != prior.shape or not np.isfinite(noise).all():
         raise ValueError('Finite Gumbel noise matching the action axis required')
     if int(visit_target) < 0:
         raise ValueError('Nonnegative sequential-halving visit target required')
-    q = natural_completed_q(prior, visits, total, value, legal)
+    q = natural_completed_q(prior, visits, total, value, legal, q_scale=q_scale)
     eligible = (visits == int(visit_target)) & legal
     if not eligible.any():
         raise ValueError('Invalid sequential-halving visit schedule')
@@ -196,20 +202,20 @@ def select_root(prior, visits, total, value, legal, noise, visit_target):
     return _argmax_masked(score, eligible)
 
 
-def select_interior(prior, visits, total, value, legal):
+def select_interior(prior, visits, total, value, legal, *, q_scale="natural_wdl"):
     prior, visits, total, legal = _legal_vectors(prior, visits, total, legal)
-    policy = improved_policy(prior, visits, total, value, legal)
+    policy = improved_policy(prior, visits, total, value, legal, q_scale=q_scale)
     visit_sum = float(np.sum(np.where(legal, visits, 0)))
     scores = policy - visits.astype(np.float64) / (1.0 + visit_sum)
     return _argmax_masked(scores, legal)
 
 
-def select_final(prior, visits, total, value, legal, noise):
+def select_final(prior, visits, total, value, legal, noise, *, q_scale="natural_wdl"):
     prior, visits, total, legal = _legal_vectors(prior, visits, total, legal)
     noise = np.asarray(noise, dtype=np.float64).reshape(-1)
     if noise.shape != prior.shape or not np.isfinite(noise).all():
         raise ValueError('Finite Gumbel noise matching the action axis required')
-    q = natural_completed_q(prior, visits, total, value, legal)
+    q = natural_completed_q(prior, visits, total, value, legal, q_scale=q_scale)
     max_visits = int(np.max(np.where(legal, visits, 0)))
     eligible = (visits == max_visits) & legal
     if not eligible.any():
@@ -312,6 +318,9 @@ def load_records(source):
 def _normalize_root(root, *, simulations, gumbel_candidates, max_depth, max_actions):
     if not isinstance(root, dict):
         raise ValueError('Each root must be a mapping')
+    q_scale = root.get('q_scale', 'natural_wdl')
+    if q_scale not in ('natural_wdl', 'mctx_default'):
+        raise ValueError('Unknown Mctx Q profile')
     viewer = int(root.get('viewer', 0))
     game_owner = int(root.get('game_owner', viewer))
     action_owner = int(root.get('action_owner', viewer))
@@ -387,7 +396,7 @@ def _normalize_root(root, *, simulations, gumbel_candidates, max_depth, max_acti
         root['device_policy'], max_actions, np.float64, 'device_policy')
     device_action = None if root.get('device_action') is None else int(root['device_action'])
     return dict(
-        root_id=int(root.get('root_id', 0)), seed=int(root.get('seed', 0)),
+        root_id=int(root.get('root_id', 0)), seed=int(root.get('seed', 0)), q_scale=q_scale,
         viewer=viewer, game_owner=game_owner, action_owner=action_owner,
         prior=prior, prior_logits=logits, value=value, legal=legal, gumbel=gumbel,
         transitions=transitions, visits=visits, total=total,
@@ -414,6 +423,13 @@ def _root_unsupported(root):
 
 def replay_device_gumbel_semantics(root, *, gumbel=None):
     """Numpy replay of DeviceGumbelSearch network_value formulas on a table."""
+    from functools import partial
+    profile = root.get("q_scale", "natural_wdl")
+    q_fn = partial(natural_completed_q, q_scale=profile)
+    pi_fn = partial(improved_policy, q_scale=profile)
+    root_fn = partial(select_root, q_scale=profile)
+    interior_fn = partial(select_interior, q_scale=profile)
+    final_fn = partial(select_final, q_scale=profile)
     start = time.monotonic()
     noise = root['gumbel'] if gumbel is None else np.asarray(gumbel, dtype=np.float64)
     if noise is None:
@@ -447,10 +463,10 @@ def replay_device_gumbel_semantics(root, *, gumbel=None):
                 leaf = float(node['value'])
                 break
             if depth == 0:
-                action = select_root(node['prior'], node['visits'], node['total'],
+                action = root_fn(node['prior'], node['visits'], node['total'],
                                      node['value'], node['legal'], noise, schedule[sim])
             else:
-                action = select_interior(node['prior'], node['visits'], node['total'],
+                action = interior_fn(node['prior'], node['visits'], node['total'],
                                          node['value'], node['legal'])
             if (node_id, action) not in root['transitions']:
                 raise ValueError('Missing recurrent transition for node %s action %s' % (
@@ -478,11 +494,11 @@ def replay_device_gumbel_semantics(root, *, gumbel=None):
             nodes[nid]['visits'][action] += 1
             nodes[nid]['total'][action] += leaf
     root_node = nodes[root['root_id']]
-    policy = improved_policy(root_node['prior'], root_node['visits'], root_node['total'],
+    policy = pi_fn(root_node['prior'], root_node['visits'], root_node['total'],
                              root_node['value'], root_node['legal'])
-    completed = natural_completed_q(root_node['prior'], root_node['visits'], root_node['total'],
+    completed = q_fn(root_node['prior'], root_node['visits'], root_node['total'],
                                     root_node['value'], root_node['legal'])
-    action = select_final(root_node['prior'], root_node['visits'], root_node['total'],
+    action = final_fn(root_node['prior'], root_node['visits'], root_node['total'],
                           root_node['value'], root_node['legal'], noise)
     visit_sum = float(root_node['visits'].sum())
     visit_policy = root_node['visits'] / visit_sum if visit_sum else root_node['prior']
@@ -496,17 +512,22 @@ def replay_device_gumbel_semantics(root, *, gumbel=None):
 
 def recorded_tree_semantics(root, *, gumbel=None):
     """Apply DeviceGumbelSearch formulas to an already completed root snapshot."""
+    from functools import partial
+    profile = root.get("q_scale", "natural_wdl")
+    q_fn = partial(natural_completed_q, q_scale=profile)
+    pi_fn = partial(improved_policy, q_scale=profile)
+    final_fn = partial(select_final, q_scale=profile)
     start = time.monotonic()
     if root['visits'] is None or root['total'] is None:
         raise ValueError('recorded_tree roots require visits and total')
     noise = root['gumbel'] if gumbel is None else np.asarray(gumbel, dtype=np.float64)
     if noise is None:
         raise ValueError(EXACT_GUMBEL_REQUIRED)
-    policy = improved_policy(root['prior'], root['visits'], root['total'],
+    policy = pi_fn(root['prior'], root['visits'], root['total'],
                              root['value'], root['legal'])
-    completed = natural_completed_q(root['prior'], root['visits'], root['total'],
+    completed = q_fn(root['prior'], root['visits'], root['total'],
                                     root['value'], root['legal'])
-    action = select_final(root['prior'], root['visits'], root['total'],
+    action = final_fn(root['prior'], root['visits'], root['total'],
                           root['value'], root['legal'], noise)
     n_legal = int(root['legal'].sum())
     requested = 1 if n_legal == 1 else int(root['simulations'])
@@ -531,7 +552,8 @@ def compare_torch_statistics(root, local):
     from .device_statistics import DeviceStatisticsPool
     started = time.monotonic()
     pool = DeviceStatisticsPool(1, root['max_actions'], device='cpu',
-        allow_cpu_reference=True, max_batch=1, max_path_len=1)
+        allow_cpu_reference=True, max_batch=1, max_path_len=1,
+        q_scale=root.get('q_scale', 'natural_wdl'))
     slots = torch.tensor([0], dtype=torch.int64)
     owners = torch.tensor([root['viewer']], dtype=torch.int64)
     written = pool.write_nodes(slots, owners,
@@ -624,12 +646,12 @@ def _pack_transition_tables(root):
                 discount=discount, child_logits=child_logits, child_value=child_value)
 
 
-def _call_official_qtransform(mctx, tree, n_actions):
+def _call_official_qtransform(mctx, tree, n_actions, *, q_scale="natural_wdl"):
     import functools
     import jax
     import jax.numpy as jnp
     qfn = functools.partial(mctx.qtransform_completed_by_mix_value,
-                            rescale_values=False, value_scale=0.1, maxvisit_init=50.0)
+                            rescale_values=(q_scale == "mctx_default"), value_scale=0.1, maxvisit_init=50.0)
     # The public qtransform contract takes an UNBATCHED tree and a scalar
     # node index. The public policy output above is a one-row batched tree.
     unbatched = jax.tree_util.tree_map(lambda value: value[0], tree)
@@ -639,6 +661,7 @@ def _call_official_qtransform(mctx, tree, n_actions):
 
 def run_official_mctx(root, *, exact=False, gumbel=None):
     """Run public mctx.gumbel_muzero_policy on a recorded perfect-info table."""
+    q_scale = root.get('q_scale', 'natural_wdl')
     start = time.monotonic()
     status = probe_official_mctx()
     base = dict(jax_available=status.jax_available, mctx_available=status.mctx_available,
@@ -683,7 +706,7 @@ def run_official_mctx(root, *, exact=False, gumbel=None):
 
     invalid = np.logical_not(root['legal']).astype(np.float32)[None, :]
     qtransform = functools.partial(mctx.qtransform_completed_by_mix_value,
-                                   rescale_values=False, value_scale=0.1, maxvisit_init=50.0)
+                                   rescale_values=(q_scale == "mctx_default"), value_scale=0.1, maxvisit_init=50.0)
     kwargs = dict(
         params=(),
         rng_key=jax.random.PRNGKey(int(root['seed']) % (2 ** 31 - 1)),
@@ -719,7 +742,7 @@ def run_official_mctx(root, *, exact=False, gumbel=None):
     completed = None
     q_reason = None
     try:
-        completed = _call_official_qtransform(mctx, tree, width)
+        completed = _call_official_qtransform(mctx, tree, width, q_scale=q_scale)
     except Exception as exc:
         q_reason = 'official_qtransform:' + type(exc).__name__
     return dict(
@@ -913,7 +936,7 @@ def compare_records(payload, *, exact=False, run_official=True, statistical_tria
     exact_passed = True if exact else False
     exact_reject = None
     for index, root in enumerate(payload['roots']):
-        case = dict(root_id=root['root_id'], index=index, seed=root['seed'],
+        case = dict(root_id=root['root_id'], index=index, seed=root['seed'], q_scale=root.get('q_scale', 'natural_wdl'),
                     viewer=root['viewer'], game_owner=root['game_owner'],
                     action_owner=root['action_owner'])
         if exact:

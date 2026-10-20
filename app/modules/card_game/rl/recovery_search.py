@@ -1,9 +1,12 @@
 """Isolated Gumbel Q-scale experiment sharing official information-search helpers.
 
 The legacy branch must match information_search.search numerically. Natural
-WDL scale corresponds to Mctx rescale_values=False. Existing service and
-training source hashes are untouched. No rewards, rule shortcuts or hand
-visibility changes. Full-game/strength acceptance is still required.
+WDL scale corresponds to Mctx rescale_values=False. Historical default behavior
+is retained; new source configurations require fresh qualification. No rewards,
+rule shortcuts or hand visibility changes. Full-game/strength acceptance is required.
+
+Explicit mctx_default uses the official rescaled mixed-Q profile on the full
+legal axis; historical defaults remain natural_wdl.
 """
 import time
 from copy import deepcopy
@@ -14,6 +17,10 @@ from .search_stability import raw_completed_q
 
 
 def completed_q(node, mode):
+    if mode == 'mctx_default':
+        from .mctx_q import completed_q as mctx_completed_q
+        return mctx_completed_q(node.prior, node.visits, node.total, node.raw_value,
+                                np.ones(len(node.prior), dtype=bool))
     if mode == 'legacy':
         return legacy.completed_q(node.prior, node.visits, node.total, node.raw_value)
     if mode != 'natural_wdl':
@@ -46,7 +53,7 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
     short terminal proofs and the sequential-halving budget identical to the
     shared implementation. This branch has no optional shaped reward path.
     """
-    if q_scale not in ('legacy', 'natural_wdl'):
+    if q_scale not in ('legacy', 'natural_wdl', 'mctx_default'):
         raise ValueError('Unknown recovery Q scale')
     if world_sampling not in ('per_simulation', 'per_decision'):
         raise ValueError('Unknown hidden-world sampling mode')

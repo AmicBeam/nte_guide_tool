@@ -1,8 +1,9 @@
-(function () {
+window.startGuideInfographic=function (data,account,allowed) {
   'use strict';
-  const root=document.getElementById('ig-data');if(!root)return;
-  const data=JSON.parse(root.textContent), Store=window.GuideInfographicState;
-  const $=id=>document.getElementById(id), key=`nte-infographic-v1:${data.character_id}`;
+  const Store=window.GuideInfographicState,Scripts=window.GuideInfographicScript;
+  const session=()=>{if(!allowed())throw new Error('请登录后继续编辑。');};
+  const $=id=>document.getElementById(id), key=`nte-infographic-v2:${account}:${data.character_id}`;
+  let controlsSignature='',renderTask=null,displayedScript='';
   let config=Store.defaults(data),revision=0,history=[],saveTimer,renderNumber=0,ready=Promise.resolve(),exporting=false;
   const status=message=>{$('ig-status').textContent=message;};
   const node=(tag,text)=>{const e=document.createElement(tag);if(text)e.textContent=text;return e;};
@@ -76,22 +77,32 @@
     });
   }
   function sync() {
+    const spec=Scripts.validate(config.script,config.script_params);
+    for(const details of document.querySelectorAll('[data-builtin]'))details.hidden=!spec.builtin.includes(details.dataset.builtin);
+    const signature=JSON.stringify(spec.controls);
+    if(signature!==controlsSignature){
+      controlsSignature=signature;$('ig-script-controls').replaceChildren();
+      for(const item of spec.controls){const field=input(item.label,`script_params.${item.key}`,{type:item.type==='boolean'?'checkbox':item.type==='text'?'textarea':item.type,limit:2000,choices:item.type==='select'?item.options.map(v=>[v,v]):null});const element=field.querySelector('input,select,textarea');if(item.type==='number')for(const k of ['min','max','step'])if(item[k]!==undefined)element[k]=item[k];$('ig-script-controls').append(field);}
+    }
+    if(displayedScript!==config.script){$('ig-script-source').value=config.script;displayedScript=config.script;}
     refreshTeamSlots();
     for(const e of $('ig-form').querySelectorAll('[data-field]')) {
       const value=pathValue(e.dataset.field);if(e.type==='checkbox')e.checked=value;else e.value=value;
       if(e.type==='range'&&e.parentElement.querySelector('output'))e.parentElement.querySelector('output').textContent=value;
     }
     config.radar_labels.forEach((label,i)=>{document.querySelector(`[data-field="radar.${i}"]`).parentElement.firstChild.textContent=label;});
-    for(const e of $('ig-editors').children)e.hidden=!config.modules[e.dataset.module];
+    for(const e of $('ig-editors').children)e.hidden=!config.modules[e.dataset.module]||!spec.builtin.includes(e.dataset.module);
     moduleList();$('ig-undo').disabled=!history.length;
   }
   function save(manual=false) {
-    try{localStorage.setItem(key,JSON.stringify(Store.pack(config,data)));if(manual)status('草稿已保存到当前浏览器。');}
+    try{session();localStorage.setItem(key,JSON.stringify(Store.pack(config,data)));if(manual)status('草稿已保存到当前浏览器。');}
     catch{status('浏览器无法保存草稿，请导出配置文件保留修改。');}
   }
   function redraw() {
+    session();renderTask?.cancel?.();
     const number=++renderNumber,snapshot=Store.clone(config),buffer=document.createElement('canvas');
-    ready=window.GuideInfographicCanvas.render(buffer,snapshot,data).then(result=>{
+    renderTask=window.GuideInfographicRuntime.render(buffer,snapshot,data);
+    ready=renderTask.then(result=>{
       if(number!==renderNumber)return;
       const canvas=$('ig-canvas');canvas.width=result.width;canvas.height=result.height;canvas.getContext('2d').drawImage(buffer,0,0);
       $('ig-size').textContent=`${result.width} × ${result.height}`;board.setScene(result);
@@ -101,13 +112,13 @@
     ready.catch(()=>{});
   }
   function commit(next) {
-    const clean=Store.validate(next,data);history.push(Store.clone(config));if(history.length>50)history.shift();config=clean;revision++;
+    session();const clean=Store.validate(next,data);history.push(Store.clone(config));if(history.length>50)history.shift();config=clean;revision++;
     $('ig-undo').disabled=false;redraw();clearTimeout(saveTimer);saveTimer=setTimeout(()=>save(),350);
   }
   $('ig-form').onsubmit=event=>event.preventDefault();
   $('ig-form').addEventListener('input',event=>{
     const e=event.target;if(!e.dataset.field)return;
-    try {const next=Store.clone(config);if(['orientation','layout'].includes(e.dataset.field))next.positions={};writePath(next,e.dataset.field,e.type==='checkbox'?e.checked:e.type==='range'?Number(e.value):e.value);if(/^teams\.\d+\.members\.\d+$/.test(e.dataset.field)){
+    try {const next=Store.clone(config);if(['orientation','layout'].includes(e.dataset.field))next.positions={};writePath(next,e.dataset.field,e.type==='checkbox'?e.checked:['range','number'].includes(e.type)?Number(e.value):e.value);if(/^teams\.\d+\.members\.\d+$/.test(e.dataset.field)){
         const [,team,,slot]=e.dataset.field.split('.');next.teams[team].candidates[slot]=next.teams[team].candidates[slot].filter(id=>id!==e.value);
       }
       commit(next);
@@ -121,16 +132,17 @@
   $('ig-undo').onclick=()=>{if(!history.length)return;config=history.pop();revision++;sync();redraw();save();status('已撤销上一次修改。');};
   $('ig-reset').onclick=()=>{if(confirm('将当前一图流恢复为初始模板？可使用撤销恢复。')){commit(Store.defaults(data));sync();status('已恢复初始模板。');}};
   function download(blob,filename){const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
-  $('ig-export-json').onclick=()=>{download(new Blob([JSON.stringify(Store.pack(config,data),null,2)],{type:'application/json'}),`${data.character_id}-一图流配置.json`);status('配置文件已导出，可在此角色页面重新导入。');};
+  $('ig-download-js').onclick=()=>{session();download(new Blob([config.script],{type:'text/javascript'}),`${data.character_id}-一图流模板.js`);};
+  $('ig-export-json').onclick=()=>{session();download(new Blob([JSON.stringify(Store.pack(config,data),null,2)],{type:'application/json'}),`${data.character_id}-一图流模板.json`);status('配置文件已导出，可在此角色页面重新导入。');};
   $('ig-import').onchange=async event=>{
     const file=event.target.files?.[0];if(!file)return;
-    try{if(file.size>128*1024)throw new Error('配置文件须小于128KB。');const next=Store.unpack(JSON.parse(await file.text()),data);commit(next);sync();status('配置已导入，原内容可撤销恢复。');}
+    try{if(file.size>256*1024)throw new Error('模板文件须小于256KB。');const raw=await file.text();const next=/\.js$/i.test(file.name)?{...Store.clone(config),script:raw,script_params:Scripts.defaults(raw,config.script_params)}:Store.unpack(JSON.parse(raw),data);await verifiedApply(next,revision); status('配置已导入，原内容可撤销恢复。');}
     catch(error){status(error.message || '配置导入失败。');}finally{event.target.value='';}
   };
   async function exportBlob() {
-    const snapshot=Store.clone(config),rendered=document.createElement('canvas');
+    session();const snapshot=Store.clone(config),rendered=document.createElement('canvas');
     await document.fonts.ready;
-    const result=await window.GuideInfographicCanvas.render(rendered,snapshot,data);
+    const result=await window.GuideInfographicRuntime.render(rendered,snapshot,data);
     if(result.failed)throw new Error('图片加载失败，请检查网络后重试。');
     const desired=Number($('ig-quality').value),scale=Math.min(desired,8192/result.height,8192/result.width,Math.sqrt(30000000/(result.width*result.height)));
     const output=document.createElement('canvas');output.width=Math.round(result.width*scale);output.height=Math.round(result.height*scale);
@@ -151,13 +163,29 @@
   }
   $('ig-export').onclick=()=>exportingImage(false);$('ig-copy').onclick=()=>exportingImage(true);
   // Only this page installs the bridge. The shared chat widget never exposes it to CLI tools.
-  window.GuideInfographicEditor={snapshot:()=>({character_id:data.character_id,revision,config:Store.clone(config)}),
-    apply(message){
+  async function verifiedApply(next,expected,signal){
+    session();const clean=Store.validate(next,data),test=document.createElement('canvas');
+    if(signal?.aborted)throw new Error('已停止，JS未应用。');
+    const task=window.GuideInfographicRuntime.render(test,clean,data),cancel=()=>task.cancel();signal?.addEventListener('abort',cancel,{once:true});
+    let result;try{result=await task;}finally{signal?.removeEventListener('abort',cancel);}
+    if(signal?.aborted)throw new Error('已停止，JS未应用。');if(result.failed)throw new Error('素材未加载成功，JS未应用。');
+    session();if(revision!==expected)throw new Error('验证脚本期间画布已变化，本次修改未覆盖。');commit(clean);sync();
+  }
+  $('ig-apply-script').onclick=async()=>{
+    const source=$('ig-script-source').value,expected=revision;
+    try{status('正在验证绘图JS…');await verifiedApply({...Store.clone(config),script:source,script_params:Scripts.defaults(source,config.script_params)},expected);status('绘图JS已应用并保存在浏览器，可撤销。');}catch(error){status(error.message);}
+  };
+  window.GuideInfographicEditor={snapshot:()=>{session();return {character_id:data.character_id,revision,config:Store.clone(config)};},
+    async apply(message,{signal}={}){
       if(message.character_id!==data.character_id||message.revision!==revision){status('助手回答期间你已修改画布，本次修改未覆盖。请重新告诉助手要调整的内容。');return false;}
-      try{commit(Store.validate(message.config,data));sync();status('攻略助手已更新一图流，可使用“撤销修改”恢复。');return true;}
+      try{await verifiedApply(message.config,message.revision,signal);status('攻略助手已更新一图流，可使用“撤销修改”恢复。');return true;}
       catch(error){status(`助手修改未应用：${error.message}`);return false;}
     }};
-  try{const raw=localStorage.getItem(key);if(raw){config=Store.unpack(JSON.parse(raw),data);status('已恢复此角色的浏览器草稿。');}else status('模板已就绪，编辑后会自动保存草稿。');}
+  try{let raw=localStorage.getItem(key);
+    const legacy=`nte-infographic-v1:${data.character_id}`,claim=`nte-infographic-claimed:${data.character_id}`;
+    if(!raw&&!localStorage.getItem(claim)){raw=localStorage.getItem(legacy);if(raw){localStorage.setItem(claim,account);localStorage.setItem(key,raw);}}
+if(raw){config=Store.unpack(JSON.parse(raw),data);status('已恢复此角色的浏览器草稿。');}else status('模板已就绪，编辑后会自动保存草稿。');}
   catch{status('旧草稿无法读取，已打开初始模板。原草稿未覆盖，可重新导入配置。');}
+  window.addEventListener('pagehide',()=>renderTask?.cancel?.());
   sync();redraw();
-}());
+};

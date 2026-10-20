@@ -1,3 +1,4 @@
+/* @editor {"builtin":["canvas","identity","modules","equipment","stats","radar","skills","teams","rotation","advice"],"controls":[]} */
 (function () {
   'use strict';
   const palettes = {night:{bg:'#10181f',panel:'#19252e',line:'#32434d',ink:'#f0f3ed',dim:'#a6b6bc',accent:'#c8f082'},
@@ -7,6 +8,7 @@
   const FONT = '"PingFang SC", "Microsoft YaHei", sans-serif';
   function image(src) {
     if(!src) return Promise.resolve(null);
+    if(typeof __igLoadImage==='function')return __igLoadImage(src);
     if(!cache.has(src)) cache.set(src,new Promise(resolve=>{
       const img = new Image(); img.onload=()=>resolve(img); img.onerror=()=>{cache.delete(src);resolve(null);};img.src=src;
     }));

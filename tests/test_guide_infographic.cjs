@@ -22,7 +22,7 @@ test('editable radar labels and board positions survive config roundtrip; legacy
   assert.deepEqual(S.unpack(S.pack(c,data),data),c);
   const old=S.pack(c,data);delete old.config.radar_labels;delete old.config.positions;
   const restored=S.unpack(old,data);assert.equal(restored.radar_labels.length,6);assert.deepEqual(restored.positions,{});
-  for(const changes of [{radar_labels:['A']},{radar_labels:['','a','b','c','d','e']},{positions:{unknown:{x:1,y:2}}},{positions:{stats:{x:NaN,y:4}}},{positions:{stats:{x:1,y:-1}}}])assert.throws(()=>S.patch(c,changes,data));
+  for(const changes of [{radar_labels:['A']},{radar_labels:['','a','b','c','d','e']},{positions:{'bad-key':{x:1,y:2}}},{positions:{stats:{x:NaN,y:4}}},{positions:{stats:{x:1,y:-1}}}])assert.throws(()=>S.patch(c,changes,data));
 });
 
 test('canvas scene shares moved text bounds and renders custom radar names and identity icons',async()=>{
@@ -60,4 +60,14 @@ test('candidate groups stay in their slot, render every candidate, and fold comp
   for(let i=0;i<5;i++)assert.ok(drawn.includes(`candidate${i}`));
   c.teams[0].folded[2]=false;const expanded=await render();
   assert.ok(expanded.scene.boards.find(b=>b.key==='teams').h>folded.scene.boards.find(b=>b.key==='teams').h);
+});
+test('JS declarations generate bounded parameters without executing code and travel with templates',()=>{
+  const P=require('../app/modules/guide/static/infographic_script.js');
+  const script='/* @editor {"builtin":[],"controls":[{"key":"title","label":"标题","type":"text","default":"新图"},{"key":"size","label":"尺寸","type":"number","default":20,"min":10,"max":40}]} */\nglobalThis.shouldNotExecute=true;';
+  const c=S.defaults(data);c.script=script;c.script_params=P.defaults(script);assert.equal(global.shouldNotExecute,undefined);
+  assert.deepEqual(S.unpack(S.pack(c,data),data),c);assert.equal(c.script_params.size,20);
+  const old=S.pack(c,data);delete old.config.script;delete old.config.script_params;
+  assert.ok(S.unpack(old,data).script.includes('@editor'));
+  for(const source of [script.replace('"size"','"constructor"'),script.replace('"min":10','"min":50'),script.replace('"controls"','"unknown"'),'while(true){}'])assert.throws(()=>P.declaration(source));
+  assert.throws(()=>S.validate({...c,script_params:{title:'x',size:999}},data));
 });

@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from flask import Flask
-from app.modules.guide import blueprint, infographic, infographic_chat, chat_service, chat_tools
+from app.modules.guide import blueprint, infographic, infographic_chat, infographic_script, chat_service, chat_tools
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -36,6 +36,9 @@ class InfographicTest(unittest.TestCase):
         self.assertIn('ig-canvas', response.text)
         self.assertIn('infographic_state.js', response.text)
         self.assertIn('infographic_board.js', response.text)
+        self.assertIn('id="ig-editor-workspace" data-character-id="1042" hidden', response.text)
+        self.assertNotIn('default_script', response.text)
+        self.assertEqual(self.client.get('/api/guide/characters/1042/infographic').status_code, 401)
         self.assertTrue(all(c['element_icon'] and c['rarity_icon'] for c in self.options['characters']))
         self.assertNotIn('ig-data', self.client.get('/guide/characters/1042').text)
         self.assertEqual(self.client.get('/guide/characters/1090/infographic').status_code, 404)
@@ -48,7 +51,7 @@ class InfographicTest(unittest.TestCase):
         self.assertEqual(infographic.validate(self.config, self.options), self.config)
         for change in [{'title': 'x'*61}, {'order': ['stats']*7}, {'order': [{}]*7},
                        {'radar': [True]*6}, {'radar': [101]*6}, {'art_scale': float('nan')},
-                       {'theme': []}, {'radar_labels': ['a']}, {'radar_labels': ['']*6}, {'positions': {'stats': {'x': float('nan'), 'y': 4}}}, {'positions': {'other': {'x': 1, 'y': 2}}}, {'modules': {}}, {'plans': [None,None]}, {'extra': 'x'}]:
+                       {'theme': []}, {'radar_labels': ['a']}, {'radar_labels': ['']*6}, {'positions': {'stats': {'x': float('nan'), 'y': 4}}}, {'positions': {'bad-key': {'x': 1, 'y': 2}}}, {'modules': {}}, {'plans': [None,None]}, {'extra': 'x'}]:
             with self.subTest(change=change), self.assertRaises(ValueError):
                 infographic.validate({**self.config, **change}, self.options)
         for name, field, value in [('plans', 'arc', 'other-game'), ('plans', 'arc', []), ('teams', 'members', ['missing']*4)]:
@@ -68,6 +71,21 @@ class InfographicTest(unittest.TestCase):
         config['teams'][0]['folded'][0] = 'true'
         with self.assertRaises(ValueError):
             infographic.validate(config, self.options)
+
+    def test_script_declaration_and_unique_edits_are_available_to_page_bot(self):
+        context = self.context()
+        value = infographic_chat.update(context, {'patch': {}, 'script_edits': [{'old': "const FONT =", 'new': "const FONT ="}]})
+        self.assertTrue(value['prepared'])
+        with self.assertRaises(ValueError):
+            infographic_chat.update(context, {'patch': {}, 'script_edits': [{'old': 'not-present-code', 'new': ''}]})
+        source = '/* @editor {"builtin":[],"controls":[{"key":"heading","label":"标题","type":"text","default":"新标题"}]} */\nwindow.GuideInfographicCanvas={render:async()=>({})};'
+        infographic_chat.update(context, {'patch': {'script': source}})
+        self.assertEqual(context['config']['script_params'], {'heading':'新标题'})
+        self.assertIn('@editor', infographic_chat.prompt(context))
+        self.assertIn('Worker', infographic_chat.prompt(context))
+        for code in ['while(true){}', '/* @editor {invalid} */', source.replace('heading', 'constructor')]:
+            with self.assertRaises(ValueError):
+                infographic_script.declaration(code)
 
     def test_editor_scope_and_patch_are_transient(self):
         context = self.context()

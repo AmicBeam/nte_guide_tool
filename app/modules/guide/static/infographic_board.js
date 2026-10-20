@@ -25,7 +25,7 @@
     function move(board,pos) {const next=structuredClone(getConfig());delete next.positions[board.key];next.positions[board.key]=pos;change(next);status('板块位置已更新，可撤销或恢复自动排版。');}
     function select(key){selected=key;for(const node of layer.querySelectorAll('.ig-board-handle')){node.classList.toggle('is-selected',node.dataset.key===key);node.setAttribute('aria-pressed',String(node.dataset.key===key));}}
     function handle(board) {
-      const button=element('button','⠿');button.type='button';button.dataset.key=board.key;button.className='ig-board-handle';button.setAttribute('aria-label',`拖动${data.modules[board.key]}板块`);button.title='拖动移动 · 方向键微调';style(button,{...board,h:30});
+      const button=element('button','⠿');button.type='button';button.dataset.key=board.key;button.className='ig-board-handle';button.setAttribute('aria-label',`拖动${(data.modules[board.key]||board.label||board.key)}板块`);button.title='拖动移动 · 方向键微调';style(button,{...board,h:30});
       button.onclick=()=>select(board.key);
       button.onkeydown=event=>{
         const delta={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[event.key];if(!delta)return;

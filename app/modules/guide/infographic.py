@@ -3,7 +3,9 @@ from copy import deepcopy
 from pathlib import Path
 import re
 
-from flask import render_template
+from flask import render_template, jsonify, g
+from app.auth import token_required
+from . import infographic_script
 from . import arc_cultivation, presentation, service
 
 MODULES = {'equipment': '弧盘与卡带', 'stats': '参考面板', 'radar': '能力雷达',
@@ -25,14 +27,15 @@ def options(identifier):
             'cores': cores, 'modules': MODULES, 'radar_labels': RADAR,
             'recommended_arc': (arc_cultivation.recommended(character) or {}).get('id', ''),
             'recommended_core': next(iter(presentation.kongmu_links().get(identifier, {}).get('recommendations', [])), {}).get('id', ''),
-            'game_version': presentation.site_header()['game_version'] or ''}
+            'game_version': presentation.site_header()['game_version'] or '',
+            'default_script': (Path(__file__).parent / 'static/infographic_canvas.js').read_text(encoding='utf-8')}
 
 
 def validate(config, available):
     """Validate imported/model-authored data against local IDs and bounded fields."""
     if not isinstance(config, dict):
         raise ValueError('一图流配置须为对象。')
-    fields = set(TEXT_LIMITS) | {'orientation', 'layout', 'theme', 'modules', 'order', 'radar', 'plans', 'teams', 'portrait', 'art_scale', 'radar_labels', 'positions'}
+    fields = set(TEXT_LIMITS) | {'orientation', 'layout', 'theme', 'modules', 'order', 'radar', 'plans', 'teams', 'portrait', 'art_scale', 'radar_labels', 'positions', 'script', 'script_params'}
     if set(config) != fields:
         raise ValueError('一图流配置字段不完整或包含未知字段。')
     for key, limit in TEXT_LIMITS.items():
@@ -52,7 +55,7 @@ def validate(config, available):
         raise ValueError('能力评分须为6个0–100整数。')
     if not isinstance(config['radar_labels'], list) or len(config['radar_labels']) != 6 or any(not isinstance(x, str) or not x.strip() or len(x) > 12 for x in config['radar_labels']):
         raise ValueError('雷达维度须为6个非空名称，每个最多12字。')
-    if not isinstance(config['positions'], dict) or set(config['positions']) - set(MODULES):
+    if not isinstance(config['positions'], dict) or len(config['positions']) > 64 or any(not isinstance(k, str) or not infographic_script.KEY.fullmatch(k) or k in ('constructor', 'prototype') for k in config['positions']):
         raise ValueError('板块位置包含未知模块。')
     for position in config['positions'].values():
         if not isinstance(position, dict) or set(position) != {'x', 'y'} or any(type(v) not in (int, float) or not 0 <= v <= 16000 for v in position.values()):
@@ -86,6 +89,7 @@ def validate(config, available):
                 raise ValueError('同一格中的首选与候选不能重复。')
         if not isinstance(team['name'], str) or len(team['name']) > 40 or not isinstance(team['note'], str) or len(team['note']) > 500:
             raise ValueError('配队说明过长或格式无效。')
+    infographic_script.validate(config['script'], config['script_params'])
     return deepcopy(config)
 
 
@@ -105,7 +109,13 @@ def register(blueprint):
     @blueprint.get('/guide/characters/<identifier>/infographic')
     def infographic_page(identifier):
         record = service.playable_character(identifier)
-        data = options(identifier)
         static = Path(__file__).parent / 'static'
-        version = max((static / name).stat().st_mtime_ns for name in ('infographic.js', 'infographic_state.js', 'infographic_canvas.js', 'infographic_board.js', 'infographic.css'))
-        return render_template('guide/infographic.html', record=record, infographic_data=data, infographic_version=version)
+        version = max((static / name).stat().st_mtime_ns for name in ('infographic.js', 'infographic_state.js', 'infographic_canvas.js', 'infographic_board.js', 'infographic_script.js', 'infographic_runtime.js', 'infographic_access.js', 'infographic.css'))
+        return render_template('guide/infographic.html', record=record, infographic_version=version)
+
+    @blueprint.get('/api/guide/characters/<identifier>/infographic')
+    @token_required
+    def infographic_bootstrap(identifier):
+        response = jsonify(data=options(identifier), account=str(g.current_player.player_uid))
+        response.headers['Cache-Control'] = 'no-store'
+        return response

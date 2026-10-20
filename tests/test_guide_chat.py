@@ -95,6 +95,16 @@ class GuideChatTest(unittest.TestCase):
             'page': '/guide/characters/1057?stage=1&token=synthetic-private',
             'page_title': '明音凛 · 角色', **kwargs}, headers={'Authorization': 'Bearer ' + self.token})
 
+    def test_infographic_bootstrap_requires_login_and_returns_no_store(self):
+        path = '/api/guide/characters/1042/infographic'
+        self.assertEqual(self.client.get(path).status_code, 401)
+        self.assertEqual(self.client.get(path, headers={'Authorization':'Bearer invalid'}).status_code, 401)
+        response = self.client.get(path, headers={'Authorization':'Bearer '+self.token})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['account'], 'chat-owner')
+        self.assertIn('@editor', response.json['data']['default_script'])
+        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+
     def test_login_only_config_and_unconfigured_model(self):
         self.assertEqual(self.client.get('/api/guide/chat/config').status_code, 401)
         self.assertEqual(self.client.post('/api/guide/chat', json={}).status_code, 401)

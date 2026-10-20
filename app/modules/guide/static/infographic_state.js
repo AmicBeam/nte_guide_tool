@@ -2,12 +2,13 @@
   const api = factory(); if (typeof module === 'object' && module.exports) module.exports = api; else root.GuideInfographicState = api;
 }(typeof window === 'undefined' ? globalThis : window, function() {
   'use strict';
+  const Scripts=typeof module==='object'&&module.exports?require('./infographic_script.js'):window.GuideInfographicScript;
   const modules = ['equipment','stats','radar','skills','teams','rotation','advice'];
   const limits = {title:60,subtitle:100,author:40,version:40,disclaimer:160,stats:650,skills:650,rotation:1200,advice:1000};
   const clone = x => JSON.parse(JSON.stringify(x));
   function defaults(data) {
     const c = data.characters.find(c => c.id === data.character_id);
-    return {title:c.name,subtitle:'角色攻略 · 配装与实战',author:'',version:data.game_version,
+    return {script:data.default_script||Scripts.fallback,script_params:Scripts.defaults(data.default_script||Scripts.fallback),title:c.name,subtitle:'角色攻略 · 配装与实战',author:'',version:data.game_version,
       disclaimer:'攻略作者个人建议，请结合队伍与实战环境调整。',orientation:'landscape',layout:'editorial',theme:'night',
       portrait:'fullbody',art_scale:1,modules:Object.fromEntries(modules.map(k=>[k,true])),order:[...modules],positions:{},radar_labels:[...(data.radar_labels||['爆发','持续','倾陷','生存','辅助','机动'])],radar:[0,0,0,0,0,0],
       stats:'',skills:'',rotation:'',advice:'',
@@ -26,7 +27,7 @@
     if(!exact(value.modules,modules)||Object.values(value.modules).some(v=>typeof v!=='boolean')) fail();
     if(!Array.isArray(value.order)||value.order.length!==modules.length||new Set(value.order).size!==modules.length||value.order.some(k=>!modules.includes(k))) fail();
     if(!Array.isArray(value.radar_labels)||value.radar_labels.length!==6||value.radar_labels.some(v=>!text(v,12)||!v.trim())) fail();
-    if(!value.positions||typeof value.positions!=='object'||Array.isArray(value.positions)||Object.keys(value.positions).some(k=>!modules.includes(k))) fail();
+    if(!value.positions||typeof value.positions!=='object'||Array.isArray(value.positions)||Object.keys(value.positions).length>64||Object.keys(value.positions).some(k=>!Scripts.identifier(k))) fail();
     for(const pos of Object.values(value.positions)) if(!exact(pos,['x','y'])||![pos.x,pos.y].every(v=>Number.isFinite(v)&&v>=0&&v<=16000)) fail();
     if(!Array.isArray(value.radar)||value.radar.length!==6||value.radar.some(v=>!Number.isInteger(v)||v<0||v>100)) fail();
     if(!Array.isArray(value.plans)||value.plans.length!==2||!Array.isArray(value.teams)||value.teams.length!==2) fail();
@@ -42,6 +43,7 @@
         const selected=[t.members[i],...ids].filter(Boolean);if(new Set(selected).size!==selected.length) fail();
       });
     }
+    Scripts.validate(value.script,value.script_params);
     return clone(value);
   }
   function patch(config,changes,data) {
@@ -56,6 +58,8 @@
     if(!Object.hasOwn(config,'positions'))config.positions={};
     if(!Object.hasOwn(config,'radar_labels'))config.radar_labels=[...(data.radar_labels||['爆发','持续','倾陷','生存','辅助','机动'])];
     for(const t of config.teams||[]){if(!Object.hasOwn(t,'candidates'))t.candidates=[[],[],[],[]];if(!Object.hasOwn(t,'folded'))t.folded=[true,true,true,true];}
+    if(!Object.hasOwn(config,'script'))config.script=data.default_script||Scripts.fallback;
+    if(!Object.hasOwn(config,'script_params'))config.script_params=Scripts.defaults(config.script);
     return validate(config,data);
   }
   return {defaults,validate,patch,pack,unpack,modules,limits,clone};

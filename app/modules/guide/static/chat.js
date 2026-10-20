@@ -137,11 +137,11 @@
           page_title:document.title,...(window.GuideInfographicEditor ? {infographic:window.GuideInfographicEditor.snapshot()} : {})}),signal:state.controller.signal});
       if(!response.ok) {if(response.status===401) {open(false);widget.hidden=true;state.user='';}throw new Error(await packet(response));}
       const reader=response.body.getReader();const decoder=new TextDecoder();let pending='',answered=false,problem='',editorStatus='';
-      const accept=line=>{
+      const accept=async line=>{
         if(!line.trim()) return;const value=JSON.parse(line);
         if(epoch!==state.epoch || state.current!==session) return;
         if(value.type==='infographic_patch' && window.GuideInfographicEditor) {
-          editorStatus=window.GuideInfographicEditor.apply(value)?'一图流已更新，可在编辑页撤销。':'画布已发生变化，助手修改未覆盖，请重新发送修改要求。';
+          editorStatus=await window.GuideInfographicEditor.apply(value,{signal:state.controller.signal})?'一图流已更新，可在编辑页撤销。':'画布已发生变化，助手修改未覆盖，请重新发送修改要求。';
         }
         if(value.type==='status') status(value.text);
         if(value.type==='error') problem=value.text;
@@ -165,8 +165,8 @@
         }
       };
       while(true) {const chunk=await reader.read();if(chunk.done) break;pending+=decoder.decode(chunk.value,{stream:true});let newline;
-        while((newline=pending.indexOf('\n'))>=0) {accept(pending.slice(0,newline));pending=pending.slice(newline+1);}}
-      pending+=decoder.decode();if(pending.trim()) accept(pending);
+        while((newline=pending.indexOf('\n'))>=0) {await accept(pending.slice(0,newline));pending=pending.slice(newline+1);}}
+      pending+=decoder.decode();if(pending.trim()) await accept(pending);
       if(!answered) throw new Error(problem || '回答未完成，请重新发送问题。');
     } catch(error) {if(epoch===state.epoch) {
       if(draft) {

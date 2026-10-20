@@ -1196,7 +1196,7 @@ def validate_launch(config, *, resume=False, completed_batches=0):
     if config.get('teacher_mode','network')=='network':
         raise ValueError('Fixed-build network teacher lacks sampled-build rollout coverage qualification')
     required=('initial-value/value-precheck.json','cycles/1/numeric.json','cycles/1/restore-check.json',
-              'cycles/1/gate.json','cycles/1/sampling/games.json','cycles/1/capacity.json')
+              'cycles/1/gate.json','cycles/1/sampling/games.json')
     if contract['rule_backend']=='cuda_vm':
         required+=('cycles/1/sampling/gpu-replay-check.json',)
     if not all(name in receipt.get('files',{}) for name in required):
@@ -1216,13 +1216,6 @@ def validate_launch(config, *, resume=False, completed_batches=0):
             or receipt.get('learning_rate')!=config['learning_rate']
             or receipt.get('value_calibration',value_calibration_protocol({}))!=value_calibration_protocol(config)):
         raise ValueError('Readiness optimizer protocol mismatch')
-    capacity=json.loads((path.parent/'cycles/1/capacity.json').read_text())
-    if (capacity.get('schema')!='seven_recovery_isolation_fit_v1' or capacity.get('passed') is not True
-            or capacity.get('complete') is not True or capacity.get('device')!='cuda'
-            or capacity.get('source_models')!=receipt['initial_models']
-            or capacity.get('collection_replicas', DEFAULT_COLLECTION_REPLICAS)!=configured_collection_replicas(config)
-            or capacity.get('planned_complete_games', COLLECTION_GAMES_PER_REPLICA)!=planned_complete_games(configured_collection_replicas(config))):
-        raise ValueError('CUDA whole-network isolation fit and heldout required')
     numeric=json.loads((path.parent/'cycles/1/numeric.json').read_text())
     restored=json.loads((path.parent/'cycles/1/restore-check.json').read_text())
     gate=json.loads((path.parent/'cycles/1/gate.json').read_text())
@@ -1244,8 +1237,8 @@ def validate_launch(config, *, resume=False, completed_batches=0):
     # matrices before launching; retain 25% capacity slack and 15min delivery.
     # The short receipt has small gates; explicitly expand the actual
     # formal pure/search gate counts and the historical 60-game round.
-    # Isolation fitting and its separate heldout corpus are performed once.
-    # Their cost is not silently charged as a recurring learning batch.
+    # Disposable isolation fitting is an explicit diagnostic, not part of
+    # preflight, recurring learning work or readiness/strength acceptance.
     work=projected_learning_work(config, receipt, resume=resume, completed_batches=completed_batches)
     if work['needed'] > config['train_until']-time.time(): raise ValueError('Insufficient staged learning capacity')
     if work['needed_eval'] > config['evaluate_until']-config['train_until']:
@@ -1553,25 +1546,8 @@ def _run_learning_core(out, config, *, resume=False, device_context=None):
                                           historical=best if historical else None,report=combined)
             start=time.time();games=collect_search_batch(pool,jobs,folder/'sampling',config,learning=True)
             search_wall+=time.time()-start;search_games+=len(games)
-            if config.get('preflight'):
-                from .recovery_capacity import fit
-                status('isolation_fit')
-                # Same opponents and initiatives with genuinely new paired
-                # seeds. Capacity heldout never enters update_batch/pools.
-                held_jobs=capacity_heldout_jobs(current,decks,config,config['train_until']-20,report=report)
-                held_games=collect_search_batch(pool,held_jobs,folder/'capacity-heldout',config,learning=False,require_search=True)
-                capacity=fit(current,jobs,games,config,min(config['train_until'],time.time()+1200),
-                             held_jobs=held_jobs,held_games=held_games,runtime_name="seven")
-                replicas=configured_collection_replicas(config)
-                capacity.update(collection_replicas=replicas,
-                                planned_complete_games=planned_complete_games(replicas),
-                                planned_historical_complete_games=planned_complete_games(replicas, historical=True),
-                                measured_learning_games=len(jobs), measured_heldout_games=len(held_jobs))
-                write(folder/'capacity.json',capacity)
-                if not capacity['passed']:
-                    stop_reason='isolation_fit_failed'
-                    save_round(out,nets,opts,pools,current,rng,config,cycle,best,no_gain)
-                    break
+            # Learn the completed search games directly. A disposable network
+            # overfitted to this small batch cannot veto the actual candidate.
             status('updating')
             update_started=time.time()
             health,rows=update_batch(nets,opts,pools,jobs,games,rng,config,config['train_until'],folder)

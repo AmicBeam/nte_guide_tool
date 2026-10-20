@@ -140,12 +140,14 @@ WDL 仍只预测实际完整终局的胜／平／负，价值带观察者是否�
 
 ### 本机与Windows入口
 
+本节的强制隔离容量预检描述历史五队 `runtime=recovery`。七队 `runtime=seven` 的当前流程见[七队默认学习与按需容量诊断](duel-v2-public-training.md#七队默认学习与按需容量诊断)：默认不采额外容量留出、不自动拟合临时网络，也不以探针 KL 单项阻断实际学习；规则、价值、数值／恢复、P0 和独立互搏验收保留。历史失败与冻结任务不改写。
+
 ```bash
 # 本机五套小预算链路，Gumbel2；不是正式搜索预算验收
-.venv/bin/python scripts/train_duel_v2_current_round.py --smoke --device cpu --teacher-mode covered_expert --workers 2 --hidden 32 --seconds 1800 --output artifacts/rl-evals/NEW/smoke --run
+.venv/bin/python scripts/train_duel_v2_current_round.py --runtime recovery --smoke --device cpu --teacher-mode covered_expert --workers 2 --hidden 32 --seconds 1800 --output artifacts/rl-evals/NEW/smoke --run
 
 # Windows上线后在冻结工作副本执行：五套Gumbel32、实际CUDA梯度/数值/Adam恢复及阶段成本
-python scripts/train_duel_v2_current_round.py --preflight --device cuda --teacher-mode covered_value --covered-value-source QUALIFIED_AUX_DIR --workers 6 --output artifacts/rl-evals/NEW/preflight --run
+python scripts/train_duel_v2_current_round.py --runtime recovery --preflight --device cuda --teacher-mode covered_value --covered-value-source QUALIFIED_AUX_DIR --workers 6 --output artifacts/rl-evals/NEW/preflight --run
 
 # 中断后仅在原学习截止内、原配置与进程已退出时恢复
 python scripts/train_duel_v2_current_round.py --output artifacts/rl-evals/EXISTING --resume --run

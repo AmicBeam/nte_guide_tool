@@ -23,7 +23,7 @@ blueprint.add_app_template_filter(service.display_scalar, 'guide_scalar')
 
 def kind_check(kind):
     if kind not in service.KINDS:
-        raise LookupError('未知分类；可选 characters、arcs、foods、challenges、endless、beginner')
+        raise LookupError('未知分类；可选 characters、arcs、foods、permanent、challenges、endless、beginner')
 
 
 def integer(name, default, low, high):
@@ -203,13 +203,14 @@ def cli_download():
 def llms():
     text = '''# NTE Tools 攻略数据库
 
-范围：角色、弧盘、料理、轨外之境、全站深境、通用攻略与自建攻略。匿名只读；网页正文由服务端渲染。
+范围：角色、弧盘、料理、常驻加成、轨外之境、全站深境、通用攻略与自建攻略。匿名只读；网页正文由服务端渲染。
 
 - [网页入口](/guide)
 - [接口与数值约定](/api/guide/schema)
 - [角色列表](/api/guide/characters)
 - [弧盘列表](/api/guide/arcs)
 - [料理列表](/api/guide/foods)
+- [常驻加成（异象家具、噗咔特训）](/api/guide/permanent)
 - [轨外之境赛期](/api/guide/challenges)
 - [全站深境（每50层一组）](/api/guide/endless)
 - [攻略](/api/guide/beginner)
@@ -217,8 +218,8 @@ def llms():
 - [CLI 下载](/guide/cli.py)
 
 检索：GET /api/guide/search?q=关键词&limit=20&offset=0
-详情：GET /api/guide/{characters|arcs|foods|challenges|endless|beginner|articles}/{id}
-纯文本：GET /guide/{characters|arcs|foods|challenges|endless|beginner|articles}/{id}.md
+详情：GET /api/guide/{characters|arcs|foods|permanent|challenges|endless|beginner|articles}/{id}
+纯文本：GET /guide/{characters|arcs|foods|permanent|challenges|endless|beginner|articles}/{id}.md
 空幕：角色详情加 ?section=equip_slots；升级材料：详情加 ?section=materials。
 等级经验：角色详情加 ?section=experience。
 好感度与喜好礼物：角色详情加 ?section=affinity，包含赠送数值和各商店标价。

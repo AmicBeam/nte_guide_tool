@@ -11,9 +11,13 @@ from .description_parameters import bind_description_parameters
 from .challenge_calendar import is_released_challenge
 from . import reference_view, previews
 
-KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '攻略'}
+KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'permanent': '常驻加成', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '攻略'}
 BEGINNER_SECTIONS = ('intro', 'gameplay', 'currencies', 'events', 'wishes', 'closing')
 LABELS = {
+    'notes': '加成与升级说明', 'entries': '异象家具加成与升级',
+    'max_level_name': '满级名称', 'max_level': '等级上限', 'unlock': '解锁条件',
+    'next_level': '升至等级', 'upgrade_costs': '升至下一级要求',
+    'required_puka_level': '所需噗卡计划等级', 'fons_cost': '升入本级方斯', 'total_fons': '累计方斯',
     'intro': '前言', 'gameplay': '一.游戏玩法讲解', 'currencies': '二.货币讲解及氪金建议',
     'events': '三.游戏活动讲解', 'wishes': '四.抽卡资源规划', 'closing': '结语',
     'status': '资料状态', 'preview': '预告', 'preview_image': '预告图',
@@ -118,6 +122,7 @@ def catalog():
         arc['rarity_icon'] = f'/static/images/rarities/YH_UI_star{rank}.webp'
         arc['image'] = f'/static/images/arcs/{arc["id"]}.webp'
     data['foods'] = json.loads((Path(__file__).parent / 'data/foods.json').read_text(encoding='utf-8'))
+    data['permanent'] = json.loads((Path(__file__).parent / 'data/permanent_bonuses.json').read_text(encoding='utf-8'))
     data['endless'] = json.loads((Path(__file__).parent / 'data/endless.json').read_text(encoding='utf-8'))['groups']
     data['beginner'] = json.loads((Path(__file__).parent / 'data/beginner.json').read_text(encoding='utf-8'))
     monsters = json.loads((Path(__file__).parent / 'data/monster_metadata.json').read_text(encoding='utf-8'))
@@ -158,7 +163,7 @@ def summary(kind, record):
         result['assets'] = record['assets']
     if kind == 'endless':
         result['description'] = record.get('description', '')
-    if kind == 'beginner':
+    if kind in ('beginner', 'permanent'):
         result['description'] = record['description']
     if kind == 'challenges':
         result['description'] = record.get('resonance', {}).get('description', '')
@@ -337,6 +342,7 @@ def page_sections(kind, record):
         'foods': ('effect', 'description', 'cooldown'),
         'challenges': ('resonance', 'stages', 'rewards'),
         'endless': ('stages',),
+        'permanent': ('notes', 'entries', 'levels'),
         'beginner': tuple(record.get('chapter_titles', {})) or BEGINNER_SECTIONS,
     }
     keys = preferred[kind] if len(record) > 3 else tuple(key for key in record if key not in ('id', 'name'))

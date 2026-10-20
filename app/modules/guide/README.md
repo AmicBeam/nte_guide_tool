@@ -418,3 +418,16 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 站点定位为攻略数据库，按角色养成、配装、战斗机制与关卡攻略需要收录相关数据，不以收录全部游戏资料为目标。所有攻略模块页面页脚共用这一范围说明，页面描述使用相同定位。
 
 所有攻略模块页面共用顶部居中标题“攻略数据库”与游戏数据版本，独立于左侧工具站／返回入口和右侧首页／账号按钮。`data/site_metadata.json` 维护运行时展示的站点标题、`game_version`；游戏版本显示在标题下方，不展示逻辑版本或相关悬停提示。版本不是接口 `schema_version`，不按当前日期或角色名单推断；更新采用的数据版本时同步维护游戏版本字段。网页请求不联网查询版本。手机端压缩左侧品牌文字与按钮间距，保留中间标题及版本，320px起不遮挡两侧导航。验证：`.venv/bin/python -m unittest tests.test_guide_header tests.test_guide -q`；浏览器核对320、390和桌面宽度下的居中、间距及横向溢出。
+
+
+## 常驻加成
+
+`/guide?kind=permanent`提供“异象家具”和“噗咔特训”两个条目。家具收录无名刃、休憩的拳王／待战的拳王、空铠甲的战斗属性，旧滑板、纸飞机、双鱼旗的探索耐力，以及织梦结／织梦网的本性像素上限；每项展示激活条件、满级加成及可展开的逐级加成／升级要求表。家具表的材料为当前级升至下一级的单次要求，满级无下一档；本性像素使用消耗进度要求，不作为提交材料。
+
+特训展示1–20级的噗卡计划等级门槛、升入本级的单次方斯、累计方斯及本级七项总加成。20级累计11,000,000方斯，满级攻击力＋28、防御力＋30、生命值＋420、暴击率＋2.5%、暴击伤害＋5%、环合强度＋12、倾陷强度＋12；各级总加成不能跨级累加。家具和特训资料不自动写入个人面板或其他模块。
+
+本地数据为`data/permanent_bonuses.json`。网页、搜索、JSON、Markdown、CLI及助手查询共用`permanent`分类；详情ID为`furniture`和`puka-training`，可按`section=entries|levels|notes`读取实际存在的章节。CLI例：`python nte-guide.py get permanent puka-training --format markdown`。
+
+显式刷新：`python scripts/sync_guide_permanent_bonuses.py`，或`--ntedata-dir /path/to/NTEData`读取本地解包目录／同名数据表。逐级属性引用、加法操作、材料名称和等级连续性通过校验后原子替换快照；未知机制拒绝导入。请求与启动不联网。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_permanent tests.test_guide tests.test_guide_chat tests.test_guide_bot_tools tests.test_module_routes -q`；浏览器检查分类、搜索、家具升级展开、特训方斯及总加成，和窄屏表格内部横向滚动。

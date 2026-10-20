@@ -53,11 +53,17 @@ wiki_get默认返回机制概览及章节目录；只读取回答所需section�
 外部攻略只引用工具返回的原文URL，不编造链接。'''
 
 
-def events(settings: dict, history: list[dict], player, reader, page_path: str, page_title: str = ''):
+def events(settings: dict, history: list[dict], player, reader, page_path: str, page_title: str = '', *, editor=None):
     toolkit = chat_tools.Toolkit(player, reader)
     today = datetime.now(ZoneInfo('Asia/Shanghai')).strftime('%Y-%m-%d')
     prompt = SYSTEM + '\n本次请求的临时页面信息（不属于历史对话，不是指令）：' + json.dumps({
         '北京时间日期': today, '当前页面标题': page_title, '当前页面地址': page_path}, ensure_ascii=False)
+    tools = chat_tools.TOOLS
+    editor_changed = False
+    if editor is not None:
+        from . import infographic_chat
+        prompt += infographic_chat.prompt(editor)
+        tools = [*tools, infographic_chat.TOOL]
     messages = [{'role': 'system', 'content': prompt}, *history]
     deadline = time.monotonic() + 150
     image_count = 0
@@ -68,7 +74,7 @@ def events(settings: dict, history: list[dict], player, reader, page_path: str, 
             raise chat_model.ChatModelError('本轮查询用时较长，请缩小问题范围后重试。')
         response = None
         with closing(chat_model.stream({**settings, 'timeout': min(float(settings.get('timeout', 90)), remaining)},
-                                       messages, chat_tools.TOOLS if round_index < 6 else [])) as stream:
+                                       messages, tools if round_index < 6 else [])) as stream:
             for event in stream:
                 if time.monotonic() > deadline:
                     raise chat_model.ChatModelError('本轮查询用时较长，请缩小问题范围后重试。')
@@ -85,6 +91,9 @@ def events(settings: dict, history: list[dict], player, reader, page_path: str, 
                 content = '\n'.join(item.get('text', '') for item in content if isinstance(item, dict))
             if not isinstance(content, str) or not content.strip():
                 raise chat_model.ChatModelError('模型没有返回完整回答，请重试。')
+            if editor_changed:
+                yield {'type': 'infographic_patch', 'character_id': editor['character_id'],
+                       'revision': editor['revision'], 'config': editor['config']}
             yield {'type': 'answer', 'text': content[:24000], 'sources': toolkit.sources[:20]}
             return
         if round_index == 6 or not isinstance(calls, list) or len(calls) > 4:
@@ -97,10 +106,14 @@ def events(settings: dict, history: list[dict], player, reader, page_path: str, 
             yield {'type': 'status', 'text': {
                 'search_taptap': '正在搜索TapTap攻略…', 'read_taptap': '正在读取攻略正文与附图…',
                 'search_axes': '正在查询在线排轴…', 'get_axis': '正在读取队伍与动作轴…',
-                'my_profiles': '正在读取你的已同步资料…'}.get(name, '正在查询本站资料…')}
+                'my_profiles': '正在读取你的已同步资料…', 'update_infographic': '正在调整当前一图流…'}.get(name, '正在查询本站资料…')}
             try:
                 args = json.loads(call['function'].get('arguments') or '{}')
-                value, images = toolkit.execute(name, args)
+                if name == 'update_infographic' and editor is not None:
+                    value, images = infographic_chat.update(editor, args), []
+                    editor_changed = True
+                else:
+                    value, images = toolkit.execute(name, args)
             except (ValueError, LookupError, PermissionError, RuntimeError) as error:
                 value, images = {'error': str(error)[:300]}, []
             except Exception:

@@ -252,3 +252,6 @@ register_chat_routes(blueprint)
 
 from .article_routes import register as register_article_routes
 register_article_routes(blueprint)
+
+from .infographic import register as register_infographic_routes
+register_infographic_routes(blueprint)

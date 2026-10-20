@@ -431,3 +431,16 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 显式刷新：`python scripts/sync_guide_permanent_bonuses.py`，或`--ntedata-dir /path/to/NTEData`读取本地解包目录／同名数据表。逐级属性引用、加法操作、材料名称和等级连续性通过校验后原子替换快照；未知机制拒绝导入。请求与启动不联网。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_permanent tests.test_guide tests.test_guide_chat tests.test_guide_bot_tools tests.test_module_routes -q`；浏览器检查分类、搜索、家具升级展开、特训方斯及总加成，和窄屏表格内部横向滚动。
+
+
+## 角色一图流攻略制作
+
+完整角色页的工具区提供“制作角色一图流攻略”，进入 `/guide/characters/<id>/infographic`；匿名可用，预告角色不提供入口。页面复用本地角色头像／立绘、适配弧盘与核心卡带图片，初始模板沿用现有推荐绑定，不自动生成面板目标、评分、队伍或攻略结论。页面数据由 `infographic.py` 提供，不引用其他模块的领域服务。
+
+`static/infographic_state.js` 管理字段校验、配置封装与导入，`infographic.js` 管理表单、按角色隔离的浏览器草稿、撤销及助手编辑桥接，`infographic_canvas.js` 在浏览器内完成预览和 PNG 生成。支持横排／竖排、杂志／均衡／紧凑三种布局、三种配色、角色图片与缩放、标题／署名／版本／页脚；弧盘与卡带、参考面板、雷达、技能优先级、两组配队、操作循环、养成与抽取建议七类模块可单独开关及排序，配装保留两个可选方案。推荐文字、评分和目标由作者填写。
+
+草稿只存在当前浏览器，不自动发布或同步到账号；自动保存失败时提示导出配置。JSON 导入限制128KB，校验角色ID、配置版本、字段长度与可选素材ID，不接受任意图片地址或HTML。导入／重置／助手修改均可撤销。高清 PNG 提供2倍和3倍选项，预览与导出使用同一渲染器，文字自动换行并增高画布；导出尺寸受8192像素单边及3000万像素总量限制，防止浏览器分配过大。图片复制需要安全上下文与浏览器剪贴板支持，失败时可下载PNG。
+
+仅该网页登录后的右下角攻略助手提供 `update_infographic`：请求临时附带当前角色、画布配置和修订号，模型可在用户本轮明确要求时准备顶层参数替换；服务端校验，完整回答后返回页面事件，由浏览器应用并自动预览。无编辑上下文的普通聊天不提供此工具；CLI、公共读取工具和服务器攻略数据不增加写入能力。用户在回答期间手动编辑时，修订号不一致则拒绝覆盖；失败／中断的回答不应用修改。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_infographic tests.test_guide_chat tests.test_guide_chat_stream tests.test_guide_builds tests.test_guide_previews -q`；`node --test tests/test_guide_infographic.cjs tests/test_guide_chat_state.cjs`。浏览器检查角色入口、横竖排与三种布局、模块开关和排序、草稿刷新恢复、PNG实际下载、配置导入导出、手机宽度及合成模型编辑／撤销／并发防覆盖。

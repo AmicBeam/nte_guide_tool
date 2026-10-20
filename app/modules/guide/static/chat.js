@@ -62,7 +62,7 @@
   }
   function render() {
     const container=$('guide-chat-messages');container.replaceChildren();
-    if (!state.current?.messages.length) container.append(node('p','可以问我角色怎么玩、怎么配队，查阅技能、在线排轴或TapTap攻略。也可以发送截图一起分析。','guide-chat-empty'));
+    if (!state.current?.messages.length) container.append(node('p',window.GuideInfographicEditor ? '可以直接告诉我怎么改这张一图流，例如：改成竖排、隐藏能力雷达、调整配装建议。修改后可撤销；也可以照常查询攻略。' : '可以问我角色怎么玩、怎么配队，查阅技能、在线排轴或TapTap攻略。也可以发送截图一起分析。','guide-chat-empty'));
     for (const message of state.current?.messages || []) {
       const article=node('article','',`guide-chat-message ${message.role}`);
       article.append(node('small',message.role==='user'?'你':message.incomplete?'攻略助手 · 未完成':'攻略助手','guide-chat-message-label'));
@@ -134,12 +134,15 @@
     try {
       const response=await fetch('/api/guide/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.token}`},
         body:JSON.stringify({messages:Store.context(session.messages),page:location.pathname+location.search,
-          page_title:document.title}),signal:state.controller.signal});
+          page_title:document.title,...(window.GuideInfographicEditor ? {infographic:window.GuideInfographicEditor.snapshot()} : {})}),signal:state.controller.signal});
       if(!response.ok) {if(response.status===401) {open(false);widget.hidden=true;state.user='';}throw new Error(await packet(response));}
-      const reader=response.body.getReader();const decoder=new TextDecoder();let pending='',answered=false,problem='';
+      const reader=response.body.getReader();const decoder=new TextDecoder();let pending='',answered=false,problem='',editorStatus='';
       const accept=line=>{
         if(!line.trim()) return;const value=JSON.parse(line);
         if(epoch!==state.epoch || state.current!==session) return;
+        if(value.type==='infographic_patch' && window.GuideInfographicEditor) {
+          editorStatus=window.GuideInfographicEditor.apply(value)?'一图流已更新，可在编辑页撤销。':'画布已发生变化，助手修改未覆盖，请重新发送修改要求。';
+        }
         if(value.type==='status') status(value.text);
         if(value.type==='error') problem=value.text;
         if(value.type==='answer_reset') resetDraft();
@@ -158,7 +161,7 @@
         if(value.type==='answer' && !answered) {
           resetDraft();
           answered=true;session.messages.push({role:'assistant',text:String(value.text),timestamp:Date.now(),sources:value.sources || []});
-          session.updatedAt=Date.now();persist();render();status('');
+          session.updatedAt=Date.now();persist();render();status(editorStatus);
         }
       };
       while(true) {const chunk=await reader.read();if(chunk.done) break;pending+=decoder.decode(chunk.value,{stream:true});let newline;

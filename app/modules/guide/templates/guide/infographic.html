@@ -1,0 +1,37 @@
+{% extends 'guide/layout.html' %}
+{% block title %}{{ record.name }} · 制作角色一图流攻略{% endblock %}
+{% block page_class %}infographic-page{% endblock %}
+{% block guide_back %}<a class="guide-top-back" href="/guide/characters/{{ record.id }}">← {{ record.name }}</a>{% endblock %}
+{% block head %}{{ super() }}
+<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='infographic.css', v=infographic_version) }}">
+<script defer src="{{ url_for('guide_module.static', filename='infographic_state.js', v=infographic_version) }}"></script>
+<script defer src="{{ url_for('guide_module.static', filename='infographic_canvas.js', v=infographic_version) }}"></script>
+<script defer src="{{ url_for('guide_module.static', filename='infographic.js', v=infographic_version) }}"></script>
+{% endblock %}
+{% block content %}
+<header class="ig-heading"><div><p class="guide-eyebrow">CHARACTER GUIDE / CREATOR</p><h1>制作角色一图流攻略</h1><p>把配装思路与实战经验，做成一张值得收藏的攻略。</p></div><a href="/guide/characters/{{ record.id }}">{{ record.name }}资料 ↗</a></header>
+<div class="ig-actions"><button type="button" id="ig-export">导出高清 PNG</button><button type="button" id="ig-copy" class="ig-secondary">复制图片</button><button type="button" id="ig-save" class="ig-secondary">保存草稿</button><button type="button" id="ig-export-json" class="ig-secondary">导出配置</button><label class="ig-file">导入配置<input type="file" id="ig-import" accept="application/json,.json"></label><button type="button" id="ig-undo" class="ig-secondary" disabled>撤销修改</button><button type="button" id="ig-reset" class="ig-secondary">重置</button></div>
+<p id="ig-status" role="status" aria-live="polite">正在准备画布…</p>
+<div class="ig-workspace">
+<form id="ig-form" class="ig-controls" autocomplete="off">
+<details open><summary>01 · 画布与布局</summary><div class="ig-fields">
+<label>画布方向<select data-field="orientation"><option value="landscape">横排 · 宽幅攻略</option><option value="portrait">竖排 · 收藏长图</option></select></label>
+<label>布局方式<select data-field="layout"><option value="editorial">杂志布局 · 立绘侧栏</option><option value="balanced">均衡布局 · 顶部横幅</option><option value="compact">紧凑布局 · 信息优先</option></select></label>
+<label>配色<select data-field="theme"><option value="night">曜石黑 × 青柠</option><option value="paper">暖纸白 × 朱砂</option><option value="teal">深海蓝 × 薄荷</option></select></label>
+<label>导出清晰度<select id="ig-quality"><option value="2">标准高清 · 2倍</option><option value="3">超清 · 3倍</option></select></label>
+<label>角色图片<select data-field="portrait"><option value="fullbody">高清立绘</option><option value="portrait">默认立绘</option><option value="avatar">头像</option></select></label>
+<label>立绘大小<input data-field="art_scale" type="range" min="0.7" max="1.6" step="0.05"></label>
+</div></details>
+<details open><summary>02 · 标题与署名</summary><div class="ig-fields">
+<label>攻略标题<input data-field="title" maxlength="60"></label><label>副标题<input data-field="subtitle" maxlength="100"></label><label>作者 / 编辑<input data-field="author" maxlength="40" placeholder="你的署名"></label><label>游戏版本 / 修订说明<input data-field="version" maxlength="40"></label><label>页脚说明<textarea data-field="disclaimer" rows="2" maxlength="160"></textarea></label>
+</div></details>
+<details open><summary>03 · 内容模块与顺序</summary><p class="ig-hint">勾选需要的模块，使用箭头调整顺序。</p><div id="ig-modules"></div></details>
+<div id="ig-editors"></div>
+<p class="ig-hint">推荐、面板目标和雷达评分由作者填写。草稿自动保存在当前浏览器；登录后可用右下角攻略助手修改本页内容。</p>
+<a class="ig-login" href="/login?next=/guide/characters/{{ record.id }}/infographic">登录使用攻略助手 ↗</a>
+</form>
+<section class="ig-preview" aria-label="一图流实时预览"><div class="ig-preview-heading"><span>LIVE PREVIEW · 所见即所得</span><span id="ig-size"></span></div><canvas id="ig-canvas" aria-label="角色一图流预览">请使用支持 Canvas 的浏览器制作一图流。</canvas><p class="ig-hint">画布随内容自动增高，导出完整图片。图片生成在浏览器内完成。</p></section>
+</div>
+<noscript><p>一图流编辑与导出需要启用 JavaScript。</p></noscript>
+<script id="ig-data" type="application/json">{{ infographic_data|tojson }}</script>
+{% endblock %}

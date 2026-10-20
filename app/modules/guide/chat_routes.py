@@ -52,6 +52,8 @@ def register(blueprint):
             if not isinstance(title, str):
                 raise ValueError('页面标题无效。')
             title = title[:160].replace('\n', ' ')
+            from .infographic import editor_context
+            editor = editor_context(payload.get('infographic'), parsed.path)
         except (ValueError, UnicodeError) as error:
             return jsonify(error={'code': 'invalid_chat', 'message': str(error)[:180]}), 400
         player = g.current_player
@@ -83,7 +85,7 @@ def register(blueprint):
 
         def generate():
             try:
-                for event in chat_service.events(settings, history, player, reader, path, title):
+                for event in chat_service.events(settings, history, player, reader, path, title, **({'editor': editor} if editor else {})):
                     yield json.dumps(event, ensure_ascii=False) + '\n'
             except GeneratorExit:
                 raise

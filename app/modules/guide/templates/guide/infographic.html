@@ -6,11 +6,12 @@
 <link rel="stylesheet" href="{{ url_for('guide_module.static', filename='infographic.css', v=infographic_version) }}">
 <script defer src="{{ url_for('guide_module.static', filename='infographic_state.js', v=infographic_version) }}"></script>
 <script defer src="{{ url_for('guide_module.static', filename='infographic_canvas.js', v=infographic_version) }}"></script>
+<script defer src="{{ url_for('guide_module.static', filename='infographic_board.js', v=infographic_version) }}"></script>
 <script defer src="{{ url_for('guide_module.static', filename='infographic.js', v=infographic_version) }}"></script>
 {% endblock %}
 {% block content %}
 <header class="ig-heading"><div><p class="guide-eyebrow">CHARACTER GUIDE / CREATOR</p><h1>制作角色一图流攻略</h1><p>把配装思路与实战经验，做成一张值得收藏的攻略。</p></div><a href="/guide/characters/{{ record.id }}">{{ record.name }}资料 ↗</a></header>
-<div class="ig-actions"><button type="button" id="ig-export">导出高清 PNG</button><button type="button" id="ig-copy" class="ig-secondary">复制图片</button><button type="button" id="ig-save" class="ig-secondary">保存草稿</button><button type="button" id="ig-export-json" class="ig-secondary">导出配置</button><label class="ig-file">导入配置<input type="file" id="ig-import" accept="application/json,.json"></label><button type="button" id="ig-undo" class="ig-secondary" disabled>撤销修改</button><button type="button" id="ig-reset" class="ig-secondary">重置</button></div>
+<div class="ig-actions"><button type="button" id="ig-export">导出高清 PNG</button><button type="button" id="ig-copy" class="ig-secondary">复制图片</button><button type="button" id="ig-save" class="ig-secondary">保存草稿</button><button type="button" id="ig-export-json" class="ig-secondary">导出配置</button><label class="ig-file">导入配置<input type="file" id="ig-import" accept="application/json,.json"></label><button type="button" id="ig-undo" class="ig-secondary" disabled>撤销修改</button><button type="button" id="ig-auto-layout" class="ig-secondary">恢复自动排版</button><button type="button" id="ig-reset" class="ig-secondary">重置</button></div>
 <p id="ig-status" role="status" aria-live="polite">正在准备画布…</p>
 <div class="ig-workspace">
 <form id="ig-form" class="ig-controls" autocomplete="off">
@@ -30,7 +31,7 @@
 <p class="ig-hint">推荐、面板目标和雷达评分由作者填写。草稿自动保存在当前浏览器；登录后可用右下角攻略助手修改本页内容。</p>
 <a class="ig-login" href="/login?next=/guide/characters/{{ record.id }}/infographic">登录使用攻略助手 ↗</a>
 </form>
-<section class="ig-preview" aria-label="一图流实时预览"><div class="ig-preview-heading"><span>LIVE PREVIEW · 所见即所得</span><span id="ig-size"></span></div><canvas id="ig-canvas" aria-label="角色一图流预览">请使用支持 Canvas 的浏览器制作一图流。</canvas><p class="ig-hint">画布随内容自动增高，导出完整图片。图片生成在浏览器内完成。</p></section>
+<section class="ig-preview" aria-label="一图流实时预览"><div class="ig-preview-heading"><span>LIVE PREVIEW · 所见即所得</span><span id="ig-size"></span></div><div id="ig-stage"><canvas id="ig-canvas" aria-label="角色一图流预览">请使用支持 Canvas 的浏览器制作一图流。</canvas><div id="ig-board-layer" aria-label="画板交互区域"></div><div id="ig-inline-editor" hidden></div></div><p class="ig-hint">双击手填文字可直接编辑，拖动板块顶部手柄可自由移动；选中板块后也可用方向键微调。自动生成的角色、装备名称通过左侧选择。</p></section>
 </div>
 <noscript><p>一图流编辑与导出需要启用 JavaScript。</p></noscript>
 <script id="ig-data" type="application/json">{{ infographic_data|tojson }}</script>

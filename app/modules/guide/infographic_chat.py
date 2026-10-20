@@ -4,7 +4,7 @@ from . import infographic
 from .chat_tools import definition
 
 TOOL = definition('update_infographic',
-    '仅在用户本轮明确要求修改当前一图流时调用。patch为当前config的顶层字段替换；modules须给完整开关表，plans/teams/order/radar须给完整数组。只修改用户要求的内容，不修改角色身份，不导出或发布。',
+    '仅在用户本轮明确要求修改当前一图流时调用。patch为当前config的顶层字段替换；modules须给完整开关表，plans/teams/order/radar/radar_labels须给完整数组。只修改用户要求的内容，不修改角色身份，不导出或发布。',
     {'patch': {'type': 'object', 'description': '只传要替换的顶层字段，类型及可选ID与当前编辑上下文一致。'}}, ['patch'])
 
 
@@ -14,7 +14,8 @@ def prompt(context):
         '字段限制': infographic.TEXT_LIMITS,
         '枚举': {'orientation': ['landscape', 'portrait'], 'layout': ['editorial', 'balanced', 'compact'],
                  'theme': ['night', 'paper', 'teal'], 'portrait': ['fullbody', 'portrait', 'avatar']},
-        'art_scale': '0.7–1.6', 'radar': '依次为爆发/持续/倾陷/生存/辅助/机动，6个0–100整数',
+        'art_scale': '0.7–1.6', 'radar': '6个0–100整数，分别对应radar_labels自定义维度名称',
+        'radar_labels': '6个非空名称，每个最多12字', 'positions': '模块ID映射到{x,y}的画布坐标；空对象恢复自动排版。改orientation/layout时同时清空positions。',
         'plan_limits': '方案名称40字，main/sub各200字，note400字；两个方案',
         'team_limits': '队名40字，note500字，每队4个角色ID或空串；两个队伍',
     }, ensure_ascii=False)

@@ -17,7 +17,7 @@ def options(identifier):
     character = service.playable_character(identifier)
     data = service.catalog()
     characters = [{'id': c['id'], 'name': c['name'], 'element': c['element_name'],
-                   'rarity': c['rarity'], 'assets': c['assets'],
+                   'rarity': c['rarity'], 'assets': c['assets'], 'element_icon': c['element_icon'], 'rarity_icon': c['rarity_icon'],
                    'tags': [t['name'] for t in c['char_tags']]} for c in data['characters']]
     cores = [dict(id=key, **value) for key, value in presentation.equipment_images().items() if value['kind'] == 'core']
     return {'character_id': character['id'], 'characters': characters,
@@ -32,7 +32,7 @@ def validate(config, available):
     """Validate imported/model-authored data against local IDs and bounded fields."""
     if not isinstance(config, dict):
         raise ValueError('一图流配置须为对象。')
-    fields = set(TEXT_LIMITS) | {'orientation', 'layout', 'theme', 'modules', 'order', 'radar', 'plans', 'teams', 'portrait', 'art_scale'}
+    fields = set(TEXT_LIMITS) | {'orientation', 'layout', 'theme', 'modules', 'order', 'radar', 'plans', 'teams', 'portrait', 'art_scale', 'radar_labels', 'positions'}
     if set(config) != fields:
         raise ValueError('一图流配置字段不完整或包含未知字段。')
     for key, limit in TEXT_LIMITS.items():
@@ -50,6 +50,13 @@ def validate(config, available):
         raise ValueError('模块顺序须包含每个模块且不重复。')
     if not isinstance(config['radar'], list) or len(config['radar']) != 6 or any(type(x) is not int or not 0 <= x <= 100 for x in config['radar']):
         raise ValueError('能力评分须为6个0–100整数。')
+    if not isinstance(config['radar_labels'], list) or len(config['radar_labels']) != 6 or any(not isinstance(x, str) or not x.strip() or len(x) > 12 for x in config['radar_labels']):
+        raise ValueError('雷达维度须为6个非空名称，每个最多12字。')
+    if not isinstance(config['positions'], dict) or set(config['positions']) - set(MODULES):
+        raise ValueError('板块位置包含未知模块。')
+    for position in config['positions'].values():
+        if not isinstance(position, dict) or set(position) != {'x', 'y'} or any(type(v) not in (int, float) or not 0 <= v <= 16000 for v in position.values()):
+            raise ValueError('板块坐标须为0–16000的有限数值。')
     arc_ids = {a['id'] for a in available['arcs']} | {''}
     core_ids = {a['id'] for a in available['cores']} | {''}
     char_ids = {a['id'] for a in available['characters']} | {''}
@@ -92,5 +99,5 @@ def register(blueprint):
         record = service.playable_character(identifier)
         data = options(identifier)
         static = Path(__file__).parent / 'static'
-        version = max((static / name).stat().st_mtime_ns for name in ('infographic.js', 'infographic_state.js', 'infographic_canvas.js', 'infographic.css'))
+        version = max((static / name).stat().st_mtime_ns for name in ('infographic.js', 'infographic_state.js', 'infographic_canvas.js', 'infographic_board.js', 'infographic.css'))
         return render_template('guide/infographic.html', record=record, infographic_data=data, infographic_version=version)

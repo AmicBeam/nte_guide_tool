@@ -16,3 +16,27 @@ test('patch cannot inject fields; original snapshot is preserved for undo',()=>{
   assert.throws(()=>S.patch(initial,JSON.parse('{"__proto__":{"polluted":true}}'),data));
   assert.equal({}.polluted,undefined);
 });
+
+test('editable radar labels and board positions survive config roundtrip; legacy drafts migrate',()=>{
+  const c=S.defaults(data);c.radar_labels=['输出','治疗','生存','破韧','增益','操作'];c.positions={stats:{x:400,y:260}};
+  assert.deepEqual(S.unpack(S.pack(c,data),data),c);
+  const old=S.pack(c,data);delete old.config.radar_labels;delete old.config.positions;
+  const restored=S.unpack(old,data);assert.equal(restored.radar_labels.length,6);assert.deepEqual(restored.positions,{});
+  for(const changes of [{radar_labels:['A']},{radar_labels:['','a','b','c','d','e']},{positions:{unknown:{x:1,y:2}}},{positions:{stats:{x:NaN,y:4}}},{positions:{stats:{x:1,y:-1}}}])assert.throws(()=>S.patch(c,changes,data));
+});
+
+test('canvas scene shares moved text bounds and renders custom radar names and identity icons',async()=>{
+  global.window={};global.Image=class {set src(v){this.url=v;this.width=256;this.height=256;queueMicrotask(()=>this.onload());}};
+  require('../app/modules/guide/static/infographic_canvas.js');
+  const text=[],images=[];
+  const ctx={measureText:v=>({width:String(v).length*11}),fillText:v=>text.push(v),drawImage:img=>images.push(img.url)};
+  for(const name of ['beginPath','roundRect','fill','rect','clip','save','restore','moveTo','lineTo','closePath','stroke','fillRect'])ctx[name]=()=>{};
+  const canvas={getContext:()=>ctx};
+  const d={...data,characters:[{id:'1042',name:'黑羽',assets:{fullbody:'portrait',avatar:'avatar'},element_icon:'dark-icon',rarity_icon:'rank-icon',tags:[]}],modules:Object.fromEntries(S.modules.map(k=>[k,k])),radar_labels:['爆发','持续','倾陷','生存','辅助','机动']};
+  const c=S.defaults(d);c.radar_labels[0]='自由维度';c.stats='自填数值';c.positions.stats={x:600,y:900};
+  const result=await window.GuideInfographicCanvas.render(canvas,c,d);
+  const board=result.scene.boards.find(b=>b.key==='stats'),field=result.scene.fields.find(f=>f.path==='stats');
+  assert.equal(board.x,600);assert.equal(board.y,900);assert.equal(field.x,board.x+26);assert.ok(field.y>board.y);
+  assert.ok(text.includes('自由维度'));assert.ok(images.includes('dark-icon'));assert.ok(images.includes('rank-icon'));
+  assert.ok(result.scene.fields.every(f=>!f.path.includes('.arc')&&!f.path.includes('.core')&&!f.path.includes('.members')));
+});

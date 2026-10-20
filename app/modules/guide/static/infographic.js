@@ -41,7 +41,7 @@
       }
     } else if(id==='radar') {
       fields.append(node('p','0表示尚未评分；仅为作者主观评价。'));
-      data.radar_labels.forEach((label,i)=>{const wrapper=input(label,`radar.${i}`,{type:'range'});wrapper.className='ig-score';const slider=wrapper.querySelector('input');slider.min='0';slider.max='100';slider.step='1';wrapper.append(node('output','0'));fields.append(wrapper);});
+      data.radar_labels.forEach((label,i)=>{fields.append(input(`维度 ${i+1} 名称`,`radar_labels.${i}`,{limit:12}));const wrapper=input(label,`radar.${i}`,{type:'range'});wrapper.className='ig-score';const slider=wrapper.querySelector('input');slider.min='0';slider.max='100';slider.step='1';wrapper.append(node('output','0'));fields.append(wrapper);});
     } else {
       const labels={stats:'目标面板与适用条件（每行一项）',skills:'技能优先级 / 关键觉醒与共鸣',rotation:'起手、输出循环与操作要点',advice:'适用场景、养成与抽取建议'};
       fields.append(input(labels[id],id,{type:'textarea',limit:Store.limits[id],rows:6}));
@@ -52,6 +52,7 @@
       const value=pathValue(e.dataset.field);if(e.type==='checkbox')e.checked=value;else e.value=value;
       if(e.type==='range'&&e.parentElement.querySelector('output'))e.parentElement.querySelector('output').textContent=value;
     }
+    config.radar_labels.forEach((label,i)=>{document.querySelector(`[data-field="radar.${i}"]`).parentElement.firstChild.textContent=label;});
     for(const e of $('ig-editors').children)e.hidden=!config.modules[e.dataset.module];
     moduleList();$('ig-undo').disabled=!history.length;
   }
@@ -64,7 +65,7 @@
     ready=window.GuideInfographicCanvas.render(buffer,snapshot,data).then(result=>{
       if(number!==renderNumber)return;
       const canvas=$('ig-canvas');canvas.width=result.width;canvas.height=result.height;canvas.getContext('2d').drawImage(buffer,0,0);
-      $('ig-size').textContent=`${result.width} × ${result.height}`;
+      $('ig-size').textContent=`${result.width} × ${result.height}`;board.setScene(result);
       if(result.failed)status('部分图片未加载成功，导出前请重试或移除对应图片。');
       return result;
     }).catch(error=>{if(number===renderNumber)status(error.message);throw error;});
@@ -77,10 +78,13 @@
   $('ig-form').onsubmit=event=>event.preventDefault();
   $('ig-form').addEventListener('input',event=>{
     const e=event.target;if(!e.dataset.field)return;
-    try {const next=Store.clone(config);writePath(next,e.dataset.field,e.type==='checkbox'?e.checked:e.type==='range'?Number(e.value):e.value);commit(next);
+    try {const next=Store.clone(config);if(['orientation','layout'].includes(e.dataset.field))next.positions={};writePath(next,e.dataset.field,e.type==='checkbox'?e.checked:e.type==='range'?Number(e.value):e.value);commit(next);
       if(e.type==='checkbox')sync();if(e.type==='range'&&e.parentElement.querySelector('output'))e.parentElement.querySelector('output').textContent=e.value;
     }catch(error){status(error.message);}
   });
+  const board=window.GuideInfographicBoard.create({getConfig:()=>config,data,status,
+    change(next){commit(next);sync();},writeField(path,value){const next=Store.clone(config);writePath(next,path,value);commit(next);sync();}});
+  $('ig-auto-layout').onclick=()=>{const next=Store.clone(config);next.positions={};board.close();commit(next);sync();status('已恢复自动排版。');};
   $('ig-save').onclick=()=>save(true);
   $('ig-undo').onclick=()=>{if(!history.length)return;config=history.pop();revision++;sync();redraw();save();status('已撤销上一次修改。');};
   $('ig-reset').onclick=()=>{if(confirm('将当前一图流恢复为初始模板？可使用撤销恢复。')){commit(Store.defaults(data));sync();status('已恢复初始模板。');}};

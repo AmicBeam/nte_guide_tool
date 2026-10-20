@@ -35,6 +35,8 @@ class InfographicTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('ig-canvas', response.text)
         self.assertIn('infographic_state.js', response.text)
+        self.assertIn('infographic_board.js', response.text)
+        self.assertTrue(all(c['element_icon'] and c['rarity_icon'] for c in self.options['characters']))
         self.assertNotIn('ig-data', self.client.get('/guide/characters/1042').text)
         self.assertEqual(self.client.get('/guide/characters/1090/infographic').status_code, 404)
         self.assertEqual(self.client.get('/guide/characters/missing/infographic').status_code, 404)
@@ -46,7 +48,7 @@ class InfographicTest(unittest.TestCase):
         self.assertEqual(infographic.validate(self.config, self.options), self.config)
         for change in [{'title': 'x'*61}, {'order': ['stats']*7}, {'order': [{}]*7},
                        {'radar': [True]*6}, {'radar': [101]*6}, {'art_scale': float('nan')},
-                       {'theme': []}, {'modules': {}}, {'plans': [None,None]}, {'extra': 'x'}]:
+                       {'theme': []}, {'radar_labels': ['a']}, {'radar_labels': ['']*6}, {'positions': {'stats': {'x': float('nan'), 'y': 4}}}, {'positions': {'other': {'x': 1, 'y': 2}}}, {'modules': {}}, {'plans': [None,None]}, {'extra': 'x'}]:
             with self.subTest(change=change), self.assertRaises(ValueError):
                 infographic.validate({**self.config, **change}, self.options)
         for name, field, value in [('plans', 'arc', 'other-game'), ('plans', 'arc', []), ('teams', 'members', ['missing']*4)]:

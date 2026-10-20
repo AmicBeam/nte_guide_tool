@@ -413,6 +413,8 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 
 验证：`.venv/bin/python -m unittest tests.test_guide_foods tests.test_guide_affinity tests.test_guide tests.test_module_routes tests.test_guide_account tests.test_guide_bot_tools tests.test_guide_chat -q`；浏览器检查料理分组／搜索／详情和窄屏、等级奖励、不同角色满好感属性、购买渠道tooltip的悬停／键盘／点按及原推荐单价。
 
-## Wiki 顶部标题与游戏版本
+## 攻略数据库顶部标题与游戏版本
 
-所有攻略模块页面共用顶部居中标题与游戏数据版本，独立于左侧工具站／返回入口和右侧首页／账号按钮。`data/site_metadata.json` 维护运行时展示的站点标题、`game_version`；游戏版本显示在标题下方，不展示逻辑版本或相关悬停提示。版本不是接口 `schema_version`，不按当前日期或角色名单推断；更新采用的数据版本时同步维护游戏版本字段。网页请求不联网查询版本。手机端压缩左侧品牌文字与按钮间距，保留中间标题及版本，320px起不遮挡两侧导航。验证：`.venv/bin/python -m unittest tests.test_guide_header tests.test_guide -q`；浏览器核对320、390和桌面宽度下的居中、间距及横向溢出。
+站点定位为攻略数据库，按角色养成、配装、战斗机制与关卡攻略需要收录相关数据，不以收录全部游戏资料为目标。所有攻略模块页面页脚共用这一范围说明，页面描述使用相同定位。
+
+所有攻略模块页面共用顶部居中标题“攻略数据库”与游戏数据版本，独立于左侧工具站／返回入口和右侧首页／账号按钮。`data/site_metadata.json` 维护运行时展示的站点标题、`game_version`；游戏版本显示在标题下方，不展示逻辑版本或相关悬停提示。版本不是接口 `schema_version`，不按当前日期或角色名单推断；更新采用的数据版本时同步维护游戏版本字段。网页请求不联网查询版本。手机端压缩左侧品牌文字与按钮间距，保留中间标题及版本，320px起不遮挡两侧导航。验证：`.venv/bin/python -m unittest tests.test_guide_header tests.test_guide -q`；浏览器核对320、390和桌面宽度下的居中、间距及横向溢出。

@@ -2,8 +2,8 @@
 {% if key == 'notes' %}{% for note in value %}<p class="guide-text">{{ note }}</p>{% endfor %}
 {% elif key == 'entries' %}
 {% for furniture in value %}<article class="guide-permanent-furniture" id="furniture-{{ furniture.id }}">
-<h3>{{ furniture.name }}{% if furniture.max_level_name != furniture.name %}<small>满级：{{ furniture.max_level_name }}</small>{% endif %}</h3>
-<p>{{ furniture.description }}</p><p class="guide-muted">解锁：{{ furniture.unlock|join('；') }}</p>
+<header class="guide-furniture-heading"><img class="guide-furniture-image" src="{{ furniture.image }}" alt="{{ furniture.name }}" width="128" height="128" loading="lazy" decoding="async"><div><h3>{{ furniture.name }}{% if furniture.max_level_name != furniture.name %}<small>满级：{{ furniture.max_level_name }}</small>{% endif %}</h3>
+<p>{{ furniture.description }}</p><p class="guide-muted">解锁：{{ furniture.unlock|join('；') }}</p></div></header>
 <div class="guide-permanent-summary"><strong>Lv.{{ furniture.max_level }} 满级加成</strong>{{ bonus_list(furniture.levels[-1].bonuses) }}</div>
 <details class="guide-notes"><summary>查看1–{{ furniture.max_level }}级加成与升级要求</summary>
 <div class="guide-table-scroll" tabindex="0" role="region" aria-label="{{ furniture.name }}逐级加成与升级要求"><table class="guide-data-table"><thead><tr><th scope="col">当前等级</th><th scope="col">当前加成</th><th scope="col">升至下一级要求</th></tr></thead><tbody>

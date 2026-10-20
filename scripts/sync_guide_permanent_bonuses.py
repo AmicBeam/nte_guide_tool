@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 from sync_guide_affinity import text
+from sync_guide_arc_images import download
 
 ROOT = Path(__file__).resolve().parents[1]
 TABLES = {
@@ -81,6 +82,7 @@ def build_records(tables):
                     raise ValueError('Missing upgrade requirement')
             output.append({'level': level['Level'], 'bonuses': effects, 'next_level': level['Level'] + 1 if index < len(levels) - 1 else None, 'upgrade_costs': costs})
         furniture.append({'id': identifier, 'name': text(row['Title']), 'max_level_name': text(row['Title2']),
+            'image': f'/static/guide/furniture/{identifier}.webp',
             'unlock': unlock, 'description': text(row['PostActivateDescription']),
             'max_level': levels[-1]['Level'], 'levels': output})
     training = []
@@ -127,6 +129,23 @@ def main():
     with ThreadPoolExecutor(max_workers=5) as executor:
         tables = dict(executor.map(load, TABLES.items()))
     records = build_records(tables)
+    output = ROOT / 'app/modules/guide/static/furniture'
+    output.mkdir(parents=True, exist_ok=True)
+    def icon(identifier):
+        asset = tables['furniture'][identifier]['PreviewImage']['AssetPathName'].split('.')[0]
+        if not asset.startswith('/Game/UI/'):
+            raise ValueError('Invalid furniture image binding')
+        data = download('https://api.everness.info/data/assets/' + asset.removeprefix('/Game/UI/') + '.webp')
+        if data[:4] != b'RIFF' or data[8:12] != b'WEBP':
+            raise ValueError('Invalid furniture WebP')
+        return identifier, data
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        icons = list(executor.map(icon, FURNITURE_IDS))
+    for identifier, data in icons:
+        target = output / f'{identifier}.webp'
+        temporary = target.with_suffix('.tmp')
+        temporary.write_bytes(data)
+        temporary.replace(target)
     path = ROOT / 'app/modules/guide/data/permanent_bonuses.json'
     temporary = path.with_suffix('.tmp')
     temporary.write_text(json.dumps(records, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')

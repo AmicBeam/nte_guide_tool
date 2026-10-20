@@ -9,3 +9,11 @@
 .guide-training-table { min-width: 740px; }
 .guide-training-table td:last-child { min-width: 290px; }
 .guide-permanent-furniture .guide-data-table { min-width: 540px; }
+
+.guide-furniture-heading { display: flex; align-items: center; gap: 20px; }
+.guide-furniture-heading > div { min-width: 0; }
+.guide-furniture-image { flex: 0 0 auto; width: 128px; height: 128px; object-fit: contain; }
+@media (max-width: 600px) {
+  .guide-furniture-heading { align-items: flex-start; gap: 12px; }
+  .guide-furniture-image { width: 88px; height: 88px; }
+}

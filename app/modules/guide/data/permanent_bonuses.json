@@ -13,6 +13,7 @@
         "id": "SF_0011",
         "name": "无名刃",
         "max_level_name": "「无名」",
+        "image": "/static/guide/furniture/SF_0011.webp",
         "unlock": [
           "获得「异土的恻隐」×1后激活"
         ],
@@ -200,6 +201,7 @@
         "id": "SF_0012",
         "name": "休憩的拳王",
         "max_level_name": "待战的拳王",
+        "image": "/static/guide/furniture/SF_0012.webp",
         "unlock": [
           "获得「拳王的战意」×1后激活"
         ],
@@ -387,6 +389,7 @@
         "id": "SF_0013",
         "name": "空铠甲",
         "max_level_name": "空铠甲",
+        "image": "/static/guide/furniture/SF_0013.webp",
         "unlock": [
           "获得「失落的甲胄」×1后激活"
         ],
@@ -574,6 +577,7 @@
         "id": "SF_0015",
         "name": "旧滑板",
         "max_level_name": "波普艺术",
+        "image": "/static/guide/furniture/SF_0015.webp",
         "unlock": [
           "获得「波普的滑板」×1后激活"
         ],
@@ -761,6 +765,7 @@
         "id": "SF_0016",
         "name": "纸飞机",
         "max_level_name": "纸飞机",
+        "image": "/static/guide/furniture/SF_0016.webp",
         "unlock": [
           "拍摄1张「纸飞机」的照片"
         ],
@@ -948,6 +953,7 @@
         "id": "SF_0017",
         "name": "双鱼旗",
         "max_level_name": "双鱼旗",
+        "image": "/static/guide/furniture/SF_0017.webp",
         "unlock": [
           "拍摄1张「鲤鱼旗」的照片"
         ],
@@ -1135,6 +1141,7 @@
         "id": "SF_0009",
         "name": "织梦结",
         "max_level_name": "织梦网",
+        "image": "/static/guide/furniture/SF_0009.webp",
         "unlock": [
           "放置任意1张床(1)"
         ],

@@ -151,7 +151,9 @@ def versions(folder):
 
 def jobs_for(models, decks, base, deadline, *, pure=True, cycle=0, mirrors=True, report=None,
              simulations=32, historical=None,teacher_mode='network',covered_value_source=None,
-             keys=None):
+             keys=None,q_scale='natural_wdl'):
+    if type(q_scale) is not str or q_scale not in ('natural_wdl','mctx_default'):
+        raise ValueError('Known seven-team Q profile required')
     from .build_acceptance import canonical_build
     decks={key:canonical_build(build) for key,build in decks.items()}
     selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
@@ -167,7 +169,7 @@ def jobs_for(models, decks, base, deadline, *, pure=True, cycle=0, mirrors=True,
                  policies={'a': (str(models), item['left']), 'b': (str(models), item['right'])},
                  decks={'a': decks[item['left']], 'b': decks[item['right']]},
                  deadline=deadline, training=not pure, train_sides=sides,
-                 q_scale='natural_wdl', value_precheck=report, simulations=simulations,teacher_mode=teacher_mode,
+                 q_scale=q_scale, value_precheck=report, simulations=simulations,teacher_mode=teacher_mode,
                  covered_value_source=covered_value_source,
                  gumbel_candidates=16, terminal_horizon=0 if teacher_mode in ('covered_terminal','covered_expert') else 3, max_actions=800)
         if historical:
@@ -202,14 +204,14 @@ def learning_collection_jobs(models, decks, config, cycle, deadline, *, historic
         replicas=replicas, pure=False, cycle=cycle, report=report,
         simulations=config['simulations'], historical=historical,
         teacher_mode=config.get('teacher_mode', 'network'),
-        covered_value_source=config.get('covered_value_source'))
+        covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl'))
     if config.get('preflight'):
         for replica in range(1, config.get('preflight_replicas', 1)):
             jobs += jobs_for(
                 models, decks, config['seeds']['foundation'] + cycle * 10000 + replica * 100,
                 deadline, pure=False, cycle=replica + 1000, report=report,
                 simulations=config['simulations'], teacher_mode=config.get('teacher_mode', 'network'),
-                covered_value_source=config.get('covered_value_source'))
+                covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl'))
         # Extra collection groups must not enter the existing independent
         # capacity seed block when callers supply their own reservation.
         held_base=config['seeds']['probes']+10000
@@ -226,13 +228,13 @@ def capacity_heldout_jobs(models, decks, config, deadline, report=None):
         models, decks, config['seeds']['probes'] + 10000, deadline,
         pure=False, cycle=100, report=report, simulations=config['simulations'],
         teacher_mode=config.get('teacher_mode', 'network'),
-        covered_value_source=config.get('covered_value_source'))
+        covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl'))
     for replica in range(1, config.get('preflight_replicas', 1)):
         jobs += jobs_for(
             models, decks, config['seeds']['probes'] + 10000 + replica * 100,
             deadline, pure=False, cycle=replica + 2000, report=report,
             simulations=config['simulations'], teacher_mode=config.get('teacher_mode', 'network'),
-            covered_value_source=config.get('covered_value_source'))
+            covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl'))
     for job in jobs:
         job.update(training=False, exploration=True, data_partition='capacity_heldout')
     return jobs
@@ -741,11 +743,11 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
     train_jobs = []
     for replica in range(config['value_replicas']):
         train_jobs += jobs_for(models, decks, config['seeds']['adaptation']+cycle*10000+replica*100+seed_offset,
-                              deadline, cycle=replica)
+                              deadline, cycle=replica,q_scale=config.get('q_scale','natural_wdl'))
     games = collect(pool, train_jobs, folder / 'train')
     def check_jobs(source, base):
         return [j for replica in range(protocol['check_replicas'])
-                for j in jobs_for(source, decks, base+replica*100, deadline, cycle=replica)]
+                for j in jobs_for(source, decks, base+replica*100, deadline, cycle=replica,q_scale=config.get('q_scale','natural_wdl'))]
     # Argmax trajectories depend only on unchanged policy arrays. Collect once;
     # neither the epoch grid nor temperature grid can change these opponents.
     selection = collect(pool, check_jobs(models,
@@ -896,8 +898,10 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
 
 
 def compare_jobs(candidate, reference, decks, seed, deadline, roots, *, search=False, reports=None,
-                 simulations=32,teacher_mode='network',covered_value_source=None,keys=None):
+                 simulations=32,teacher_mode='network',covered_value_source=None,keys=None,q_scale='natural_wdl'):
     """Compare both versions against identical frozen opponents in both seats/initiatives."""
+    if type(q_scale) is not str or q_scale not in ('natural_wdl','mctx_default'):
+        raise ValueError('Known seven-team Q profile required')
     jobs = []
     selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
     for k, key in enumerate(ROSTER):
@@ -916,7 +920,7 @@ def compare_jobs(candidate, reference, decks, seed, deadline, roots, *, search=F
                             policies={learner:(str(folder),key), enemy:(str(reference),foe)},
                             references={learner:(str(reference),key)}, train_sides=['a','b'],
                             decks={learner:decks[key],enemy:decks[foe]}, deadline=deadline,
-                            value_precheck=reports, q_scale='natural_wdl', simulations=simulations,teacher_mode=teacher_mode,
+                            value_precheck=reports, q_scale=q_scale, simulations=simulations,teacher_mode=teacher_mode,
                             covered_value_source=covered_value_source))
     for job in jobs:job['terminal_horizon']=0 if teacher_mode in ('covered_terminal','covered_expert') else 3
     return jobs
@@ -1130,6 +1134,8 @@ def immutable_receipt_files(out):
 def validate_launch(config, *, resume=False, completed_batches=0):
     """Formal launches require actual current-source CUDA preflight, not flags."""
     from .seven_lineup import identity
+    if type(config.get('q_scale','natural_wdl')) is not str or config.get('q_scale','natural_wdl') not in ('natural_wdl','mctx_default'):
+        raise ValueError('Known seven-team Q profile required')
     if config.get('runtime') != 'seven' or config.get('rule_hash') != identity():
         raise ValueError('Recovery rule/runtime mismatch')
     if set(learning_keys(config)) != set(ROSTER):
@@ -1185,7 +1191,7 @@ def validate_launch(config, *, resume=False, completed_batches=0):
             or receipt.get('algorithm_sha256') != fingerprint() or receipt.get('rule_hash') != identity()
             or receipt.get('simulations') != 32 or receipt.get('gumbel_candidates') != 16
             or receipt.get('terminal_horizon') != config['terminal_horizon']
-            or receipt.get('q_scale') != 'natural_wdl' or receipt.get('workers') != config['workers']
+            or receipt.get('q_scale') != config.get('q_scale','natural_wdl') or receipt.get('workers') != config['workers']
             or receipt.get('teacher_mode','network') != config.get('teacher_mode','network')
             or receipt.get('covered_value_sha')!=scope_sha
             or not 0 <= time.time()-receipt.get('measured_at',0) < 86400
@@ -1307,7 +1313,7 @@ def evaluate_frozen(pool, out, selected, initial, decks, report, config):
                 policies={'a':(str(selected),item['left']),'b':(str(selected),item['right'])},
                 output=str(folder/'evaluation'),replay=item['replica']==0,
                 search_sides=['a','b'] if mode=='search' else [],simulations=config['simulations'],
-                value_precheck=report,q_scale='natural_wdl',gumbel_candidates=16,
+                value_precheck=report,q_scale=config.get('q_scale','natural_wdl'),gumbel_candidates=16,
                 terminal_horizon=0 if config.get('teacher_mode') in ('covered_terminal','covered_expert') else 3,
                 teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')))
         write(folder/'planned-jobs.json',jobs)
@@ -1465,7 +1471,7 @@ def run(out, config, *, resume=False, device_driver=None):
     this execution entry and cannot manufacture a service from config flags.
     """
     from .batched_search.device_execution_contract import require_closed_device_driver
-    driver=require_closed_device_driver(device_driver,purpose='training')
+    driver=require_closed_device_driver(device_driver,purpose='training',q_scale=config.get('q_scale','natural_wdl'))
     driver.validate_frozen_inputs(config)
     return driver.run_device_batch(config,output=out,resume=resume)
 
@@ -1473,7 +1479,7 @@ def run(out, config, *, resume=False, device_driver=None):
 def run_closed_device_learning(out, config, *, device_driver, resume=False):
     """Reuse the learning core only after the real device service is qualified."""
     from .batched_search.device_learning_context import ClosedDeviceLearningContext
-    context = ClosedDeviceLearningContext(device_driver)
+    context = ClosedDeviceLearningContext(device_driver,q_scale=config.get('q_scale','natural_wdl'))
     context.driver.validate_frozen_inputs(config)
     return _run_learning_core(out, config, resume=resume, device_context=context)
 
@@ -1599,9 +1605,9 @@ def _run_learning_core(out, config, *, resume=False, device_context=None):
             deadline=min(config['train_until'],time.time()+config['gate_seconds'])
             pure_gate_started=time.time()
             pure=comparison(pool,compare_jobs(candidate,best,decks,config['seeds']['selection']+cycle*10000+2000,
-                            deadline,config['gate_roots']),folder/'pure-screen')
+                            deadline,config['gate_roots'],q_scale=config.get('q_scale','natural_wdl')),folder/'pure-screen')
             confirmed=comparison(pool,compare_jobs(candidate,best,decks,config['seeds']['selection']+cycle*10000+3000,
-                            deadline,config['gate_roots']),folder/'pure-confirm')
+                            deadline,config['gate_roots'],q_scale=config.get('q_scale','natural_wdl')),folder/'pure-confirm')
             pure_gate_wall+=time.time()-pure_gate_started
             designated=config['smoke'] or cycle in (config['gates']['mid'],config['gates']['late'])
             decision=gate_decision(pure,confirmed,health,no_gain=no_gain and designated)
@@ -1610,10 +1616,10 @@ def _run_learning_core(out, config, *, resume=False, device_context=None):
                 combined=merged_reports(report,best_report)
                 search_screen=comparison(pool,compare_jobs(candidate,best,decks,
                     config['seeds']['selection']+cycle*10000+4000,deadline,config['search_gate_roots'],search=True,
-                    reports=combined,simulations=32,teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')),folder/'search-screen')
+                    reports=combined,simulations=32,teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl')),folder/'search-screen')
                 search_confirm=comparison(pool,compare_jobs(candidate,best,decks,
                     config['seeds']['selection']+cycle*10000+5000,deadline,config['search_gate_roots'],search=True,
-                    reports=combined,simulations=32,teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')),folder/'search-confirm')
+                    reports=combined,simulations=32,teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl')),folder/'search-confirm')
                 decision=gate_decision(pure,confirmed,health,no_gain=no_gain and designated,search=search_screen,search_confirm=search_confirm)
             proposal=dict(decision)
             if proposal['decision']=='promote':proposal['decision']='pending_mixed_validation'
@@ -1634,7 +1640,7 @@ def _run_learning_core(out, config, *, resume=False, device_context=None):
                         selected_checks.append(comparison(pool,compare_jobs(selected,best,decks,
                             config['seeds']['selection']+cycle*10000+offset,config['train_until'],
                             config['search_gate_roots'],search=True,reports=selected_reports,
-                            simulations=config['simulations'],teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')),
+                            simulations=config['simulations'],teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl')),
                             folder/('selected-search-'+label)))
                     safe=all(check[k]['candidate']>=check[k]['reference'] for check in selected_checks for k in ROSTER)
                     if safe:best=selected;best_report=selected_report;no_gain=False
@@ -1664,7 +1670,7 @@ def _run_learning_core(out, config, *, resume=False, device_context=None):
             ready=stop_reason=='planned_batches' and config['device']=='cuda' and config['simulations']==32 and config['gumbel_candidates']==16 and config.get('teacher_mode','network')!='network' and bool(health) and all(h['finite'] and h['gradient'] and h['coverage']==1 for h in health.values())
             receipt=dict(schema='seven_recovery_readiness_v1',device=config['device'],ready=ready,
                 rule_hash=config['rule_hash'],algorithm_sha256=fingerprint(),simulations=config['simulations'],
-                gumbel_candidates=config['gumbel_candidates'],terminal_horizon=config['terminal_horizon'],q_scale='natural_wdl',
+                gumbel_candidates=config['gumbel_candidates'],terminal_horizon=config['terminal_horizon'],q_scale=config.get('q_scale','natural_wdl'),
                 teacher_mode=config.get('teacher_mode','network'),
                 covered_value_sha=sha256((Path(config['covered_value_source'])/'scope.json').read_bytes()).hexdigest() if config.get('covered_value_source') else None,
                 selected_value_seconds=value_wall,

@@ -7,9 +7,9 @@ Numerical updates, selection and checkpoint semantics remain in seven_round.
 
 
 class ClosedDeviceLearningContext:
-    def __init__(self, driver):
+    def __init__(self, driver, *, q_scale=None):
         from .device_execution_contract import require_closed_device_driver
-        self.driver = require_closed_device_driver(driver, purpose='training')
+        self.driver = require_closed_device_driver(driver, purpose='training', q_scale=q_scale)
         for name in ('collect', 'evaluate_jobs'):
             if not callable(getattr(self.driver, name, None)):
                 raise ValueError('Closed device learning requires ' + name)
@@ -46,10 +46,22 @@ class ClosedDeviceLearningContext:
         return results
 
     def collect(self, jobs):
+        self._check_q_profiles(jobs)
         return self._checked_results(jobs, self.driver.collect(jobs))
 
     def evaluate_jobs(self, jobs):
+        self._check_q_profiles(jobs)
         return self._checked_results(jobs, self.driver.evaluate_jobs(jobs))
+
+    def _check_q_profiles(self, jobs):
+        """Reject a different search contract before the device service runs."""
+        expected = getattr(self.driver, 'q_scale', 'natural_wdl')
+        for job in jobs:
+            if job.get('pure') is True:
+                continue
+            profile = job.get('q_scale', 'natural_wdl')
+            if type(profile) is not str or profile not in ('natural_wdl', 'mctx_default') or profile != expected:
+                raise ValueError('Search job Q profile differs from the frozen device driver')
 
 
 class DeviceValueCalibrationContext:

@@ -20,7 +20,7 @@ class DeviceExecutionNotReady(RuntimeError):
     """The requested formal method has no qualified closed device executor."""
 
 
-def require_closed_device_driver(driver, *, purpose):
+def require_closed_device_driver(driver, *, purpose, q_scale=None):
     """Reject legacy dispatch before side effects; never grant CUDA approval.
 
     This is capability/receipt validation, not proof that execution succeeded.
@@ -29,18 +29,24 @@ def require_closed_device_driver(driver, *, purpose):
     """
     if purpose not in ('training', 'winrate_evaluation'):
         raise ValueError('Explicit formal training or winrate-evaluation purpose required')
+    if q_scale is not None and (type(q_scale) is not str or q_scale not in ('natural_wdl', 'mctx_default')):
+        raise ValueError('Known explicit device-search Q profile required')
     reasons = []
     if driver is None or isinstance(driver, dict):
         reasons.append('missing_real_device_driver')
     else:
         requirements = dict(execution_kind='closed_device_gumbel', runtime='seven',
-                            algorithm='gumbel', q_scale='natural_wdl',
+                            algorithm='gumbel',
                             device_control='cuda_conditional_graph', allow_synthetic=False,
                             host_root_dispatch=False, cpu_rule_callbacks=False)
         for key, value in requirements.items():
             actual = getattr(driver, key, None)
             if (actual is not value if type(value) is bool else actual != value):
                 reasons.append('driver:' + key)
+        actual_q = getattr(driver, 'q_scale', None)
+        if (type(actual_q) is not str or actual_q not in ('natural_wdl', 'mctx_default')
+                or (q_scale is not None and actual_q != q_scale)):
+            reasons.append('driver:q_scale')
         for name in ('run_device_batch', 'validate_frozen_inputs'):
             if not callable(getattr(driver, name, None)):
                 reasons.append('driver:' + name)
@@ -58,7 +64,8 @@ def require_closed_device_driver(driver, *, purpose):
                 or receipt.get('independent_review_passed') is not True
                 or not isinstance(source, str) or len(source) != 64
                 or any(char not in '0123456789abcdef' for char in source)
-                or receipt.get('source_manifest_sha256') != source):
+                or receipt.get('source_manifest_sha256') != source
+                or receipt.get('q_scale', 'natural_wdl') != actual_q):
             reasons.append('missing_same_source_device_preflight')
     if reasons:
         raise DeviceExecutionNotReady(
@@ -80,8 +87,8 @@ class DeviceSearchContract:
         for value in (self.concurrent_roots, self.simulations, self.gumbel_candidates):
             if type(value) is not int or value < 1:
                 raise ValueError('Positive integer device-search limits required')
-        if self.runtime != 'seven' or self.q_scale != 'natural_wdl':
-            raise ValueError('Current seven-team natural-WDL contract required')
+        if self.runtime != 'seven' or type(self.q_scale) is not str or self.q_scale not in ('natural_wdl', 'mctx_default'):
+            raise ValueError('Current seven-team known Q-profile contract required')
 
 
 def _identities(value):

@@ -11,6 +11,19 @@ from app.modules.card_game.rl import seven_round
 
 
 class ClosedDeviceLearningContextTest(unittest.TestCase):
+    def test_q_profile_mismatch_rejects_before_any_device_dispatch(self):
+        driver = SimpleNamespace(q_scale='mctx_default', collect=Mock(), evaluate_jobs=Mock())
+        context = self.fixture(driver)
+        for method in (context.collect, context.evaluate_jobs):
+            for profile in ('natural_wdl', 'unknown', None):
+                with self.assertRaisesRegex(ValueError, 'Q profile'):
+                    method([dict(id='job', q_scale=profile)])
+        driver.collect.assert_not_called()
+        driver.evaluate_jobs.assert_not_called()
+        job = dict(id='job', q_scale='mctx_default')
+        driver.collect.return_value = [dict(job)]
+        self.assertEqual(context.collect([job]), [job])
+
     def fixture(self, driver):
         with patch('app.modules.card_game.rl.batched_search.device_execution_contract.require_closed_device_driver',
                    return_value=driver):

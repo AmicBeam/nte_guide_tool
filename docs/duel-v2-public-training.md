@@ -6,6 +6,8 @@
 
 接入点为 `recovery_search`、协作遍历、批量节点池、`DeviceStatisticsPool`、`DeviceGumbelSearch` 和显式 SoA covered 工厂。设备搜索的 `q_scale` 必须与统计池相同；协作采集配置与每个 job 的配置也必须一致。正式训练的 closed-device、同源 CUDA、校准、完整终局与恢复门槛继续保留，新增配置不能借旧 `natural_wdl` 回执取得资格。
 
+正式入口与任务生成器显式支持两套 Q 配置，省略仍为 `natural_wdl`。`seven_round` 将配置传到学习、选择、容量检查及冻结矩阵，并按实际配置生成和核验 readiness；设备学习上下文在派发前拒绝不同配置的搜索任务。`require_closed_device_driver` 同时核服务、请求及同源预检回执的配置；旧回执缺少字段时只代表历史 `natural_wdl`，不能批准 `mctx_default`。冻结评估 CLI 可用 `--q-scale mctx_default` 声明请求，但仍需真实合格设备服务，不会从参数制造执行器或放行 CPU 回退。
+
 准备命令默认仅输出计划，不加载 Torch/CUDA，不分配评估种子、不连接远端、不训练：
 
 ```bash

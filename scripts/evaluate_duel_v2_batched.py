@@ -43,6 +43,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="cpu",
         help="Inference device: 'cpu' or 'cuda'.",
     )
+    parser.add_argument('--q-scale', choices=('natural_wdl', 'mctx_default'), default='natural_wdl',
+                        help='Frozen Q profile; requires matching same-profile device preflight evidence.')
     parser.add_argument(
         "--workers",
         type=int,
@@ -221,6 +223,7 @@ def main(argv: list[str] | None = None, *, device_driver=None) -> int:
             "action": "config_check_only",
             "run": False,
             "device": args.device,
+            "q_scale": args.q_scale,
 
             "rule_backend": args.rule_backend,
             "runtime": args.runtime,
@@ -264,7 +267,7 @@ def main(argv: list[str] | None = None, *, device_driver=None) -> int:
         DeviceExecutionNotReady, require_closed_device_driver,
     )
     try:
-        driver = require_closed_device_driver(device_driver, purpose='winrate_evaluation')
+        driver = require_closed_device_driver(device_driver, purpose='winrate_evaluation', q_scale=args.q_scale)
     except DeviceExecutionNotReady as exc:
         print(json.dumps(dict(action='refused_formal_device_execution', reason=str(exc),
                               outputs_created=False, weights_loaded=False,

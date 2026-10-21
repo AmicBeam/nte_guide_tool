@@ -39,6 +39,22 @@ def jobs(**kwargs):
 
 
 class SoATrainingJobsTests(unittest.TestCase):
+    def test_real_generators_preserve_mctx_for_learning_and_selection(self):
+        from app.modules.card_game.rl.seven_round import compare_jobs, learning_collection_jobs, capacity_heldout_jobs
+        from app.modules.card_game.rl.training_config import COLLECTION_REPLICA_SEED_STRIDE
+        generated = jobs(q_scale='mctx_default')
+        self.assertTrue(generated and all(j['q_scale']=='mctx_default' for j in generated))
+        compared = compare_jobs(FOLDER, HISTORICAL, DECKS, 10_000_000_000, 2_000_000_000, 1,
+                                search=True, q_scale='mctx_default')
+        self.assertTrue(compared and all(j['q_scale']=='mctx_default' for j in compared))
+        config = dict(q_scale='mctx_default', simulations=32, collection_replicas=1,
+                      preflight=True, preflight_replicas=2, seeds=dict(foundation=10_000_000_000,probes=11_000_000_000))
+        for batch in (learning_collection_jobs(FOLDER, DECKS, config, 1, 2_000_000_000),
+                      capacity_heldout_jobs(FOLDER, DECKS, config, 2_000_000_000)):
+            self.assertTrue(batch and all(j['q_scale']=='mctx_default' for j in batch))
+        with self.assertRaisesRegex(ValueError,'Q profile'):
+            jobs(q_scale='unknown')
+
     def test_q_profiles_bind_explicitly_and_cannot_share_a_batch(self):
         source = jobs(teacher_mode='covered_value', covered_value_source='/tmp/covered')[:2]
         for profile in ('natural_wdl', 'mctx_default'):

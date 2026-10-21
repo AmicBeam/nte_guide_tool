@@ -12,6 +12,29 @@ from app.modules.card_game.rl.batched_search.device_execution_contract import (
 
 
 class DeviceExecutionContractTest(unittest.TestCase):
+    def test_mctx_driver_requires_matching_profile_receipt_and_request(self):
+        from types import SimpleNamespace as NS
+        sha = 'a'*64
+        service = NS(execution_kind='closed_device_gumbel', runtime='seven', algorithm='gumbel',
+            q_scale='mctx_default', device_control='cuda_conditional_graph', allow_synthetic=False,
+            host_root_dispatch=False, cpu_rule_callbacks=False, run_device_batch=lambda: None,
+            validate_frozen_inputs=lambda: None,
+            rules=NS(execution_kind='frozen_cuda_rules', supports_device_graph=True, host_rule_callbacks=False),
+            source_manifest_sha256=sha,
+            device_validation_receipt=dict(schema='closed_device_preflight_v1', source_kind='actual_cuda',
+                rule_parity_passed=True, full_search_parity_passed=True, independent_review_passed=True,
+                source_manifest_sha256=sha))
+        with self.assertRaises(DeviceExecutionNotReady):
+            require_closed_device_driver(service, purpose='training')
+        service.device_validation_receipt['q_scale'] = 'mctx_default'
+        self.assertIs(require_closed_device_driver(service, purpose='training', q_scale='mctx_default'), service)
+        with self.assertRaises(DeviceExecutionNotReady):
+            require_closed_device_driver(service, purpose='training', q_scale='natural_wdl')
+        self.report['q_scale'] = 'mctx_default'
+        self.assertIn('identity:q_scale', self.audit()['reasons'])
+        self.assertTrue(audit_device_search(self.report, artifact_root=self.root,
+            contract=DeviceSearchContract(q_scale='mctx_default'))['evidence_consistent'])
+
     def test_formal_gate_rejects_missing_service_configuration_and_legacy_backend(self):
         from types import SimpleNamespace
         for service in (None, dict(rule_backend='cuda_vm', device='cuda', search_roots=1600),

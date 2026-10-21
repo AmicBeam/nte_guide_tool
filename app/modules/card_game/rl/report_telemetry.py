@@ -5,7 +5,7 @@ import re
 
 class GameTelemetry:
     def __init__(self, state):
-        self.original_instances={card['instance_id']:side for side in ('a','b')
+        self.original_entities={card['entity_id']:side for side in ('a','b')
             for zone in ('hand','deck','discard') for card in state['sides'][side].get(zone,[])}
         self.cards={'a':{},'b':{}}
         self.opening={side:{'initial_hand':[c['card_id'] for c in state['sides'][side]['hand']],
@@ -27,7 +27,7 @@ class GameTelemetry:
 
     def origin(self,side,card):
         if card.get('copy'):return 'copy'
-        owner=self.original_instances.get(card.get('instance_id'))
+        owner=self.original_entities.get(card.get('entity_id'))
         if card.get('derived') or owner is None:return 'generated'
         return 'original' if owner==side else 'foreign_original'
 

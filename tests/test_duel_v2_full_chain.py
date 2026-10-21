@@ -84,6 +84,8 @@ class ReportTelemetryTest(unittest.TestCase):
         state=new_game(seed=1,skip_mulligan=False)
         telemetry=GameTelemetry(state);cid=state['sides']['a']['hand'][0]['card_id']
         after=deepcopy(state);card=card_instance(after,cid,'a')
+        # Legacy card labels do not establish entity identity.
+        card['instance_id']=state['sides']['a']['hand'][0]['instance_id']
         self.assertFalse(card.get('copy'))
         self.assertFalse(card.get('derived'))
         after['events'] += [

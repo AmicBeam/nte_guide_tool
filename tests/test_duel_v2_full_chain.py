@@ -43,7 +43,7 @@ class ReportTelemetryTest(unittest.TestCase):
         after=deepcopy(state);seq=state['event_seq']
         after['events'] += [
             {'seq':seq+1,'type':'draw','side':'a','private_card':card,'patch':{'turn':0}},
-            {'seq':seq+2,'type':'play','side':'a','card':card,'patch':{'turn':3}},
+            {'seq':seq+2,'type':'play','side':'a','card':card,'response':True,'patch':{'turn':3}},
             {'seq':seq+3,'type':'harmony','side':'a','actor':'a:nanali','target':'a:zero',
              'before':{'harmony':2},'after':{'harmony':0},'text':'入场，触发创生。','patch':{'turn':3}},
             {'seq':seq+4,'type':'harmony','side':'a','text':'创生后续效果'}]
@@ -56,6 +56,26 @@ class ReportTelemetryTest(unittest.TestCase):
         self.assertEqual(len(t.mechanisms),1)
         self.assertEqual(t.mechanisms[0]['provider'],'a:zero')
         self.assertEqual(t.mechanisms[0]['harmony_type'],'创生')
+
+    def test_release_and_response_capability_do_not_count_as_card_use(self):
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        state=new_game(seed=1,skip_mulligan=False)
+        telemetry=GameTelemetry(state)
+        card=deepcopy(state['sides']['a']['hand'][0]);card['response']='self_attacked'
+        after=deepcopy(state);seq=state['event_seq']
+        after['events'] += [
+            {'seq':seq+1,'type':'play','side':'a','card':card,'release_only':True,'patch':{'turn':3}},
+            {'seq':seq+2,'type':'play','side':'a','card':card,'response':False,'patch':{'turn':4}},
+            {'seq':seq+3,'type':'play','side':'a','card':card,'response':True,'patch':{'turn':5}}]
+        telemetry.after(state,after,{'type':'play_card','card_id':card['instance_id']},'a')
+        bucket=telemetry.cards['a'][card['card_id']]
+        self.assertEqual(bucket['plays'],2)
+        self.assertEqual(bucket['original_plays'],2)
+        self.assertEqual(bucket['response_plays'],1)
+        self.assertEqual(bucket['first_original_play_turn'],4)
+        self.assertEqual(telemetry.finish(after)['releases'],[
+            dict(side='a',card_id=card['card_id'],turn=3,seq=seq+1,actor=None)])
 
     def test_extra_report_keeps_telemetry_private(self):
         from app.modules.card_game.rl.offline_analysis import run_offline_analysis

@@ -10,6 +10,7 @@ class GameTelemetry:
             'opponent_characters':list(state['sides']['b' if side=='a' else 'a']['order']),
             'position':'first' if side==state['first_side'] else 'second','first_turn_actions':[]} for side in ('a','b')}
         self.mechanisms=[]
+        self.releases=[]
         self.opportunities=set()
         self.turns=[]
         self.observed_turns=set()
@@ -84,12 +85,16 @@ class GameTelemetry:
                 self.obtain(owner,card,source,turn)
                 obtained.add((owner,card.get('instance_id')))
             if owner in self.cards and kind=='play' and card.get('card_id'):
+                if event.get('release_only'):
+                    self.releases.append(dict(side=owner,card_id=card['card_id'],turn=turn,
+                                              seq=event['seq'],actor=event.get('actor')))
+                    continue
                 bucket=self.bucket(owner,card['card_id']);bucket['plays']+=1
                 bucket['first_play_turn']=turn if bucket['first_play_turn'] is None else bucket['first_play_turn']
                 bucket['copy_plays' if card.get('copy') else 'derived_plays' if card.get('derived') else 'original_plays']+=1
                 if not card.get('copy') and not card.get('derived') and bucket['first_original_play_turn'] is None:
                     bucket['first_original_play_turn']=turn
-                if card.get('response') and not (action['type']=='play_card' and action.get('card_id')==card.get('instance_id')):
+                if event.get('response'):
                     bucket['response_plays']+=1
             ultimate_start=kind=='ultimate' and 'energy' in event.get('before',{})
             ultimate_end=kind=='ultimate' and not ultimate_start
@@ -119,6 +124,7 @@ class GameTelemetry:
 
     def finish(self,state):
         return {'final_turn':state.get('turn',0),'cards':self.cards,'mechanisms':self.mechanisms,
+                'releases':self.releases,
                 'opportunities':[dict(kind=k,side=s,character_id=c,turn=t) for k,s,c,t in sorted(self.opportunities)],
                 'turn_states':self.turns,'opening':self.opening,'prediction_probability':None,
                 'opportunity_unit':'unique character/global turn with a legal ultimate or ordinary or battle-card attack harmony',

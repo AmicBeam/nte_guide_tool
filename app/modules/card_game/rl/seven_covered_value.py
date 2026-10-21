@@ -15,6 +15,35 @@ def identity():
     return digest.hexdigest()
 
 
+def computation_identity(root=None):
+    """Bind the actual auxiliary target/inference code, separately from world sampling."""
+    import ast
+    root=Path(root) if root is not None else Path(__file__).parent
+    tree=ast.parse((root/'seven_covered_value.py').read_text())
+    functions={node.name:node for node in tree.body if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef))}
+    digest=sha256()
+    for name in ('collect_game','expert_leaf'):
+        digest.update(ast.dump(functions[name],include_attributes=False).encode())
+    for name in ('covered_rollout.py','policies.py','seven_auxiliary_jobs.py','seven_runtime.py',
+                 'outcome_runtime.py','seven_policy.py','seven_lineup.py','seven_grounded.py','information_search.py'):
+        digest.update(name.encode());digest.update((root/name).read_bytes())
+    return digest.hexdigest()
+
+
+def _algorithm_binding_matches(folder,report):
+    if report.get('algorithm_sha256')==identity():return True
+    path=folder/'value-computation-compatibility.json'
+    if not path.is_file():return False
+    receipt=json.loads(path.read_text())
+    expected=dict(schema='covered_value_unchanged_computation_v1',
+        original_report_sha256=sha256((folder/'scope.json').read_bytes()).hexdigest(),
+        original_algorithm_sha256=report.get('algorithm_sha256'),rule_hash=report.get('rule_hash'),
+        models=report.get('models'),value_computation_sha256=computation_identity(),
+        original_value_computation_sha256=computation_identity(),
+        accepted_sampler_sha256=sha256((Path(__file__).parent/'seven_sampler.py').read_bytes()).hexdigest())
+    return all(receipt.get(key)==value for key,value in expected.items())
+
+
 def phase_counts(report):
     if report.get('schema')=='seven_expert_value_v1':
         return dict(training=168,selection=56,heldout=56)
@@ -35,7 +64,7 @@ def load_scope(folder):
     from .seven_lineup import identity as rules
     folder=Path(folder);report=json.loads((folder/'scope.json').read_text())
     if (report.get('schema') not in ('seven_expert_value_v1','seven_expert_value_v2') or report.get('passed') is not True
-            or report.get('rule_hash')!=rules() or report.get('algorithm_sha256')!=identity()
+            or report.get('rule_hash')!=rules() or not _algorithm_binding_matches(folder,report)
             or report.get('objective')!='visible_rule_after_six_exploration_actions'
             or set(report.get('models',{}))!=set(ROSTER)):
         raise ValueError('Covered expert value scope is unqualified')

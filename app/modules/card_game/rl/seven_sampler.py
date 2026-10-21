@@ -23,7 +23,7 @@ def generated_kind(card):
     return None
 
 
-def _allocation(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed, generated_owners=()):
+def _allocation_prior(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed, generated_owners=(), *, recovered_parents=0, deck_generators=False):
     # A03 timing metadata is absent from public_card: do not use its real
     # original/generated flag, even on a revealed/discarded enemy card.
     originals=Counter(c['card_id'] for c in public if c['card_id']!='NF01'
@@ -33,11 +33,13 @@ def _allocation(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed, 
     discarded=Counter(c['card_id'] for c in team['discard']);possibilities=[]
     def needed(known,copies,allocated):
         return hidden_family+sum(n for kind,n in allocated.items() if kind!='PF01')+sum(max(0,n-known[cid]+
-            int(cid=='C02' and discarded['C02']>0)) for cid,n in copies.items())
+            int(cid=='C02' and discarded['C02']>0)) for cid,n in copies.items() if not(deck_generators and cid=='Q05'))
     def feasible(known,copies,allocated,limits,remaining):
         if set(team['characters']) & {'heiyu','lingke'}:return True
-        free=sum(min(limits.get(cid+'_copy',0),max(0,known[cid]-
+        free=sum(limits.get(cid+'_copy',0) if deck_generators and cid=='Q05' else
+                 min(limits.get(cid+'_copy',0),max(0,known[cid]-
                  int(cid=='C02' and discarded['C02']>0)-n)) for cid,n in copies.items())
+        if deck_generators:free+=limits.get('PF01',0)
         return needed(known,copies,allocated)+max(0,remaining-free)<=hand_n
     for temporary in range(min(originals['A03'],discarded['AF01'])+1):
         known=originals.copy();known['A03']-=temporary
@@ -49,10 +51,10 @@ def _allocation(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed, 
             if hero not in team['characters']:continue
             count=sum(n for c,n in known.items() if CARDS[c]['character_id']==hero)
             copies[cid]=max(0,known[cid]-2,count-8);remaining-=copies[cid]
-            cap=surplus if hero=='xiaozhi' else discarded[cid]
+            cap=surplus if hero=='xiaozhi' else discarded[cid]+recovered_parents
             limits[cid+'_copy']=cap-copies[cid]
         if 'anhunqu' in team['characters']:
-            limits['AF01']=discarded['A04']-special['AF01']
+            limits['AF01']=discarded['A04']+recovered_parents-special['AF01']
             limits['A03_ephemeral']=discarded['AF01']-temporary if temporary_allowed else 0
         if 'heiyu' in generated_owners:limits['PF01']=max(0,surplus-special['PF01'])
         if 'dafutier' in generated_owners:limits['FF01']=max(0,surplus-special['FF01'])
@@ -74,6 +76,35 @@ def _allocation(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed, 
         if kind.endswith('_copy'):copies[kind[:-5]]+=1
         else:allocated[kind]+=1
     return known,copies,allocated,temporary
+
+
+def _public_recovery_budget(state,side):
+    from ..engine.duel_v2.escalation import reached
+    if not reached(state,20):return 0
+    first=21 if side==state['first_side'] else 20
+    return max(0,1+(state['turn']-first)//2)
+
+
+def _allocation(team,public,surplus,rng,hand_n,hidden_family,temporary_allowed,
+                generated_owners=(), *, recovery_budget=0, continuation=None):
+    # A conservative extension: every successful prior draw and its RNG state
+    # remain exactly unchanged. Retry only an undefined allocation, using public
+    # recovery opportunities and generators which can put copies into the deck.
+    saved=rng.getstate()
+    try:
+        return _allocation_prior(team,public,surplus,rng,hand_n,hidden_family,
+                                 temporary_allowed,generated_owners)
+    except ValueError as error:
+        if str(error) not in ('No public-consistent generation allocation',
+                              'No hand-consistent generated allocation'):
+            raise
+        if not(recovery_budget or 'xiaozhi' in team['characters'] or 'heiyu' in generated_owners):
+            raise
+        rng.setstate(saved)
+        result=_allocation_prior(team,public,surplus,rng,hand_n,hidden_family,
+            temporary_allowed,generated_owners,recovered_parents=recovery_budget,deck_generators=True)
+        if continuation is not None:continuation['extended']=True
+        return result
 
 
 def _determinize_transition(state,viewer,seed):
@@ -99,8 +130,10 @@ def _determinize_transition(state,viewer,seed):
     if surplus<0:raise ValueError('Negative public generated surplus')
     generated_owners=set(team['characters'])
     if 'anhunqu' in generated_owners:generated_owners.update(out['sides'][viewer]['characters'])
+    allocation_mode={}
     original,copies,allocated,temporary=_allocation(team,public,surplus,rng,hand_n,hidden_family,
-        out['active_side']==foe,generated_owners=generated_owners)
+        out['active_side']==foe,generated_owners=generated_owners,
+        recovery_budget=_public_recovery_budget(out,foe),continuation=allocation_mode)
     a03=[c for c in public if c['card_id']=='A03'];rng.shuffle(a03)
     for i,c in enumerate(a03):
         if i<temporary:c['ephemeral_turn']=out['turn']
@@ -132,6 +165,7 @@ def _determinize_transition(state,viewer,seed):
     mandatory=[] if placement else [c for c in pool if c[0] in ('NF01','AF01','FF01') or c[1]]
     pool=pool if placement else [c for c in pool if c[0] not in ('NF01','AF01','FF01') and not c[1]]
     for cid,n in ({} if placement else copies).items():
+        if allocation_mode.get('extended') and cid=='Q05':continue
         count=max(0,n-original[cid]+int(cid=='C02' and any(c['card_id']=='C02' for c in team['discard'])))
         for _ in range(count):
             match=next(i for i,c in enumerate(pool) if c[0]==cid);mandatory.append(pool.pop(match))

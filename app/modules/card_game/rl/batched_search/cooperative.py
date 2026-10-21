@@ -370,9 +370,22 @@ class CooperativeScheduler:
                 dispatch_metrics=self.dispatch_metrics,async_rule_dispatch=self.async_rule_dispatch,
                 progress_metrics=self.progress_metrics)
         finally:
-            self._abandon_async([query for _,query in pending.values()] if pending else [])
-            for job in owned.values():job.generator.close()
+            import sys
+            original_error=sys.exc_info()[1]
+            cleanup_errors=[]
+            try:
+                self._abandon_async([query for _,query in pending.values()] if pending else [])
+            except Exception as cleanup_error:
+                cleanup_errors.append(cleanup_error)
+            for job in owned.values():
+                try:job.generator.close()
+                except Exception as cleanup_error:cleanup_errors.append(cleanup_error)
             self._running=False
+            if cleanup_errors:
+                if original_error is None:raise cleanup_errors[0]
+                if hasattr(original_error,'add_note'):
+                    for cleanup_error in cleanup_errors:
+                        original_error.add_note('Asynchronous cleanup also failed: '+repr(cleanup_error))
 
     def _resolve(self,queries):
         from .traversal import InferenceQuery,InferenceResponse

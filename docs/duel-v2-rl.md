@@ -193,3 +193,9 @@ GPU源程序需包含训练教师，真实设备规则／教师对拍和CUDA32�
 完整 H3 入口从真实任务的 `q_scale` 绑定配置，显式支持 `natural_wdl` 与 `mctx_default`，同批混用或未知值拒绝。统计池、covered 搜索、独立复核、逐根证明缓存及联合流程的冻结输入使用同一配置；原默认仍为 `natural_wdl`。策略记录按实际配置写入 `policy_source`，不同配置的检查点和证明不能互相恢复。主价值预检、独立辅助 scope、完整预算与真实终局门槛保持不变；入口接通不表示完整 GPU 对局或胜率改善已通过。相关验证为 `tests.test_duel_v2_soa_training_jobs`、`tests.test_duel_v2_soa_training_results`、`tests.test_duel_v2_device_h3_collection`、`tests.test_duel_v2_device_h3_proof_cache` 与联合流程的配置冻结测试。
 
 正式服务闸门、`DeviceSearchContract`、七队任务生成／readiness 和冻结评估 CLI 同样支持显式配置；新配置要求预检回执具名匹配，历史缺字段回执只代表 `natural_wdl`。`ClosedDeviceLearningContext` 在任何设备派发前拒绝搜索任务与服务配置不一致；这不提供实际设备服务或完整对局资格。验证入口包括 `tests.test_duel_v2_device_execution_contract`、`tests.test_duel_v2_device_learning_context` 及七队任务生成测试。
+
+### 信息集生成与辅助价值资格边界
+
+- 公开计数采样仍是近似先验，不是完整动作历史后验。已支持的旧分支及其随机流保持不变；只有旧约束无解时，才按公开的白热化回收次数上界，以及小吱同名常驻牌／谕石可进入牌库的机制补充分配。未知手牌真实身份和时序不用于限制粒子，观察与完整合法动作编码的一致性检查不豁免。
+- 辅助价值目标是六个探索动作后沿公开规则策略生成终局标签，H3叶子沿用同一公开规则续走。世界采样不参与这两个辅助计算函数。旧资格因无关采样依赖变化失配时，仅可通过明确的`value-computation-compatibility.json`收据承接：原报告字节、规则、模型身份、两项计算函数的AST、全部目标／推断依赖，以及特定采样器源码必须匹配；原数据完整性、种子分区和留出数值门槛仍逐项核验。不得重写原报告的算法身份或把兼容复核称为新采样的独立留出。
+- 新采样检查点同时绑定世界采样、辅助资格读取器和驻留进程后端源码。历史未完整绑定的检查点只能在其原冻结执行器和显式兼容证明下读取；不得更改旧合同或payload摘要冒充新执行器产物。域扩展须另冻结并证明旧成功世界／随机流不变、新域信息边界一致，优化器恢复仍要求其原算法身份。

@@ -36,6 +36,11 @@ def collection_contract(jobs, models, value_models, **profile):
     code = {name: hashlib.sha256((code_dir / name).read_bytes()).hexdigest()
             for name in ('training_checkpoint.py', 'training_rollout.py', 'cooperative.py',
                          'traversal.py', 'inference.py', 'evaluator.py')}
+    for name,path in (
+            ('seven_sampler.py',code_dir.parent/'seven_sampler.py'),
+            ('seven_covered_value.py',code_dir.parent/'seven_covered_value.py'),
+            ('process_backend.py',code_dir.parent/'batched_duel/process_backend.py')):
+        code[name]=hashlib.sha256(path.read_bytes()).hexdigest()
     def model_identity(bank):
         return {key: dict(version=str(model.version), weights=_contract_value(getattr(model, 'weights', {})))
                 for key, model in sorted((bank or {}).items())}

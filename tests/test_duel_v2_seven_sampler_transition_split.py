@@ -29,3 +29,44 @@ class TransitionSplitTest(unittest.TestCase):
                 with self.assertRaises(ValueError):function(state,'a',31)
 
 if __name__=='__main__':unittest.main()
+
+class GenerationSupportTest(unittest.TestCase):
+    def game(self,key='murk'):
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        deck=next(d for d in STARTER_DECKS if d['id']==key)
+        return new_game(seed=7,first_side='b',skip_mulligan=True,decks={'a':deck,'b':deck})
+
+    def test_white_heat_recovered_parent_does_not_erase_derived_card(self):
+        from app.modules.card_game.engine.duel_v2.state import card_instance
+        from app.modules.card_game.engine.duel_v2.escalation import begin_escalation
+        state=self.game();team=state['sides']['b']
+        for zone in('hand','deck'):
+            card=next((c for c in team[zone]if c['card_id']=='A04'),None)
+            if card is not None:team[zone].remove(card);break
+        self.assertIsNotNone(card);team['discard']=[card,card_instance(state,'AF01','b')]
+        state.update(turn=21,active_side='b');begin_escalation(state,'b')
+        self.assertFalse(any(c['card_id']=='A04'for c in team['discard']))
+        state.update(turn=22,active_side='a');original=deepcopy(state)
+        for seed in range(8):
+            out=sampler.determinize(state,'a',seed)
+            self.assertEqual(len(out['sides']['b']['hand']),len(team['hand']))
+            self.assertEqual(len(out['sides']['b']['deck']),len(team['deck']))
+        self.assertEqual(state,original)
+
+    def test_copies_generated_into_deck_need_not_fit_in_hidden_hand(self):
+        from app.modules.card_game.engine.duel_v2.state import card_instance
+        state=self.game('quick-rush');team=state['sides']['b'];team['discard']+=team['hand'];team['hand']=[]
+        for _ in range(4):team['deck'].append(card_instance(state,'Q05','b'))
+        for seed in range(8):
+            out=sampler.determinize(state,'a',seed)
+            self.assertEqual(out['sides']['b']['hand'],[])
+            self.assertEqual(len(out['sides']['b']['deck']),len(team['deck']))
+
+    def test_successful_prior_draws_and_rng_are_bit_exact(self):
+        from random import Random
+        team=self.game()['sides']['b']
+        for seed in range(32):
+            a,b=Random(seed),Random(seed);info={}
+            old=sampler._allocation_prior(team,[],0,a,len(team['hand']),0,True)
+            new=sampler._allocation(team,[],0,b,len(team['hand']),0,True,recovery_budget=5,continuation=info)
+            self.assertEqual(old,new);self.assertEqual(a.getstate(),b.getstate());self.assertFalse(info)

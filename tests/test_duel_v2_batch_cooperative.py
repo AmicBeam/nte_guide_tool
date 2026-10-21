@@ -27,6 +27,19 @@ class BulkFake(FakeBackend):
 
 
 class CooperativeTest(unittest.TestCase):
+    def test_cleanup_failure_does_not_replace_the_original_worker_failure(self):
+        from unittest.mock import patch
+        backend=BulkFake()
+        def gen():
+            try:yield from _operation(backend,'acting_side',dict(actor='a'))
+            finally:raise RuntimeError('owned backend release also failed')
+        job=RootJob('broken','broken',1,gen());queue=deque([job]);scheduler=CooperativeScheduler(FakeInference())
+        with patch.object(scheduler,'_resolve',side_effect=ValueError('public generation allocation')),patch.object(scheduler,'_abandon_async',side_effect=RuntimeError('Backend is closed')):
+            with self.assertRaisesRegex(ValueError,'public generation allocation'):
+                scheduler.run_stream(lambda:queue.popleft()if queue else None,lambda rows:None)
+        self.assertIsNone(job.generator.gi_frame)
+        self.assertFalse(scheduler._running)
+
     def test_mixed_rule_operations_share_dispatch_without_changing_results(self):
         class Mixed(BulkFake):
             supports_mixed_operations=True

@@ -130,6 +130,22 @@ class ReportTelemetryTest(unittest.TestCase):
         self.assertEqual(telemetry.finish(after)['card_uses'][0]['card_id'],'RF01')
         self.assertEqual(telemetry.finish(after)['card_uses'][0]['physical_card_id'],physical_id)
 
+    def test_harmony_opportunity_uses_the_effective_battle_character(self):
+        from unittest.mock import patch
+        from app.modules.card_game.engine.duel_v2 import new_game,apply_action
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        deck=next(d for d in STARTER_DECKS if d['id']=='zhenhong')
+        state=new_game(seed=2,decks={'a':deck,'b':deck},first_side='a')
+        for side in('a','b'):state=apply_action(state,side,{'type':'mulligan','card_ids':[]})
+        state['sides']['a']['characters']['zhenhong']['awakened']=True
+        card=next(c for c in state['sides']['a']['hand']if c['character_id']!='zhenhong')
+        telemetry=GameTelemetry(state)
+        with patch('app.modules.card_game.engine.duel_v2.combat.resolved_harmony_kind',return_value='weave') as resolve:
+            telemetry.before(state,'a',[{'type':'play_card','card_id':card['instance_id']}])
+        self.assertEqual(resolve.call_args.args[2],'zhenhong')
+        self.assertIn(('harmony','a','zhenhong',state['turn']),telemetry.opportunities)
+
     def test_extra_report_keeps_telemetry_private(self):
         from app.modules.card_game.rl.offline_analysis import run_offline_analysis
         from app.modules.card_game.rl.policies import VisibleEngineRulePolicy

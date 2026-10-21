@@ -53,10 +53,12 @@ class GameTelemetry:
                     'energy':sum(c['energy'] for c in state['sides'][s]['characters'].values()),
                     'harmony':sum(c['harmony'] for c in state['sides'][s]['characters'].values())} for s in ('a','b')}})
         from app.modules.card_game.engine.duel_v2.combat import resolved_harmony_kind
+        from app.modules.card_game.engine.duel_v2.state import effective_card
         hand={c['instance_id']:c for c in state['sides'][side]['hand']}
         for action in actions:
             cid=action.get('character_id')
-            card=hand.get(action.get('card_id'),{})
+            physical=hand.get(action.get('card_id'))
+            card=effective_card(state,side,physical) if physical else {}
             battle=action['type']=='play_card' and card.get('type')=='battle'
             if battle:cid=card['character_id']
             if action['type']=='ultimate':self.opportunities.add(('ultimate',side,cid,turn))

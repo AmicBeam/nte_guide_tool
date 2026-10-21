@@ -116,7 +116,7 @@ class CachedRootTest(unittest.TestCase):
         query=InferenceQuery('cached','m','sha',x,c,True,'a')
         cache=RootEvaluation(state,'a',actions,query,InferenceResponse(query.id,
             np.zeros(len(c),dtype=np.float64),np.array([.2,.1,.7]),'sha'))
-        for mode in ('legacy','natural_wdl'):
+        for mode in ('legacy','natural_wdl','mctx_default'):
             options=dict(backend=backend,seed=1972,simulations=32,terminal_horizon=2,q_scale=mode,noise=True)
             baseline=drive_traversal(search_traversal(state,'a',policies,**options))
             actual=drive_traversal(search_traversal(state,'a',policies,root_evaluation=cache,**options))
@@ -364,41 +364,42 @@ class TestBatchedTraversal(unittest.TestCase):
         mock_runtime = MockRuntime()
         policies = {'a': 'dummy_a', 'b': 'dummy_b'}
 
-        # Run recovery_search.search with patched rules
-        with patch.object(recovery_search.core, 'sample_world', side_effect=lambda state, viewer, seed, **kw: synthetic_backend.sample_world(state, viewer, seed)), \
-             patch.object(recovery_search.core, 'simulate_action', side_effect=synthetic_backend.step), \
-             patch.object(recovery_search.core, 'acting_side', side_effect=synthetic_backend.acting_side), \
-             patch.object(recovery_search.core, 'clean', side_effect=synthetic_backend.clean), \
-             patch.object(recovery_search.core, 'terminal_value', side_effect=synthetic_backend.terminal_value):
-            ref_result = recovery_search.search(
-                root, 'a', policies,
-                seed=seed, runtime=mock_runtime, simulations=simulations,
+        for profile in ('natural_wdl','mctx_default'):
+            # Run recovery_search.search with patched rules
+            with patch.object(recovery_search.core, 'sample_world', side_effect=lambda state, viewer, seed, **kw: synthetic_backend.sample_world(state, viewer, seed)), \
+                 patch.object(recovery_search.core, 'simulate_action', side_effect=synthetic_backend.step), \
+                 patch.object(recovery_search.core, 'acting_side', side_effect=synthetic_backend.acting_side), \
+                 patch.object(recovery_search.core, 'clean', side_effect=synthetic_backend.clean), \
+                 patch.object(recovery_search.core, 'terminal_value', side_effect=synthetic_backend.terminal_value):
+                ref_result = recovery_search.search(
+                    root, 'a', policies,
+                    seed=seed, runtime=mock_runtime, simulations=simulations,
+                    gumbel_candidates=2, terminal_horizon=0, max_depth=3,
+                    noise=False, q_scale=profile, teacher_mode='network',
+                )
+
+            # Run search_traversal generator driven with identical predictions
+            gen = search_traversal(
+                root, 'a', {'a': ('dummy_a', 'v1'), 'b': ('dummy_b', 'v1')},
+                backend=synthetic_backend, seed=seed, simulations=simulations,
                 gumbel_candidates=2, terminal_horizon=0, max_depth=3,
-                noise=False, q_scale='natural_wdl', teacher_mode='network',
+                noise=False, q_scale=profile,
             )
 
-        # Run search_traversal generator driven with identical predictions
-        gen = search_traversal(
-            root, 'a', {'a': ('dummy_a', 'v1'), 'b': ('dummy_b', 'v1')},
-            backend=synthetic_backend, seed=seed, simulations=simulations,
-            gumbel_candidates=2, terminal_horizon=0, max_depth=3,
-            noise=False, q_scale='natural_wdl',
-        )
+            def provider(query):
+                return fixed_logits.copy(), fixed_wdl.copy()
 
-        def provider(query):
-            return fixed_logits.copy(), fixed_wdl.copy()
+            traversal_result = drive_traversal(gen, response_provider=provider)
 
-        traversal_result = drive_traversal(gen, response_provider=provider)
-
-        # Assert equivalence
-        self.assertEqual(traversal_result['simulations'], ref_result['simulations'])
-        self.assertEqual(traversal_result['nodes'], ref_result['nodes'])
-        self.assertEqual(traversal_result['search_choice'], ref_result['search_choice'])
-        self.assertEqual(traversal_result['raw_choice'], ref_result['raw_choice'])
-        np.testing.assert_array_equal(traversal_result['visits'], ref_result['visits'])
-        np.testing.assert_allclose(traversal_result['mean_values'], ref_result['mean_values'])
-        np.testing.assert_allclose(traversal_result['pi'], ref_result['pi'])
-        np.testing.assert_allclose(traversal_result['root_prior'], ref_result['root_prior'])
+            # Assert equivalence
+            self.assertEqual(traversal_result['simulations'], ref_result['simulations'])
+            self.assertEqual(traversal_result['nodes'], ref_result['nodes'])
+            self.assertEqual(traversal_result['search_choice'], ref_result['search_choice'])
+            self.assertEqual(traversal_result['raw_choice'], ref_result['raw_choice'])
+            np.testing.assert_array_equal(traversal_result['visits'], ref_result['visits'])
+            np.testing.assert_allclose(traversal_result['mean_values'], ref_result['mean_values'])
+            np.testing.assert_allclose(traversal_result['pi'], ref_result['pi'])
+            np.testing.assert_allclose(traversal_result['root_prior'], ref_result['root_prior'])
 
     def test_nonacting_leaf_keeps_root_observer_and_false_actor_context(self):
         backend = FakeBackend(terminal_depth=20)

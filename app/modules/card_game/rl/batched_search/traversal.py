@@ -150,6 +150,10 @@ def raw_completed_q(prior: np.ndarray, visits: np.ndarray, total: np.ndarray, va
 
 
 def completed_q(node: Node, mode: str) -> np.ndarray:
+    if mode == 'mctx_default':
+        from ..mctx_q import completed_q as mctx_completed_q
+        return mctx_completed_q(node.prior, node.visits, node.total, node.raw_value,
+                                np.ones(len(node.prior), dtype=bool))
     if mode == 'legacy':
         return legacy_completed_q(node.prior, node.visits, node.total, node.raw_value)
     if mode != 'natural_wdl':

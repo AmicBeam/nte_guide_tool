@@ -15,6 +15,17 @@ from app.modules.card_game.rl.batched_search.mctx_reference import (
 
 
 class MctxProfilesTest(unittest.TestCase):
+    def test_cooperative_final_policy_matches_the_scalar_mctx_reference(self):
+        from app.modules.card_game.rl.batched_search import traversal
+        from app.modules.card_game.rl import recovery_search
+        from app.modules.card_game.rl.information_search import Node
+        node = Node.create(np.array([.75,.25]), -.2)
+        node.visits[:] = [2,1]
+        node.total[:] = [-.3,.6]
+        for profile in ('natural_wdl','mctx_default'):
+            np.testing.assert_allclose(traversal.completed_q(node,profile),recovery_search.completed_q(node,profile))
+            np.testing.assert_allclose(traversal.improved_policy(node,profile),recovery_search.improved_policy(node,profile))
+
     def test_rescaling_excludes_padding_and_handles_equal_values(self):
         p = np.array([.75, 0., .25, 0.])
         n = np.array([2, 0, 0, 0])

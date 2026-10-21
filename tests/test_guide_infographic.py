@@ -32,7 +32,7 @@ class InfographicTest(unittest.TestCase):
     def test_strategy_index_links_to_character_selector(self):
         listing = self.client.get('/guide?kind=beginner')
         self.assertIn('href="/guide/infographic"', listing.text)
-        self.assertIn('制作角色一图流攻略', listing.text)
+        self.assertIn('制作一图流', listing.text)
         selector = self.client.get('/guide/infographic')
         self.assertEqual(selector.status_code, 200)
         for character in infographic.service.catalog()['characters']:

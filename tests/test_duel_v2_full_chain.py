@@ -113,6 +113,23 @@ class ReportTelemetryTest(unittest.TestCase):
         self.assertEqual(bucket['original_plays'],0)
         self.assertEqual(bucket['derived_plays'],0)
 
+    def test_changed_hand_face_preserves_original_physical_card_source(self):
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        state=new_game(seed=1,skip_mulligan=False);telemetry=GameTelemetry(state)
+        after=deepcopy(state);card=deepcopy(state['sides']['a']['hand'][0]);physical_id=card['card_id']
+        card.update(card_id='RF01',derived=True)
+        after['events'].append({'seq':state['event_seq']+1,'type':'play','side':'a','card':card,'patch':{'turn':4}})
+        telemetry.after(state,after,{'type':'play_card','card_id':card['instance_id']},'a')
+        bucket=telemetry.cards['a'][physical_id]
+        self.assertEqual(bucket['original_plays'],1)
+        self.assertEqual(bucket['derived_plays'],0)
+        self.assertNotIn('RF01',telemetry.cards['a'])
+        self.assertEqual(bucket['native_effect_plays'],0)
+        self.assertEqual(bucket['converted_plays'],1)
+        self.assertEqual(telemetry.finish(after)['card_uses'][0]['card_id'],'RF01')
+        self.assertEqual(telemetry.finish(after)['card_uses'][0]['physical_card_id'],physical_id)
+
     def test_extra_report_keeps_telemetry_private(self):
         from app.modules.card_game.rl.offline_analysis import run_offline_analysis
         from app.modules.card_game.rl.policies import VisibleEngineRulePolicy

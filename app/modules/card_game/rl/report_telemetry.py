@@ -5,7 +5,7 @@ import re
 
 class GameTelemetry:
     def __init__(self, state):
-        self.original_entities={card['entity_id']:side for side in ('a','b')
+        self.original_entities={card['entity_id']:(side,card['card_id']) for side in ('a','b')
             for zone in ('hand','deck','discard') for card in state['sides'][side].get(zone,[])}
         self.cards={'a':{},'b':{}}
         self.opening={side:{'initial_hand':[c['card_id'] for c in state['sides'][side]['hand']],
@@ -13,6 +13,7 @@ class GameTelemetry:
             'position':'first' if side==state['first_side'] else 'second','first_turn_actions':[]} for side in ('a','b')}
         self.mechanisms=[]
         self.releases=[]
+        self.card_uses=[]
         self.opportunities=set()
         self.turns=[]
         self.observed_turns=set()
@@ -23,16 +24,20 @@ class GameTelemetry:
 
     def bucket(self,side,cid):
         return self.cards[side].setdefault(cid,{'sources':{},'plays':0,'first_play_turn':None,
-                                               'original_plays':0,'copy_plays':0,'derived_plays':0,'foreign_original_plays':0,'response_plays':0,'first_original_play_turn':None})
+                                               'original_plays':0,'copy_plays':0,'derived_plays':0,'foreign_original_plays':0,
+                                               'native_effect_plays':0,'converted_plays':0,'response_plays':0,'first_original_play_turn':None})
 
     def origin(self,side,card):
-        if card.get('copy'):return 'copy'
-        owner=self.original_entities.get(card.get('entity_id'))
-        if card.get('derived') or owner is None:return 'generated'
-        return 'original' if owner==side else 'foreign_original'
+        original=self.original_entities.get(card.get('entity_id'))
+        if original is not None:return 'original' if original[0]==side else 'foreign_original'
+        return 'copy' if card.get('copy') else 'generated'
+
+    def physical_card_id(self,card):
+        original=self.original_entities.get(card.get('entity_id'))
+        return original[1] if original is not None else (card.get('hand_face') or {}).get('card_id',card.get('card_id'))
 
     def obtain(self,side,card,source,turn):
-        cid=card.get('card_id')
+        cid=self.physical_card_id(card)
         if not cid:return
         origin=self.origin(side,card)
         if origin!='original':source=origin
@@ -97,9 +102,13 @@ class GameTelemetry:
                     self.releases.append(dict(side=owner,card_id=card['card_id'],turn=turn,
                                               seq=event['seq'],actor=event.get('actor')))
                     continue
-                bucket=self.bucket(owner,card['card_id']);bucket['plays']+=1
+                physical_id=self.physical_card_id(card)
+                bucket=self.bucket(owner,physical_id);bucket['plays']+=1
+                bucket['native_effect_plays' if physical_id==card['card_id'] else 'converted_plays']+=1
                 bucket['first_play_turn']=turn if bucket['first_play_turn'] is None else bucket['first_play_turn']
                 origin=self.origin(owner,card)
+                self.card_uses.append(dict(side=owner,card_id=card['card_id'],physical_card_id=physical_id,
+                    origin=origin,turn=turn,seq=event['seq'],response=bool(event.get('response'))))
                 bucket[{'copy':'copy_plays','generated':'derived_plays','original':'original_plays',
                         'foreign_original':'foreign_original_plays'}[origin]]+=1
                 if origin=='original' and bucket['first_original_play_turn'] is None:
@@ -135,6 +144,7 @@ class GameTelemetry:
     def finish(self,state):
         return {'final_turn':state.get('turn',0),'cards':self.cards,'mechanisms':self.mechanisms,
                 'releases':self.releases,
+                'card_uses':self.card_uses,
                 'opportunities':[dict(kind=k,side=s,character_id=c,turn=t) for k,s,c,t in sorted(self.opportunities)],
                 'turn_states':self.turns,'opening':self.opening,'prediction_probability':None,
                 'opportunity_unit':'unique character/global turn with a legal ultimate or ordinary or battle-card attack harmony',

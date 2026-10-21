@@ -38,6 +38,8 @@ python -m unittest tests.test_duel_v2_mctx_profiles tests.test_duel_v2_device_st
 
 ## 显式授权的混合训练
 
+混合联合更新要求显式一致的 `q_scale`：配置、每个任务和完整策略行必须同为 `natural_wdl` 或 `mctx_default`，混用拒绝。真实终局、逐动作重放、合格主／辅助价值、七队全覆盖、数值及优化器恢复门槛保持；默认 closed-device 入口不因混合组件支持而放宽。验证为 `tests.test_duel_v2_hybrid_joint_update`。
+
 用户明确选择吞吐优先的混合架构时，可在独立冻结任务中使用正式 Python 驻留规则、CUDA 批量推理／树统计和 CUDA 联合更新。该授权必须绑定本轮完整构筑、原始数值、种子、绝对截止及实际用户确认；不因 GPU 方法失败自动切换，也不把混合结果写成设备内全规则验收通过。下节的默认 GPU 训练入口和 closed-device 资格要求继续保留。
 
 混合任务复用 `TrainingRollout` 的 Gumbel32／cap16／H3、逐模拟世界采样、自然终局标签和独立校准。`rollout_from_config` 必须通过真实 `load_scope` 绑定独立辅助价值；把主价值头换名为 `aux@` 的诊断模型不能用于学习。未完成的无 VM 出击数值样例不能承担完整规则推进。

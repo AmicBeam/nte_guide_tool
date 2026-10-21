@@ -92,10 +92,12 @@ def _validate_policy_row(row, step, trace, job):
     # A forced action has no competing root to allocate sequential halving to.
     # Traversal's existing contract records its one actual simulation.
     budget = 1 if len(row.get('c',())) == 1 else 32
+    q_scale = job.get('q_scale', 'natural_wdl')
     if (row.get('step') != step or row.get('side') != trace['side']
             or row.get('search_budget') != budget or row.get('search_algorithm') != 'gumbel'
             or row.get('teacher_mode') != 'covered_value'
-            or row.get('q_scale') != 'natural_wdl' or row.get('z') not in (-1,0,1)
+            or q_scale not in ('natural_wdl', 'mctx_default')
+            or row.get('q_scale') != q_scale or row.get('z') not in (-1,0,1)
             or row.get('key') != job['policies'][row['side']][1]):
         raise ValueError('Complete per-decision Gumbel label contract required')
 
@@ -107,7 +109,9 @@ def _validate(source, jobs, games, config):
         raise ValueError('policy_passes must be 1, 4 or 8')
     if type(config.get('max_row_reuse',8)) is not int or config.get('max_row_reuse',8) < 1:
         raise ValueError('Positive bounded max_row_reuse required')
-    if config.get('teacher_mode') != 'covered_value' or config.get('q_scale') != 'natural_wdl':
+    q_scale = config.get('q_scale')
+    if (config.get('teacher_mode') != 'covered_value' or type(q_scale) is not str
+            or q_scale not in ('natural_wdl', 'mctx_default')):
         raise ValueError('Qualified H3 covered value Gumbel contract required')
     if not jobs or len(jobs) != len(games) or len({j['id'] for j in jobs}) != len(jobs):
         raise ValueError('Distinct complete job/game batch required')
@@ -118,7 +122,7 @@ def _validate(source, jobs, games, config):
         if (job.get('training') is not True or job.get('pure') is True
                 or job.get('simulations',32) != 32 or job.get('gumbel_candidates',16) != 16
                 or job.get('terminal_horizon',3) != 3 or job.get('max_depth',10) != 10
-                or job.get('teacher_mode') != 'covered_value' or job.get('q_scale') != 'natural_wdl'
+                or job.get('teacher_mode') != 'covered_value' or job.get('q_scale') != q_scale
                 or job.get('zhenhong_passive_reward') not in (None,0) or job.get('setup_rewards')):
             raise ValueError('Complete Gumbel32/cap16/H3/depth10 terminal-WDL jobs required')
         policies = {s: rt.model(*spec) for s,spec in job['policies'].items()}

@@ -22,6 +22,17 @@ except ImportError:
 
 @unittest.skipIf(torch is None,'Torch unavailable')
 class HybridJointUpdateTest(unittest.TestCase):
+    def test_label_q_profile_must_match_the_explicit_job(self):
+        for profile in ('natural_wdl','mctx_default'):
+            job = dict(q_scale=profile,policies={'a':('/frozen','starter')})
+            row = dict(step=0,side='a',key='starter',c=np.zeros((2,2),dtype=np.float32),
+                       search_budget=32,search_algorithm='gumbel',teacher_mode='covered_value',
+                       q_scale=profile,z=1)
+            stage._validate_policy_row(row,0,dict(side='a'),job)
+            row['q_scale'] = 'natural_wdl' if profile=='mctx_default' else 'mctx_default'
+            with self.assertRaisesRegex(ValueError,'Gumbel label'):
+                stage._validate_policy_row(row,0,dict(side='a'),job)
+
     def test_forced_root_uses_one_simulation_and_multiaction_roots_require_32(self):
         job = dict(policies={'a':('/frozen','starter')})
         row = dict(step=0,side='a',key='starter',c=np.zeros((1,2),dtype=np.float32),

@@ -106,6 +106,12 @@ def editor_context(raw, path):
 
 
 def register(blueprint):
+    @blueprint.get('/guide/infographic')
+    def infographic_characters():
+        characters = service.catalog()['characters']
+        version = (Path(__file__).parent / 'static/catalog_cards.css').stat().st_mtime_ns
+        return render_template('guide/infographic_characters.html', characters=characters, catalog_asset_version=version)
+
     @blueprint.get('/guide/characters/<identifier>/infographic')
     def infographic_page(identifier):
         record = service.playable_character(identifier)

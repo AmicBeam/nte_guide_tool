@@ -54,3 +54,5 @@
 @media(max-width:800px){.guide-editor-columns{grid-template-columns:1fr}.guide-author-heading{display:block}.guide-markdown-source textarea{min-height:430px}.guide-markdown-preview{min-height:280px}.guide-author-actions{gap:10px}.guide-author-actions label{width:100%}.guide-author-actions select{max-width:100%;flex:1}.guide-video-insert{flex-wrap:wrap}.guide-video-insert input{flex-basis:100%}.guide-search-row{flex-wrap:wrap}.guide-search-row .guide-write-button{padding:12px 15px}.guide-article-card{padding:18px!important}}
 
 .guide-page .guide-text-card .guide-card-identity,.guide-page .guide-text-card .guide-card-identity h3{margin-top:0}
+
+.guide-author-shortcuts{display:flex;gap:8px;flex-wrap:wrap}.guide-search-row .guide-author-shortcuts .guide-write-button{font-size:13px}@media(max-width:800px){.guide-search-row .guide-author-shortcuts{flex-basis:100%}.guide-search-row .guide-author-shortcuts .guide-write-button{flex:1;padding:12px 10px}}

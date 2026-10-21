@@ -29,6 +29,17 @@ class InfographicTest(unittest.TestCase):
         return infographic.editor_context({'character_id': '1042', 'revision': 7, 'config': copy.deepcopy(self.config)},
                                           '/guide/characters/1042/infographic')
 
+    def test_strategy_index_links_to_character_selector(self):
+        listing = self.client.get('/guide?kind=beginner')
+        self.assertIn('href="/guide/infographic"', listing.text)
+        self.assertIn('制作角色一图流攻略', listing.text)
+        selector = self.client.get('/guide/infographic')
+        self.assertEqual(selector.status_code, 200)
+        for character in infographic.service.catalog()['characters']:
+            self.assertIn('/guide/characters/' + character['id'] + '/infographic', selector.text)
+        self.assertNotIn('/guide/characters/1090/infographic', selector.text)
+        self.assertNotIn('default_script', selector.text)
+
     def test_public_entry_data_and_preview_boundary(self):
         self.assertIn('/guide/characters/1042/infographic', self.client.get('/guide/characters/1042').text)
         response = self.client.get('/guide/characters/1042/infographic')

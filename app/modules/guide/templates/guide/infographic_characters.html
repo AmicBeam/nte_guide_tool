@@ -1,0 +1,11 @@
+{% extends 'guide/layout.html' %}
+{% block title %}选择角色 · 制作一图流攻略{% endblock %}
+{% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='catalog_cards.css', v=catalog_asset_version) }}">{% endblock %}
+{% block guide_back %}<a class="guide-top-back" href="/guide?kind=beginner">← 攻略</a>{% endblock %}
+{% block content %}
+<header class="guide-author-heading"><div><p class="guide-eyebrow">角色一图流攻略</p><h1>选择要制作攻略的角色</h1><p>选择角色，进入画板编辑配装、配队与操作建议。</p><p class="guide-muted">制作需登录，模板保存在当前浏览器。</p></div></header>
+<div class="guide-grid" aria-label="选择一图流角色">{% for character in characters %}
+<a class="guide-card" href="/guide/characters/{{ character.id }}/infographic" aria-label="制作{{ character.name }}一图流攻略">
+<div class="guide-card-identity"><div class="guide-card-media"><img class="guide-card-image" src="{{ character.assets.avatar }}" alt="{{ character.name }}头像" width="72" height="72" loading="lazy" decoding="async"><span class="guide-card-meta"><img class="guide-element-icon" src="{{ character.element_icon }}" alt="{{ character.element_name }}属性" width="24" height="24"><img class="guide-rarity-icon" src="{{ character.rarity_icon }}" alt="{{ character.rarity }}星角色" width="32" height="24"></span></div><h3>{{ character.name }}</h3></div>
+</a>{% endfor %}</div>
+{% endblock %}

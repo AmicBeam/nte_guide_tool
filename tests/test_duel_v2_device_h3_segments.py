@@ -53,6 +53,62 @@ class PersistentLoop:
 
 
 class H3SegmentsTests(unittest.TestCase):
+    def checkpoint(self, loop):
+        checkpoint = NS(restored=False, path=None, directory='fixture', total=0, written=0,
+                        max_chunks=None, require_window=Mock(), frames=[])
+        def save(owned, initial, diag):
+            checkpoint.total += 1
+            checkpoint.written += 1
+            checkpoint.path = 'fixture-'+str(checkpoint.total)
+            checkpoint.frames.append((deepcopy(diag), loop.pcg.clone(), loop.q.clone()))
+            return checkpoint.path
+        checkpoint.save = Mock(side_effect=save)
+        return checkpoint
+
+    def test_checkpoint_interval_preserves_full_prefix_and_flushes_natural_completion(self):
+        frames = [(result(),1),(result((1,)),1),(result((1,)),1),(result((2,),(True,)),1)]
+        reference = PersistentLoop(deepcopy(frames))
+        replay_h3_chunks(self.collector(), reference, self.metadata())
+        actual = PersistentLoop(deepcopy(frames)); checkpoint = self.checkpoint(actual)
+        replay_h3_chunks(self.collector(checkpoint_interval_chunks=3), actual, self.metadata(),
+                         checkpoint=checkpoint, owned={})
+        self.assertEqual(checkpoint.save.call_count,2)
+        self.assertEqual([f[0]['steps'] for f in checkpoint.frames], [[1],[2]])
+        torch.testing.assert_close(actual.pcg, reference.pcg)
+        torch.testing.assert_close(actual.q, reference.q)
+        self.assertEqual(actual.raw, reference.raw)
+
+    def test_checkpoint_interval_flushes_unsaved_progress_before_process_pause(self):
+        from app.modules.card_game.rl.batched_search.device_h3_segments import H3SegmentPaused
+        loop = PersistentLoop([(result((1,)),1)])
+        checkpoint = self.checkpoint(loop)
+        checkpoint.require_window.side_effect = [None, H3SegmentPaused('fixture')]
+        with self.assertRaises(H3SegmentPaused) as raised:
+            replay_h3_chunks(self.collector(checkpoint_interval_chunks=8), loop, self.metadata(),
+                             checkpoint=checkpoint, owned={})
+        self.assertEqual(raised.exception.checkpoint, checkpoint.path)
+        checkpoint.save.assert_called_once()
+        self.assertEqual(checkpoint.frames[0][0]['steps'], [1])
+
+    def test_process_chunk_limit_still_counts_replays_and_guards_never_flush_failed_state(self):
+        from app.modules.card_game.rl.batched_search.device_h3_segments import H3SegmentPaused
+        loop = PersistentLoop([(result(),1),(result(),1)])
+        checkpoint = self.checkpoint(loop); checkpoint.max_chunks = 1
+        with self.assertRaises(H3SegmentPaused):
+            replay_h3_chunks(self.collector(checkpoint_interval_chunks=8), loop, self.metadata(),
+                             checkpoint=checkpoint, owned={})
+        self.assertEqual(loop.calls,1); checkpoint.save.assert_called_once()
+        failed = PersistentLoop([(result(),1)])
+        original = failed.replay_chunk
+        def guard_failure():
+            original(); failed._inner.errors.fill_(1)
+        failed.replay_chunk = guard_failure
+        checkpoint = self.checkpoint(failed)
+        with self.assertRaisesRegex(RuntimeError,'guard'):
+            replay_h3_chunks(self.collector(checkpoint_interval_chunks=8), failed, self.metadata(),
+                             checkpoint=checkpoint, owned={})
+        checkpoint.save.assert_not_called()
+
     def collector(self, **changes):
         kwargs = dict(seconds=60, proof_seconds=30, max_decisions=800, chunk_search_ticks=1,
             on_chunk=None, last_diagnostics={}, _memory=Mock(return_value=123),

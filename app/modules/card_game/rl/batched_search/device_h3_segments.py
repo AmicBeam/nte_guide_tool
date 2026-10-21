@@ -59,7 +59,10 @@ def replay_h3_chunks(collector, loop, metadata, *, checkpoint=None, owned=None, 
     if checkpoint is not None and checkpoint.restored and all(previous['complete_rows']):
         return loop.result_device()
     records = deque(maxlen=32)
-    count, replay_seconds = 0, 0.0
+    count, replay_seconds, saved_count = 0, 0.0, 0
+    interval = getattr(collector, 'checkpoint_interval_chunks', 1)
+    if type(interval) is not int or not 1 <= interval <= 32:
+        raise ValueError('Checkpoint interval must be one to32 complete GPU chunks')
     torch = collector.executor.torch
     while True:
         # Preserve the same original absolute deadline, plus a monotonic bound
@@ -68,7 +71,13 @@ def replay_h3_chunks(collector, loop, metadata, *, checkpoint=None, owned=None, 
         if remaining < collector.seconds + collector.proof_seconds:
             raise TimeoutError('Original H3 deadline exhausted; partial chunks have no learning labels')
         if checkpoint is not None:
-            checkpoint.require_window(collector.seconds,margin=20,owned=owned,initial=initial,diag=previous)
+            try:
+                checkpoint.require_window(collector.seconds,margin=20)
+            except H3SegmentPaused:
+                if owned is not None and (count != saved_count or checkpoint.path is None):
+                    path = checkpoint.save(owned,initial,previous)
+                    collector.last_diagnostics.update(checkpoint=path,persisted_chunks=checkpoint.total)
+                raise H3SegmentPaused(checkpoint.path or str(checkpoint.directory))
         collector._memory()
         start = time.monotonic()
         loop.replay_chunk()
@@ -91,15 +100,17 @@ def replay_h3_chunks(collector, loop, metadata, *, checkpoint=None, owned=None, 
             raise RuntimeError('H3 chunk exceeded original replay budget; no joint labels')
         if _guard_failed(loop):
             raise RuntimeError('Actual H3 conditional-graph guard failed; prefix cannot be resumed')
-        if checkpoint is not None:
+        limit_reached = checkpoint is not None and checkpoint.max_chunks is not None and count >= checkpoint.max_chunks
+        if checkpoint is not None and (count % interval == 0 or all(diag['complete_rows']) or limit_reached):
             path=checkpoint.save(owned,initial,diag)
+            saved_count = count
             collector.last_diagnostics.update(checkpoint=path,persisted_chunks=checkpoint.total)
         if collector.on_chunk is not None:
             from copy import deepcopy
             collector.on_chunk(deepcopy(collector.last_diagnostics))
         if all(diag['complete_rows']):
             return result
-        if checkpoint is not None and checkpoint.max_chunks is not None and checkpoint.written>=checkpoint.max_chunks:
+        if limit_reached:
             raise H3SegmentPaused(checkpoint.path)
         previous = diag
 

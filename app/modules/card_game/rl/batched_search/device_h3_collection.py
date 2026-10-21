@@ -271,7 +271,7 @@ class DeviceH3Collector:
     def __init__(self, executor, *, seconds=90, proof_seconds=60, max_decisions=800,
                  memory_limit_mib=14336, chunk_search_ticks=1, on_chunk=None,
                  checkpoint_dir=None,resume_checkpoint=None,max_chunks=None,continuation=None,
-                 process_seconds=None,rule_lanes=None,inference_rows=None):
+                 process_seconds=None,rule_lanes=None,inference_rows=None,checkpoint_interval_chunks=1):
         from ..batched_duel.native_soa_cuda import CudaSoARules
         if not isinstance(executor, CudaSoARules) or executor.execute_only or executor.device.type != 'cuda':
             raise TypeError('Actual full native CUDA executor required')
@@ -293,6 +293,9 @@ class DeviceH3Collector:
         if process_seconds is not None and(type(process_seconds)not in(int,float)or not math.isfinite(process_seconds)or not 0<process_seconds<=150):
             raise ValueError('Explicit positive H3 process window at most150seconds required')
         self.chunk_search_ticks, self.on_chunk = chunk_search_ticks, on_chunk
+        if type(checkpoint_interval_chunks) is not int or not 1 <= checkpoint_interval_chunks <= 32:
+            raise ValueError('Checkpoint interval must be one to32 complete GPU chunks')
+        self.checkpoint_interval_chunks = checkpoint_interval_chunks
         _h3_work_tiles(32,rule_lanes,inference_rows)
         self.rule_lanes,self.inference_rows=rule_lanes,inference_rows
         self.checkpoint_options=dict(checkpoint_dir=checkpoint_dir,resume_checkpoint=resume_checkpoint,
@@ -314,7 +317,8 @@ class DeviceH3Collector:
             raise TimeoutError('Original deadline cannot contain bounded H3 replay and proof')
         owned = []
         self.last_diagnostics = dict(complete=False, profile=h3_profile(metadata), optimizer_steps=0,
-            main_model_versions=metadata.model_versions, auxiliary_versions=scope['models'])
+            main_model_versions=metadata.model_versions, auxiliary_versions=scope['models'],
+            checkpoint_interval_chunks=getattr(self,'checkpoint_interval_chunks',1))
         options=dict(checkpoint_dir=checkpoint_dir,resume_checkpoint=resume_checkpoint,
                      max_chunks=max_chunks,continuation=continuation,process_seconds=process_seconds)
         defaults=getattr(self,'checkpoint_options',{})
@@ -377,6 +381,7 @@ class DeviceH3Collector:
             binding.update(main_versions={k:v.version for k,v in models.items()},
                 auxiliary_versions={k:v.version for k,v in auxiliary_models.items()},
                 capacity=asdict(capacity),chunk_search_ticks=self.chunk_search_ticks,
+                checkpoint_interval_chunks=getattr(self,'checkpoint_interval_chunks',1),
                 implementation={name:sha256(Path(import_module(__package__+'.'+name[:-3]).__file__).read_bytes()).hexdigest()
                     for name in ('device_h3_collection.py','device_h3_segments.py','device_chunked_games.py',
                                  'device_search.py','device_statistics.py')})

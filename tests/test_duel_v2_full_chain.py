@@ -77,6 +77,40 @@ class ReportTelemetryTest(unittest.TestCase):
         self.assertEqual(telemetry.finish(after)['releases'],[
             dict(side='a',card_id=card['card_id'],turn=3,seq=seq+1,actor=None)])
 
+    def test_generated_normal_card_is_not_an_original_deck_instance(self):
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.engine.duel_v2.state import card_instance
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        state=new_game(seed=1,skip_mulligan=False)
+        telemetry=GameTelemetry(state);cid=state['sides']['a']['hand'][0]['card_id']
+        after=deepcopy(state);card=card_instance(after,cid,'a')
+        self.assertFalse(card.get('copy'))
+        self.assertFalse(card.get('derived'))
+        after['events'] += [
+            {'seq':state['event_seq']+1,'type':'draw','side':'a','private_card':card},
+            {'seq':state['event_seq']+2,'type':'play','side':'a','card':card}]
+        telemetry.after(state,after,{'type':'end_turn'},'a')
+        bucket=telemetry.cards['a'][cid]
+        self.assertEqual(bucket['sources']['generated'],1)
+        self.assertNotIn('draw',bucket['sources'])
+        self.assertEqual(bucket['original_plays'],0)
+        self.assertEqual(bucket['derived_plays'],1)
+
+    def test_other_players_original_card_is_not_own_deck_or_generated(self):
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        state=new_game(seed=1,skip_mulligan=False);telemetry=GameTelemetry(state)
+        after=deepcopy(state);card=deepcopy(state['sides']['b']['hand'][0])
+        after['events'] += [
+            {'seq':state['event_seq']+1,'type':'gain','side':'a','card':card},
+            {'seq':state['event_seq']+2,'type':'play','side':'a','card':card}]
+        telemetry.after(state,after,{'type':'end_turn'},'a')
+        bucket=telemetry.cards['a'][card['card_id']]
+        self.assertEqual(bucket['sources']['foreign_original'],1)
+        self.assertEqual(bucket['foreign_original_plays'],1)
+        self.assertEqual(bucket['original_plays'],0)
+        self.assertEqual(bucket['derived_plays'],0)
+
     def test_extra_report_keeps_telemetry_private(self):
         from app.modules.card_game.rl.offline_analysis import run_offline_analysis
         from app.modules.card_game.rl.policies import VisibleEngineRulePolicy

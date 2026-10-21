@@ -5,6 +5,8 @@ import re
 
 class GameTelemetry:
     def __init__(self, state):
+        self.original_instances={card['instance_id']:side for side in ('a','b')
+            for zone in ('hand','deck','discard') for card in state['sides'][side].get(zone,[])}
         self.cards={'a':{},'b':{}}
         self.opening={side:{'initial_hand':[c['card_id'] for c in state['sides'][side]['hand']],
             'opponent_characters':list(state['sides']['b' if side=='a' else 'a']['order']),
@@ -21,13 +23,19 @@ class GameTelemetry:
 
     def bucket(self,side,cid):
         return self.cards[side].setdefault(cid,{'sources':{},'plays':0,'first_play_turn':None,
-                                               'original_plays':0,'copy_plays':0,'derived_plays':0,'response_plays':0,'first_original_play_turn':None})
+                                               'original_plays':0,'copy_plays':0,'derived_plays':0,'foreign_original_plays':0,'response_plays':0,'first_original_play_turn':None})
+
+    def origin(self,side,card):
+        if card.get('copy'):return 'copy'
+        owner=self.original_instances.get(card.get('instance_id'))
+        if card.get('derived') or owner is None:return 'generated'
+        return 'original' if owner==side else 'foreign_original'
 
     def obtain(self,side,card,source,turn):
         cid=card.get('card_id')
         if not cid:return
-        if card.get('copy'):source='copy'
-        elif card.get('derived'):source='generated'
+        origin=self.origin(side,card)
+        if origin!='original':source=origin
         bucket=self.bucket(side,cid)
         bucket['sources'][source]=bucket['sources'].get(source,0)+1
 
@@ -91,8 +99,10 @@ class GameTelemetry:
                     continue
                 bucket=self.bucket(owner,card['card_id']);bucket['plays']+=1
                 bucket['first_play_turn']=turn if bucket['first_play_turn'] is None else bucket['first_play_turn']
-                bucket['copy_plays' if card.get('copy') else 'derived_plays' if card.get('derived') else 'original_plays']+=1
-                if not card.get('copy') and not card.get('derived') and bucket['first_original_play_turn'] is None:
+                origin=self.origin(owner,card)
+                bucket[{'copy':'copy_plays','generated':'derived_plays','original':'original_plays',
+                        'foreign_original':'foreign_original_plays'}[origin]]+=1
+                if origin=='original' and bucket['first_original_play_turn'] is None:
                     bucket['first_original_play_turn']=turn
                 if event.get('response'):
                     bucket['response_plays']+=1

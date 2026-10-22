@@ -1377,3 +1377,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 域状态编解码将角色存储身份与当前阵容分开，保留消失召唤物、实际出击次序、灵可连用记录、伤害来源和选择续步。所有对象引用使用存储槽；具名投影按有效阵容呈现。验证：`python -m unittest tests.test_duel_v2_domain_soa_codec tests.test_duel_v2_domain_soa_projection -q`；完整 GPU 对局资格仍未由这些状态组件授予。
 
 无 VM 公开计数采样的数值诊断位于 `rl/batched_duel/domain_soa_sampler.py`，保留全状态输出、选择／结算牌引用、正式随机序列和失败回滚。完整信息集校验尚未实现，默认保护拒绝活动采样；关闭保护仅限诊断，不能用于正式 H3 训练。验证：`python -m unittest tests.test_duel_v2_domain_soa_sampler -v`；详细边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。
+
+换牌设备阶段 `rl/batched_duel/domain_soa_turns.py` 输出手牌／牌库、随机状态及相关计数的增量，保留失败回滚；第二次起手换牌和手牌调度分别等待回合开始／结算结束续步。它要求完整合法动作预校验，尚非完整动作或对局执行器。验证：`python -m unittest tests.test_duel_v2_domain_soa_turns -v`；边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。

@@ -77,3 +77,5 @@ CPU C++ shim 检查同一直接 CUDA 算术源码与既有张量参考；实际 
 组件计时入口 `python scripts/benchmark_duel_v2_direct_gpu.py` 默认只输出计划；显式 `--run --roots 400 --copy-backend direct --output NEW_DIR` 测量合成字段状态的分支、完整候选队列、准备后伤害和区域移动。`--copy-backend tensor` 为匹配的复制对照。该入口不创建完整游戏、加载模型或优化器，最多使用 120 秒组件预算；结果始终保留 `full_game_benchmark=false` 和 `full_duel_qualified=false`，不能替代半小时真实整局对照。
 
 选择阶段验证：`python -m unittest tests.test_duel_v2_domain_soa_choices -v`。测试将实际正式引擎的完整候选列表逐项对拍，包含组合边界、顶部／底部及多底部顺序、全选、空选择、容量拒绝和 400 行设备图的状态变更。CUDA 跳过不计为设备通过。
+
+换牌的直接设备阶段位于 `domain_soa_turns.py`。它只返回换牌所需字段增量，要求调用者先校验完整合法动作；选中牌按手牌顺序移出、先抽替换牌再归还洗牌，使用正式 CPython 随机序列。第二次起手换牌返回 `begin_turn` 续步，手牌调度返回 `finish_operation` 续步；这些下游规则尚未执行。小吱终结抽牌钩子、空牌库等未覆盖情况在提交前拒绝，既有错误、过期内容绑定和失败行保留原状态。稳定缓冲区每次读取当前具名列，支持非连续状态池视图与设备图重放。该组件不维护完整动作标识和公开事件，也不授予完整整局或训练资格。验证：`python -m unittest tests.test_duel_v2_domain_soa_turns -v`；CPU 编译器对拍与实际 CUDA 检查分别计数。

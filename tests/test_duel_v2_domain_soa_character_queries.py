@@ -99,6 +99,14 @@ class CharacterQueryTest(unittest.TestCase):
         layout,fields=pack(states)
         with backend(layout)as q:self.compare(states,q.query(fields,torch.ones(len(states),dtype=torch.bool)))
 
+    def test_copied_panel_passive_uses_actual_shield_without_zone_penalty(self):
+        st=state(94,a='murk',b='starter')
+        team=st['sides']['a'];h=team['characters']['anhunqu']
+        h['flags']['mimic']={'id':'adler'};h['shield']=4;team['front']='anhunqu'
+        team['front_debuff']['delay']={'left':2,'slow':2,'by':'b'}
+        layout,fields=pack([st])
+        with backend(layout)as q:self.compare([st],q.query(fields,torch.ones(1,dtype=torch.bool)))
+
     def test_all_scopes_stable_layers_and_player_holders(self):
         states=[]
         for scope in ('self','allies','other_allies','enemies','all'):

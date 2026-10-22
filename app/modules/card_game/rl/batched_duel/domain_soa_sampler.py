@@ -92,8 +92,7 @@ REQUIRED = (
     'character_bool_value','zone_count',
 )
 MISSING_STAGES = (
-    'revealed_ids is not a schema field; only enemy_hand choice aliases are kept',
-    'deck_visible_turn/visible_deck are not schema fields; own deck is always sorted then shuffled',
+    'revealed hand and visible-deck constraints are preserved by schema but active such roots are refused',
     'seeds are nonnegative int64; arbitrary Python ints are not represented',
     'Random._randbelow is bounded by max_draws instead of an unbounded host loop',
     'card-table holes are not compacted into codec registration order',
@@ -878,6 +877,13 @@ class DomainSoASampler:
         source_error.copy_(t.where(bad&(source_error==0),INVALID_INPUT,source_error))
         unsupported_view = (batch.active != 0) & batch.sources['card_is_view'].any(1)
         source_error.copy_(t.where(unsupported_view & (source_error == 0), UNSUPPORTED_ROOT, source_error))
+        # Visibility constraints are preserved by the codec, but this numeric
+        # sampler has not implemented their public-consistency proof yet.
+        visibility=batch.sources['player_revealed_count'].any(1)
+        vi=PLAYER_INT_FIELDS.index('deck_visible_turn')
+        visibility=visibility|((batch.sources['player_int_presence'][:,:,vi]==2)&
+                              (batch.sources['player_int_value'][:,:,vi]==batch.sources['turn'][:,None])).any(1)
+        source_error.copy_(t.where((batch.active!=0)&visibility&(source_error==0),UNSUPPORTED_ROOT,source_error))
         L = self.layout
         scalars = (
             rows, L.max_characters, L.max_cards, L.max_zone, L.max_choice_cards,

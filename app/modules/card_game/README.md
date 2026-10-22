@@ -1385,3 +1385,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 公开字段投影保留来源失败与内容绑定保护，个人能量上限按正式模板和节奏变化，待选项之外不编码结算牌头部；设备图重放覆盖这些变化。验证：`python -m unittest tests.test_duel_v2_domain_soa_projection -v`。当前仍为部分特征，不是完整网络观察。
 
 只读角色数值查询 `rl/batched_duel/domain_soa_character_queries.py` 直接处理具名设备字段的效果条件、范围、层级、武备和相关面板数值，保留来源错误及绑定保护；它不执行出牌、攻击命中或回合推进。验证：`python -m unittest tests.test_duel_v2_domain_soa_character_queries -v`；详细边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。
+
+七队完整观察列由 `rl/batched_duel/domain_soa_observation.py` 组装，保留冻结编码接口、手牌牌面变换、可见性、复制异能与终局行为；源字段和观察者在设备图中重读。它不提供完整动作特征、物理推进或 H3 资格，采样保护仍保留。验证：`python -m unittest tests.test_duel_v2_domain_soa_observation -v`；数值列和完整对局资格分别验收。

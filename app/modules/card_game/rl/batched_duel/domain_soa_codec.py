@@ -732,7 +732,15 @@ def _encode_player(team, arrays, row, s, layout, strings, register_card):
     arrays["player_used_count"][row, s] = len(used)
     for i, (key, value) in enumerate(used.items()):
         arrays["player_used_key_slot"][row, s, i] = strings.intern(key)
-        arrays["player_used_value"][row, s, i] = _as_bool("used", value)
+        if type(value)is bool:
+            arrays['player_used_value_kind'][row,s,i]=0
+            arrays['player_used_value'][row,s,i]=value
+        elif type(value)is int:
+            arrays['player_used_value_kind'][row,s,i]=1
+            arrays['player_used_int'][row,s,i]=_as_int('used value',value)
+            arrays['player_used_value'][row,s,i]=bool(value)
+        else:
+            raise DomainSoAUnsupportedError('used values must be bool or int')
     harmonized = team["harmonized"]
     if type(harmonized) is not dict:
         raise TypeError("harmonized must be a dict")
@@ -756,6 +764,23 @@ def _encode_player(team, arrays, row, s, layout, strings, register_card):
     arrays["player_effects_presence"][row, s] = _effects_presence(team)
     _encode_flags(team, arrays, row, layout.holder_index(s, None), layout, strings)
     arrays["player_flags_presence"][row, s] = _flags_presence(team)
+    if 'revealed_ids' in team:
+        revealed=team['revealed_ids']
+        if revealed is None:
+            arrays['player_revealed_presence'][row,s]=PRESENCE_NULL
+        else:
+            if type(revealed) is not list:
+                raise TypeError('revealed_ids must be a list')
+            if len(revealed)>layout.max_cards:
+                raise DomainSoACapacityError('revealed_ids exceeds max_cards')
+            arrays['player_revealed_presence'][row,s]=PRESENCE_VALUE
+            arrays['player_revealed_count'][row,s]=len(revealed)
+            for ri,instance in enumerate(revealed):
+                if type(instance)is not str or instance[:2]not in ('a-','b-'):
+                    raise DomainSoAUnsupportedError('noncanonical revealed instance id')
+                rs=instance[0]
+                arrays['player_revealed_side'][row,s,ri]=side_index(rs)
+                arrays['player_revealed_instance'][row,s,ri]=_parse_instance_num(instance,rs)
     _encode_front_debuff(team.get("front_debuff", {}), arrays, row, s, layout, strings)
     for i, cid in enumerate(order):
         _encode_character(characters[cid], cid, arrays, row, s, i, layout, strings)
@@ -1198,6 +1223,8 @@ def _encode_flags(holder, arrays, row, holder_index, layout, strings):
         "flags",
     )
     for i, key in enumerate(FLAG_INT_FIELDS):
+        if key=='mimic'and type(flags.get(key))is dict:
+            continue
         _put_optional_int(
             flags, key, arrays["flag_int_presence"][row, holder_index],
             arrays["flag_int_value"][row, holder_index], i, bool_keys=FLAG_BOOL_INTS,
@@ -1212,6 +1239,19 @@ def _encode_flags(holder, arrays, row, holder_index, layout, strings):
             flags, key, arrays["flag_str_presence"][row, holder_index],
             arrays["flag_str_slot"][row, holder_index], i, strings, allow_value=True,
         )
+    mimic=flags.get('mimic',_MISSING)
+    if type(mimic)is dict:
+        _unknown(mimic,frozenset({'id'}),'mimic')
+        arrays['flag_mimic_presence'][row,holder_index]=PRESENCE_VALUE
+        if 'id'in mimic:
+            if mimic['id']is None:
+                arrays['flag_mimic_id_presence'][row,holder_index]=PRESENCE_NULL
+            else:
+                cid=mimic['id']
+                if type(cid)is not str or (cid and cid not in CHARACTER_VOCAB):
+                    raise DomainSoAUnsupportedError('unsupported mimicked character')
+                arrays['flag_mimic_id_presence'][row,holder_index]=PRESENCE_VALUE
+                arrays['flag_mimic_template'][row,holder_index]=CHARACTER_VOCAB[cid]if cid else 0
     collapse = flags.get("collapse", _MISSING)
     if collapse is _MISSING:
         arrays["flag_collapse_presence"][row, holder_index] = PRESENCE_ABSENT
@@ -1785,6 +1825,15 @@ def _decode_player(batch, row, s, side, cards):
                 raise DomainSoADecodeError(f"{zone} card index {index} is missing")
             packed.append(cards[index])
         payload[zone] = packed
+    rp=int(batch.player_revealed_presence[row,s]);rn=int(batch.player_revealed_count[row,s])
+    if not 0<=rn<=batch.layout.max_cards:
+        raise DomainSoADecodeError('revealed count outside layout')
+    if rp==PRESENCE_NULL:
+        payload['revealed_ids']=None
+    elif rp==PRESENCE_VALUE:
+        payload['revealed_ids']=[_side_from(batch.player_revealed_side[row,s,j])+'-'+str(int(batch.player_revealed_instance[row,s,j]))for j in range(rn)]
+    elif rp!=PRESENCE_ABSENT:
+        raise DomainSoADecodeError('invalid revealed presence')
     payload["records"] = []
     for i, key in enumerate(PLAYER_INT_FIELDS):
         _apply_optional(payload, key, _take_optional(
@@ -1799,7 +1848,9 @@ def _decode_player(batch, row, s, side, cards):
     used = {}
     used_n = int(batch.player_used_count[row, s])
     for i in range(used_n):
-        used[_load_string(batch, row, batch.player_used_key_slot[row, s, i])] = bool(batch.player_used_value[row, s, i])
+        kind=int(batch.player_used_value_kind[row,s,i])
+        if kind not in (0,1):raise DomainSoADecodeError('invalid used value kind')
+        used[_load_string(batch, row, batch.player_used_key_slot[row, s, i])] = (bool(batch.player_used_value[row,s,i]) if kind==0 else int(batch.player_used_int[row,s,i]))
     payload["used"] = used
     payload["harmonized"] = {
         cid: True for i, cid in enumerate(stored) if bool(batch.player_harmonized[row, s, i])
@@ -2153,6 +2204,20 @@ def _decode_flags_field(batch, row, holder, presence):
             {"amount": int(batch.flag_timed_amount[row, holder, i]), "left": int(batch.flag_timed_left[row, holder, i])}
             for i in range(timed_n)
         ]
+    mp=int(batch.flag_mimic_presence[row,holder])
+    if mp==PRESENCE_VALUE:
+        mimic={};ip=int(batch.flag_mimic_id_presence[row,holder])
+        if ip==PRESENCE_NULL:mimic['id']=None
+        elif ip==PRESENCE_VALUE:
+            value=int(batch.flag_mimic_template[row,holder])
+            if value==0:mimic['id']=''
+            else:
+                cid=next((cid for cid,index in CHARACTER_VOCAB.items()if index==value),None)
+                if cid is None:raise DomainSoADecodeError('invalid mimicked character')
+                mimic['id']=cid
+        elif ip!=PRESENCE_ABSENT:raise DomainSoADecodeError('invalid mimic id presence')
+        flags['mimic']=mimic
+    elif mp!=PRESENCE_ABSENT:raise DomainSoADecodeError('invalid mimic presence')
     return flags
 
 

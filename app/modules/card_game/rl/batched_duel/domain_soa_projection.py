@@ -19,6 +19,7 @@ from .domain_soa_schema import (
     CARD_VOCAB,
     CHARACTER_BOOL_FIELDS,
     CHARACTER_INT_FIELDS,
+    CHARACTER_STR_FIELDS,
     CHARACTER_VOCAB,
     CHOICE_KINDS,
     DomainSoALayout,
@@ -80,7 +81,7 @@ IMPLEMENTED_CHAR = (
     'ch_down', 'ch_awakened', 'ch_ult_turns', 'ch_growth', 'ch_energy_max',
     'ch_order', 'ch_jingu', 'ch_jingu_loan',
 )
-IMPLEMENTED_CARD_ZONES = (0, 1, 2, 3)
+IMPLEMENTED_CARD_ZONES = (0, 1, 2, 3, 4)
 PUBLIC_FLAG_NAMES = (
     'observation_public', 'actions_complete', 'viewer_mulligan_done', 'finished',
 )
@@ -97,7 +98,9 @@ REQUIRED_FIELDS = (
     'character_energy', 'character_int_presence', 'character_int_value',
     'character_bool_presence', 'character_bool_value', 'zone_count',
     'zone_card_index', 'card_valid', 'card_template', 'card_bool_presence',
-    'card_bool_value', 'rng',
+    'card_bool_value', 'rng', 'card_instance_slot', 'card_side',
+    'player_revealed_presence', 'player_revealed_count', 'player_revealed_side', 'player_revealed_instance', 'character_str_presence', 'character_str_slot',
+    'string_count', 'string_offset', 'string_length', 'string_bytes', 'string_bytes_used',
 )
 _TORCH_DTYPES = {
     'bool': 'bool', 'int8': 'int8', 'int16': 'int16', 'int32': 'int32',
@@ -195,8 +198,6 @@ def prepare_catalog_tables(device, torch_module=None):
             header_choice[i] = HEADER_CHOICE_CODE[kind]
         if kind in CHOICES:
             seven_choice[i] = CHOICES.index(kind)
-        elif kind == 'deck_order':
-            seven_choice[i] = CHOICES.index('hand_deck_placement')
     return FrozenCatalogTables(
         character_to_seat=char_to_seat, card_to_seven=card_to_seven,
         header_choice=header_choice, seven_choice=seven_choice,
@@ -265,6 +266,7 @@ class DomainSoAProjection:
         self.catalog = catalog
         self._catalog_digest = torch.tensor(list(catalog_fingerprint()),dtype=torch.uint8,device=self.device)
         self.max_actions = max_actions
+        self.dark_utf8 = torch.tensor([list(a.encode('utf-8'))for a in ('暗','魂','咒')],dtype=torch.uint8,device=self.device)
         self.combo_index = torch.tensor(MULLIGAN_COMBOS, dtype=torch.int32, device=self.device)
         pad = torch.full(
             (self.combo_index.shape[0], SEARCH_CANDIDATE_CAP - MAX_MULLIGAN_SELECT),
@@ -323,7 +325,7 @@ class DomainSoAProjection:
         one = t.nn.functional.one_hot(safe, n_classes)
         return (valid.unsqueeze(-1) & (indices >= 0).unsqueeze(-1) & one.bool()).sum(-2)
 
-    def project(self, fields, viewers, active, *, errors=None):
+    def project(self, fields, viewers, active, *, errors=None, observation_only=False):
         t = self.t
         fields = self._fields(fields)
         if (not isinstance(viewers, t.Tensor) or viewers.device != self.device
@@ -353,7 +355,7 @@ class DomainSoAProjection:
         own = viewers.clamp(0, 1)
         side_index = t.stack((own, 1 - own), dim=1)
         phase = col['phase'].to(t.int32)
-        finished = (phase == PHASE_FINISHED) | (col['winner_presence'].to(t.int32) == PRESENCE_VALUE)
+        finished = phase == PHASE_FINISHED
         pending = col['pending_choice_present']
         unknown_phase = (phase < 0) | (phase >= len(GAME_PHASES))
         unhandled = active & ~finished & (
@@ -361,7 +363,8 @@ class DomainSoAProjection:
             | ((phase == PHASE_PLAYING) & (own == col['active_side'].to(t.int64)))
             | ((phase == PHASE_MULLIGAN) & (pending | col['operation_present']))
         )
-        errors = errors | unhandled.to(t.int32) * UNHANDLED_ACTION_CATEGORY
+        if not observation_only:
+            errors = errors | unhandled.to(t.int32) * UNHANDLED_ACTION_CATEGORY
         stored_present = col['character_valid']
         stored_count = col['player_character_count'].long()
         declared_count = col['player_order_count'].long()
@@ -419,7 +422,21 @@ class DomainSoAProjection:
         char_max_hp = scatter_int(character_int('max_hp'))
         safe_template = char_tmpl.clamp(0, char_map.shape[0] - 1)
         energy_base = self.catalog.character_int_defaults[safe_template, CINT['energy_max']]
-        runtime_override = self.catalog.character_energy_runtime_override[safe_template]
+        ai=CHARACTER_STR_FIELDS.index('attribute')
+        attr_p=col['character_str_presence'][...,ai]
+        attr_slot=col['character_str_slot'][...,ai].long()
+        safe_slot=attr_slot.clamp(0,self.layout.max_string_slots-1)
+        offsets=col['string_offset'].gather(1,safe_slot.flatten(1)).reshape(rows,2,C).long()
+        lengths=col['string_length'].gather(1,safe_slot.flatten(1)).reshape(rows,2,C).long()
+        positions=(offsets[...,None]+t.arange(3,device=self.device)).clamp(0,self.layout.max_string_bytes-1)
+        raw=col['string_bytes'].gather(1,positions.flatten(1)).reshape(rows,2,C,3)
+        dark=(raw[...,None,:]==self.dark_utf8).all(-1).any(-1)&(lengths==3)&(attr_p==PRESENCE_VALUE)
+        bad_attr=(attr_p==PRESENCE_VALUE)&((attr_slot<0)|(attr_slot>=col['string_count'][:,None,None])|
+                 (offsets<0)|(lengths<0)|(offsets+lengths>col['string_bytes_used'][:,None,None])|
+                 (offsets+lengths>self.layout.max_string_bytes))
+        errors=errors|((bad_attr&stored_present).flatten(1).any(1)&active).int()*INVALID_ROW
+        energy_base=t.where(char_tmpl==0,5+dark.int(),energy_base)
+        runtime_override = self.catalog.character_energy_runtime_override[safe_template] | (char_tmpl==0)
         energy_base = t.where(runtime_override & (cint_p[..., CINT['energy_max_override']] == PRESENCE_VALUE),
                               cint_v[..., CINT['energy_max_override']], energy_base)
         energy_cut = (col['escalation_enabled'] & (col['turn'] >= 13)).int()
@@ -441,6 +458,8 @@ class DomainSoAProjection:
             in_map = (gathered >= 0) & (gathered < char_map.shape[0])
             mapped = t.where(in_map, char_map[gathered.clamp(0, char_map.shape[0] - 1)].to(t.int64),
                              t.full_like(gathered, -1))
+            is_summon = summoned.gather(2,safe.unsqueeze(-1)).squeeze(-1)
+            mapped = t.where(is_summon,t.full_like(mapped,SUMMON_SEAT),mapped)
             occupied = char_valid.gather(2, safe.unsqueeze(-1)).squeeze(-1)
             bad = present & ((slot < 0) | (slot >= C) | (mapped < 0) | ~occupied)
             return t.where(present, mapped, t.full_like(mapped, -1)), bad
@@ -460,6 +479,16 @@ class DomainSoAProjection:
         card_seven = t.where(in_card, card_map[card_tmpl.clamp(0, card_map.shape[0] - 1)].to(t.int64),
                              t.full_like(card_tmpl, -1))
         copy_flag = self._optional_bool(col['card_bool_presence'], col['card_bool_value'], KBOOL['copy'])
+        reveal_n=col['player_revealed_count'].long()
+        reveal_pos=t.arange(K,device=self.device)[None,None,:]
+        reveal_valid=(reveal_pos<reveal_n[:,:,None].clamp(0,K))&(col['player_revealed_presence'][:,:,None]==PRESENCE_VALUE)
+        reveal_side=col['player_revealed_side'].long();reveal_instance=col['player_revealed_instance'].long()
+        bad_reveal=(reveal_n<0)|(reveal_n>K)
+        invalid_reveal=reveal_valid&((reveal_side<0)|(reveal_side>1)|(reveal_instance<1))
+        errors=errors|((bad_reveal.any(1)|invalid_reveal.flatten(1).any(1))&active).int()*INVALID_ROW
+        revealed=((reveal_instance[:,:,:,None]==col['card_instance_slot'][:,None,None,:])&
+                  (reveal_side[:,:,:,None]==col['card_side'][:,None,None,:])&reveal_valid[:,:,:,None]).any(2)
+
 
         def zone_kinds(side_idx, zone, public_mask=None):
             count = zone_count[batch, side_idx, zone]
@@ -477,7 +506,8 @@ class DomainSoAProjection:
             return kinds, valid_card, unknown
 
         own_hand_k, own_hand_v, unk_h = zone_kinds(own, ZONE_HAND)
-        opp_hand_k, opp_hand_v, unk_oh = zone_kinds(1 - own, ZONE_HAND, public_mask=copy_flag)
+        own_reveal_k,own_reveal_v,unk_or=zone_kinds(own,ZONE_HAND,public_mask=revealed[batch,own])
+        opp_hand_k, opp_hand_v, unk_oh = zone_kinds(1 - own, ZONE_HAND, public_mask=copy_flag|revealed[batch,1-own])
         own_disc_k, own_disc_v, unk_d = zone_kinds(own, ZONE_DISCARD)
         opp_disc_k, opp_disc_v, unk_od = zone_kinds(1 - own, ZONE_DISCARD)
         errors = errors | (unk_h | unk_oh | unk_d | unk_od).any(1).to(t.int32) * UNKNOWN_TEMPLATE
@@ -523,7 +553,7 @@ class DomainSoAProjection:
         actors = t.where(phase == PHASE_MULLIGAN, mulligan_actor, col['active_side'].to(t.int64))
         actors = t.where(finished | ~active, own, actors)
         own_hand_n = hand_n[batch, own]
-        work = active & ~finished & (errors == 0)
+        work = active & ~finished & (errors == 0) & (not observation_only)
         want_mulligan = work & (phase == PHASE_MULLIGAN) & ~viewer_done
         want_concede = work & ((phase == PHASE_MULLIGAN)
                                | ((phase == PHASE_PLAYING) & (own != col['active_side'].to(t.int64))))
@@ -616,6 +646,7 @@ class DomainSoAProjection:
             self._scatter_classes(own_disc_k, own_disc_v, NUM_CARDS),
             self._scatter_classes(opp_disc_k, opp_disc_v, NUM_CARDS),
             self._scatter_classes(opp_hand_k, opp_hand_v, NUM_CARDS),
+            self._scatter_classes(own_reveal_k,own_reveal_v,NUM_CARDS),
         ]
         if 'support_turn' in PINT:
             st=PINT['support_turn']
@@ -666,7 +697,7 @@ class DomainSoAProjection:
         packed = t.where(active.unsqueeze(1), packed, t.zeros_like(packed))
         flags = t.stack((
             active & ~upstream_failed & ((errors & (INVALID_ROW | UNKNOWN_TEMPLATE)) == 0),
-            active & (errors == 0) & ~unhandled,
+            active & (errors == 0) & ~unhandled & (not observation_only),
             viewer_done,
             finished,
         ), dim=1)

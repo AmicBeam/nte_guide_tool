@@ -148,6 +148,43 @@ class DomainSoAProjectionTest(unittest.TestCase):
         self.assertTrue(torch.equal(out.packed_named[0],expected),
                         msg=self._diff(out.packed_names,out.packed_named[0],expected))
 
+    def test_revealed_hands_match_both_observers(self):
+        state=_state(93)
+        for side in ('a','b'):
+            team=state['sides'][side]
+            team['revealed_ids']=[team['hand'][0]['instance_id']]*2
+        for viewer,side in enumerate(('a','b')):
+            out=_project(_pack(state),[viewer])
+            self.assertEqual(int(out.errors[0]),0)
+            obs,_=seven_lineup.encode(observe(state,side),[])
+            gold=torch.tensor(obs[list(out.packed_index)],dtype=torch.float32)
+            self.assertTrue(torch.equal(out.packed_named[0],gold),msg=self._diff(out.packed_names,out.packed_named[0],gold))
+
+    def test_current_summon_front_and_energy_match_formal_observation(self):
+        from app.modules.card_game.engine.duel_v2.summons import summon_front
+        for attribute in ('','咒'):
+            state=_state(91)
+            cid=summon_front(state,'a',name='测试召唤',attack=2,hp=4)
+            state['sides']['a']['characters'][cid]['attribute']=attribute
+            state['turn']=13
+            out=_project(_pack(state),[0])
+            self.assertEqual(int(out.errors[0]),0)
+            obs,_=seven_lineup.encode(observe(state,'a'),[])
+            expected=torch.tensor(obs[list(out.packed_index)],dtype=torch.float32)
+            self.assertTrue(torch.equal(out.packed_named[0],expected),msg=self._diff(out.packed_names,out.packed_named[0],expected))
+
+    def test_observation_only_never_qualifies_action_lists(self):
+        from app.modules.card_game.engine.duel_v2.flow import apply_action
+        state=_state(92)
+        for side in ('a','b'):state=apply_action(state,side,{'type':'mulligan','card_ids':[]})
+        out=_project(_pack(state),[0],observation_only=True)
+        self.assertEqual(int(out.errors[0]),0)
+        self.assertEqual(int(out.counts[0]),0)
+        self.assertFalse(bool(out.public_flags[0,1]))
+        obs,_=seven_lineup.encode(observe(state,'a'),[])
+        expected=torch.tensor(obs[list(out.packed_index)],dtype=torch.float32)
+        self.assertTrue(torch.equal(out.packed_named[0],expected),msg=self._diff(out.packed_names,out.packed_named[0],expected))
+
     def test_energy_cap_uses_formal_template_and_escalation(self):
         for turn, enabled in ((12,True),(13,True),(13,False),(20,True)):
             state = _state(82)

@@ -236,7 +236,11 @@ QFN void character_query(const QRow*f,int side,int c,double*out,int*err){
  if(card_form[sh]&&card_attack[sh]>0&&card_hp[sh]>0)base=card_attack[sh]+(growth>0?growth:0);
  else base=printed+growth+ci(f,h,CI_growth,err)+ci(f,h,CI_gaze,err)+card_bonus[sh];
  int present=1;base=query(f,h,0,base,&present,err);base=query(f,h,1,base,&present,err);
- if(id==ID_adler)base=f->character_shield[ch];
+ int panel_id=id;
+ if(f->flag_mimic_presence[h]==2&&f->flag_mimic_id_presence[h]==2&&f->flag_mimic_template[h]>0){
+  panel_id=f->flag_mimic_template[h];if(panel_id>=NT){*err=1;return;}
+ }
+ if(panel_id==ID_adler&&f->phase[0]!=3)base=f->character_shield[ch];
  else if(f->player_front_presence[side]==2&&f->player_front_slot[side]==c&&f->zone_status_presence[side*5]==2){
   int mask=f->zone_status_i32[(side*5)*8+7];
   int at=0,slow=0,slow_turn=f->turn[0];

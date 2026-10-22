@@ -92,6 +92,17 @@ class DomainSoASamplerTest(unittest.TestCase):
         self.assertIn('bmt_seed_words', source)
         self.assertIn('generation allocation including recovery/deck-generator retry', info['implemented'])
 
+    def test_visible_roots_are_explicitly_refused_by_numeric_sampler(self):
+        states=[_state(),_state()]
+        states[0]['sides']['b']['revealed_ids']=[states[0]['sides']['b']['hand'][0]['instance_id']]
+        states[1]['sides']['a']['deck_visible_turn']=states[1]['turn']
+        layout=DomainSoALayout(game_capacity=2)
+        _,fields=_torch_fields(states,layout)
+        with cpu_oracle(layout,guard=False)as sampler:
+            out=sampler.determinize(fields,torch.zeros(2,dtype=torch.int64),torch.tensor([11,12],dtype=torch.int64),torch.ones(2,dtype=torch.int32))
+            self.assertEqual(out['row_error'].tolist(),[UNSUPPORTED_ROOT]*2)
+            self.assertTrue(torch.equal(out['zone_card_index'],fields['zone_card_index']))
+
     def test_physical_views_reject_even_diagnostic_sampling(self):
         layout = DomainSoALayout(game_capacity=1)
         _, fields = _torch_fields([_state()], layout)

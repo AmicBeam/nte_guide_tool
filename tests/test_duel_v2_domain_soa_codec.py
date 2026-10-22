@@ -343,6 +343,24 @@ class DomainSoACodecTest(unittest.TestCase):
         self.assertIn("playing", phases)
         self.assertEqual(rejected, [], msg=str(rejected[:5]))
 
+    def test_mimic_variants_and_integer_used_clocks_roundtrip(self):
+        for mimic in ({},{'id':None},{'id':''},{'id':'adler'}):
+            state=_fourteen_initial_states()[0]
+            team=state['sides']['a'];cid=team['order'][0]
+            team['characters'][cid]['flags']['mimic']=mimic
+            team['used']={'instant':False,'canhong_dot_attack_turn:e1':12,'zero_int':0,'true_bool':True}
+            _roundtrip(state)
+
+    def test_revealed_ids_and_visible_deck_keep_absent_null_empty_and_order(self):
+        for revealed in (None,[],['a-1','b-4','a-1']):
+            state=_fourteen_initial_states()[0]
+            state['sides']['a']['revealed_ids']=revealed
+            state['sides']['a']['deck_visible_turn']=state['turn']
+            _roundtrip(state)
+        state['sides']['a']['revealed_ids']=['a-001']
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([state],DomainSoALayout(),presentation='drop')
+
     def test_effective_card_view_preserves_physical_alias_and_identity(self):
         from app.modules.card_game.engine.duel_v2.state import effective_card
         decks = _decks()

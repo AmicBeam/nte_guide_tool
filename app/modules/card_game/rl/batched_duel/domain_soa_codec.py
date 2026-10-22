@@ -43,6 +43,8 @@ from .domain_soa_schema import (
     DomainSoALayout,
     DomainSoAUnsupportedError,
     EFFECT_CLEAR_EVENTS,
+    EFFECT_CONDITION_IDS,
+    EFFECT_CONDITION_ARGS,
     EFFECT_KINDS,
     EFFECT_OPS,
     EFFECT_PHASES,
@@ -57,6 +59,7 @@ from .domain_soa_schema import (
     NON_AUTHORITATIVE_GAME_KEYS,
     OP_FLAG_KEYS,
     OP_INT_KEYS,
+    OP_STR_KEYS,
     PLAYER_BOOL_FIELDS,
     PLAYER_INT_FIELDS,
     PLAYER_KEYS,
@@ -113,13 +116,13 @@ OP_ALLOWED = (
     )
     | frozenset(OP_FLAG_KEYS)
     | frozenset(OP_INT_KEYS)
+    | frozenset(OP_STR_KEYS)
 )
 DEFERRED_ALLOWED = frozenset({"side", "actor", "entity_id", "kind"})
 MISSING_SCHEMA_FIELDS = (
     "Player.records payloads",
     "PendingChoice.choices card list",
-    "Effect.conditions payloads (count only)",
-    "Effect.clear_on values outside EFFECT_CLEAR_EVENTS (including ultimate_end)",
+    "Effect.clear_on values outside EFFECT_CLEAR_EVENTS",
     "_deferred_card_marks operation list",
 )
 UNSUPPORTED_REMAINING = (
@@ -846,6 +849,17 @@ def _encode_character(hero, cid, arrays, row, s, slot, layout, strings):
             arrays["character_str_slot"][row, s, slot], i,
             strings if allow else _RejectStrings(), catalog=catalog or None, allow_value=allow,
         )
+    if "collapse_reductions" in hero:
+        reductions = hero["collapse_reductions"]
+        if type(reductions) is not dict:
+            raise TypeError("collapse_reductions must be a dict")
+        if len(reductions) > 2 * layout.max_characters:
+            raise DomainSoACapacityError("collapse_reductions exceeds identity bound")
+        arrays["character_reductions_presence"][row, s, slot] = PRESENCE_VALUE
+        arrays["character_reductions_count"][row, s, slot] = len(reductions)
+        for ri, (eid, value) in enumerate(reductions.items()):
+            arrays["character_reductions_entity"][row, s, slot, ri] = _parse_entity_num(eid)
+            arrays["character_reductions_value"][row, s, slot, ri] = _as_int("collapse_reductions value", value)
     _encode_lingke_chain(hero, arrays, row, s, slot, strings)
     arrays["character_effects_presence"][row, s, slot] = _effects_presence(hero)
     _encode_effects(hero, arrays, row, layout.holder_index(s, slot), layout, strings, "character effects")
@@ -1048,6 +1062,7 @@ def _encode_effects(holder, arrays, row, holder_index, layout, strings, what):
             arrays["effect_consume_on_presence"][row, holder_index, i] = PRESENCE_VALUE
             arrays["effect_consume_on_slot"][row, holder_index, i] = strings.intern(effect["consume_on"])
         clear_on = effect.get("clear_on", _MISSING)
+        arrays["effect_clear_presence"][row, holder_index, i] = PRESENCE_ABSENT if clear_on is _MISSING else PRESENCE_VALUE
         if clear_on is _MISSING:
             arrays["effect_clear_count"][row, holder_index, i] = 0
         else:
@@ -1061,12 +1076,48 @@ def _encode_effects(holder, arrays, row, holder_index, layout, strings, what):
                     event, EFFECT_CLEAR_EVENTS, "clear_on"
                 )
         _encode_expiry(effect.get("expiry", _MISSING), arrays, row, holder_index, i)
-        if effect.get("conditions"):
-            raise DomainSoAUnsupportedError("effect conditions have no payload arrays")
-        arrays["effect_conditions_count"][row, holder_index, i] = 0
-        extra_present = [key for key in ("conditions",) if key in effect]
-        if extra_present:
-            raise DomainSoAUnsupportedError("effect conditions have no payload arrays")
+        conditions = effect.get("conditions", _MISSING)
+        if conditions is not _MISSING:
+            if type(conditions) is not list:
+                raise TypeError("effect.conditions must be a list")
+            if len(conditions) > layout.max_conditions:
+                raise DomainSoACapacityError("effect.conditions exceeds layout.max_conditions")
+            arrays["effect_conditions_presence"][row, holder_index, i] = PRESENCE_VALUE
+            arrays["effect_conditions_count"][row, holder_index, i] = len(conditions)
+            for ci, condition in enumerate(conditions):
+                if type(condition) is not dict:
+                    raise TypeError("effect condition must be a dict")
+                _unknown(condition, frozenset({"id", "args"}), "condition")
+                at = (row, holder_index, i, ci)
+                arrays["effect_condition_id"][at] = _enum_index(condition["id"], EFFECT_CONDITION_IDS, "condition id")
+                if "args" not in condition:
+                    continue
+                args = condition["args"]
+                if type(args) is not dict:
+                    raise TypeError("condition.args must be a dict")
+                _unknown(args, frozenset(EFFECT_CONDITION_ARGS), "condition args")
+                arrays["effect_condition_args_presence"][at] = PRESENCE_VALUE
+                for ai, key in enumerate(EFFECT_CONDITION_ARGS):
+                    if key not in args:
+                        continue
+                    index = at + (ai,)
+                    value = args[key]
+                    arrays["effect_condition_arg_presence"][index] = PRESENCE_VALUE
+                    if type(value) is bool:
+                        kind, number = VALUE_KIND_BOOL, int(value)
+                        arrays["effect_condition_arg_int"][index] = number
+                    elif type(value) is int:
+                        kind = VALUE_KIND_INT
+                        arrays["effect_condition_arg_int"][index] = _as_int(key, value)
+                    elif type(value) is float and np.isfinite(value):
+                        kind = VALUE_KIND_FLOAT
+                        arrays["effect_condition_arg_float"][index] = value
+                    elif type(value) is str:
+                        kind = 3
+                        arrays["effect_condition_arg_string"][index] = strings.intern(value)
+                    else:
+                        raise DomainSoAUnsupportedError("unsupported condition argument value")
+                    arrays["effect_condition_arg_kind"][index] = kind
 
 
 def _encode_effect_value(value, arrays, row, holder_index, i):
@@ -1242,6 +1293,7 @@ def _encode_front_debuff(zone, arrays, row, s, layout, strings):
         return
     if type(dots) is not dict:
         raise TypeError("dots must be a dict")
+    arrays["zone_dots_presence"][row, s] = True
     extra = [key for key in dots if key not in DOT_KINDS]
     if extra:
         raise DomainSoAUnsupportedError(f"unsupported dot kinds {extra}")
@@ -1385,6 +1437,8 @@ def _encode_operation(state, arrays, row, layout, strings, register_card):
         _put_optional_bool(operation, key, arrays["op_flag_presence"][row], arrays["op_flag_value"][row], i)
     for i, key in enumerate(OP_INT_KEYS):
         _put_optional_int(operation, key, arrays["op_int_presence"][row], arrays["op_int_value"][row], i)
+    for i, key in enumerate(OP_STR_KEYS):
+        _put_optional_str(operation, key, arrays["op_str_presence"][row], arrays["op_str_slot"][row], i, strings, allow_value=True)
     if "option_id" not in operation:
         arrays["op_option_id_presence"][row] = PRESENCE_ABSENT
     elif operation["option_id"] is None:
@@ -1430,7 +1484,7 @@ def _encode_last_attack_target(operation, state, arrays, row):
         raise DomainSoAUnsupportedError("last_attack_target must be (side, cid)")
     arrays["op_last_attack_target_presence"][row] = PRESENCE_VALUE
     arrays["op_last_attack_target_slot"][row] = (
-        side_index(target[0]) * 256 + _char_slot(list(state["sides"][target[0]]["characters"]), target[1], "last_attack_target")
+        side_index(target[0]) * 256 + (255 if target[1] == 'player' else _char_slot(list(state["sides"][target[0]]["characters"]), target[1], "last_attack_target"))
     )
 
 
@@ -1806,6 +1860,20 @@ def _decode_character(batch, row, s, slot, side):
         }
     else:
         raise DomainSoADecodeError("invalid equipment presence")
+    rp = int(batch.character_reductions_presence[row, s, slot])
+    rn = int(batch.character_reductions_count[row, s, slot])
+    if not 0 <= rn <= 2 * batch.layout.max_characters:
+        raise DomainSoADecodeError("collapse_reductions count outside layout")
+    if rp == PRESENCE_VALUE:
+        reductions = {}
+        for ri in range(rn):
+            eid = _entity_text(batch.character_reductions_entity[row, s, slot, ri])
+            if eid in reductions:
+                raise DomainSoADecodeError("duplicate collapse_reductions identity")
+            reductions[eid] = int(batch.character_reductions_value[row, s, slot, ri])
+        hero["collapse_reductions"] = reductions
+    elif rp != PRESENCE_ABSENT:
+        raise DomainSoADecodeError("invalid collapse_reductions presence")
     _apply_optional(hero, "lingke_chain", _decode_lingke_chain(batch, row, s, slot))
     return hero, cid
 
@@ -1913,7 +1981,7 @@ def _decode_effects_field(batch, row, holder, presence):
         elif consume_p != PRESENCE_ABSENT:
             raise DomainSoADecodeError("invalid consume_on presence")
         clear_n = int(batch.effect_clear_count[row, holder, i])
-        if clear_n:
+        if int(batch.effect_clear_presence[row, holder, i]) == PRESENCE_VALUE:
             effect["clear_on"] = [
                 _enum_from(batch.effect_clear_event[row, holder, i, c], EFFECT_CLEAR_EVENTS, "clear_on")
                 for c in range(clear_n)
@@ -1921,8 +1989,35 @@ def _decode_effects_field(batch, row, holder, presence):
         expiry = _decode_expiry(batch, row, holder, i)
         if expiry is not _MISSING:
             effect["expiry"] = expiry
-        if int(batch.effect_conditions_count[row, holder, i]):
-            raise DomainSoAUnsupportedError("effect conditions have no payload arrays")
+        condition_n = int(batch.effect_conditions_count[row, holder, i])
+        if not 0 <= condition_n <= batch.layout.max_conditions:
+            raise DomainSoADecodeError("condition count outside layout")
+        if int(batch.effect_conditions_presence[row, holder, i]) == PRESENCE_VALUE:
+            conditions = []
+            for ci in range(condition_n):
+                at = (row, holder, i, ci)
+                condition = {"id": _enum_from(batch.effect_condition_id[at], EFFECT_CONDITION_IDS, "condition id")}
+                if int(batch.effect_condition_args_presence[at]) == PRESENCE_VALUE:
+                    args = {}
+                    for ai, key in enumerate(EFFECT_CONDITION_ARGS):
+                        index = at + (ai,)
+                        if int(batch.effect_condition_arg_presence[index]) != PRESENCE_VALUE:
+                            continue
+                        kind = int(batch.effect_condition_arg_kind[index])
+                        if kind == VALUE_KIND_INT:
+                            value = int(batch.effect_condition_arg_int[index])
+                        elif kind == VALUE_KIND_FLOAT:
+                            value = float(batch.effect_condition_arg_float[index])
+                        elif kind == VALUE_KIND_BOOL:
+                            value = bool(batch.effect_condition_arg_int[index])
+                        elif kind == 3:
+                            value = _load_string(batch, row, batch.effect_condition_arg_string[index])
+                        else:
+                            raise DomainSoADecodeError("unknown condition argument type")
+                        args[key] = value
+                    condition["args"] = args
+                conditions.append(condition)
+            effect["conditions"] = conditions
         effects.append(effect)
     return effects
 
@@ -2089,7 +2184,7 @@ def _decode_front_debuff(batch, row, s):
         elif turn_p != PRESENCE_ABSENT:
             raise DomainSoADecodeError("invalid dot applied_turn presence")
         dots[kind] = spec
-    if dots:
+    if dots or bool(batch.zone_dots_presence[row, s]):
         zone["dots"] = dots
     return zone
 
@@ -2171,6 +2266,8 @@ def _decode_operation(batch, row, state, cards):
         _apply_optional(operation, key, _take_optional(batch.op_flag_presence[row], batch.op_flag_value[row], i, lambda v: bool(v)))
     for i, key in enumerate(OP_INT_KEYS):
         _apply_optional(operation, key, _take_optional(batch.op_int_presence[row], batch.op_int_value[row], i, int))
+    for i, key in enumerate(OP_STR_KEYS):
+        _apply_optional(operation, key, _take_optional(batch.op_str_presence[row], batch.op_str_slot[row], i, lambda slot: _load_string(batch, row, slot)))
     opt_p = int(batch.op_option_id_presence[row])
     if opt_p == PRESENCE_NULL:
         operation["option_id"] = None
@@ -2184,7 +2281,7 @@ def _decode_operation(batch, row, state, cards):
     elif last_p == PRESENCE_VALUE:
         packed = int(batch.op_last_attack_target_slot[row])
         last_side = _side_from(packed // 256)
-        operation["last_attack_target"] = [last_side, list(state["sides"][last_side]["characters"])[packed % 256]]
+        operation["last_attack_target"] = [last_side, "player" if packed % 256 == 255 else list(state["sides"][last_side]["characters"])[packed % 256]]
     elif last_p != PRESENCE_ABSENT:
         raise DomainSoADecodeError("invalid last_attack_target presence")
     mark_p = int(batch.op_card_mark_presence[row])

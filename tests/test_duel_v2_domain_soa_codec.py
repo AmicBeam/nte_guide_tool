@@ -95,7 +95,7 @@ def _natural_states(max_steps=40):
             if not acts:
                 break
             playable = [item for item in acts if item.get("type") not in ("end_turn", "concede")]
-            pool = playable or acts
+            pool = playable or [item for item in acts if item.get("type") != "concede"]
             state = apply_action(state, side, pool[steps % len(pool)])
             states.append(state)
             steps += 1
@@ -151,7 +151,7 @@ class DomainSoACodecTest(unittest.TestCase):
         self.assertTrue(report["normal_playing"])
         self.assertEqual(report["seven_official_presets"], KEYS)
         self.assertNotIn("Character.last_hit_source", report["missing_schema_fields"])
-        self.assertIn("Effect.conditions payloads (count only)", report["missing_schema_fields"])
+        self.assertNotIn("Effect.conditions payloads (count only)", report["missing_schema_fields"])
 
     def test_fourteen_seven_team_initial_mulligan_roundtrip(self):
         states = _fourteen_initial_states()
@@ -343,10 +343,30 @@ class DomainSoACodecTest(unittest.TestCase):
         self.assertIn("playing", phases)
         self.assertEqual(rejected, [], msg=str(rejected[:5]))
 
+    def test_effect_conditions_and_empty_clear_events_preserve_types(self):
+        from app.modules.card_game.engine.duel_v2.modifiers import contribution
+        for conditions in ([], [{'id':'enemy_turn'}], [{'id':'damage_attribute','args':{'attribute':'光'}}],
+                           [{'id':'resource_at_least','args':{'resource':'energy','amount':2}}],
+                           [{'id':'source_shape','args':{'card_id':'N08'}}], [{'id':'source_alive','args':{}}]):
+            state = _fourteen_initial_states()[0]
+            team = state['sides']['a']
+            hero = team['characters'][team['order'][0]]
+            effect = contribution('test.condition', 'attack.panel', 1, source_entity_id=hero['entity_id'], clear_on=[])
+            effect['conditions'] = conditions
+            hero['effects'] = [effect]
+            _, got = _roundtrip(state)
+            self.assertEqual(got['sides']['a']['characters'][team['order'][0]]['effects'][0]['conditions'], conditions)
+            hero['effects'][0]['clear_on'] = ['ultimate_end']
+            _roundtrip(state)
+        state['sides']['a']['characters'][team['order'][0]]['effects'][0]['conditions'] = [{'id':'future_unknown'}]
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([state], DomainSoALayout(), presentation='drop')
+
     def test_runtime_fields_keep_null_false_zero_and_structured_chain(self):
         state=_fourteen_initial_states()[0]
         team=state['sides']['a'];cid=team['order'][0];other=team['order'][1]
         hero=team['characters'][cid]
+        hero['collapse_reductions']={team['characters'][other]['entity_id']:2}
         team.update(effect_seq=2,support_turn=0,support_count=3)
         hero.update(last_hit_source='b:canhong',beast_fangs=3,base_attack=2,base_max_hp=4,
                     lingke_chain=dict(entity_id=team['characters'][other]['entity_id'],character_id=other,count=0))

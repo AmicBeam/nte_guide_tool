@@ -105,8 +105,10 @@ OP_FLAG_KEYS: tuple[str, ...] = (
     "support_resolved",
     "pending_sortie",
     "record_candidate_unused",
+    "heiyu_after_placement",
 )
-OP_INT_KEYS: tuple[str, ...] = ("ap_paid", "card_bonus", "card_set_attack", "last_attack_amount")
+OP_INT_KEYS: tuple[str, ...] = ("ap_paid", "card_bonus", "card_set_attack", "last_attack_amount", "sortie_attack_bonus")
+OP_STR_KEYS: tuple[str, ...] = ("heiyu_after_divination",)
 ZONE_STATUS_KEYS: tuple[str, ...] = ("delay", "burn", "star", "weave", "stain")
 LINGKE_CHAIN_KEYS: tuple[str, ...] = ("entity_id", "character_id", "count")
 EFFECT_OPS: tuple[str, ...] = ("add", "multiply", "set", "allow", "forbid")
@@ -122,7 +124,15 @@ EFFECT_CLEAR_EVENTS: tuple[str, ...] = (
     "turn_end",
     "attack",
     "card_use",
+    "ultimate_end",
+    "battle",
 )
+
+EFFECT_CONDITION_IDS: tuple[str, ...] = (
+    "source_front", "source_alive", "source_awakened", "source_shape", "enemy_turn",
+    "resource_at_least", "damage_attribute", "card_owner_other", "attribute_is",
+)
+EFFECT_CONDITION_ARGS: tuple[str, ...] = ("card_id", "resource", "amount", "attribute", "value")
 
 PUBLIC_CHARACTER_ORDER: tuple[str, ...] = tuple(sorted(PUBLIC_CHARACTER_IDS))
 PUBLIC_CARD_ORDER: tuple[str, ...] = tuple(
@@ -199,6 +209,10 @@ CHARACTER_INT_FIELDS: tuple[str, ...] = (
     "beast_fangs",
     "base_attack",
     "base_max_hp",
+    "intimidation",
+    "surplus_passive_triggers",
+    "extra_attacks",
+    "dissonance_layers",
 )
 CHARACTER_BOOL_FIELDS: tuple[str, ...] = ("awakened", "summoned", "jingu_loan", "disappeared")
 CHARACTER_STR_FIELDS: tuple[str, ...] = (
@@ -384,6 +398,7 @@ CHARACTER_KEYS: frozenset[str] = (
             "resource_name",
             "turn_snapshots",
             "lingke_chain",
+            "collapse_reductions",
         )
     )
     | frozenset(CHARACTER_INT_FIELDS)
@@ -474,6 +489,7 @@ class DomainSoALayout:
     max_dots: int = 4
     max_timed_attack: int = 8
     max_clear_on: int = 8
+    max_conditions: int = 4
     max_participants: int = 8
     max_down_responses: int = 8
     max_deferred_marks: int = 8
@@ -609,6 +625,8 @@ def array_specs(layout):
         "op_flag_value": (b, (n_opflag,)),
         "op_int_presence": (u8, (n_opint,)),
         "op_int_value": (i32, (n_opint,)),
+        "op_str_presence": (u8, (len(OP_STR_KEYS),)),
+        "op_str_slot": (i32, (len(OP_STR_KEYS),)),
         "op_option_id_presence": (u8, ()),
         "op_option_id_slot": (i32, ()),
         "op_last_attack_target_presence": (u8, ()),
@@ -692,6 +710,10 @@ def array_specs(layout):
         "character_equipment_source_slot": (i32, (2, C)),
         "character_effects_presence": (u8, (2, C)),
         "character_flags_presence": (u8, (2, C)),
+        "character_reductions_presence": (u8, (2, C)),
+        "character_reductions_count": (i16, (2, C)),
+        "character_reductions_entity": (i32, (2, C, 2 * C)),
+        "character_reductions_value": (i32, (2, C, 2 * C)),
         "character_lingke_presence": (u8, (2, C)),
         "character_lingke_entity_slot": (i32, (2, C)),
         "character_lingke_id_slot": (i32, (2, C)),
@@ -747,7 +769,16 @@ def array_specs(layout):
         "effect_expiry_turn": (i32, (H, E)),
         "effect_expiry_remaining_presence": (u8, (H, E)),
         "effect_expiry_remaining": (i32, (H, E)),
+        "effect_clear_presence": (u8, (H, E)),
+        "effect_conditions_presence": (u8, (H, E)),
         "effect_conditions_count": (i16, (H, E)),
+        "effect_condition_id": (i8, (H, E, layout.max_conditions)),
+        "effect_condition_args_presence": (u8, (H, E, layout.max_conditions)),
+        "effect_condition_arg_presence": (u8, (H, E, layout.max_conditions, len(EFFECT_CONDITION_ARGS))),
+        "effect_condition_arg_kind": (i8, (H, E, layout.max_conditions, len(EFFECT_CONDITION_ARGS))),
+        "effect_condition_arg_int": (i32, (H, E, layout.max_conditions, len(EFFECT_CONDITION_ARGS))),
+        "effect_condition_arg_float": (f64, (H, E, layout.max_conditions, len(EFFECT_CONDITION_ARGS))),
+        "effect_condition_arg_string": (i32, (H, E, layout.max_conditions, len(EFFECT_CONDITION_ARGS))),
         "flag_int_presence": (u8, (H, n_fint)),
         "flag_int_value": (i32, (H, n_fint)),
         "flag_bool_presence": (u8, (H, n_fbool)),
@@ -768,6 +799,7 @@ def array_specs(layout):
         "zone_status_side": (i8, (2, 5, 4)),
         "zone_status_bool": (b, (2, 5, 2)),
         "zone_status_slot": (i32, (2, 5, 2)),
+        "zone_dots_presence": (b, (2,)),
         "zone_dot_valid": (b, (2, D)),
         "zone_dot_kind": (i8, (2, D)),
         "zone_dot_stacks": (i32, (2, D)),

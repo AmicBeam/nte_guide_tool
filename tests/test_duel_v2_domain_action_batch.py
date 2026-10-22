@@ -273,6 +273,10 @@ class DomainActionBatchCPUTests(unittest.TestCase):
         out=self.arena.scatter_results(new,stale)
         self.assertTrue((out.errors&STALE_RESULT).all())
         self.assertFalse(out.present.any())
+        # A self-consistent old queue/result pair is stale after reissuance too.
+        out=self.arena.scatter_results(old,stale)
+        self.assertTrue((out.errors&STALE_RESULT).all())
+        self.assertFalse(out.present.any())
         preview=self.arena.group_selected_actions(*args,preview=True)
         result=results_from_queue(self.arena,preview,values)
         wrong=replace(result,candidate_ordinal=result.candidate_ordinal+1)

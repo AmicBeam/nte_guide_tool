@@ -52,6 +52,68 @@ class SoARandomTest(unittest.TestCase):
         self.assertTrue(torch.equal(result.values, values))
         self.assertTrue(torch.equal(result.seeds, seeds))
 
+    def test_prepared_shuffle_reuses_outputs_and_rejects_foreign_backend(self):
+        values = torch.arange(12, dtype=torch.int32).reshape(3, 4)
+        counts = torch.tensor([3, 2, 1, 0], dtype=torch.int32)
+        seeds = torch.tensor([5, 6, 7, 8], dtype=torch.int64)
+        active = torch.ones(4, dtype=torch.int32)
+        with DomainSoARandom(device='cpu', allow_cpu_reference=True) as backend:
+            batch = backend.prepare(values, counts, seeds, active)
+            first = backend.launch(batch)
+            pointer = first.values.data_ptr()
+            seeds.add_(100)
+            second = backend.launch(batch)
+            self.assertEqual(second.values.data_ptr(), pointer)
+            for row in range(4):
+                rng = random.Random(int(seeds[row]))
+                expected = values[:, row].tolist()
+                prefix = expected[:int(counts[row])]
+                rng.shuffle(prefix)
+                expected[:len(prefix)] = prefix
+                self.assertEqual(second.values[:, row].tolist(), expected)
+                self.assertEqual(int(second.seeds[row]), rng.getrandbits(63))
+            with DomainSoARandom(device='cpu', allow_cpu_reference=True) as foreign:
+                with self.assertRaises(ValueError):
+                    foreign.launch(batch)
+        with self.assertRaises(RuntimeError):
+            backend.launch(batch)
+
+    @unittest.skipUnless(torch.cuda.is_available(), 'Actual CUDA Graph required')
+    def test_400_prepared_graph_uses_fresh_rng_and_no_native_compiler(self):
+        rows, width = 400, 32
+        values = torch.arange(width * rows, dtype=torch.int32).reshape(width, rows)
+        counts = torch.arange(rows, dtype=torch.int32) % (width + 1)
+        seeds = torch.arange(rows, dtype=torch.int64) + 2**40
+        active = (torch.arange(rows) % 11 != 0).int()
+        with DomainSoARandom(device='cuda') as backend:
+            inputs = [v.cuda() for v in (values, counts, seeds, active)]
+            batch = backend.prepare(*inputs)
+            backend.launch(batch)
+            torch.cuda.synchronize()
+            graph = torch.cuda.CUDAGraph()
+            with torch.cuda.graph(graph):
+                backend.launch(batch)
+            for offset in (0, 12345):
+                inputs[2].copy_(seeds + offset)
+                graph.replay()
+                torch.cuda.synchronize()
+                got, nxt, errors = (v.cpu() for v in
+                    (batch.result.values, batch.result.seeds, batch.result.errors))
+                self.assertEqual(errors.tolist(), [0] * rows)
+                for row in range(rows):
+                    expected = values[:, row].tolist()
+                    seed = int(seeds[row]) + offset
+                    if active[row]:
+                        rng = random.Random(seed)
+                        prefix = expected[:int(counts[row])]
+                        rng.shuffle(prefix)
+                        expected[:len(prefix)] = prefix
+                        seed = rng.getrandbits(63)
+                    self.assertEqual(got[:, row].tolist(), expected)
+                    self.assertEqual(int(nxt[row]), seed)
+            del graph
+            torch.cuda.synchronize()
+
     @unittest.skipUnless(torch.cuda.is_available(), 'Real CUDA required; native RNG parity is not device qualification')
     def test_actual_cuda_tail_and_repeated_execution(self):
         values = torch.arange(32*8, dtype=torch.int32).reshape(32, 8)

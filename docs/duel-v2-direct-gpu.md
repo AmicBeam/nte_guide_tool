@@ -37,6 +37,8 @@
 
 `domain_soa_action_batch.py` 保留完整 800 候选容量，区分物理单选与多候选预演。回执核对 arena、设备 issuance epoch、owner／generation、动作索引与原候选 ordinal，迟到、重复、外来或不完整结果拒绝。`domain_soa_zones.py` 在设备上保持实体索引和区域顺序，支持移除后插入及同区调整；它不替调用者执行满手重定向、抽空胜负和卡效。
 
+`domain_soa_random.py` 支持预先分配洗牌输出，再在调用方流中启动或捕获 CUDA Graph。重放读取当前种子和牌序，逐位保持正式 Python Random 洗牌与后继 63 位种子；拒绝预算耗尽则保留输入。准备阶段与执行阶段分离，不在捕获时分配输出，也不在设备失败后回退 CPU。
+
 状态池与动作队列的独立实现及验证必须保持 `supports_full_duel_rules=False`，直到全部规则接口和真实完整局证据齐备。任何组件加速比都不能写作七队整局加速比。
 
 ## 实施与放行顺序

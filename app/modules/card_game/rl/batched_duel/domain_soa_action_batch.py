@@ -356,7 +356,7 @@ class DomainSoAActionBatch:
         ordinal_grid = t.zeros(self.work_width, dtype=t.int32, device=self.device)
         ordinal_grid.index_add_(0, linear_q, t.where(present_q, queue.candidate_ordinal, 0))
         matched = in_range & (q_hist[linear_r] > 0)
-        stale = matched & (gen_r != gen_grid[linear_r])
+        stale = (matched & (gen_r != gen_grid[linear_r])) | (present_r & (queue.epoch != self._epoch))
         if results.epoch is None:
             stale |= present_r
         else:
@@ -396,4 +396,3 @@ class DomainSoAActionBatch:
         values = value_grid.view(self.max_roots, width)[:rows]
         values = t.where(laid, values, t.zeros_like(values))
         return DomainActionScatterResult(values=values, present=laid, errors=errors)
-

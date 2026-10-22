@@ -325,4 +325,3 @@ class DomainSoAStatePool:
         """Stop captured uses before closing the owned direct copy kernel."""
         if self._copy_kernel is not None:
             self._copy_kernel.close()
-

@@ -78,6 +78,16 @@ class ShuffleFields:
     errors: object
 
 
+@dataclass(frozen=True)
+class PreparedShuffle:
+    owner: object
+    values: object
+    counts: object
+    seeds: object
+    active: object
+    result: ShuffleFields
+
+
 class DomainSoARandom:
     """Explicit prepared backend; CUDA calls never transfer tensor contents."""
     gpu_qualified = False
@@ -125,10 +135,12 @@ class DomainSoARandom:
         else:
             raise ValueError('CUDA or explicitly enabled CPU reference required')
 
-    def shuffle(self, values, counts, seeds, active):
+    def prepare(self, values, counts, seeds, active):
         import torch
         if self.closed:
             raise RuntimeError('SoA RNG is closed')
+        if self.device.type == 'cuda' and torch.cuda.is_current_stream_capturing():
+            raise RuntimeError('Prepare RNG buffers before CUDA capture')
         if (not isinstance(values, torch.Tensor) or values.dtype != torch.int32 or values.ndim != 2
                 or values.device != self.device or not values.is_contiguous()):
             raise ValueError('Contiguous resident int32[slots,batch] required')
@@ -143,14 +155,28 @@ class DomainSoARandom:
                 raise ValueError('Exact resident RNG column required: ' + name)
         output, next_seed = torch.empty_like(values), torch.empty_like(seeds)
         errors = torch.empty_like(counts)
+        return PreparedShuffle(self, values, counts, seeds, active,
+                               ShuffleFields(output, next_seed, errors))
+
+    def launch(self, batch):
+        if self.closed:
+            raise RuntimeError('SoA RNG is closed')
+        if not isinstance(batch, PreparedShuffle) or batch.owner is not self:
+            raise ValueError('Prepared buffers must belong to this RNG backend')
+        values, counts, seeds, active = batch.values, batch.counts, batch.seeds, batch.active
+        output, next_seed, errors = batch.result.values, batch.result.seeds, batch.result.errors
+        width, rows = values.shape
         if self._module is not None:
             self._module.launch('domain_soa_shuffle', [values, counts, seeds, active, output,
-                next_seed, errors, rows, width, self.max_draws], grid=((rows+63)//64,), block=(64,))
+                next_seed, errors, rows, width, self.max_draws], grid=((rows+63)//64,),
+                block=(64,), capture_safe=True)
         else:
-            # CPU-only native ABI: tensors already reside on CPU. No GPU fallback.
             self._kernel(*(ctypes.c_void_p(item.data_ptr()) for item in
                 (values, counts, seeds, active, output, next_seed, errors)), rows, width, self.max_draws)
-        return ShuffleFields(output, next_seed, errors)
+        return batch.result
+
+    def shuffle(self, values, counts, seeds, active):
+        return self.launch(self.prepare(values, counts, seeds, active))
 
     def close(self):
         if self.closed:

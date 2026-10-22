@@ -1383,3 +1383,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 域状态的效果条件、空清理列表与空持续状态分别保留；战斗玩家目标、额外出击计数、倾陷削减和黑羽检视续步采用具名字段。暂停出击仅保存已知规格，临时牌视图保留物理引用；采样器仍拒绝临时视图，完整 GPU 训练资格未解除。验证：`python -m unittest tests.test_duel_v2_domain_soa_codec -v`。
 
 公开字段投影保留来源失败与内容绑定保护，个人能量上限按正式模板和节奏变化，待选项之外不编码结算牌头部；设备图重放覆盖这些变化。验证：`python -m unittest tests.test_duel_v2_domain_soa_projection -v`。当前仍为部分特征，不是完整网络观察。
+
+只读角色数值查询 `rl/batched_duel/domain_soa_character_queries.py` 直接处理具名设备字段的效果条件、范围、层级、武备和相关面板数值，保留来源错误及绑定保护；它不执行出牌、攻击命中或回合推进。验证：`python -m unittest tests.test_duel_v2_domain_soa_character_queries -v`；详细边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。

@@ -148,6 +148,43 @@ class DomainSoAProjectionTest(unittest.TestCase):
         self.assertTrue(torch.equal(out.packed_named[0],expected),
                         msg=self._diff(out.packed_names,out.packed_named[0],expected))
 
+    def test_energy_cap_uses_formal_template_and_escalation(self):
+        for turn, enabled in ((12,True),(13,True),(13,False),(20,True)):
+            state = _state(82)
+            state['turn'] = turn
+            state['escalation_enabled'] = enabled
+            cid = state['sides']['a']['order'][0]
+            state['sides']['a']['characters'][cid]['energy_max'] = 1
+            packed = _pack(state)
+            out = _project(packed, [0])
+            obs, _ = seven_lineup.encode(observe(state,'a'), [])
+            expected = torch.tensor(obs[list(out.packed_index)],dtype=torch.float32)
+            self.assertTrue(torch.equal(out.packed_named[0],expected),
+                            msg=self._diff(out.packed_names,out.packed_named[0],expected))
+
+    def test_finished_operation_without_choice_has_no_resolving_header(self):
+        state = _state(83)
+        team = state['sides']['a']
+        state.update(phase='finished',winner='a',reason='player_hp')
+        state['operation'] = {'side':'a','actor':team['order'][0],'card':team['hand'][0],
+                              'participants':[], 'harmony':None, 'first_bonus':0,
+                              'redeem_bonus':0,'record_candidate':False}
+        out = _project(_pack(state), [0])
+        obs, _ = seven_lineup.encode(observe(state,'a'), [])
+        expected = torch.tensor(obs[list(out.packed_index)],dtype=torch.float32)
+        self.assertTrue(torch.equal(out.packed_named[0],expected),
+                        msg=self._diff(out.packed_names,out.packed_named[0],expected))
+
+    def test_prior_failed_row_and_changed_catalog_cannot_be_public(self):
+        packed = _pack(_state(84),_state(85))
+        packed.arrays['row_error'][0] = 64
+        packed.arrays['catalog_digest'][1,0] ^= 1
+        out = _project(packed, [0,0])
+        self.assertNotEqual(int(out.errors[0]), 0)
+        self.assertNotEqual(int(out.errors[1]), 0)
+        self.assertFalse(bool(out.public_flags[:,0].any()))
+        self.assertEqual(out.counts.tolist(), [0,0])
+
     def test_hidden_opponent_cards_rng_and_deck_order_do_not_enter(self):
         state = _state(21)
         packed = _pack(state)
@@ -295,6 +332,25 @@ class DomainSoAProjectionTest(unittest.TestCase):
         self.assertEqual(int(actual.errors[0]),proj.INVALID_ROW)
         self.assertEqual(int(actual.counts[0]),0)
         self.assertTrue((actual.errors[1:]==0).all())
+        fields['row_error'][2] = 64
+        fields['catalog_digest'][3,0] ^= 1
+        fields['turn'][4] = 13
+        cid = states[4]['sides']['a']['order'][0]
+        storage = list(states[4]['sides']['a']['characters']).index(cid)
+        fields['character_int_presence'][4,0,storage,proj.CINT['energy_max']] = PRESENCE_VALUE
+        fields['character_int_value'][4,0,storage,proj.CINT['energy_max']] = 1
+        graph.replay();torch.cuda.synchronize()
+        self.assertEqual(int(actual.errors[2]),64)
+        self.assertNotEqual(int(actual.errors[3]),0)
+        self.assertFalse(bool(actual.public_flags[2:4,0].any()))
+        self.assertEqual(actual.counts[2:4].cpu().tolist(),[0,0])
+        formal = deepcopy(states[4])
+        formal['turn'] = 13
+        formal['sides']['a']['characters'][cid]['energy_max'] = 1
+        obs,_ = seven_lineup.encode(observe(formal,'a'),[])
+        gold = torch.tensor(obs[list(actual.packed_index)],dtype=torch.float32)
+        self.assertTrue(torch.equal(actual.packed_named[4].cpu(), gold),
+                        msg=self._diff(actual.packed_names,actual.packed_named[4].cpu(),gold))
         del graph
         torch.cuda.synchronize()
 

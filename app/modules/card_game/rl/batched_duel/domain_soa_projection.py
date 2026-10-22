@@ -28,6 +28,7 @@ from .domain_soa_schema import (
     PRESENCE_CATALOG,
     PRESENCE_VALUE,
     array_specs,
+    catalog_fingerprint,
     supports_full_duel_rules as _SCHEMA_FULL,
 )
 
@@ -84,7 +85,7 @@ PUBLIC_FLAG_NAMES = (
     'observation_public', 'actions_complete', 'viewer_mulligan_done', 'finished',
 )
 REQUIRED_FIELDS = (
-    'row_valid', 'phase', 'turn', 'active_side', 'first_side', 'escalation_enabled',
+    'row_valid', 'row_error', 'catalog_digest', 'phase', 'turn', 'active_side', 'first_side', 'escalation_enabled',
     'winner_presence', 'pending_choice_present', 'choice_kind', 'choice_side',
     'choice_card_count', 'choice_card_index', 'operation_present', 'op_card_index',
     'mulligan_count', 'mulligan_sides', 'player_valid', 'player_hp', 'player_max_hp',
@@ -169,6 +170,7 @@ def prepare_catalog_tables(device, torch_module=None):
     char_max_hp = t.zeros(n_char, dtype=t.int32, device=device)
     char_energy_max = t.zeros(n_char, dtype=t.int32, device=device)
     char_attack = t.zeros(n_char, dtype=t.int32, device=device)
+    char_energy_runtime_override = t.zeros(n_char, dtype=t.bool, device=device)
     char_int_defaults = t.zeros((n_char, len(CINT)), dtype=t.int32, device=device)
     for cid, vocab in CHARACTER_VOCAB.items():
         char_to_seat[vocab] = seven_lineup.SEAT_INDEX[cid]
@@ -179,6 +181,11 @@ def prepare_catalog_tables(device, torch_module=None):
         for name, index in CINT.items():
             value = spec.get(name)
             char_int_defaults[vocab, index] = value if type(value) is int else 0
+    from app.modules.card_game.engine.duel_v2.state import energy_max
+    for cid, vocab in CHARACTER_VOCAB.items():
+        spec = CHARACTERS[cid]
+        char_int_defaults[vocab, CINT['energy_max']] = energy_max(dict(spec, id=cid))
+        char_energy_runtime_override[vocab] = 'energy_max_override' not in spec
     for card_id, vocab in CARD_VOCAB.items():
         card_to_seven[vocab] = seven_lineup.CARD_INDEX[card_id]
     header_choice = t.full((len(CHOICE_KINDS),), -1, dtype=t.int32, device=device)
@@ -193,13 +200,14 @@ def prepare_catalog_tables(device, torch_module=None):
     return FrozenCatalogTables(
         character_to_seat=char_to_seat, card_to_seven=card_to_seven,
         header_choice=header_choice, seven_choice=seven_choice,
-        character_int_defaults=char_int_defaults, device=device)
+        character_int_defaults=char_int_defaults, character_energy_runtime_override=char_energy_runtime_override, device=device)
 
 
 @dataclass(frozen=True)
 class FrozenCatalogTables:
     character_to_seat: object
     character_int_defaults: object
+    character_energy_runtime_override: object
     card_to_seven: object
     header_choice: object
     seven_choice: object
@@ -255,6 +263,7 @@ class DomainSoAProjection:
             raise ValueError('Frozen catalog tables must already reside on the projection device')
         self.layout = layout
         self.catalog = catalog
+        self._catalog_digest = torch.tensor(list(catalog_fingerprint()),dtype=torch.uint8,device=self.device)
         self.max_actions = max_actions
         self.combo_index = torch.tensor(MULLIGAN_COMBOS, dtype=torch.int32, device=self.device)
         pad = torch.full(
@@ -329,6 +338,10 @@ class DomainSoAProjection:
         else:
             errors = self._tensor(errors.clone(), t.int32, (rows,), 'errors')
         col = {name: self._column(fields, name, rows) for name in REQUIRED_FIELDS}
+        errors = errors | col['row_error']
+        upstream_failed = col['row_error'] != 0
+        stale_catalog = (col['catalog_digest'] != self._catalog_digest[None,:]).any(1)
+        errors = errors | (active & stale_catalog).int() * INVALID_ROW
         hidden_rng = col['rng']
         C = self.layout.max_characters
         K = self.layout.max_cards
@@ -404,7 +417,13 @@ class DomainSoAProjection:
             return t.where(cint_p[..., index] == PRESENCE_CATALOG, defaults, raw)
 
         char_max_hp = scatter_int(character_int('max_hp'))
-        char_energy_max = scatter_int(character_int('energy_max'))
+        safe_template = char_tmpl.clamp(0, char_map.shape[0] - 1)
+        energy_base = self.catalog.character_int_defaults[safe_template, CINT['energy_max']]
+        runtime_override = self.catalog.character_energy_runtime_override[safe_template]
+        energy_base = t.where(runtime_override & (cint_p[..., CINT['energy_max_override']] == PRESENCE_VALUE),
+                              cint_v[..., CINT['energy_max_override']], energy_base)
+        energy_cut = (col['escalation_enabled'] & (col['turn'] >= 13)).int()
+        char_energy_max = scatter_int(energy_base - energy_cut[:,None,None])
         char_harmony = scatter_int(character_int('harmony'))
         char_down = scatter_int(character_int('down_turns'))
         char_ult = scatter_int(character_int('ultimate_turns'))
@@ -484,11 +503,13 @@ class DomainSoAProjection:
             t.int32) * UNKNOWN_TEMPLATE
         resolving = t.full((rows,), -1, dtype=t.int64, device=self.device)
         op_idx = col['op_card_index'].to(t.int64)
-        op_ok = col['operation_present'] & (op_idx >= 0) & (op_idx < K)
-        resolving = t.where(
-            op_ok, card_seven.gather(1, op_idx.clamp(0, max(K - 1, 0)).unsqueeze(1)).squeeze(1), resolving)
-        errors = errors | (active & col['operation_present'] & ((resolving < 0) | ~op_ok)).to(
-            t.int32) * UNKNOWN_TEMPLATE
+        has_op_card = col['operation_present'] & (op_idx >= 0)
+        op_ok = has_op_card & (op_idx < K)
+        safe_op = op_idx.clamp(0, max(K - 1, 0)).unsqueeze(1)
+        op_kind = card_seven.gather(1, safe_op).squeeze(1)
+        op_valid = col['card_valid'].gather(1, safe_op).squeeze(1)
+        resolving = t.where(pending & op_ok, op_kind, resolving)
+        errors = errors | (active & has_op_card & (~op_ok | ~op_valid | (op_kind < 0))).int() * UNKNOWN_TEMPLATE
         slot = t.arange(2, device=self.device)
         m_count = col['mulligan_count'].to(t.int32)
         m_in = slot.unsqueeze(0) < m_count.unsqueeze(1).clamp(min=0, max=2)
@@ -644,7 +665,7 @@ class DomainSoAProjection:
             raise RuntimeError('Implemented named-column pack drifted from the declared feature list')
         packed = t.where(active.unsqueeze(1), packed, t.zeros_like(packed))
         flags = t.stack((
-            active & ((errors & (INVALID_ROW | UNKNOWN_TEMPLATE)) == 0),
+            active & ~upstream_failed & ((errors & (INVALID_ROW | UNKNOWN_TEMPLATE)) == 0),
             active & (errors == 0) & ~unhandled,
             viewer_done,
             finished,

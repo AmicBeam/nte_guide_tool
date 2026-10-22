@@ -1381,3 +1381,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 换牌设备阶段 `rl/batched_duel/domain_soa_turns.py` 输出手牌／牌库、随机状态及相关计数的增量，保留失败回滚；第二次起手换牌和手牌调度分别等待回合开始／结算结束续步。它要求完整合法动作预校验，尚非完整动作或对局执行器。验证：`python -m unittest tests.test_duel_v2_domain_soa_turns -v`；边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。
 
 域状态的效果条件、空清理列表与空持续状态分别保留；战斗玩家目标、额外出击计数、倾陷削减和黑羽检视续步采用具名字段。暂停出击仅保存已知规格，临时牌视图保留物理引用；采样器仍拒绝临时视图，完整 GPU 训练资格未解除。验证：`python -m unittest tests.test_duel_v2_domain_soa_codec -v`。
+
+公开字段投影保留来源失败与内容绑定保护，个人能量上限按正式模板和节奏变化，待选项之外不编码结算牌头部；设备图重放覆盖这些变化。验证：`python -m unittest tests.test_duel_v2_domain_soa_projection -v`。当前仍为部分特征，不是完整网络观察。

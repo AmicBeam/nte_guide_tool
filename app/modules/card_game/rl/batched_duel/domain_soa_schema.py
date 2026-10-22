@@ -248,6 +248,7 @@ CARD_BOOL_FIELDS: tuple[str, ...] = (
     "retain",
     "playable_downed",
     "training_excluded",
+    "_k03_recovery",
 )
 CARD_STR_FIELDS: tuple[str, ...] = (
     "id",
@@ -406,7 +407,7 @@ CHARACTER_KEYS: frozenset[str] = (
     | frozenset(CHARACTER_STR_FIELDS)
 )
 CARD_KEYS: frozenset[str] = (
-    frozenset(("entity_id", "instance_id", "side", "card_id", "copy", "jingu_mark", "source", "play_options"))
+    frozenset(("entity_id", "instance_id", "side", "card_id", "copy", "jingu_mark", "source", "play_options", "_physical_card"))
     | frozenset(CARD_INT_FIELDS)
     | frozenset(CARD_BOOL_FIELDS)
     | frozenset(CARD_STR_FIELDS)
@@ -625,6 +626,10 @@ def array_specs(layout):
         "op_flag_value": (b, (n_opflag,)),
         "op_int_presence": (u8, (n_opint,)),
         "op_int_value": (i32, (n_opint,)),
+        "op_pending_sortie_presence": (u8, ()),
+        "op_pending_stay_bench": (b, ()),
+        "op_pending_bonus_presence": (u8, ()),
+        "op_pending_bonus": (i32, ()),
         "op_str_presence": (u8, (len(OP_STR_KEYS),)),
         "op_str_slot": (i32, (len(OP_STR_KEYS),)),
         "op_option_id_presence": (u8, ()),
@@ -718,6 +723,8 @@ def array_specs(layout):
         "character_lingke_entity_slot": (i32, (2, C)),
         "character_lingke_id_slot": (i32, (2, C)),
         "character_lingke_count": (i32, (2, C)),
+        "card_is_view": (b, (K,)),
+        "card_physical_index": (i32, (K,)),
         "card_valid": (b, (K,)),
         "card_entity_slot": (i32, (K,)),
         "card_instance_slot": (i32, (K,)),

@@ -92,6 +92,35 @@ class DomainSoASamplerTest(unittest.TestCase):
         self.assertIn('bmt_seed_words', source)
         self.assertIn('generation allocation including recovery/deck-generator retry', info['implemented'])
 
+    def test_physical_views_reject_even_diagnostic_sampling(self):
+        layout = DomainSoALayout(game_capacity=1)
+        _, fields = _torch_fields([_state()], layout)
+        fields['card_is_view'][0,0] = True
+        with cpu_oracle(layout, guard=False) as sampler:
+            result = sampler.determinize(fields, torch.tensor([0],dtype=torch.int64),
+                                    torch.tensor([91],dtype=torch.int64), torch.tensor([1],dtype=torch.int32))
+            self.assertEqual(int(result['row_error'][0]), UNSUPPORTED_ROOT)
+            self.assertTrue(torch.equal(result['card_is_view'], fields['card_is_view']))
+
+    @unittest.skipUnless(torch.cuda.is_available(), 'Actual CUDA view guard required')
+    def test_cuda_physical_views_reject_without_mutating(self):
+        layout = DomainSoALayout(game_capacity=1)
+        _, fields = _torch_fields([_state()], layout, 'cuda')
+        fields['card_is_view'][0,0] = True
+        with DomainSoASampler(layout=layout, device='cuda', guard=False) as sampler:
+            prepared = sampler.prepare(fields, torch.zeros(1,dtype=torch.int64,device='cuda'),
+                                       torch.ones(1,dtype=torch.int64,device='cuda'),
+                                       torch.ones(1,dtype=torch.int32,device='cuda'))
+            sampler.launch(prepared)
+            torch.cuda.synchronize()
+            graph = torch.cuda.CUDAGraph()
+            with torch.cuda.graph(graph):
+                result = sampler.launch(prepared)
+            graph.replay()
+            torch.cuda.synchronize()
+            self.assertEqual(int(result['row_error'][0]), UNSUPPORTED_ROOT)
+            self.assertTrue(torch.equal(result['zone_card_index'],fields['zone_card_index']))
+
     def test_missing_schema_fields_reject(self):
         layout = DomainSoALayout(game_capacity=2)
         packed, fields = _torch_fields([_state()], layout)

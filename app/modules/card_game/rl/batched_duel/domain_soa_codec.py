@@ -121,6 +121,7 @@ OP_ALLOWED = (
 DEFERRED_ALLOWED = frozenset({"side", "actor", "entity_id", "kind"})
 MISSING_SCHEMA_FIELDS = (
     "Player.records payloads",
+    "pending_sortie specs beyond optional integer bonus",
     "PendingChoice.choices card list",
     "Effect.clear_on values outside EFFECT_CLEAR_EVENTS",
     "_deferred_card_marks operation list",
@@ -586,7 +587,16 @@ def _encode_row(state, arrays, row, layout, presentation):
             instances[instance] = entity
 
     def register_card(card, side):
-        register_entity(card, CardEntity, instance=card.get("instance_id"))
+        physical = card.get('_physical_card', _MISSING)
+        if physical is _MISSING:
+            register_entity(card, CardEntity, instance=card.get("instance_id"))
+        else:
+            if not isinstance(card, CardEntity) or not isinstance(physical, CardEntity):
+                raise DomainSoAUnsupportedError('physical card view must reference a CardEntity')
+            if physical is card or '_physical_card' in physical:
+                raise DomainSoAUnsupportedError('nested or cyclic physical card view')
+            if any(card.get(key) != physical.get(key) for key in ('entity_id','instance_id','side')):
+                raise DomainSoAUnsupportedError('physical view identity mismatch')
         ident = id(card)
         found = card_by_obj.get(ident)
         if found is not None:
@@ -595,11 +605,16 @@ def _encode_row(state, arrays, row, layout, presentation):
             raise DomainSoACapacityError("card table exceeds layout.max_cards")
         idx = card_n[0]
         card_by_obj[ident] = idx
-        _encode_card(card, side, arrays, row, idx, strings)
         card_n[0] += 1
+        if physical is not _MISSING:
+            arrays['card_is_view'][row, idx] = True
+            arrays['card_physical_index'][row, idx] = register_card(physical, side)
+        _encode_card(card, side, arrays, row, idx, strings)
         return idx
 
     def register_zone_card(card, side):
+        if '_physical_card' in card:
+            raise DomainSoAUnsupportedError('zone cannot contain an effective physical-card view')
         ident = id(card)
         if ident in zone_seen:
             raise DomainSoAUnsupportedError("Duplicate entity identity or multiple physical zone occupancy")
@@ -1434,9 +1449,25 @@ def _encode_operation(state, arrays, row, layout, strings, register_card):
     arrays["op_redeem_bonus"][row] = _as_int("redeem_bonus", operation.get("redeem_bonus", 0))
     arrays["op_record_candidate"][row] = _as_bool("record_candidate", operation.get("record_candidate", False))
     for i, key in enumerate(OP_FLAG_KEYS):
+        if key == 'pending_sortie' and type(operation.get(key)) is dict:
+            continue
         _put_optional_bool(operation, key, arrays["op_flag_presence"][row], arrays["op_flag_value"][row], i)
     for i, key in enumerate(OP_INT_KEYS):
         _put_optional_int(operation, key, arrays["op_int_presence"][row], arrays["op_int_value"][row], i)
+    pending_sortie = operation.get('pending_sortie')
+    if type(pending_sortie) is dict:
+        _unknown(pending_sortie, frozenset({'spec', 'stay_bench'}), 'pending_sortie')
+        if set(pending_sortie) != {'spec', 'stay_bench'}:
+            raise DomainSoAUnsupportedError('incomplete pending_sortie')
+        spec = pending_sortie['spec']
+        if type(spec) is not dict:
+            raise TypeError('pending_sortie.spec must be a dict')
+        _unknown(spec, frozenset({'bonus'}), 'pending_sortie.spec')
+        arrays['op_pending_sortie_presence'][row] = PRESENCE_VALUE
+        arrays['op_pending_stay_bench'][row] = _as_bool('pending_sortie.stay_bench', pending_sortie['stay_bench'])
+        if 'bonus' in spec:
+            arrays['op_pending_bonus_presence'][row] = PRESENCE_VALUE
+            arrays['op_pending_bonus'][row] = _as_int('pending_sortie.spec.bonus', spec['bonus'])
     for i, key in enumerate(OP_STR_KEYS):
         _put_optional_str(operation, key, arrays["op_str_presence"][row], arrays["op_str_slot"][row], i, strings, allow_value=True)
     if "option_id" not in operation:
@@ -1699,6 +1730,16 @@ def _decode_cards(batch, row):
         else:
             raise DomainSoADecodeError("invalid jingu_mark presence")
         cards[index] = CardEntity(payload, entity_id=_entity_text(batch.card_entity_slot[row, index]), side=side)
+    for index, card in cards.items():
+        if not bool(batch.card_is_view[row, index]):
+            continue
+        physical_index = int(batch.card_physical_index[row, index])
+        if physical_index not in cards or physical_index == index or bool(batch.card_is_view[row, physical_index]):
+            raise DomainSoADecodeError('invalid physical view reference')
+        physical = cards[physical_index]
+        if any(card.get(key) != physical.get(key) for key in ('entity_id','instance_id','side')):
+            raise DomainSoADecodeError('physical view identity mismatch')
+        card['_physical_card'] = physical
     return cards
 
 
@@ -2268,6 +2309,17 @@ def _decode_operation(batch, row, state, cards):
         _apply_optional(operation, key, _take_optional(batch.op_int_presence[row], batch.op_int_value[row], i, int))
     for i, key in enumerate(OP_STR_KEYS):
         _apply_optional(operation, key, _take_optional(batch.op_str_presence[row], batch.op_str_slot[row], i, lambda slot: _load_string(batch, row, slot)))
+    pending_p = int(batch.op_pending_sortie_presence[row])
+    if pending_p == PRESENCE_VALUE:
+        spec = {}
+        bonus_p = int(batch.op_pending_bonus_presence[row])
+        if bonus_p == PRESENCE_VALUE:
+            spec['bonus'] = int(batch.op_pending_bonus[row])
+        elif bonus_p != PRESENCE_ABSENT:
+            raise DomainSoADecodeError('invalid pending_sortie bonus presence')
+        operation['pending_sortie'] = {'spec':spec,'stay_bench':bool(batch.op_pending_stay_bench[row])}
+    elif pending_p != PRESENCE_ABSENT:
+        raise DomainSoADecodeError('invalid pending_sortie presence')
     opt_p = int(batch.op_option_id_presence[row])
     if opt_p == PRESENCE_NULL:
         operation["option_id"] = None

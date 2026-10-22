@@ -876,6 +876,8 @@ class DomainSoASampler:
              |(batch.sources['catalog_digest']!=self._catalog_digest[None,:]).any(1)
              |(batch.active<0)|(batch.active>1)))
         source_error.copy_(t.where(bad&(source_error==0),INVALID_INPUT,source_error))
+        unsupported_view = (batch.active != 0) & batch.sources['card_is_view'].any(1)
+        source_error.copy_(t.where(unsupported_view & (source_error == 0), UNSUPPORTED_ROOT, source_error))
         L = self.layout
         scalars = (
             rows, L.max_characters, L.max_cards, L.max_zone, L.max_choice_cards,

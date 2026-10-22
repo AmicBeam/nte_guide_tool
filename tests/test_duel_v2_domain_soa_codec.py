@@ -343,6 +343,35 @@ class DomainSoACodecTest(unittest.TestCase):
         self.assertIn("playing", phases)
         self.assertEqual(rejected, [], msg=str(rejected[:5]))
 
+    def test_effective_card_view_preserves_physical_alias_and_identity(self):
+        from app.modules.card_game.engine.duel_v2.state import effective_card
+        decks = _decks()
+        state = new_game(seed=8, decks={'a':decks['zhenhong'],'b':decks['starter']}, skip_mulligan=True)
+        team = state['sides']['a']
+        team['characters']['zhenhong']['awakened'] = True
+        raw = team['hand'][0]
+        view = effective_card(state, 'a', raw)
+        self.assertIs(view['_physical_card'], raw)
+        state['operation'] = {'side':'a','actor':'zhenhong','card':view,'participants':[],
+                              'harmony':None,'first_bonus':0,'redeem_bonus':0,'record_candidate':False}
+        _, got = _roundtrip(state)
+        self.assertIs(got['operation']['card']['_physical_card'], got['sides']['a']['hand'][0])
+        view['entity_id'] = 'e99999'
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([state], DomainSoALayout(), presentation='drop')
+
+    def test_pending_sortie_preserves_empty_and_zero_bonus(self):
+        for spec in ({}, {'bonus':0}, {'bonus':2}):
+            state = _fourteen_initial_states()[0]
+            cid = state['sides']['a']['order'][0]
+            state['operation'] = {'side':'a','actor':cid,'card':None,'participants':[], 'harmony':None,
+                                  'first_bonus':0,'redeem_bonus':0,'record_candidate':False,
+                                  'pending_sortie':{'spec':spec,'stay_bench':False}}
+            _roundtrip(state)
+        state['operation']['pending_sortie']['spec']['future_unknown'] = True
+        with self.assertRaises(DomainSoAUnsupportedError):
+            encode_domain_states([state], DomainSoALayout(), presentation='drop')
+
     def test_effect_conditions_and_empty_clear_events_preserve_types(self):
         from app.modules.card_game.engine.duel_v2.modifiers import contribution
         for conditions in ([], [{'id':'enemy_turn'}], [{'id':'damage_attribute','args':{'attribute':'光'}}],

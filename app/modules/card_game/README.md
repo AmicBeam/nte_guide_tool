@@ -1369,3 +1369,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 显式授权的混合训练可使用 `batched_search/training_checkpoint.py` 保存完整决策边界前缀，并通过 `hybrid_joint_update.py` 执行一次性联合更新、`hybrid_capacity.py` 接续原容量拟合；辅助／主WDL、自然终局、原搜索预算及P0门槛保留。入口边界与验证命令见[显式授权的混合训练](../../../docs/duel-v2-public-training.md#显式授权的混合训练)，默认设备内训练入口不因这些组件解除资格校验。
 
 七队默认预检直接使用完整搜索对局做联合更新，不再额外采集容量留出并拟合临时网络200轮；策略容量工具仅按需诊断。规则、独立价值、数值／恢复、P0、独立互搏和并发／显存验收保留，旧失败不追认。验证：`python -m unittest tests.test_duel_v2_seven_preflight`；流程见[七队默认学习与按需容量诊断](../../../docs/duel-v2-public-training.md#七队默认学习与按需容量诊断)。
+
+无 VM GPU 的具名字段状态池、完整候选批队列、直接 CUDA 复制／准备后伤害和区域移动组件见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。组件计时入口 `scripts/benchmark_duel_v2_direct_gpu.py` 默认只展示计划，显式 `--run` 才使用 CUDA；完整规则、七队自然终局与 H3 接线尚未通过，组件成绩不能作为整局或训练资格。验证：`python -m unittest tests.test_duel_v2_domain_state_pool tests.test_duel_v2_domain_action_batch tests.test_duel_v2_domain_cuda_damage tests.test_duel_v2_domain_soa_zones -q`。

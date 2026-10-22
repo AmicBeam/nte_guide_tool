@@ -88,6 +88,7 @@ REQUIRED_FIELDS = (
     'winner_presence', 'pending_choice_present', 'choice_kind', 'choice_side',
     'choice_card_count', 'choice_card_index', 'operation_present', 'op_card_index',
     'mulligan_count', 'mulligan_sides', 'player_valid', 'player_hp', 'player_max_hp',
+    'player_order_count', 'player_character_count', 'player_order_slot',
     'player_shield', 'player_ap', 'player_front_presence', 'player_front_slot',
     'player_last_front_presence', 'player_last_front_slot', 'player_int_presence',
     'player_int_value', 'player_bool_presence', 'player_bool_value',
@@ -348,7 +349,24 @@ class DomainSoAProjection:
             | ((phase == PHASE_MULLIGAN) & (pending | col['operation_present']))
         )
         errors = errors | unhandled.to(t.int32) * UNHANDLED_ACTION_CATEGORY
-        char_valid = col['character_valid']
+        stored_present = col['character_valid']
+        stored_count = col['player_character_count'].long()
+        declared_count = col['player_order_count'].long()
+        position = t.arange(C,device=self.device).view(1,1,C)
+        # Formal team_order falls back to stored dict order for an empty list.
+        order_count = t.where(declared_count==0,stored_count,declared_count)
+        order_slots = t.where((declared_count==0)[:,:,None],position,
+                              col['player_order_slot'].long())
+        ordered = position < order_count[:,:,None]
+        bad_order = ((stored_count<1)|(stored_count>C)|(order_count<0)|(order_count>stored_count)).any(1)
+        bad_order = bad_order | (ordered&((order_slots<0)|(order_slots>=stored_count[:,:,None]))).flatten(1).any(1)
+        order_map = t.nn.functional.one_hot(order_slots.clamp(0,C-1),C).bool() & ordered[:,:,:,None]
+        hits = order_map.sum(2)
+        bad_order = bad_order | (hits>1).flatten(1).any(1)
+        bad_order = bad_order | (stored_present != (position<stored_count[:,:,None])).flatten(1).any(1)
+        errors = errors | (active & bad_order).int()*INVALID_ROW
+        char_valid = stored_present & (hits>0)
+        order_position = (order_map.int()*position[:,:,:,None]).sum(2).int()
         char_tmpl = col['character_template'].to(t.int64)
         char_map = self.catalog.character_to_seat
         in_char = (char_tmpl >= 0) & (char_tmpl < char_map.shape[0])
@@ -394,8 +412,7 @@ class DomainSoAProjection:
         char_jingu = scatter_int(character_int('jingu'))
         char_awakened = scatter_bool(self._optional_bool(cbool_p, cbool_v, CBOOL['awakened']))
         char_jingu_loan = scatter_bool(self._optional_bool(cbool_p, cbool_v, CBOOL['jingu_loan']))
-        order_slots = t.arange(C, device=self.device, dtype=t.int32).view(1, 1, C).expand(rows, 2, C)
-        char_order = t.where(char_present, scatter_int(order_slots, default=-1),
+        char_order = t.where(char_present, scatter_int(order_position, default=-1),
                              t.full((rows, 2, NUM_SEATS), -1, dtype=t.int32, device=self.device))
 
         def occupant_seat(presence, slot):
@@ -579,11 +596,17 @@ class DomainSoAProjection:
             self._scatter_classes(opp_disc_k, opp_disc_v, NUM_CARDS),
             self._scatter_classes(opp_hand_k, opp_hand_v, NUM_CARDS),
         ]
+        if 'support_turn' in PINT:
+            st=PINT['support_turn']
+            support=t.where((pint_p[:,:,st]==PRESENCE_VALUE)&(pint_v[:,:,st]==col['turn'][:,None]),
+                            self._optional_int(pint_p,pint_v,PINT['support_count']),0)
+        else:
+            support=t.zeros_like(col['player_hp'])
         seven_side = t.stack((
             g(col['player_max_hp']),
             g(2 + self._optional_int(pint_p, pint_v, PINT['insight_bonus'])),
             g(self._optional_int(pint_p, pint_v, PINT['insight_played'])),
-            g(t.zeros_like(col['player_hp'])),
+            g(support),
             g(self._optional_int(pint_p, pint_v, PINT['heiyu_divinations'])),
         ), dim=2)
         mapped_choice = t.where(

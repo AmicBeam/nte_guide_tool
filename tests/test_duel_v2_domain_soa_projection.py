@@ -120,6 +120,34 @@ class DomainSoAProjectionTest(unittest.TestCase):
                 self.assertTrue(torch.equal(out.packed_named[row], expected),
                                 msg=self._diff(out.packed_names, out.packed_named[row], expected))
 
+    def test_lineup_order_and_dismissed_identity_project_like_formal_view(self):
+        from app.modules.card_game.engine.duel_v2.summons import summon_front,dismiss
+        state=_state(61)
+        team=state['sides']['a']
+        team['order']=[team['order'][1],team['order'][0],*team['order'][2:]]
+        ghost=summon_front(state,'a',name='test summon',attack=2,hp=4)
+        dismiss(state,'a',ghost)
+        for turn,support_turn in ((0,None),(0,0),(2,1),(2,2)):
+            state['turn']=turn;team['support_count']=3
+            if support_turn is None:team.pop('support_turn',None)
+            else:team['support_turn']=support_turn
+            packed=_pack(state);out=_project(packed,[0])
+            self.assertEqual(int(out.errors[0]),0)
+            obs,_=seven_lineup.encode(observe(state,'a'),[])
+            expected=torch.tensor(obs[list(out.packed_index)],dtype=torch.float32)
+            self.assertTrue(torch.equal(out.packed_named[0],expected),
+                            msg=self._diff(out.packed_names,out.packed_named[0],expected))
+
+    def test_empty_lineup_uses_formal_storage_fallback(self):
+        state=_state(71)
+        state['sides']['a']['order']=[]
+        packed=_pack(state);out=_project(packed,[0])
+        self.assertEqual(int(out.errors[0]),0)
+        obs,_=seven_lineup.encode(observe(state,'a'),[])
+        expected=torch.tensor(obs[list(out.packed_index)],dtype=torch.float32)
+        self.assertTrue(torch.equal(out.packed_named[0],expected),
+                        msg=self._diff(out.packed_names,out.packed_named[0],expected))
+
     def test_hidden_opponent_cards_rng_and_deck_order_do_not_enter(self):
         state = _state(21)
         packed = _pack(state)
@@ -256,6 +284,17 @@ class DomainSoAProjectionTest(unittest.TestCase):
                          'actors', 'public_flags', 'errors'):
                 self.assertTrue(torch.equal(getattr(actual, name).cpu(), getattr(expected, name)),
                                 msg=name)
+        fields['player_order_count'][0,0]=0
+        fields['player_order_slot'][0,0].fill_(-1)
+        graph.replay();torch.cuda.synchronize()
+        self.assertTrue(torch.equal(actual.packed_named.cpu(),expected.packed_named))
+        self.assertTrue((actual.errors==0).all())
+        fields['player_order_count'][0,0]=2
+        fields['player_order_slot'][0,0,:2]=0
+        graph.replay();torch.cuda.synchronize()
+        self.assertEqual(int(actual.errors[0]),proj.INVALID_ROW)
+        self.assertEqual(int(actual.counts[0]),0)
+        self.assertTrue((actual.errors[1:]==0).all())
         del graph
         torch.cuda.synchronize()
 

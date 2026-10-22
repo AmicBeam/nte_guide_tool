@@ -28,11 +28,13 @@ from .domain_soa_schema import (
     CHARACTER_BOOL_FIELDS,
     CHARACTER_INT_FIELDS,
     CHARACTER_KEYS,
+    CHARACTER_RUNTIME_STR_FIELDS,
     CHARACTER_STR_FIELDS,
     CHARACTER_VOCAB,
     CHOICE_BOOL_KEYS,
     CHOICE_INT_KEYS,
     CHOICE_KINDS,
+    CHOICE_STR_KEYS,
     COVERAGE,
     DOT_KINDS,
     DomainSoABatch,
@@ -46,9 +48,12 @@ from .domain_soa_schema import (
     EFFECT_PHASES,
     EFFECT_SCOPES,
     EFFECT_VISIBILITY,
+    FLAG_BOOL_FIELDS,
     FLAG_INT_FIELDS,
+    FLAG_STR_FIELDS,
     GAME_KEYS,
     GAME_PHASES,
+    LINGKE_CHAIN_KEYS,
     NON_AUTHORITATIVE_GAME_KEYS,
     OP_FLAG_KEYS,
     OP_INT_KEYS,
@@ -86,6 +91,7 @@ CHOICE_ALLOWED = (
     frozenset({"side", "kind", "prompt", "cards", "actor", "continuation"})
     | frozenset(CHOICE_INT_KEYS)
     | frozenset(CHOICE_BOOL_KEYS)
+    | frozenset(CHOICE_STR_KEYS)
 )
 OP_ALLOWED = (
     frozenset(
@@ -110,21 +116,11 @@ OP_ALLOWED = (
 )
 DEFERRED_ALLOWED = frozenset({"side", "actor", "entity_id", "kind"})
 MISSING_SCHEMA_FIELDS = (
-    "Character.last_hit_source",
-    "Character.lingke_chain",
-    "Character.flavor",
-    "Character.base_attack/base_max_hp as top-level keys",
-    "Character.disappeared",
-    "Character.beast_fangs",
-    "Player.effect_seq (allowed key, no dedicated array)",
     "Player.records payloads",
-    "Player.support_turn",
-    "Flags.gulang_item/has_harmonized/return_after/temp_revive/free_normal_attack_turn",
-    "PendingChoice.deck_cards/deck_order/snapshot_n/location_id/source_instance_id/scope/choices",
+    "PendingChoice.choices card list",
     "Effect.conditions payloads (count only)",
     "Effect.clear_on values outside EFFECT_CLEAR_EVENTS (including ultimate_end)",
     "_deferred_card_marks operation list",
-    "deferred_actions empty-list vs absent (count only, no presence code)",
 )
 UNSUPPORTED_REMAINING = (
     "unknown keys at any allowlisted object",
@@ -132,7 +128,6 @@ UNSUPPORTED_REMAINING = (
     "tutorial/scenario/turn_snapshots/time_removed",
     "non-public unsommoned character templates",
     "mutated catalog nests (mechanisms/play_options/source/ultimate)",
-    "attacked_this_turn order other than character-order entity ids",
     "records with payloads",
     "Python callables, numpy/torch payloads, bool used as int except declared bool-int flags",
     *MISSING_SCHEMA_FIELDS,
@@ -155,9 +150,10 @@ def coverage():
             "CardEntity table plus ordered hand/deck/discard/removed",
             "entity class, entity_id, instance_id, aliases across zones/choice/operation",
             "typed effects with expiry clocks and known clear_on events",
-            "typed flags in FLAG_INT_FIELDS plus collapse/atk_buff_expiring/timed_attack",
-            "pending_choice and operation resumptions with card aliases",
-            "deferred_actions kind/side/actor/entity_id, response locks, down-response queue",
+            "typed flags including has_harmonized/gulang_item/return_after/temp_revive/free_normal_attack_turn",
+            "last_hit_source, lingke_chain, beast_fangs, flavor, disappeared, support_turn, effect_seq",
+            "pending_choice including deck_cards/deck_order/snapshot_n/continuation strings",
+            "deferred_actions empty-list vs absent via presence, response locks, down-response queue",
             "front_debuff delay/burn/star/weave/stain/dots",
             "equipment, shape, copy, jingu_mark",
             "absent vs null vs zero via presence codes",
@@ -672,8 +668,6 @@ def _encode_optional_bool_field(state, key, arrays, row, prefix):
 
 def _encode_player(team, arrays, row, s, layout, strings, register_card):
     _unknown(team, PLAYER_KEYS, "player")
-    if "effect_seq" in team:
-        raise DomainSoAUnsupportedError("player effect_seq has no dedicated SoA array")
     arrays["player_valid"][row, s] = True
     arrays["player_entity_slot"][row, s] = _parse_entity_num(team["entity_id"])
     if team.get("side") not in (None, SIDES[s]):
@@ -683,15 +677,19 @@ def _encode_player(team, arrays, row, s, layout, strings, register_card):
     arrays["player_max_hp"][row, s] = _as_int("max_hp", team["max_hp"])
     arrays["player_shield"][row, s] = _as_int("shield", team["shield"])
     arrays["player_ap"][row, s] = _as_int("ap", team["ap"])
-    order = team["order"]
+    declared_order = team["order"]
     characters = team["characters"]
-    if type(order) is not list or not isinstance(characters, Mapping):
+    if type(declared_order) is not list or not isinstance(characters, Mapping):
         raise TypeError("player order/characters must be list/dict")
+    order = list(characters)  # Stored identities retain formal dict iteration order.
     if len(order) > layout.max_characters:
-        raise DomainSoACapacityError("character order exceeds layout.max_characters")
-    if set(order) != set(characters) or len(order) != len(characters):
-        raise DomainSoAUnsupportedError("codec requires lineup characters to match order")
-    arrays["player_order_count"][row, s] = len(order)
+        raise DomainSoACapacityError("character storage exceeds layout.max_characters")
+    if len(set(declared_order)) != len(declared_order) or any(cid not in characters for cid in declared_order):
+        raise DomainSoAUnsupportedError("lineup order must contain distinct stored character ids")
+    arrays["player_character_count"][row, s] = len(order)
+    arrays["player_order_count"][row, s] = len(declared_order)
+    for i, cid in enumerate(declared_order):
+        arrays["player_order_slot"][row, s, i] = order.index(cid)
     _encode_front_ref(team, order, arrays, row, s, "front", "player_front")
     _encode_front_ref(team, order, arrays, row, s, "last_front", "player_last_front")
     for i, key in enumerate(PLAYER_INT_FIELDS):
@@ -773,13 +771,17 @@ def _encode_attacked(team, order, arrays, row, s):
     attacked = team["attacked_this_turn"]
     if type(attacked) is not list:
         raise TypeError("attacked_this_turn must be a list")
-    eids = [team["characters"][cid]["entity_id"] for cid in order]
-    canon = [eid for eid in eids if eid in attacked]
-    if attacked != canon or any(eid not in eids for eid in attacked):
-        raise DomainSoAUnsupportedError("attacked_this_turn must be character-order entity ids")
+    eid_to_slot = {team["characters"][cid]["entity_id"]: i for i, cid in enumerate(order)}
+    if any(eid not in eid_to_slot for eid in attacked):
+        raise DomainSoAUnsupportedError("attacked_this_turn entity is not in order")
+    if len(attacked) > len(order):
+        raise DomainSoAUnsupportedError("attacked_this_turn exceeds lineup size")
     arrays["player_attacked_this_turn_presence"][row, s] = PRESENCE_VALUE
-    for i, eid in enumerate(eids):
-        arrays["player_attacked_this_turn"][row, s, i] = eid in attacked
+    arrays["player_attacked_count"][row, s] = len(attacked)
+    for i, eid in enumerate(attacked):
+        slot = eid_to_slot[eid]
+        arrays["player_attacked_slot"][row, s, i] = slot
+        arrays["player_attacked_this_turn"][row, s, slot] = True
 
 
 def _effects_presence(holder):
@@ -838,12 +840,13 @@ def _encode_character(hero, cid, arrays, row, s, slot, layout, strings):
             arrays["character_bool_value"][row, s, slot], i, catalog=catalog or None,
         )
     for i, key in enumerate(CHARACTER_STR_FIELDS):
-        allow = summoned or key == "shape"
+        allow = summoned or key == "shape" or key in CHARACTER_RUNTIME_STR_FIELDS
         _put_optional_str(
             hero, key, arrays["character_str_presence"][row, s, slot],
             arrays["character_str_slot"][row, s, slot], i,
             strings if allow else _RejectStrings(), catalog=catalog or None, allow_value=allow,
         )
+    _encode_lingke_chain(hero, arrays, row, s, slot, strings)
     arrays["character_effects_presence"][row, s, slot] = _effects_presence(hero)
     _encode_effects(hero, arrays, row, layout.holder_index(s, slot), layout, strings, "character effects")
     arrays["character_flags_presence"][row, s, slot] = _flags_presence(hero)
@@ -863,6 +866,28 @@ def _encode_character(hero, cid, arrays, row, s, slot, layout, strings):
     if "resource_name" in hero:
         raise DomainSoAUnsupportedError("resource_name has no dedicated SoA array")
 
+
+
+def _encode_lingke_chain(hero, arrays, row, s, slot, strings):
+    if "lingke_chain" not in hero:
+        arrays["character_lingke_presence"][row, s, slot] = PRESENCE_ABSENT
+        return
+    chain = hero["lingke_chain"]
+    if chain is None:
+        arrays["character_lingke_presence"][row, s, slot] = PRESENCE_NULL
+        return
+    if type(chain) is not dict:
+        raise TypeError("lingke_chain must be a dict")
+    _unknown(chain, frozenset(LINGKE_CHAIN_KEYS), "lingke_chain")
+    for required in LINGKE_CHAIN_KEYS:
+        if required not in chain:
+            raise DomainSoAUnsupportedError(f"lingke_chain missing {required}")
+    arrays["character_lingke_presence"][row, s, slot] = PRESENCE_VALUE
+    arrays["character_lingke_entity_slot"][row, s, slot] = _parse_entity_num(chain["entity_id"])
+    if type(chain["character_id"]) is not str:
+        raise TypeError("lingke_chain.character_id must be str")
+    arrays["character_lingke_id_slot"][row, s, slot] = strings.intern(chain["character_id"])
+    arrays["character_lingke_count"][row, s, slot] = _as_int("lingke_chain.count", chain["count"])
 
 
 def _encode_stat_layer(hero, catalog, arrays, row, s, slot):
@@ -1101,11 +1126,25 @@ def _encode_flags(holder, arrays, row, holder_index, layout, strings):
         return
     if type(flags) is not dict:
         raise TypeError("flags must be a dict")
-    _unknown(flags, frozenset(FLAG_INT_FIELDS) | FLAG_SPECIAL, "flags")
+    _unknown(
+        flags,
+        frozenset(FLAG_INT_FIELDS) | frozenset(FLAG_BOOL_FIELDS) | frozenset(FLAG_STR_FIELDS) | FLAG_SPECIAL,
+        "flags",
+    )
     for i, key in enumerate(FLAG_INT_FIELDS):
         _put_optional_int(
             flags, key, arrays["flag_int_presence"][row, holder_index],
             arrays["flag_int_value"][row, holder_index], i, bool_keys=FLAG_BOOL_INTS,
+        )
+    for i, key in enumerate(FLAG_BOOL_FIELDS):
+        _put_optional_bool(
+            flags, key, arrays["flag_bool_presence"][row, holder_index],
+            arrays["flag_bool_value"][row, holder_index], i,
+        )
+    for i, key in enumerate(FLAG_STR_FIELDS):
+        _put_optional_str(
+            flags, key, arrays["flag_str_presence"][row, holder_index],
+            arrays["flag_str_slot"][row, holder_index], i, strings, allow_value=True,
         )
     collapse = flags.get("collapse", _MISSING)
     if collapse is _MISSING:
@@ -1283,6 +1322,11 @@ def _encode_choice(state, arrays, row, layout, strings, register_card):
         _put_optional_int(pending, key, arrays["choice_int_presence"][row], arrays["choice_int_value"][row], i)
     for i, key in enumerate(CHOICE_BOOL_KEYS):
         _put_optional_bool(pending, key, arrays["choice_bool_presence"][row], arrays["choice_bool_value"][row], i)
+    for i, key in enumerate(CHOICE_STR_KEYS):
+        _put_optional_str(
+            pending, key, arrays["choice_str_presence"][row], arrays["choice_str_slot"][row], i,
+            strings, allow_value=True,
+        )
     if "actor" not in pending:
         arrays["choice_actor_presence"][row] = PRESENCE_ABSENT
     elif pending["actor"] is None:
@@ -1290,7 +1334,7 @@ def _encode_choice(state, arrays, row, layout, strings, register_card):
     else:
         arrays["choice_actor_presence"][row] = PRESENCE_VALUE
         arrays["choice_actor_side"][row] = side_index(pending["side"])
-        arrays["choice_actor_slot"][row] = _char_slot(state["sides"][pending["side"]]["order"], pending["actor"], "choice actor")
+        arrays["choice_actor_slot"][row] = _char_slot(list(state["sides"][pending["side"]]["characters"]), pending["actor"], "choice actor")
     if "continuation" not in pending:
         arrays["choice_continuation_presence"][row] = PRESENCE_ABSENT
     elif pending["continuation"] is None:
@@ -1314,7 +1358,7 @@ def _encode_operation(state, arrays, row, layout, strings, register_card):
     arrays["operation_present"][row] = True
     side = operation["side"]
     arrays["op_side"][row] = side_index(side)
-    arrays["op_actor_slot"][row] = _char_slot(state["sides"][side]["order"], operation["actor"], "operation actor")
+    arrays["op_actor_slot"][row] = _char_slot(list(state["sides"][side]["characters"]), operation["actor"], "operation actor")
     card = operation.get("card", _MISSING)
     if card is _MISSING or card is None:
         arrays["op_card_index"][row] = -1
@@ -1360,7 +1404,7 @@ def _encode_operation(state, arrays, row, layout, strings, register_card):
         if type(item) not in (list, tuple) or len(item) != 2:
             raise DomainSoAUnsupportedError("participant must be (side, cid)")
         arrays["op_participant_side"][row, i] = side_index(item[0])
-        arrays["op_participant_slot"][row, i] = _char_slot(state["sides"][item[0]]["order"], item[1], "participant")
+        arrays["op_participant_slot"][row, i] = _char_slot(list(state["sides"][item[0]]["characters"]), item[1], "participant")
     choice_cards = operation.get("choice_cards", _MISSING)
     if choice_cards is _MISSING:
         arrays["op_choice_card_count"][row] = 0
@@ -1386,7 +1430,7 @@ def _encode_last_attack_target(operation, state, arrays, row):
         raise DomainSoAUnsupportedError("last_attack_target must be (side, cid)")
     arrays["op_last_attack_target_presence"][row] = PRESENCE_VALUE
     arrays["op_last_attack_target_slot"][row] = (
-        side_index(target[0]) * 256 + _char_slot(state["sides"][target[0]]["order"], target[1], "last_attack_target")
+        side_index(target[0]) * 256 + _char_slot(list(state["sides"][target[0]]["characters"]), target[1], "last_attack_target")
     )
 
 
@@ -1409,14 +1453,18 @@ def _encode_card_mark(operation, arrays, row):
 def _encode_deferred(state, arrays, row, layout, strings):
     deferred = state.get("deferred_actions", _MISSING)
     if deferred is _MISSING:
+        arrays["deferred_presence"][row] = PRESENCE_ABSENT
+        arrays["deferred_count"][row] = 0
+        return
+    if deferred is None:
+        arrays["deferred_presence"][row] = PRESENCE_NULL
         arrays["deferred_count"][row] = 0
         return
     if type(deferred) is not list:
         raise TypeError("deferred_actions must be a list")
-    if not deferred:
-        raise DomainSoAUnsupportedError("empty deferred_actions cannot be distinguished from absence")
     if len(deferred) > layout.max_deferred:
         raise DomainSoACapacityError("deferred_actions exceed layout.max_deferred")
+    arrays["deferred_presence"][row] = PRESENCE_VALUE
     arrays["deferred_count"][row] = len(deferred)
     for i, item in enumerate(deferred):
         if type(item) is not dict:
@@ -1424,7 +1472,7 @@ def _encode_deferred(state, arrays, row, layout, strings):
         _unknown(item, DEFERRED_ALLOWED, "deferred")
         arrays["deferred_side"][row, i] = side_index(item["side"])
         arrays["deferred_actor_slot"][row, i] = _char_slot(
-            state["sides"][item["side"]]["order"], item["actor"], "deferred actor"
+            list(state["sides"][item["side"]]["characters"]), item["actor"], "deferred actor"
         )
         arrays["deferred_entity_slot"][row, i] = _parse_entity_num(item["entity_id"])
         arrays["deferred_kind_slot"][row, i] = strings.intern(item["kind"])
@@ -1490,9 +1538,13 @@ def _decode_row(batch, row):
         state["pending_choice"] = _decode_choice(batch, row, state, cards)
     if bool(batch.operation_present[row]):
         state["operation"] = _decode_operation(batch, row, state, cards)
-    deferred_n = int(batch.deferred_count[row])
-    if deferred_n:
-        state["deferred_actions"] = _decode_deferred(batch, row, state, deferred_n)
+    deferred_p = int(batch.deferred_presence[row])
+    if deferred_p == PRESENCE_NULL:
+        state["deferred_actions"] = None
+    elif deferred_p == PRESENCE_VALUE:
+        state["deferred_actions"] = _decode_deferred(batch, row, state, int(batch.deferred_count[row]))
+    elif deferred_p != PRESENCE_ABSENT:
+        raise DomainSoADecodeError("invalid deferred_actions presence")
     down_n = int(batch.down_response_count[row])
     if down_n:
         state["_pending_down_responses"] = [
@@ -1598,15 +1650,24 @@ def _decode_cards(batch, row):
 
 def _decode_player(batch, row, s, side, cards):
     order_n = int(batch.player_order_count[row, s])
-    if order_n < 1 or order_n > batch.layout.max_characters:
-        raise DomainSoADecodeError("invalid player order count")
-    order, characters = [], {}
-    for slot in range(order_n):
+    stored_n = int(batch.player_character_count[row, s])
+    if not 1 <= stored_n <= batch.layout.max_characters or not 0 <= order_n <= stored_n:
+        raise DomainSoADecodeError("invalid character storage or lineup count")
+    stored, characters = [], {}
+    for slot in range(stored_n):
         if not bool(batch.character_valid[row, s, slot]):
-            raise DomainSoADecodeError("missing character in order")
+            raise DomainSoADecodeError("missing stored character")
         hero, cid = _decode_character(batch, row, s, slot, side)
-        order.append(cid)
+        if cid in characters:
+            raise DomainSoADecodeError("duplicate stored character id")
+        stored.append(cid)
         characters[cid] = hero
+    order = []
+    for i in range(order_n):
+        slot = int(batch.player_order_slot[row, s, i])
+        if not 0 <= slot < stored_n or stored[slot] in order:
+            raise DomainSoADecodeError("invalid or duplicate lineup slot")
+        order.append(stored[slot])
     payload = {
         "name": _load_string(batch, row, batch.player_name_slot[row, s]),
         "hp": int(batch.player_hp[row, s]),
@@ -1616,8 +1677,8 @@ def _decode_player(batch, row, s, side, cards):
         "order": order,
         "characters": characters,
     }
-    _apply_optional(payload, "front", _decode_front_ref(batch.player_front_presence[row, s], batch.player_front_slot[row, s], order, "front"))
-    _apply_optional(payload, "last_front", _decode_front_ref(batch.player_last_front_presence[row, s], batch.player_last_front_slot[row, s], order, "last_front"))
+    _apply_optional(payload, "front", _decode_front_ref(batch.player_front_presence[row, s], batch.player_front_slot[row, s], stored, "front"))
+    _apply_optional(payload, "last_front", _decode_front_ref(batch.player_last_front_presence[row, s], batch.player_last_front_slot[row, s], stored, "last_front"))
     for z, zone in enumerate(ZONES):
         count = int(batch.zone_count[row, s, z])
         if count < 0 or count > batch.layout.max_zone:
@@ -1646,15 +1707,21 @@ def _decode_player(batch, row, s, side, cards):
         used[_load_string(batch, row, batch.player_used_key_slot[row, s, i])] = bool(batch.player_used_value[row, s, i])
     payload["used"] = used
     payload["harmonized"] = {
-        cid: True for i, cid in enumerate(order) if bool(batch.player_harmonized[row, s, i])
+        cid: True for i, cid in enumerate(stored) if bool(batch.player_harmonized[row, s, i])
     }
     payload["front_debuff"] = _decode_front_debuff(batch, row, s)
     attacked_p = int(batch.player_attacked_this_turn_presence[row, s])
     if attacked_p == PRESENCE_VALUE:
-        payload["attacked_this_turn"] = [
-            characters[cid]["entity_id"] for i, cid in enumerate(order)
-            if bool(batch.player_attacked_this_turn[row, s, i])
-        ]
+        count = int(batch.player_attacked_count[row, s])
+        if count < 0 or count > len(stored):
+            raise DomainSoADecodeError("invalid attacked_this_turn count")
+        attacked = []
+        for i in range(count):
+            index = int(batch.player_attacked_slot[row, s, i])
+            if index < 0 or index >= len(stored):
+                raise DomainSoADecodeError("attacked_this_turn slot outside order")
+            attacked.append(characters[stored[index]]["entity_id"])
+        payload["attacked_this_turn"] = attacked
     elif attacked_p not in (PRESENCE_ABSENT,):
         raise DomainSoADecodeError("invalid attacked_this_turn presence")
     if int(batch.player_records_count[row, s]):
@@ -1739,7 +1806,21 @@ def _decode_character(batch, row, s, slot, side):
         }
     else:
         raise DomainSoADecodeError("invalid equipment presence")
+    _apply_optional(hero, "lingke_chain", _decode_lingke_chain(batch, row, s, slot))
     return hero, cid
+
+
+def _decode_lingke_chain(batch, row, s, slot):
+    presence = int(batch.character_lingke_presence[row, s, slot])
+    if presence == PRESENCE_ABSENT:
+        return _MISSING
+    if presence == PRESENCE_NULL:
+        return None
+    if presence != PRESENCE_VALUE:
+        raise DomainSoADecodeError('invalid lingke_chain presence')
+    return dict(entity_id=_entity_text(batch.character_lingke_entity_slot[row, s, slot]),
+                character_id=_load_string(batch, row, batch.character_lingke_id_slot[row, s, slot]),
+                count=int(batch.character_lingke_count[row, s, slot]))
 
 
 def _decode_stat_layer(batch, row, s, slot, hero, catalog):
@@ -1903,6 +1984,13 @@ def _decode_flags_field(batch, row, holder, presence):
         _apply_optional(flags, key, _take_optional(
             batch.flag_int_presence[row, holder], batch.flag_int_value[row, holder], i, int,
             bool_keys=FLAG_BOOL_INTS, key=key))
+    for i, key in enumerate(FLAG_BOOL_FIELDS):
+        _apply_optional(flags, key, _take_optional(
+            batch.flag_bool_presence[row, holder], batch.flag_bool_value[row, holder], i, lambda v: bool(v)))
+    for i, key in enumerate(FLAG_STR_FIELDS):
+        _apply_optional(flags, key, _take_optional(
+            batch.flag_str_presence[row, holder], batch.flag_str_slot[row, holder], i,
+            lambda v, _row=row: _load_string(batch, _row, v)))
     collapse_p = int(batch.flag_collapse_presence[row, holder])
     if collapse_p == PRESENCE_NULL:
         flags["collapse"] = None
@@ -2025,11 +2113,15 @@ def _decode_choice(batch, row, state, cards):
         _apply_optional(pending, key, _take_optional(batch.choice_int_presence[row], batch.choice_int_value[row], i, int))
     for i, key in enumerate(CHOICE_BOOL_KEYS):
         _apply_optional(pending, key, _take_optional(batch.choice_bool_presence[row], batch.choice_bool_value[row], i, lambda v: bool(v)))
+    for i, key in enumerate(CHOICE_STR_KEYS):
+        _apply_optional(pending, key, _take_optional(
+            batch.choice_str_presence[row], batch.choice_str_slot[row], i,
+            lambda v, _row=row: _load_string(batch, _row, v)))
     actor_p = int(batch.choice_actor_presence[row])
     if actor_p == PRESENCE_NULL:
         pending["actor"] = None
     elif actor_p == PRESENCE_VALUE:
-        pending["actor"] = state["sides"][side]["order"][int(batch.choice_actor_slot[row])]
+        pending["actor"] = list(state["sides"][side]["characters"])[int(batch.choice_actor_slot[row])]
     elif actor_p != PRESENCE_ABSENT:
         raise DomainSoADecodeError("invalid choice actor presence")
     cont_p = int(batch.choice_continuation_presence[row])
@@ -2044,7 +2136,7 @@ def _decode_choice(batch, row, state, cards):
 
 def _decode_operation(batch, row, state, cards):
     side = _side_from(batch.op_side[row])
-    order = state["sides"][side]["order"]
+    order = list(state["sides"][side]["characters"])
     operation = {
         "side": side,
         "actor": order[int(batch.op_actor_slot[row])],
@@ -2054,7 +2146,7 @@ def _decode_operation(batch, row, state, cards):
         "participants": [
             [
                 _side_from(batch.op_participant_side[row, i]),
-                state["sides"][_side_from(batch.op_participant_side[row, i])]["order"][int(batch.op_participant_slot[row, i])],
+                list(state["sides"][_side_from(batch.op_participant_side[row, i])]["characters"])[int(batch.op_participant_slot[row, i])],
             ]
             for i in range(int(batch.op_participant_count[row]))
         ],
@@ -2092,7 +2184,7 @@ def _decode_operation(batch, row, state, cards):
     elif last_p == PRESENCE_VALUE:
         packed = int(batch.op_last_attack_target_slot[row])
         last_side = _side_from(packed // 256)
-        operation["last_attack_target"] = [last_side, state["sides"][last_side]["order"][packed % 256]]
+        operation["last_attack_target"] = [last_side, list(state["sides"][last_side]["characters"])[packed % 256]]
     elif last_p != PRESENCE_ABSENT:
         raise DomainSoADecodeError("invalid last_attack_target presence")
     mark_p = int(batch.op_card_mark_presence[row])
@@ -2117,7 +2209,7 @@ def _decode_deferred(batch, row, state, count):
         side = _side_from(batch.deferred_side[row, i])
         items.append({
             "side": side,
-            "actor": state["sides"][side]["order"][int(batch.deferred_actor_slot[row, i])],
+            "actor": list(state["sides"][side]["characters"])[int(batch.deferred_actor_slot[row, i])],
             "entity_id": _entity_text(batch.deferred_entity_slot[row, i]),
             "kind": _load_string(batch, row, batch.deferred_kind_slot[row, i]),
         })

@@ -104,7 +104,7 @@ def _natural_states(max_steps=40):
 class DomainSoACodecTest(unittest.TestCase):
     def test_known_unimplemented_fields_and_mutable_aliases_are_rejected(self):
         for mutate in (
-            lambda s: s["sides"]["a"].update(effect_seq=1),
+            lambda s: s["sides"]["a"].update(records=[{}]),
             lambda s: s["sides"]["a"].update(side=None),
             lambda s: s["sides"]["a"]["deck"].append(s["sides"]["a"]["hand"][0]),
             lambda s: s["sides"]["b"].update(entity_id=s["sides"]["a"]["entity_id"]),
@@ -150,7 +150,7 @@ class DomainSoACodecTest(unittest.TestCase):
         self.assertTrue(report["initial_mulligan"])
         self.assertTrue(report["normal_playing"])
         self.assertEqual(report["seven_official_presets"], KEYS)
-        self.assertIn("Character.last_hit_source", report["missing_schema_fields"])
+        self.assertNotIn("Character.last_hit_source", report["missing_schema_fields"])
         self.assertIn("Effect.conditions payloads (count only)", report["missing_schema_fields"])
 
     def test_fourteen_seven_team_initial_mulligan_roundtrip(self):
@@ -218,20 +218,18 @@ class DomainSoACodecTest(unittest.TestCase):
         state = _authoritative(deepcopy(_fourteen_initial_states()[0]))
         with self.assertRaises(DomainSoAUnsupportedError):
             encode_domain_states([{**state, "pending_choice": {"kind": "discard"}}])
+        supported = deepcopy(state)
+        supported['pending_choice'] = dict(side='a',kind='kit',prompt='x',cards=[],deck_cards=True)
+        _roundtrip(supported)
         with self.assertRaises(DomainSoAUnsupportedError):
-            encode_domain_states([{**state, "pending_choice": {
-                "side": "a", "kind": "kit", "prompt": "x", "cards": [], "deck_cards": True,
-            }}])
-        with self.assertRaises(DomainSoAUnsupportedError):
-            encode_domain_states([{**state, "deferred_actions": [1]}])
-        flagged = deepcopy(state)
-        next(iter(flagged["sides"]["a"]["characters"].values()))["flags"] = {"has_harmonized": True}
-        with self.assertRaises(DomainSoAUnsupportedError):
-            encode_domain_states([flagged])
-        hit = deepcopy(state)
-        next(iter(hit["sides"]["a"]["characters"].values()))["last_hit_source"] = "a:nanali"
-        with self.assertRaises(DomainSoAUnsupportedError):
-            encode_domain_states([hit])
+            encode_domain_states([{**state, 'deferred_actions': [1]}])
+        for key, value in (('has_harmonized', True),('return_after',False),('temp_revive',True),('gulang_item','vinyl')):
+            flagged=deepcopy(state)
+            next(iter(flagged['sides']['a']['characters'].values()))['flags']={key:value}
+            _roundtrip(flagged)
+        hit=deepcopy(state)
+        next(iter(hit['sides']['a']['characters'].values()))['last_hit_source']='a:nanali'
+        _roundtrip(hit)
 
     def test_playing_effects_flags_front_choice_and_operation_roundtrip(self):
         state = _authoritative(deepcopy(new_game(seed=3, first_side="a", skip_mulligan=True)))
@@ -343,15 +341,46 @@ class DomainSoACodecTest(unittest.TestCase):
             self.assertIs(type(got["rng"]), int)
         self.assertGreaterEqual(accepted, 14)
         self.assertIn("playing", phases)
-        self.assertTrue(rejected)
-        joined = " ".join(message for _, message in rejected)
-        self.assertTrue(
-            any(token in joined for token in (
-                "last_hit_source", "lingke_chain", "deck_cards", "has_harmonized",
-                "gulang_item", "ultimate_end", "unknown",
-            )),
-            joined[:500],
-        )
+        self.assertEqual(rejected, [], msg=str(rejected[:5]))
+
+    def test_runtime_fields_keep_null_false_zero_and_structured_chain(self):
+        state=_fourteen_initial_states()[0]
+        team=state['sides']['a'];cid=team['order'][0];other=team['order'][1]
+        hero=team['characters'][cid]
+        team.update(effect_seq=2,support_turn=0,support_count=3)
+        hero.update(last_hit_source='b:canhong',beast_fangs=3,base_attack=2,base_max_hp=4,
+                    lingke_chain=dict(entity_id=team['characters'][other]['entity_id'],character_id=other,count=0))
+        hero['flags'].update(has_harmonized=False,return_after=None,temp_revive=True,
+                             gulang_item='vinyl',free_normal_attack_turn=0)
+        _, got=_roundtrip(state)
+        self.assertIs(got['sides']['a']['characters'][cid]['flags']['has_harmonized'],False)
+        for value in (None,[]):
+            variant=deepcopy(state);variant['deferred_actions']=value
+            _,got=_roundtrip(variant)
+            self.assertIs(type(got['deferred_actions']),type(value))
+        chain_null=deepcopy(state);chain_null['sides']['a']['characters'][cid]['lingke_chain']=None
+        _roundtrip(chain_null)
+        bad=deepcopy(state);bad['sides']['a']['characters'][cid]['lingke_chain']['count']=False
+        with self.assertRaises(TypeError):encode_domain_states([bad],presentation='drop')
+
+    def test_storage_order_is_independent_of_lineup_and_keeps_dismissed_summon(self):
+        from app.modules.card_game.engine.duel_v2.summons import summon_front,dismiss
+        state=new_game(seed=63,skip_mulligan=True)
+        team=state['sides']['a'];original=list(team['characters'])
+        team['order']=[original[1],original[0],*original[2:]]
+        team['attacked_this_turn']=[team['characters'][original[3]]['entity_id'],team['characters'][original[0]]['entity_id']]
+        ghost=summon_front(state,'a',name='test summon',attack=2,hp=4)
+        dismiss(state,'a',ghost)
+        _,got=_roundtrip(state)
+        self.assertEqual(list(got['sides']['a']['characters']),list(team['characters']))
+        self.assertEqual(got['sides']['a']['order'],team['order'])
+        self.assertIn(ghost,got['sides']['a']['characters'])
+        self.assertNotIn(ghost,got['sides']['a']['order'])
+        self.assertEqual(got['sides']['a']['attacked_this_turn'],team['attacked_this_turn'])
+        team['order']=[]
+        _,got=_roundtrip(state)
+        self.assertEqual(got['sides']['a']['order'],[])
+        self.assertEqual(list(got['sides']['a']['characters']),list(team['characters']))
 
     def test_encode_does_not_mutate_and_empty_batch_roundtrips(self):
         state = _fourteen_initial_states()[0]

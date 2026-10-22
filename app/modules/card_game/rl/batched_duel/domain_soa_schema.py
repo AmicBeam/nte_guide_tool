@@ -74,7 +74,41 @@ CHOICE_KINDS: tuple[str, ...] = (
     "hand_redraw",
     "deck_order",
     "inspect_deck",
+    "heiyu_divination",
+    "hand_deck_placement",
 )
+CHOICE_INT_KEYS: tuple[str, ...] = (
+    "max_select",
+    "min_select",
+    "max_bottom",
+    "min_bottom",
+    "snapshot_n",
+)
+CHOICE_BOOL_KEYS: tuple[str, ...] = (
+    "multi_bottom",
+    "hand_placement",
+    "execute_divination",
+    "deck_cards",
+    "deck_order",
+)
+CHOICE_STR_KEYS: tuple[str, ...] = (
+    "location_id",
+    "source_instance_id",
+    "scope",
+)
+OP_FLAG_KEYS: tuple[str, ...] = (
+    "release_only",
+    "additional_attack",
+    "normal_attack",
+    "skip_combat_harmony",
+    "support",
+    "support_resolved",
+    "pending_sortie",
+    "record_candidate_unused",
+)
+OP_INT_KEYS: tuple[str, ...] = ("ap_paid", "card_bonus", "card_set_attack", "last_attack_amount")
+ZONE_STATUS_KEYS: tuple[str, ...] = ("delay", "burn", "star", "weave", "stain")
+LINGKE_CHAIN_KEYS: tuple[str, ...] = ("entity_id", "character_id", "count")
 EFFECT_OPS: tuple[str, ...] = ("add", "multiply", "set", "allow", "forbid")
 EFFECT_SCOPES: tuple[str, ...] = ("self", "allies", "other_allies", "enemies", "all")
 EFFECT_KINDS: tuple[str, ...] = ("persistent", "aura")
@@ -124,6 +158,8 @@ PLAYER_INT_FIELDS: tuple[str, ...] = (
     "insight_played",
     "support_count",
     "canhong_collapse_used",
+    "support_turn",
+    "effect_seq",
 )
 PLAYER_BOOL_FIELDS: tuple[str, ...] = (
     "normal_attack_available",
@@ -160,8 +196,11 @@ CHARACTER_INT_FIELDS: tuple[str, ...] = (
     "heal_draw_turn",
     "everness_id",
     "energy_max_override",
+    "beast_fangs",
+    "base_attack",
+    "base_max_hp",
 )
-CHARACTER_BOOL_FIELDS: tuple[str, ...] = ("awakened", "summoned", "jingu_loan")
+CHARACTER_BOOL_FIELDS: tuple[str, ...] = ("awakened", "summoned", "jingu_loan", "disappeared")
 CHARACTER_STR_FIELDS: tuple[str, ...] = (
     "name",
     "attribute",
@@ -171,6 +210,8 @@ CHARACTER_STR_FIELDS: tuple[str, ...] = (
     "awakened_passive",
     "faction",
     "shape",
+    "last_hit_source",
+    "flavor",
 )
 
 CARD_INT_FIELDS: tuple[str, ...] = (
@@ -233,7 +274,15 @@ FLAG_INT_FIELDS: tuple[str, ...] = (
     "step_index",
     "scripted_for",
     "damage_immunity_until",
+    "free_normal_attack_turn",
 )
+FLAG_BOOL_FIELDS: tuple[str, ...] = (
+    "has_harmonized",
+    "return_after",
+    "temp_revive",
+)
+FLAG_STR_FIELDS: tuple[str, ...] = ("gulang_item",)
+CHARACTER_RUNTIME_STR_FIELDS: frozenset[str] = frozenset(("last_hit_source", "flavor"))
 
 NON_AUTHORITATIVE_GAME_KEYS: frozenset[str] = frozenset(("_public_board", "events"))
 UNSUPPORTED_GAME_KEYS: frozenset[str] = frozenset(
@@ -334,6 +383,7 @@ CHARACTER_KEYS: frozenset[str] = (
             "mechanisms",
             "resource_name",
             "turn_snapshots",
+            "lingke_chain",
         )
     )
     | frozenset(CHARACTER_INT_FIELDS)
@@ -368,9 +418,10 @@ COVERAGE: MappingProxyType[str, object] = MappingProxyType(
             "CardEntity table plus ordered hand/deck/discard/removed",
             "entity class, entity_id, instance_id and ordered zone references",
             "typed modifiers/effects with expiry clocks",
-            "typed flags including collapse/timed_attack/immunity",
-            "pending_choice and operation resumptions with card aliases",
-            "deferred_actions, response locks, down-response queue",
+            "typed last_hit_source/lingke_chain/beast_fangs/support_turn/effect_seq",
+            "typed flags including collapse/timed_attack/immunity/has_harmonized/gulang_item",
+            "pending_choice including deck_cards/deck_order/snapshot_n/continuation",
+            "deferred_actions presence distinguishing empty list from absence",
             "front_debuff delay/burn/star/weave/stain/dots",
             "absent vs null vs zero via presence codes",
             "int32/int64 exact range, no truncation",
@@ -482,6 +533,13 @@ def array_specs(layout):
     n_kbool = len(CARD_BOOL_FIELDS)
     n_kstr = len(CARD_STR_FIELDS)
     n_fint = len(FLAG_INT_FIELDS)
+    n_fbool = len(FLAG_BOOL_FIELDS)
+    n_fstr = len(FLAG_STR_FIELDS)
+    n_chint = len(CHOICE_INT_KEYS)
+    n_chbool = len(CHOICE_BOOL_KEYS)
+    n_chstr = len(CHOICE_STR_KEYS)
+    n_opflag = len(OP_FLAG_KEYS)
+    n_opint = len(OP_INT_KEYS)
     return {
         "catalog_digest": (u8, (32,)),
         "row_valid": (b, ()),
@@ -518,6 +576,7 @@ def array_specs(layout):
         "response_intercept": (b, ()),
         "draining_presence": (u8, ()),
         "draining": (b, ()),
+        "deferred_presence": (u8, ()),
         "deferred_count": (i16, ()),
         "down_response_count": (i16, ()),
         "choice_kind": (i16, ()),
@@ -525,10 +584,12 @@ def array_specs(layout):
         "choice_prompt_slot": (i32, ()),
         "choice_card_count": (i16, ()),
         "choice_card_index": (i32, (CH,)),
-        "choice_int_presence": (u8, (4,)),
-        "choice_int_value": (i32, (4,)),
-        "choice_bool_presence": (u8, (3,)),
-        "choice_bool_value": (b, (3,)),
+        "choice_int_presence": (u8, (n_chint,)),
+        "choice_int_value": (i32, (n_chint,)),
+        "choice_bool_presence": (u8, (n_chbool,)),
+        "choice_bool_value": (b, (n_chbool,)),
+        "choice_str_presence": (u8, (n_chstr,)),
+        "choice_str_slot": (i32, (n_chstr,)),
         "choice_actor_presence": (u8, ()),
         "choice_actor_side": (i8, ()),
         "choice_actor_slot": (i16, ()),
@@ -544,10 +605,10 @@ def array_specs(layout):
         "op_first_bonus": (i32, ()),
         "op_redeem_bonus": (i32, ()),
         "op_record_candidate": (b, ()),
-        "op_flag_presence": (u8, (8,)),
-        "op_flag_value": (b, (8,)),
-        "op_int_presence": (u8, (4,)),
-        "op_int_value": (i32, (4,)),
+        "op_flag_presence": (u8, (n_opflag,)),
+        "op_flag_value": (b, (n_opflag,)),
+        "op_int_presence": (u8, (n_opint,)),
+        "op_int_value": (i32, (n_opint,)),
         "op_option_id_presence": (u8, ()),
         "op_option_id_slot": (i32, ()),
         "op_last_attack_target_presence": (u8, ()),
@@ -578,6 +639,8 @@ def array_specs(layout):
         "player_last_front_presence": (u8, (2,)),
         "player_last_front_slot": (i16, (2,)),
         "player_order_count": (i16, (2,)),
+        "player_character_count": (i16, (2,)),
+        "player_order_slot": (i16, (2, C)),
         "player_int_presence": (u8, (2, n_pint)),
         "player_int_value": (i32, (2, n_pint)),
         "player_bool_presence": (u8, (2, n_pbool)),
@@ -590,6 +653,8 @@ def array_specs(layout):
         "player_harmonized": (b, (2, C)),
         "player_attacked_this_turn_presence": (u8, (2,)),
         "player_attacked_this_turn": (b, (2, C)),
+        "player_attacked_count": (i16, (2,)),
+        "player_attacked_slot": (i16, (2, C)),
         "player_records_count": (i16, (2,)),
         "player_effects_presence": (u8, (2,)),
         "player_flags_presence": (u8, (2,)),
@@ -627,6 +692,10 @@ def array_specs(layout):
         "character_equipment_source_slot": (i32, (2, C)),
         "character_effects_presence": (u8, (2, C)),
         "character_flags_presence": (u8, (2, C)),
+        "character_lingke_presence": (u8, (2, C)),
+        "character_lingke_entity_slot": (i32, (2, C)),
+        "character_lingke_id_slot": (i32, (2, C)),
+        "character_lingke_count": (i32, (2, C)),
         "card_valid": (b, (K,)),
         "card_entity_slot": (i32, (K,)),
         "card_instance_slot": (i32, (K,)),
@@ -681,6 +750,10 @@ def array_specs(layout):
         "effect_conditions_count": (i16, (H, E)),
         "flag_int_presence": (u8, (H, n_fint)),
         "flag_int_value": (i32, (H, n_fint)),
+        "flag_bool_presence": (u8, (H, n_fbool)),
+        "flag_bool_value": (b, (H, n_fbool)),
+        "flag_str_presence": (u8, (H, n_fstr)),
+        "flag_str_slot": (i32, (H, n_fstr)),
         "flag_collapse_presence": (u8, (H,)),
         "flag_collapse_side": (i8, (H,)),
         "flag_collapse_until": (i32, (H,)),
@@ -726,21 +799,6 @@ def catalog_fingerprint():
     )
     return sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False,
         separators=(',', ':'), allow_nan=False).encode('utf-8')).digest()
-
-CHOICE_INT_KEYS: tuple[str, ...] = ("max_select", "min_select", "max_bottom", "min_bottom")
-CHOICE_BOOL_KEYS: tuple[str, ...] = ("multi_bottom", "hand_placement", "execute_divination")
-OP_FLAG_KEYS: tuple[str, ...] = (
-    "release_only",
-    "additional_attack",
-    "normal_attack",
-    "skip_combat_harmony",
-    "support",
-    "support_resolved",
-    "pending_sortie",
-    "record_candidate_unused",
-)
-OP_INT_KEYS: tuple[str, ...] = ("ap_paid", "card_bonus", "card_set_attack", "last_attack_amount")
-ZONE_STATUS_KEYS: tuple[str, ...] = ("delay", "burn", "star", "weave", "stain")
 
 
 def allocate_arrays(layout, n_rows):

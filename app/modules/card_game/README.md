@@ -1373,3 +1373,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 无 VM GPU 的具名字段状态池、完整候选批队列、直接 CUDA 复制／准备后伤害和区域移动组件见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。组件计时入口 `scripts/benchmark_duel_v2_direct_gpu.py` 默认只展示计划，显式 `--run` 才使用 CUDA；完整规则、七队自然终局与 H3 接线尚未通过，组件成绩不能作为整局或训练资格。验证：`python -m unittest tests.test_duel_v2_domain_state_pool tests.test_duel_v2_domain_action_batch tests.test_duel_v2_domain_cuda_damage tests.test_duel_v2_domain_soa_zones -q`。
 
 无 VM 选择阶段的直接合法动作生成见 `rl/batched_duel/domain_soa_choices.py`：保留逐张、组合与已解析排牌的完整顺序，具名设备列在图重放时重新读取，超容量与未解析角色规格拒绝；它不执行选择卡效，也不提供完整搜索资格。验证：`python -m unittest tests.test_duel_v2_domain_soa_choices -v`。边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。
+
+域状态编解码将角色存储身份与当前阵容分开，保留消失召唤物、实际出击次序、灵可连用记录、伤害来源和选择续步。所有对象引用使用存储槽；具名投影按有效阵容呈现。验证：`python -m unittest tests.test_duel_v2_domain_soa_codec tests.test_duel_v2_domain_soa_projection -q`；完整 GPU 对局资格仍未由这些状态组件授予。

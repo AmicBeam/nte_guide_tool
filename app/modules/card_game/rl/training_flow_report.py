@@ -302,10 +302,14 @@ def _updates(metrics, roster):
                 game_text = MISSING if game_value in (None, "") else f"{MISSING}（{game_value}）"
             else:
                 game_text = display(game_value)
+                if not isinstance(games, dict):
+                    game_text = f"{game_text}（全轮总计）"
             if update_value in (None, 0, "0"):
                 update_text = MISSING if update_value in (None, "") else f"{MISSING}（{update_value}）"
             else:
                 update_text = display(update_value)
+                if not isinstance(updates, dict):
+                    update_text = f"{update_text}（全轮总计）"
             rows.append((key, game_text, update_text))
         return rows
     if names:

@@ -95,6 +95,23 @@ def passed(metrics, artifacts=None, summary="synthetic"):
 
 
 class FlowReportTest(unittest.TestCase):
+    def test_global_games_are_not_presented_as_each_teams_games(self):
+        flow = self.make(metrics={
+            "complete_training_games": 56,
+            "formal_policy_updates": {"alpha": 20, "beta": 24},
+        })
+        text = render_flow_report(flow)
+        self.assertIn("| alpha | 56（全轮总计） | 20 |", text)
+        self.assertNotIn("| alpha | 56 | 20 |", text)
+
+    def test_global_updates_keep_their_scope_with_per_team_games(self):
+        flow = self.make(metrics={
+            "complete_training_games": {"alpha": 14, "beta": 12},
+            "formal_policy_updates": 44,
+        })
+        text = render_flow_report(flow)
+        self.assertIn("| beta | 12 | 44（全轮总计） |", text)
+
     def setUp(self):
         self.tmp = TemporaryDirectory()
         self.root = Path(self.tmp.name) / "run"

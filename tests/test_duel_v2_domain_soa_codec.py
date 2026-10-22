@@ -1,10 +1,10 @@
-"""Initial-state domain SoA codec: seven-team mulligan roundtrip and explicit rejects."""
+"""Domain SoA codec: seven-team mulligan/playing roundtrip and explicit rejects."""
 from copy import deepcopy
 import unittest
 
 from app.modules.card_game.content.duel_v2 import STARTER_DECKS
 from app.modules.card_game.engine.duel_v2.entities import CardEntity, CharacterEntity, PlayerEntity
-from app.modules.card_game.engine.duel_v2.flow import new_game
+from app.modules.card_game.engine.duel_v2.flow import acting_side, apply_action, legal_actions, new_game
 from app.modules.card_game.rl.batched_duel.domain_soa_codec import (
     coverage,
     decode_domain_states,
@@ -56,7 +56,7 @@ def _assert_same(left, right, path="root"):
         raise AssertionError(f"{path}: {type(left).__name__} != {type(right).__name__}")
     if isinstance(left, dict):
         if left.keys() != right.keys():
-            raise AssertionError(f"{path} key set changed")
+            raise AssertionError(f"{path} key set changed {set(left) ^ set(right)}")
         for key in left:
             _assert_same(left[key], right[key], path + "." + str(key))
     elif isinstance(left, (list, tuple)):
@@ -68,26 +68,59 @@ def _assert_same(left, right, path="root"):
         raise AssertionError(f"{path}: {left!r} != {right!r}")
 
 
+def _roundtrip(state, presentation="drop"):
+    packed = encode_domain_states([state], DomainSoALayout(), presentation=presentation)
+    got = decode_domain_states(packed)[0]
+    _assert_same(_authoritative(state), got)
+    return packed, got
+
+
+def _natural_states(max_steps=40):
+    decks = _decks()
+    states = []
+    for game in range(14):
+        first = "a" if game % 2 == 0 else "b"
+        pair = game % 7
+        state = new_game(
+            seed=10160000 + game,
+            decks={"a": decks[KEYS[pair]], "b": decks[KEYS[(pair + 1) % 7]]},
+            first_side=first,
+            skip_mulligan=(game % 3 == 0),
+        )
+        states.append(state)
+        steps = 0
+        while state.get("phase") != "finished" and steps < max_steps:
+            side = acting_side(state)
+            acts = legal_actions(state, side)
+            if not acts:
+                break
+            playable = [item for item in acts if item.get("type") not in ("end_turn", "concede")]
+            pool = playable or acts
+            state = apply_action(state, side, pool[steps % len(pool)])
+            states.append(state)
+            steps += 1
+    return states
+
 class DomainSoACodecTest(unittest.TestCase):
     def test_known_unimplemented_fields_and_mutable_aliases_are_rejected(self):
         for mutate in (
-            lambda s: s['sides']['a'].update(effect_seq=1),
-            lambda s: s['sides']['a'].update(side=None),
-            lambda s: s['sides']['a']['deck'].append(s['sides']['a']['hand'][0]),
-            lambda s: s['sides']['b'].update(entity_id=s['sides']['a']['entity_id']),
+            lambda s: s["sides"]["a"].update(effect_seq=1),
+            lambda s: s["sides"]["a"].update(side=None),
+            lambda s: s["sides"]["a"]["deck"].append(s["sides"]["a"]["hand"][0]),
+            lambda s: s["sides"]["b"].update(entity_id=s["sides"]["a"]["entity_id"]),
         ):
             state = _fourteen_initial_states()[0]
             mutate(state)
             with self.assertRaises(DomainSoAUnsupportedError):
-                encode_domain_states([state], presentation='drop')
+                encode_domain_states([state], presentation="drop")
 
     def test_catalog_binding_and_unused_column_corruption_fail_closed(self):
         from unittest.mock import patch
         from app.modules.card_game.content.duel_v2 import CARDS
         state = _fourteen_initial_states()[0]
-        packed = encode_domain_states([state], presentation='drop')
-        key = state['sides']['a']['hand'][0]['card_id']
-        with patch.dict(CARDS[key], cost=int(CARDS[key]['cost'])+1):
+        packed = encode_domain_states([state], presentation="drop")
+        key = state["sides"]["a"]["hand"][0]["card_id"]
+        with patch.dict(CARDS[key], cost=int(CARDS[key]["cost"]) + 1):
             with self.assertRaises(DomainSoADecodeError):
                 decode_domain_states(packed)
         packed.effect_value_int[0, 0, 0] = 1
@@ -96,17 +129,17 @@ class DomainSoACodecTest(unittest.TestCase):
 
     def test_torch_export_rejects_float_or_bool_row_indices(self):
         import torch
-        packed = encode_domain_states([_fourteen_initial_states()[0]], presentation='drop').to_torch()
+        packed = encode_domain_states([_fourteen_initial_states()[0]], presentation="drop").to_torch()
         for index in (torch.tensor([.9]), torch.tensor([True])):
             with self.assertRaises(TypeError):
                 packed.clone_rows(index)
         clone = packed.clone_rows(torch.tensor([0], dtype=torch.int64))
-        clone.arrays['character_hp'].zero_()
-        self.assertTrue(packed.arrays['character_hp'].any())
+        clone.arrays["character_hp"].zero_()
+        self.assertTrue(packed.arrays["character_hp"].any())
         from app.modules.card_game.rl.batched_duel.domain_soa_schema import DomainSoABatch
         host = DomainSoABatch.from_torch(packed)
         host.character_hp.fill(0)
-        self.assertTrue(packed.arrays['character_hp'].any())
+        self.assertTrue(packed.arrays["character_hp"].any())
 
     def test_coverage_does_not_claim_full_public17(self):
         self.assertFalse(supports_full_duel_rules)
@@ -114,7 +147,11 @@ class DomainSoACodecTest(unittest.TestCase):
         self.assertFalse(report["supports_full_duel_rules"])
         self.assertFalse(report["complete_soa"])
         self.assertFalse(report["full_public17"])
+        self.assertTrue(report["initial_mulligan"])
+        self.assertTrue(report["normal_playing"])
         self.assertEqual(report["seven_official_presets"], KEYS)
+        self.assertIn("Character.last_hit_source", report["missing_schema_fields"])
+        self.assertIn("Effect.conditions payloads (count only)", report["missing_schema_fields"])
 
     def test_fourteen_seven_team_initial_mulligan_roundtrip(self):
         states = _fourteen_initial_states()
@@ -177,22 +214,95 @@ class DomainSoACodecTest(unittest.TestCase):
         self.assertEqual(int(packed.character_int_value[0, 0, 0, harmony]), 0)
         self.assertEqual(int(packed.card_source_presence[0, 0]), PRESENCE_CATALOG)
 
-    def test_rejects_choice_operation_deferred_effects_and_flags(self):
+    def test_rejects_incomplete_choice_and_unknown_or_schema_missing_fields(self):
         state = _authoritative(deepcopy(_fourteen_initial_states()[0]))
         with self.assertRaises(DomainSoAUnsupportedError):
             encode_domain_states([{**state, "pending_choice": {"kind": "discard"}}])
         with self.assertRaises(DomainSoAUnsupportedError):
-            encode_domain_states([{**state, "operation": {"side": "a"}}])
+            encode_domain_states([{**state, "pending_choice": {
+                "side": "a", "kind": "kit", "prompt": "x", "cards": [], "deck_cards": True,
+            }}])
         with self.assertRaises(DomainSoAUnsupportedError):
             encode_domain_states([{**state, "deferred_actions": [1]}])
         flagged = deepcopy(state)
-        next(iter(flagged["sides"]["a"]["characters"].values()))["flags"] = {"atk_buff": 1}
+        next(iter(flagged["sides"]["a"]["characters"].values()))["flags"] = {"has_harmonized": True}
         with self.assertRaises(DomainSoAUnsupportedError):
             encode_domain_states([flagged])
-        effected = deepcopy(state)
-        next(iter(effected["sides"]["a"]["characters"].values()))["effects"] = [{"id": "x"}]
+        hit = deepcopy(state)
+        next(iter(hit["sides"]["a"]["characters"].values()))["last_hit_source"] = "a:nanali"
         with self.assertRaises(DomainSoAUnsupportedError):
-            encode_domain_states([effected])
+            encode_domain_states([hit])
+
+    def test_playing_effects_flags_front_choice_and_operation_roundtrip(self):
+        state = _authoritative(deepcopy(new_game(seed=3, first_side="a", skip_mulligan=True)))
+        team = state["sides"]["a"]
+        cid = team["order"][0]
+        hero = team["characters"][cid]
+        team["front"] = cid
+        team["used"] = {"instant": True}
+        team["harmonized"] = {cid: True}
+        team["attacked_this_turn"] = [hero["entity_id"]]
+        hero["flags"] = {"collapse_count": 2, "pact": True, "next_bonus": 1}
+        hero["effects"] = [{
+            "effect_id": "e2:effect:1",
+            "definition_id": "attack.buff",
+            "property": "attack.panel",
+            "op": "add",
+            "value": 1,
+            "source_entity_id": hero["entity_id"],
+            "source_key": "ability",
+            "scope": "self",
+            "kind": "persistent",
+            "layer": 0,
+            "label": "attack buff",
+            "clear_on": ["down"],
+            "visibility": "public",
+            "show_marker": False,
+        }]
+        hero["equipment"] = {
+            "card_id": team["hand"][0]["card_id"],
+            "equipment_id": "e3:weapon:1",
+            "source_card_entity_id": team["hand"][0]["entity_id"],
+        }
+        hand_card = team["hand"][0]
+        state["pending_choice"] = {
+            "side": "a",
+            "kind": "discard",
+            "prompt": "discard 1",
+            "cards": [hand_card],
+            "actor": cid,
+        }
+        packed, got = _roundtrip(state)
+        self.assertIs(got["pending_choice"]["cards"][0], got["sides"]["a"]["hand"][0])
+        self.assertEqual(got["sides"]["a"]["front"], cid)
+        self.assertEqual(got["sides"]["a"]["characters"][cid]["flags"]["pact"], True)
+        self.assertEqual(int(packed.pending_choice_present[0]), 1)
+        playing = deepcopy(state)
+        playing["pending_choice"] = None
+        playing["operation"] = {
+            "side": "a",
+            "actor": cid,
+            "card": playing["sides"]["a"]["hand"][0],
+            "target_id": "b:" + playing["sides"]["b"]["order"][0],
+            "participants": [],
+            "harmony": None,
+            "first_bonus": 0,
+            "redeem_bonus": 0,
+            "record_candidate": False,
+            "card_mark": None,
+            "option_id": None,
+            "ap_paid": 1,
+        }
+        _, got_op = _roundtrip(playing)
+        self.assertIs(got_op["operation"]["card"], got_op["sides"]["a"]["hand"][0])
+        finished = deepcopy(playing)
+        finished["operation"] = None
+        finished["phase"] = "finished"
+        finished["winner"] = "a"
+        finished["reason"] = "concede"
+        _, got_fin = _roundtrip(finished)
+        self.assertEqual(got_fin["winner"], "a")
+        self.assertEqual(got_fin["reason"], "concede")
 
     def test_presentation_default_rejects_and_drop_omits(self):
         state = _fourteen_initial_states()[0]
@@ -202,19 +312,46 @@ class DomainSoACodecTest(unittest.TestCase):
         self.assertNotIn("events", got)
         self.assertNotIn("_public_board", got)
 
-    def test_rejects_bool_as_int_playing_phase_and_unknown_keys(self):
+    def test_rejects_bool_as_int_and_unknown_keys_but_encodes_playing(self):
         state = _authoritative(deepcopy(_fourteen_initial_states()[0]))
         bad_hp = deepcopy(state)
         bad_hp["sides"]["a"]["hp"] = True
         with self.assertRaises(TypeError):
             encode_domain_states([bad_hp])
         playing = new_game(seed=3, first_side="a", skip_mulligan=True)
-        with self.assertRaises(DomainSoAUnsupportedError):
-            encode_domain_states([playing], presentation="drop")
+        packed, got = _roundtrip(playing)
+        self.assertEqual(got["phase"], "playing")
+        self.assertEqual(int(packed.phase[0]), 1)
         mystery = dict(state)
         mystery["mystery"] = 1
         with self.assertRaises(DomainSoAUnsupportedError):
             encode_domain_states([mystery])
+
+    def test_seven_preset_natural_playing_roundtrips_or_rejects_explicitly(self):
+        accepted = 0
+        rejected = []
+        phases = set()
+        for state in _natural_states():
+            try:
+                _, got = _roundtrip(state)
+            except DomainSoAUnsupportedError as exc:
+                rejected.append((state.get("phase"), str(exc)))
+                continue
+            phases.add(got["phase"])
+            accepted += 1
+            self.assertIsInstance(got["sides"]["a"], PlayerEntity)
+            self.assertIs(type(got["rng"]), int)
+        self.assertGreaterEqual(accepted, 14)
+        self.assertIn("playing", phases)
+        self.assertTrue(rejected)
+        joined = " ".join(message for _, message in rejected)
+        self.assertTrue(
+            any(token in joined for token in (
+                "last_hit_source", "lingke_chain", "deck_cards", "has_harmonized",
+                "gulang_item", "ultimate_end", "unknown",
+            )),
+            joined[:500],
+        )
 
     def test_encode_does_not_mutate_and_empty_batch_roundtrips(self):
         state = _fourteen_initial_states()[0]

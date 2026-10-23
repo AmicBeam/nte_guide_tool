@@ -66,21 +66,23 @@ def fixtures():
 
 
 class NativeExecutionSemanticsTest(unittest.TestCase):
+ device="cpu"
+ def pack(self,worlds,**kwargs):return pack(worlds,device=self.device,**kwargs)
  def test_codec_preserves_continuous_damage_iteration_order(self):
   from app.modules.card_game.engine.duel_v2.continuous import apply_dot
   world=state(200)
   for kind in ('guard','venom','nightmare','etch'):
    apply_dot(world,'b',kind,by='a',source_cid=world['sides']['a']['order'][0],stacks=1)
-  layout,fields=pack([world]);got=_decode_row(DomainSoABatch(layout=layout,**{k:v.numpy()for k,v in fields.items()}),0)
+  layout,fields=self.pack([world]);got=_decode_row(DomainSoABatch(layout=layout,**{k:v.cpu().numpy()for k,v in fields.items()}),0)
   self.assertEqual(list(got['sides']['b']['front_debuff']['dots']),list(world['sides']['b']['front_debuff']['dots']))
  def test_all_public_cards_and_paid_options(self):
   torch.set_num_threads(1)
   cases,skipped=fixtures();self.assertEqual(skipped,[]);self.assertEqual(len(set(c[0] for c in cases)),141)
-  layout,fields=pack([c[1]for c in cases]);n=len(cases)
-  with DomainSoAExecution(layout,device='cpu',allow_cpu_oracle=True,allow_unqualified=True)as core:
-   out=core.launch(core.prepare(fields,torch.zeros(n,dtype=torch.int64),torch.tensor([c[2]for c in cases]),torch.ones(n,dtype=torch.bool)))
+  layout,fields=self.pack([c[1]for c in cases]);n=len(cases)
+  with DomainSoAExecution(layout,device=self.device,allow_cpu_oracle=self.device=='cpu',allow_unqualified=True)as core:
+   out=core.launch(core.prepare(fields,torch.zeros(n,dtype=torch.int64,device=self.device),torch.tensor([c[2]for c in cases],device=self.device),torch.ones(n,dtype=torch.bool,device=self.device)))
    self.assertFalse(out['errors'].any(),out['errors'].tolist())
-   batch=DomainSoABatch(layout=layout,**{k:v.numpy()for k,v in out['fields'].items()})
+   batch=DomainSoABatch(layout=layout,**{k:v.cpu().numpy()for k,v in out['fields'].items()})
    for row,(card,world,index,action)in enumerate(cases):
     with self.subTest(card=card,action=action):
      gold=apply_action(world,'a',action);gold.pop('events',None);gold.pop('_public_board',None)
@@ -92,19 +94,19 @@ class NativeExecutionSemanticsTest(unittest.TestCase):
    if owner in seen:continue
    seen.add(owner);world=deepcopy(source);own=world['sides']['a'];own['front']=owner;own['ultimate_available']=True;own['characters'][owner]['energy']=9
    legal=[a for a in legal_actions(world,'a')if a['type']!='concede'];action={'type':'ultimate','character_id':owner};cases.append((owner,world,legal.index(action),action))
-  self.assertEqual(len(cases),17);layout,fields=pack([c[1]for c in cases]);n=len(cases)
-  with DomainSoAExecution(layout,device='cpu',allow_cpu_oracle=True,allow_unqualified=True)as core:
-   out=core.launch(core.prepare(fields,torch.zeros(n,dtype=torch.int64),torch.tensor([c[2]for c in cases]),torch.ones(n,dtype=torch.bool)))
-   self.assertFalse(out['errors'].any(),out['errors'].tolist());batch=DomainSoABatch(layout=layout,**{k:v.numpy()for k,v in out['fields'].items()})
+  self.assertEqual(len(cases),17);layout,fields=self.pack([c[1]for c in cases]);n=len(cases)
+  with DomainSoAExecution(layout,device=self.device,allow_cpu_oracle=self.device=='cpu',allow_unqualified=True)as core:
+   out=core.launch(core.prepare(fields,torch.zeros(n,dtype=torch.int64,device=self.device),torch.tensor([c[2]for c in cases],device=self.device),torch.ones(n,dtype=torch.bool,device=self.device)))
+   self.assertFalse(out['errors'].any(),out['errors'].tolist());batch=DomainSoABatch(layout=layout,**{k:v.cpu().numpy()for k,v in out['fields'].items()})
    for row,(owner,world,index,action)in enumerate(cases):
     with self.subTest(owner=owner):
      gold=apply_action(world,'a',action);gold.pop('events',None);gold.pop('_public_board',None);self.assertEqual(differences(gold,_decode_row(batch,row)),[])
  def test_fourteen_natural_games_against_formal_engine(self):
   torch.set_num_threads(1);keys=('starter','weave-rush','quick-rush','zhenhong','murk','collapse','lingke');n=14
   worlds=[state(900+i,a=keys[i%7],b=keys[(i+1)%7])for i in range(n)]
-  layout,fields=pack(worlds,layout=DomainSoALayout(game_capacity=n,max_characters=16))
-  active=torch.ones(n,dtype=torch.bool);sides=torch.zeros(n,dtype=torch.int64);picks=torch.zeros(n,dtype=torch.int64);rng=[random.Random(1000+i)for i in range(n)]
-  with DomainSoAExecution(layout,device='cpu',allow_cpu_oracle=True,allow_unqualified=True)as core:
+  layout,fields=self.pack(worlds,layout=DomainSoALayout(game_capacity=n,max_characters=16))
+  active=torch.ones(n,dtype=torch.bool,device=self.device);sides=torch.zeros(n,dtype=torch.int64,device=self.device);picks=torch.zeros(n,dtype=torch.int64,device=self.device);rng=[random.Random(1000+i)for i in range(n)]
+  with DomainSoAExecution(layout,device=self.device,allow_cpu_oracle=self.device=='cpu',allow_unqualified=True)as core:
    prepared=core.prepare(fields,sides,picks,active)
    for step in range(350):
     choices=[];counts=[]
@@ -114,7 +116,7 @@ class NativeExecutionSemanticsTest(unittest.TestCase):
      legal=[a for a in legal_actions(world,actor)if a['type']!='concede'];picks[row]=rng[row].randrange(len(legal));choices.append(legal[int(picks[row])]);counts.append(len(legal))
     if not active.any():break
     out=core.launch(prepared);self.assertFalse(out['errors'].any(),(step,out['errors'].tolist(),out['error_sites'].tolist()))
-    batch=DomainSoABatch(layout=layout,**{k:v.numpy()for k,v in out['fields'].items()})
+    batch=DomainSoABatch(layout=layout,**{k:v.cpu().numpy()for k,v in out['fields'].items()})
     for row in range(n):
      if not active[row]:continue
      gold=apply_action(worlds[row],('a','b')[int(sides[row])],choices[row]);gold.pop('_public_board',None);gold.pop('events',None)

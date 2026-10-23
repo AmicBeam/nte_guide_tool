@@ -50,4 +50,15 @@ class PhysicalCudaGraphTest(unittest.TestCase):
      graph.replay()
     torch.cuda.synchronize()
 
+
+
+from tests import test_duel_v2_domain_soa_execution_semantics as semantics
+
+class PhysicalCudaSemanticsTest(semantics.NativeExecutionSemanticsTest):
+ device='cuda'
+ @classmethod
+ def setUpClass(cls):
+  if not torch.cuda.is_available():raise unittest.SkipTest('Actual CUDA required')
+  torch.backends.cuda.matmul.allow_tf32=False
+
 if __name__=='__main__':unittest.main()

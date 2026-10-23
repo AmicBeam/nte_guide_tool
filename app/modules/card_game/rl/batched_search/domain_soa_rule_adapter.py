@@ -66,6 +66,7 @@ class DomainSoARuleAdapter:
             self.observation_buffers=self.observation.prepare(self.fields,self.viewers,self.active)
             self.sampler=DomainSoASampler(layout,device=self.device,allow_cpu_oracle=allow_cpu_oracle,guard=True,seed_words=5)
             self.sample_buffers=self.sampler.prepare(self.fields,self.viewers,self.seeds,self.sample_active)
+            self.sample_original_phase=t.zeros_like(self.fields['phase']);self.sample_original_actor=t.zeros_like(self.fields['active_side'])
             self.apply_buffers=self.execution.prepare(self.fields,self.actors,self.indices,self.active)
             self.previews=DomainRulePreviews(layout,device=self.device,max_actions=A,allow_cpu_oracle=allow_cpu_oracle,allow_unqualified=True)
             self.preview_buffers=self.previews.prepare(self.fields,self.viewers,self.active,self.action_table)
@@ -136,8 +137,23 @@ class DomainSoARuleAdapter:
     def sample_world_device(self,states,viewers,seeds):
         t=self.t;errors=self._load(states);self._vector(viewers,t.int64,(self.rows,));self._vector(seeds,t.int64,(self.rows,5))
         self.viewers.copy_(viewers);self.seeds.copy_(seeds);self.sample_active.copy_(self.active.int())
+        # Match information_search.sample_world: sample a playing proxy for
+        # mulligans, restore phase/actor, then check the original visible input.
+        self.sample_original_phase.copy_(self.fields['phase']);self.sample_original_actor.copy_(self.fields['active_side'])
+        mulligan=self.active&(self.sample_original_phase==0)
+        self.fields['phase'].copy_(t.where(mulligan,1,self.fields['phase']))
+        self.fields['active_side'].copy_(t.where(mulligan,viewers.to(self.fields['active_side'].dtype),self.fields['active_side']))
         sampled=self.sampler.launch(self.sample_buffers)
         fields=sampled.fields if hasattr(sampled,'fields')else sampled
+        self.fields['phase'].copy_(self.sample_original_phase);self.fields['active_side'].copy_(self.sample_original_actor)
+        fields['phase'].copy_(t.where(mulligan,self.sample_original_phase,fields['phase']))
+        fields['active_side'].copy_(t.where(mulligan,self.sample_original_actor,fields['active_side']))
+        self.sample_buffers.information_active.copy_(mulligan&(fields['row_error']==0))
+        checked=self.sampler._information_guard.launch(self.sample_buffers.information)
+        bad=mulligan&(checked['errors']!=0)
+        fields['row_error'].bitwise_or_(t.where(mulligan,checked['errors'],t.zeros_like(checked['errors'])))
+        for name,value in fields.items():
+            if name!='row_error':value.copy_(t.where(bad.reshape((self.rows,)+(1,)*(value.ndim-1)),self.fields[name],value))
         return self.pool.put_device(dict(fields),states.owners,self.active,errors=errors|fields['row_error'])
 
     def step_device(self,states,actors,decision,action_indices,*,physical=False):

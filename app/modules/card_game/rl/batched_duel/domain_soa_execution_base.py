@@ -58,7 +58,8 @@ def emit_header(layout):
     specs=schema.array_specs(layout)
     members=''.join(_TYPES[np.dtype(dtype).name]+'* '+name+';\n'for name,(dtype,shape)in specs.items())
     text=re.sub(r'struct QRow\{.*?\};',lambda _: 'struct QRow{'+members+'int choice_serial;int error_site;};',text,count=1,flags=re.S)
-    text+='\n#if defined(__CUDACC__) || defined(__CUDACC_RTC__)\n#define DFN __device__\n#define BMT_DEVICE __device__\n#else\n#define DFN inline\n#define BMT_DEVICE\n#endif\n'+emit_random_source()
+    text=text.replace('#define QFN __device__ __forceinline__','#define QFN __device__ __noinline__')
+    text+='\n#if defined(__CUDACC__) || defined(__CUDACC_RTC__)\n#define DFN __device__ __noinline__\n#define BMT_DEVICE __device__\n#else\n#define DFN inline\n#define BMT_DEVICE\n#endif\n'+emit_random_source()
     values=dict(K=layout.max_cards,Z=layout.max_zone,CH=layout.max_choice_cards,CL=layout.max_clear_on,DF=layout.max_deferred,DRMAX=layout.max_down_responses,COMBAT_D=layout.max_dots,PART=layout.max_participants,
         KB=len(schema.CARD_BOOL_FIELDS),KI=len(schema.CARD_INT_FIELDS),KS=len(schema.CARD_STR_FIELDS),PB=len(schema.PLAYER_BOOL_FIELDS),PS=len(schema.PLAYER_STR_FIELDS),FB=len(schema.FLAG_BOOL_FIELDS),FS=len(schema.FLAG_STR_FIELDS),NU=layout.max_used,
         NOPINT=len(schema.OP_INT_KEYS),NOPBOOL=len(schema.OP_FLAG_KEYS),NTCARD=max(schema.CARD_VOCAB.values())+1)

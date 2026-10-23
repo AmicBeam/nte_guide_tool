@@ -21,22 +21,23 @@ from tests.test_duel_v2_domain_soa_sampler import _state
 from tests.test_duel_v2_domain_soa_character_queries import pack
 
 class PhysicalH3Test(unittest.TestCase):
+ device="cpu"
  def test_teacher_states_auxiliary_values_terminal_and_shared_deadline(self):
   torch.set_num_threads(1);keys=('starter','weave-rush','quick-rush','zhenhong','murk','collapse','lingke')
   worlds=[_state(880+i,first='a',a=k,b=keys[(i+1)%7])for i,k in enumerate(keys)]
   terminal=_state(888);terminal.update(phase='finished',winner='draw',reason='player_hp');worlds.append(terminal)
   quick=_state(889,a='starter');quick['sides']['b']['hp']=1;quick['sides']['b']['discard'].extend(quick['sides']['b']['hand']);quick['sides']['b']['hand']=[];quick['sides']['b']['front']=None;quick['sides']['a']['discard'].extend(quick['sides']['a']['hand']);quick['sides']['a']['hand']=[];quick['sides']['a']['ap']=0;quick['sides']['a']['normal_attack_available']=False;quick['sides']['a']['ultimate_available']=False;quick['sides']['b']['discard'].extend(quick['sides']['b']['deck']);quick['sides']['b']['deck']=[];worlds.append(quick)
-  n=len(worlds);layout,fields=pack(worlds,layout=DomainSoALayout(game_capacity=n,max_characters=16))
+  n=len(worlds);layout,fields=pack(worlds,device=self.device,layout=DomainSoALayout(game_capacity=n,max_characters=16))
   main={'fixture':SyntheticSevenModel('fixture',17)};aux={'fixture':SyntheticSevenModel('fixture',99)}
-  primary=DeviceSevenInference(main,device='cpu',allow_cpu_reference=True,max_rows=n)
-  auxiliary=DeviceValueOnlyInference(aux,device='cpu',allow_cpu_reference=True,max_rows=n)
-  deadline=DomainDeviceDeadline(n,device='cpu',allow_cpu_oracle=True)
+  primary=DeviceSevenInference(main,device=self.device,allow_cpu_reference=self.device=='cpu',max_rows=n)
+  auxiliary=DeviceValueOnlyInference(aux,device=self.device,allow_cpu_reference=self.device=='cpu',max_rows=n)
+  deadline=DomainDeviceDeadline(n,device=self.device,allow_cpu_oracle=self.device=='cpu')
   try:
-   with DomainSoAH3(layout,auxiliary,primary,device='cpu',allow_cpu_oracle=True,allow_unqualified=True)as h3:
-    active=torch.ones(n,dtype=torch.bool);viewer=torch.zeros(n,dtype=torch.int64);model=torch.zeros(n,dtype=torch.int64)
-    p=h3.prepare(fields,viewer,model,active,deadline);deadline.start(torch.full((n,),600000.,dtype=torch.float64));out=h3.launch(p)
+   with DomainSoAH3(layout,auxiliary,primary,device=self.device,allow_cpu_oracle=self.device=='cpu',allow_unqualified=True)as h3:
+    active=torch.ones(n,dtype=torch.bool,device=self.device);viewer=torch.zeros(n,dtype=torch.int64,device=self.device);model=torch.zeros(n,dtype=torch.int64,device=self.device)
+    p=h3.prepare(fields,viewer,model,active,deadline);deadline.start(torch.full((n,),600000.,dtype=torch.float64,device=self.device));out=h3.launch(p)
     self.assertFalse(out['errors'].any(),out['errors'].tolist());self.assertTrue(out['complete'].all());self.assertEqual(int(out['steps'][7]),0);self.assertLess(int(out['steps'][8]),3)
-    batch=DomainSoABatch(layout=layout,**{k:v.numpy()for k,v in out['fields'].items()});runner=BatchedInference(aux,device='cpu')
+    batch=DomainSoABatch(layout=layout,**{k:v.cpu().numpy()for k,v in out['fields'].items()});runner=BatchedInference(aux,device='cpu')
     for row,world in enumerate(worlds):
      gold=deepcopy(world);steps=0
      for unused in range(3):
@@ -51,7 +52,7 @@ class PhysicalH3Test(unittest.TestCase):
        expected=runner.predict([InferenceRequest(row,'fixture',aux['fixture'].version,x,np.empty((0,1576),dtype=np.float32),acting_side(gold)=='a',True)])[0]
        value=float(expected.wdl[2]-expected.wdl[0])
       self.assertAlmostEqual(float(out['values'][row]),value,places=5)
-    deadline.start(torch.zeros(n,dtype=torch.float64));expired=h3.launch(p)
+    deadline.start(torch.zeros(n,dtype=torch.float64,device=self.device));expired=h3.launch(p)
     self.assertTrue(torch.all(expired['errors'][:7]==128));self.assertFalse(expired['complete'][:7].any());self.assertTrue(bool(expired['complete'][7]))
   finally:deadline.close();auxiliary.close();primary.close()
 

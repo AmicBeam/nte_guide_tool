@@ -1415,3 +1415,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 域状态编解码保留暂停出击的全部具名数值／布尔参数、目标与属性，以及响应延后结算的完整操作快照；快照牌与区域中的原牌保留独立对象身份，区域重复身份仍拒绝。验证：`python -m unittest tests.test_duel_v2_domain_soa_pending_sortie tests.test_duel_v2_domain_soa_mark_queue -v`。这些无损状态字段不授予完整物理执行、H3 或实际 CUDA 资格。
 
 直接领域执行器 `domain_soa_execution.py` 已组合出牌、战斗、回合、响应、选择与公开角色 hooks，并通过 `domain_soa_rule_adapter.py` 接入完整观察、逐模拟采样、真实 H3 和固定 Gumbel32 搜索。该接线仍是显式未验收入口：CPU 同源编译器对拍不能替代实际 CUDA、400 并发或训练资格。实现边界、紧凑候选和验证命令见 [直接领域 GPU 执行器](../../../docs/duel-v2-domain-gpu-executor.md)。
+
+直接领域 GPU 验证入口 `tests.test_duel_v2_domain_soa_execution_cuda` 与 `tests.test_duel_v2_domain_soa_search_cuda` 复用正式完整状态对拍夹具，分别覆盖物理图重放／自然终局及真实 H3／起手换牌采样。完整物理 CUDA 函数显式非内联并预先配置调用栈；起手采样保持正式行动代理及恢复后的双重信息检查。组件通过仍不自动授予 400 并发、速度或训练资格。

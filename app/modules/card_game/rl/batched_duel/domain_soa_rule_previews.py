@@ -37,6 +37,7 @@ class DomainRulePreviews:
             if self.device.type=='cuda':
                 from .cuda_runtime import CudaModule
                 self.module=CudaModule(source,{'domain_rule_previews':abi},device=str(self.device))
+                self.module.ensure_stack(65536)
             else:
                 compiler=shutil.which('clang++')or shutil.which('g++')
                 if not compiler:raise RuntimeError('C++ compiler required')

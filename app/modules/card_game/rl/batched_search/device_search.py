@@ -21,6 +21,7 @@ SAMPLE, INSPECT, EVALUATE_NODE, LEAF, OPPONENT, STEP, BACKUP, FINAL, CLEANUP, DO
 RULE_ERROR, INFERENCE_ERROR, STATISTICS_ERROR, KEY_ERROR = 1, 2, 4, 8
 CAPACITY_ERROR, RANDOM_ERROR, METADATA_ERROR = 16, 32, 64
 PRIOR_ERROR = 128
+PHASE_GUARD_ERROR = 256
 
 
 @dataclass(frozen=True)
@@ -76,7 +77,7 @@ class DeviceGumbelSearch:
                  reuse_root_policy_value=False, verify_root_value_reuse=False,
                  group_ready_leaves=False,reuse_interior_observation=False,reuse_root_observation=False,opponent_mode='rule',
                  prior_guide=None, reuse_sampled_world=False, reuse_root_decision=False,fused_rule_steps=False,
-                 q_scale='natural_wdl'):
+                 q_scale='natural_wdl', phase_gating=False):
         import torch
         from ..search_policy import visit_schedule
         for value in (rows, max_actions, simulations, gumbel_candidates, max_depth):
@@ -92,6 +93,8 @@ class DeviceGumbelSearch:
             raise ValueError('network_value requires zero teacher horizon')
         if teacher_mode != 'network_value' and not getattr(rules, 'require_teacher', True):
             raise ValueError('Teacher-free rule adapter requires network_value')
+        if type(phase_gating)is not bool:raise TypeError('Explicit phase gating selection required')
+        self.phase_gating=phase_gating;self.phase_gates=None
         self.teacher_mode = teacher_mode
         if type(fused_rule_steps) is not bool:
             raise TypeError('Explicit fused rule-step selection required')
@@ -222,8 +225,30 @@ class DeviceGumbelSearch:
                 rows=rows,max_actions=max_actions,tile=self.value_batch_rows,seconds=row_work_seconds,
                 policy_sites=3 if opponent_mode=='policy' else 2)
 
+        self.phase_executions=torch.zeros(DONE,dtype=torch.int64,device=self.device)
+        if phase_gating and self.device.type=='cuda':
+            from .device_search_phase_gate import DeviceSearchPhaseGates
+            self.phase_gates=DeviceSearchPhaseGates(phases=DONE,device=self.device)
+
     def close(self):
+        if self.phase_gates is not None:self.phase_gates.close()
         if self.row_work is not None:self.row_work.close()
+
+    def _run_phase(self, phase, active, body):
+        if not self.phase_gating:
+            body()
+            return
+        def counted():
+            self.phase_executions[phase].add_(1)
+            body()
+        if self.phase_gates is not None:
+            errors=self.phase_gates.capture(phase,active,counted)
+            self._error(errors,active,PHASE_GUARD_ERROR)
+        elif self.device.type=='cpu' and self.allow_synthetic:
+            # Explicit oracle only; production never reads a GPU predicate.
+            if bool(active.any()):counted()
+        else:
+            raise RuntimeError('Phase gating requires CUDA or explicit CPU oracle')
 
     def _build_context(self):
         if (self.device.type == 'cuda' and not self.allow_synthetic
@@ -500,6 +525,7 @@ class DeviceGumbelSearch:
         self._world_live.zero_()
         self._sampled_live.zero_()
         self.world_samples.zero_()
+        self.phase_executions.zero_()
         if self.root_prior_shifts is not None:
             self.root_prior_shifts.zero_()
         mask = roots.active & (self.errors == 0)
@@ -610,197 +636,216 @@ class DeviceGumbelSearch:
         for phase in range(DONE):
             self.phase_work[phase].add_((masks[phase] if self.group_ready_leaves else before==phase).long())
 
-        sample = masks[SAMPLE]
-        if self.reuse_sampled_world:
-            # No sampler kernels in the simulation loop, even with empty masks.
-            # All traversals borrow the immutable particle issued in initialize.
-            sampled = self._sampled_world(sample)
-        else:
-            selected_seeds = self._simulation_seeds[self._rows,
-                                                    self.completed.clamp(0, self.simulations - 1)]
-            sampled = self.rules.sample_world_device(self._masked(self._roots, sample),
-                                                     self._viewers, selected_seeds)
-            self.world_samples.add_(sample.long())
-        # recovery_search starts traversal directly from sample_world. Applying
-        # an extra clean here would silently change that source contract.
-        self._replace_world(sampled, sample)
-        leased = ((sampled.slots != self._roots.slots)
-                  | (sampled.generations != self._roots.generations))
-        self._error(~leased, sample & (self.errors == 0), RULE_ERROR)
-        self.depth.copy_(t.where(sample, 0, self.depth))
-        self.path_valid.masked_fill_(sample[:, None], False)
-        self.phase.copy_(t.where(sample, INSPECT, self.phase))
+        def phase_sample():
+            sample = masks[SAMPLE]
+            if self.reuse_sampled_world:
+                # No sampler kernels in the simulation loop, even with empty masks.
+                # All traversals borrow the immutable particle issued in initialize.
+                sampled = self._sampled_world(sample)
+            else:
+                selected_seeds = self._simulation_seeds[self._rows,
+                                                        self.completed.clamp(0, self.simulations - 1)]
+                sampled = self.rules.sample_world_device(self._masked(self._roots, sample),
+                                                         self._viewers, selected_seeds)
+                self.world_samples.add_(sample.long())
+            # recovery_search starts traversal directly from sample_world. Applying
+            # an extra clean here would silently change that source contract.
+            self._replace_world(sampled, sample)
+            leased = ((sampled.slots != self._roots.slots)
+                      | (sampled.generations != self._roots.generations))
+            self._error(~leased, sample & (self.errors == 0), RULE_ERROR)
+            self.depth.copy_(t.where(sample, 0, self.depth))
+            self.path_valid.masked_fill_(sample[:, None], False)
+            self.phase.copy_(t.where(sample, INSPECT, self.phase))
+        self._run_phase(SAMPLE,masks[SAMPLE],phase_sample)
 
-        inspect = masks[INSPECT]
-        world = self._world(inspect)
-        meta = self.rules.metadata_device(world)
-        self._error(meta.errors, inspect, RULE_ERROR)
-        terminal = inspect & meta.finished
-        self._error((meta.winners < -1) | (meta.winners > 1), terminal, METADATA_ERROR)
-        terminal_value = t.where(meta.winners == self._viewers, 1.,
-                                 t.where(meta.winners >= 0, -1., 0.)).to(t.float64)
-        terminal_observation = self.rules.value_observation_device(self._world(terminal), self._viewers)
-        self._error(terminal_observation.errors, terminal, RULE_ERROR)
-        self._error(~terminal_observation.terminal
-                    | (terminal_observation.terminal_value != terminal_value), terminal, METADATA_ERROR)
-        self.leaf_values.copy_(t.where(terminal, terminal_value, self.leaf_values))
-        exhausted = inspect & ~meta.finished & (self.depth >= self.max_depth)
-        traverse = inspect & ~meta.finished & ~exhausted
-        self._error((meta.actors < 0) | (meta.actors > 1), traverse, METADATA_ERROR)
-        own = traverse & (meta.actors == self._viewers) & (self.errors == 0)
-        opposing = traverse & (meta.actors != self._viewers) & (self.errors == 0)
-        query = own
-        if self.reuse_root_decision:
-            from dataclasses import replace
-            root_rows = own & (self.depth == 0)
-            self._save_decision(replace(self._root_decision,
-                states=self._world(root_rows)), root_rows)
-            query = own & ~root_rows
-        decision = self.rules.decision_device(self._world(query), self._viewers)
-        self._error(decision.errors, query, RULE_ERROR)
-        own = own & (self.errors == 0)
-        self._save_decision(decision, query & (self.errors == 0))
-        if self.reuse_root_decision:
-            decision = self._decision
-        hashed = self._hash_decision(decision, own)
-        self._error(hashed.errors, own, KEY_ERROR)
-        matches = (self.keys == hashed.keys[:, None, :]).all(-1)
-        matches = matches & (self._columns[None, :] < self.node_count[:, None])
-        found = matches.any(-1)
-        node = matches.long().argmax(-1)
-        self._error((self.depth == 0) & (~found | (node != 0)), own, KEY_ERROR)
-        existing = own & found & (self.errors == 0)
-        fresh = own & ~found & (self.errors == 0)
-        self._error(self.node_count >= self.nodes_per_root, fresh, CAPACITY_ERROR)
-        slots = self._base_slots + node
-        generations = self.node_generations[self._rows, node]
-        root_choice = self.statistics.select_root(slots, generations, self._noise,
-            self._schedule[self._limits, self.completed.clamp(0, self.simulations - 1)],
-            active=existing & (self.depth == 0))
-        inner_choice = self.statistics.select_interior(slots, generations,
-                                                       active=existing & (self.depth > 0))
-        self._error(root_choice.error | inner_choice.error, existing, STATISTICS_ERROR)
-        chosen = t.where(self.depth == 0, root_choice.actions, inner_choice.actions)
-        depth = self.depth.clamp(0, self.max_depth - 1)
-        path_mask = t.nn.functional.one_hot(depth, self.max_depth).bool() & existing[:, None]
-        self.path_slots.copy_(t.where(path_mask, slots[:, None], self.path_slots))
-        self.path_generations.copy_(t.where(path_mask, generations[:, None], self.path_generations))
-        self.path_actions.copy_(t.where(path_mask, chosen[:, None], self.path_actions))
-        self.path_valid.logical_or_(path_mask)
-        self.actions.copy_(t.where(existing, chosen, self.actions))
-        self.phase.copy_(t.where(terminal, BACKUP, self.phase))
-        self.phase.copy_(t.where(exhausted, LEAF, self.phase))
-        self.phase.copy_(t.where(opposing, OPPONENT, self.phase))
-        self.phase.copy_(t.where(existing, STEP, self.phase))
-        self.phase.copy_(t.where(fresh, EVALUATE_NODE, self.phase))
+        def phase_inspect():
+            inspect = masks[INSPECT]
+            world = self._world(inspect)
+            meta = self.rules.metadata_device(world)
+            self._error(meta.errors, inspect, RULE_ERROR)
+            terminal = inspect & meta.finished
+            self._error((meta.winners < -1) | (meta.winners > 1), terminal, METADATA_ERROR)
+            terminal_value = t.where(meta.winners == self._viewers, 1.,
+                                     t.where(meta.winners >= 0, -1., 0.)).to(t.float64)
+            terminal_observation = self.rules.value_observation_device(self._world(terminal), self._viewers)
+            self._error(terminal_observation.errors, terminal, RULE_ERROR)
+            self._error(~terminal_observation.terminal
+                        | (terminal_observation.terminal_value != terminal_value), terminal, METADATA_ERROR)
+            self.leaf_values.copy_(t.where(terminal, terminal_value, self.leaf_values))
+            exhausted = inspect & ~meta.finished & (self.depth >= self.max_depth)
+            traverse = inspect & ~meta.finished & ~exhausted
+            self._error((meta.actors < 0) | (meta.actors > 1), traverse, METADATA_ERROR)
+            own = traverse & (meta.actors == self._viewers) & (self.errors == 0)
+            opposing = traverse & (meta.actors != self._viewers) & (self.errors == 0)
+            query = own
+            if self.reuse_root_decision:
+                from dataclasses import replace
+                root_rows = own & (self.depth == 0)
+                self._save_decision(replace(self._root_decision,
+                    states=self._world(root_rows)), root_rows)
+                query = own & ~root_rows
+            decision = self.rules.decision_device(self._world(query), self._viewers)
+            self._error(decision.errors, query, RULE_ERROR)
+            own = own & (self.errors == 0)
+            self._save_decision(decision, query & (self.errors == 0))
+            if self.reuse_root_decision:
+                decision = self._decision
+            hashed = self._hash_decision(decision, own)
+            self._error(hashed.errors, own, KEY_ERROR)
+            matches = (self.keys == hashed.keys[:, None, :]).all(-1)
+            matches = matches & (self._columns[None, :] < self.node_count[:, None])
+            found = matches.any(-1)
+            node = matches.long().argmax(-1)
+            self._error((self.depth == 0) & (~found | (node != 0)), own, KEY_ERROR)
+            existing = own & found & (self.errors == 0)
+            fresh = own & ~found & (self.errors == 0)
+            self._error(self.node_count >= self.nodes_per_root, fresh, CAPACITY_ERROR)
+            slots = self._base_slots + node
+            generations = self.node_generations[self._rows, node]
+            root_choice = self.statistics.select_root(slots, generations, self._noise,
+                self._schedule[self._limits, self.completed.clamp(0, self.simulations - 1)],
+                active=existing & (self.depth == 0))
+            inner_choice = self.statistics.select_interior(slots, generations,
+                                                           active=existing & (self.depth > 0))
+            self._error(root_choice.error | inner_choice.error, existing, STATISTICS_ERROR)
+            chosen = t.where(self.depth == 0, root_choice.actions, inner_choice.actions)
+            depth = self.depth.clamp(0, self.max_depth - 1)
+            path_mask = t.nn.functional.one_hot(depth, self.max_depth).bool() & existing[:, None]
+            self.path_slots.copy_(t.where(path_mask, slots[:, None], self.path_slots))
+            self.path_generations.copy_(t.where(path_mask, generations[:, None], self.path_generations))
+            self.path_actions.copy_(t.where(path_mask, chosen[:, None], self.path_actions))
+            self.path_valid.logical_or_(path_mask)
+            self.actions.copy_(t.where(existing, chosen, self.actions))
+            self.phase.copy_(t.where(terminal, BACKUP, self.phase))
+            self.phase.copy_(t.where(exhausted, LEAF, self.phase))
+            self.phase.copy_(t.where(opposing, OPPONENT, self.phase))
+            self.phase.copy_(t.where(existing, STEP, self.phase))
+            self.phase.copy_(t.where(fresh, EVALUATE_NODE, self.phase))
+        self._run_phase(INSPECT,masks[INSPECT],phase_inspect)
 
-        fresh = masks[EVALUATE_NODE]
-        prior = self._policy_prediction(self._decision, self._viewers, fresh)
-        observed=None
-        if self.reuse_interior_observation:
-            world=self._world(fresh);saved=self._decision.states
-            if saved.pool is not world.pool:
-                raise ValueError('Interior decision observation must use the same state arena')
-            mismatch=(saved.slots!=world.slots)|(saved.generations!=world.generations)|(saved.owners!=world.owners)
-            self._error(mismatch,fresh,METADATA_ERROR)
-            observed=DeviceValueObservation(self._decision.observations,
-                t.ones((self.rows,1),dtype=t.float32,device=self.device),
-                t.zeros(self.rows,dtype=t.bool,device=self.device),
-                t.zeros(self.rows,dtype=t.float64,device=self.device),self._decision.errors)
-        value = self._fixed_value(self._world(fresh), self._viewers, self._aux_ids, fresh,observed=observed)
-        hashed = self._hash_decision(self._decision, fresh)
-        self._error(hashed.errors, fresh, KEY_ERROR)
-        index = self.node_count.clamp(0, self.nodes_per_root - 1)
-        written = self.statistics.write_nodes(self._base_slots + index, self._roots.owners,
-            prior, value, self._decision.valid, active=fresh & (self.errors == 0),
-            expected_generations=self.node_generations[self._rows, index])
-        self._error(written.error, fresh, STATISTICS_ERROR)
-        success = fresh & (self.errors == 0)
-        self.keys[self._rows, index] = t.where(success[:, None], hashed.keys, self.keys[self._rows, index])
-        self.node_generations[self._rows, index] = t.where(success, written.generations,
-                                                          self.node_generations[self._rows, index])
-        self.node_count.add_(success.long())
-        if self.teacher_mode == 'network_value':
-            self.leaf_values.copy_(t.where(success, value, self.leaf_values))
-            self.phase.copy_(t.where(success, BACKUP, self.phase))
-        else:
-            self.phase.copy_(t.where(success, LEAF, self.phase))
+        def phase_fresh():
+            fresh = masks[EVALUATE_NODE]
+            prior = self._policy_prediction(self._decision, self._viewers, fresh)
+            observed=None
+            if self.reuse_interior_observation:
+                world=self._world(fresh);saved=self._decision.states
+                if saved.pool is not world.pool:
+                    raise ValueError('Interior decision observation must use the same state arena')
+                mismatch=(saved.slots!=world.slots)|(saved.generations!=world.generations)|(saved.owners!=world.owners)
+                self._error(mismatch,fresh,METADATA_ERROR)
+                observed=DeviceValueObservation(self._decision.observations,
+                    t.ones((self.rows,1),dtype=t.float32,device=self.device),
+                    t.zeros(self.rows,dtype=t.bool,device=self.device),
+                    t.zeros(self.rows,dtype=t.float64,device=self.device),self._decision.errors)
+            value = self._fixed_value(self._world(fresh), self._viewers, self._aux_ids, fresh,observed=observed)
+            hashed = self._hash_decision(self._decision, fresh)
+            self._error(hashed.errors, fresh, KEY_ERROR)
+            index = self.node_count.clamp(0, self.nodes_per_root - 1)
+            written = self.statistics.write_nodes(self._base_slots + index, self._roots.owners,
+                prior, value, self._decision.valid, active=fresh & (self.errors == 0),
+                expected_generations=self.node_generations[self._rows, index])
+            self._error(written.error, fresh, STATISTICS_ERROR)
+            success = fresh & (self.errors == 0)
+            self.keys[self._rows, index] = t.where(success[:, None], hashed.keys, self.keys[self._rows, index])
+            self.node_generations[self._rows, index] = t.where(success, written.generations,
+                                                              self.node_generations[self._rows, index])
+            self.node_count.add_(success.long())
+            if self.teacher_mode == 'network_value':
+                self.leaf_values.copy_(t.where(success, value, self.leaf_values))
+                self.phase.copy_(t.where(success, BACKUP, self.phase))
+            else:
+                self.phase.copy_(t.where(success, LEAF, self.phase))
+        self._run_phase(EVALUATE_NODE,masks[EVALUATE_NODE],phase_fresh)
 
-        leaf = masks[LEAF]
-        old = self._world(leaf)
-        if self.teacher_mode == 'covered_value':
-            continuation = self.rules.teacher_continue_device(old, self._viewers, horizon=self.terminal_horizon)
-            self._release_replaced(old, continuation, leaf)
-            self._replace_world(continuation, leaf)
-        value = self._fixed_value(self._world(leaf), self._viewers, self._aux_ids, leaf)
-        self.leaf_values.copy_(t.where(leaf, value, self.leaf_values))
-        self.phase.copy_(t.where(leaf, BACKUP, self.phase))
+        def phase_leaf():
+            leaf = masks[LEAF]
+            old = self._world(leaf)
+            if self.teacher_mode == 'covered_value':
+                continuation = self.rules.teacher_continue_device(old, self._viewers, horizon=self.terminal_horizon)
+                self._release_replaced(old, continuation, leaf)
+                self._replace_world(continuation, leaf)
+            value = self._fixed_value(self._world(leaf), self._viewers, self._aux_ids, leaf)
+            self.leaf_values.copy_(t.where(leaf, value, self.leaf_values))
+            self.phase.copy_(t.where(leaf, BACKUP, self.phase))
+        self._run_phase(LEAF,masks[LEAF],phase_leaf)
 
-        opponent = masks[OPPONENT]
-        meta = self.rules.metadata_device(self._world(opponent))
-        if self.opponent_mode == 'policy':
-            opponent_decision = self.rules.decision_device(self._world(opponent), meta.actors)
-            self._error(opponent_decision.errors | meta.errors, opponent, RULE_ERROR)
-            probabilities = self._policy_prediction(opponent_decision, meta.actors, opponent)
-            draw = self.random.categorical(probabilities.contiguous(),
-                opponent_decision.counts.contiguous(),
-                (opponent & (self.errors == 0)).contiguous())
-            self._error(draw.errors, opponent, RANDOM_ERROR)
-            self._save_decision(opponent_decision, opponent)
-            self.actions.copy_(t.where(opponent, draw.indices, self.actions))
-        else:
-            teacher_decision, teacher_choice, teacher_errors = self.rules.rule_decision_device(
-                self._world(opponent), meta.actors)
-            self._error(meta.errors | teacher_errors, opponent, RULE_ERROR)
-            self._save_decision(teacher_decision, opponent, actions_only=True)
-            self.actions.copy_(t.where(opponent, teacher_choice, self.actions))
-        self.phase.copy_(t.where(opponent, STEP, self.phase))
+        def phase_opponent():
+            opponent = masks[OPPONENT]
+            meta = self.rules.metadata_device(self._world(opponent))
+            if self.opponent_mode == 'policy':
+                opponent_decision = self.rules.decision_device(self._world(opponent), meta.actors)
+                self._error(opponent_decision.errors | meta.errors, opponent, RULE_ERROR)
+                probabilities = self._policy_prediction(opponent_decision, meta.actors, opponent)
+                draw = self.random.categorical(probabilities.contiguous(),
+                    opponent_decision.counts.contiguous(),
+                    (opponent & (self.errors == 0)).contiguous())
+                self._error(draw.errors, opponent, RANDOM_ERROR)
+                self._save_decision(opponent_decision, opponent)
+                self.actions.copy_(t.where(opponent, draw.indices, self.actions))
+            else:
+                teacher_decision, teacher_choice, teacher_errors = self.rules.rule_decision_device(
+                    self._world(opponent), meta.actors)
+                self._error(meta.errors | teacher_errors, opponent, RULE_ERROR)
+                self._save_decision(teacher_decision, opponent, actions_only=True)
+                self.actions.copy_(t.where(opponent, teacher_choice, self.actions))
+            self.phase.copy_(t.where(opponent, STEP, self.phase))
+        self._run_phase(OPPONENT,masks[OPPONENT],phase_opponent)
 
-        step = masks[STEP]
-        old = self._world(step)
-        meta = self.rules.metadata_device(old)
-        self._error(meta.errors, step, RULE_ERROR)
-        if self.fused_rule_steps:
-            advanced=self.rules.step_clean_device(old,meta.actors,self._decision,self.actions,physical=False)
-            cleaned=advanced
-        else:
-            advanced = self.rules.step_device(old, meta.actors, self._decision, self.actions, physical=False)
-            cleaned = self.rules.clean_device(self._masked(advanced, step))
-        self._release_replaced(advanced, cleaned, step)
-        distinct_advanced = ((old.slots != advanced.slots)
-                             | (old.generations != advanced.generations))
-        self._release_replaced(old, cleaned, step & distinct_advanced)
-        self._replace_world(cleaned, step)
-        self.depth.add_(step.long())
-        self.phase.copy_(t.where(step, INSPECT, self.phase))
+        def phase_step():
+            step = masks[STEP]
+            old = self._world(step)
+            meta = self.rules.metadata_device(old)
+            self._error(meta.errors, step, RULE_ERROR)
+            if self.fused_rule_steps:
+                advanced=self.rules.step_clean_device(old,meta.actors,self._decision,self.actions,physical=False)
+                cleaned=advanced
+            else:
+                advanced = self.rules.step_device(old, meta.actors, self._decision, self.actions, physical=False)
+                cleaned = self.rules.clean_device(self._masked(advanced, step))
+            self._release_replaced(advanced, cleaned, step)
+            distinct_advanced = ((old.slots != advanced.slots)
+                                 | (old.generations != advanced.generations))
+            self._release_replaced(old, cleaned, step & distinct_advanced)
+            self._replace_world(cleaned, step)
+            self.depth.add_(step.long())
+            self.phase.copy_(t.where(step, INSPECT, self.phase))
+        self._run_phase(STEP,masks[STEP],phase_step)
 
-        backup = masks[BACKUP]
-        backed = self.statistics.backup(self.path_slots, self.path_generations, self.path_actions,
-            self.path_valid, self.leaf_values, self._roots.owners, active=backup)
-        self._error(backed.error, backup, STATISTICS_ERROR)
-        accepted = backup & (self.errors == 0)
-        self.completed.add_(accepted.long())
-        self._release_lease(self._world(backup), backup & self._world_live)
-        self._world_live.logical_and_(~backup)
-        self.phase.copy_(t.where(accepted & (self.completed < self.requested), SAMPLE, self.phase))
-        self.phase.copy_(t.where(accepted & (self.completed == self.requested), FINAL, self.phase))
+        def phase_backup():
+            backup = masks[BACKUP]
+            backed = self.statistics.backup(self.path_slots, self.path_generations, self.path_actions,
+                self.path_valid, self.leaf_values, self._roots.owners, active=backup)
+            self._error(backed.error, backup, STATISTICS_ERROR)
+            accepted = backup & (self.errors == 0)
+            self.completed.add_(accepted.long())
+            self._release_lease(self._world(backup), backup & self._world_live)
+            self._world_live.logical_and_(~backup)
+            self.phase.copy_(t.where(accepted & (self.completed < self.requested), SAMPLE, self.phase))
+            self.phase.copy_(t.where(accepted & (self.completed == self.requested), FINAL, self.phase))
+        self._run_phase(BACKUP,masks[BACKUP],phase_backup)
 
-        final = masks[FINAL]
-        final_choice = self.statistics.select_final(self._base_slots, self.node_generations[:, 0],
-                                                    self._noise, active=final)
-        policy = self.statistics.improved_policy(self._base_slots, self.node_generations[:, 0], active=final)
-        snapshot = self.statistics.snapshot(self._base_slots, self.node_generations[:, 0], active=final)
-        self._error(final_choice.error | policy.error | snapshot.error, final, STATISTICS_ERROR)
-        self.actions.copy_(t.where(final, final_choice.actions, self.actions))
-        self.policy.copy_(t.where(final[:, None], policy.policy.to(t.float32), self.policy))
-        self.visits.copy_(t.where(final[:, None], snapshot.visits, self.visits))
-        denominator = snapshot.visits.sum(-1, keepdim=True)
-        visit_policy = t.where(denominator > 0, snapshot.visits / denominator.clamp_min(1), snapshot.prior)
-        self.visit_policy.copy_(t.where(final[:, None], visit_policy.to(t.float32), self.visit_policy))
-        self.phase.copy_(t.where(final, CLEANUP, self.phase))
+        def phase_final():
+            final = masks[FINAL]
+            final_choice = self.statistics.select_final(self._base_slots, self.node_generations[:, 0],
+                                                        self._noise, active=final)
+            policy = self.statistics.improved_policy(self._base_slots, self.node_generations[:, 0], active=final)
+            snapshot = self.statistics.snapshot(self._base_slots, self.node_generations[:, 0], active=final)
+            self._error(final_choice.error | policy.error | snapshot.error, final, STATISTICS_ERROR)
+            self.actions.copy_(t.where(final, final_choice.actions, self.actions))
+            self.policy.copy_(t.where(final[:, None], policy.policy.to(t.float32), self.policy))
+            self.visits.copy_(t.where(final[:, None], snapshot.visits, self.visits))
+            denominator = snapshot.visits.sum(-1, keepdim=True)
+            visit_policy = t.where(denominator > 0, snapshot.visits / denominator.clamp_min(1), snapshot.prior)
+            self.visit_policy.copy_(t.where(final[:, None], visit_policy.to(t.float32), self.visit_policy))
+            self.phase.copy_(t.where(final, CLEANUP, self.phase))
+        self._run_phase(FINAL,masks[FINAL],phase_final)
 
-        cleanup = (before == CLEANUP)
-        self._drain_device(cleanup)
+        def phase_cleanup():
+            cleanup = (before == CLEANUP)
+            self._drain_device(cleanup)
+        self._run_phase(CLEANUP,(before == CLEANUP),phase_cleanup)
+
         self.phase.copy_(t.where((self.errors != 0) & (self.phase != DONE), CLEANUP, self.phase))
         self._update_predicate()
 

@@ -215,7 +215,7 @@ class DomainSoARuleAdapter:
     def __exit__(self,*args):self.close()
 
 
-def make_gumbel_search(rules,inference,auxiliary_inference,statistics,information_keys,*,random=None,noise=False,budget_seconds=120,allow_cpu_oracle=False):
+def make_gumbel_search(rules,inference,auxiliary_inference,statistics,information_keys,*,random=None,noise=False,budget_seconds=120,allow_cpu_oracle=False,phase_gating=False):
     """Bind the unchanged 32/cap16/H3/depth10/per-simulation/mctx_default profile.
 
     Still an explicit integration sandbox. This is not a training approval gate.
@@ -234,7 +234,7 @@ def make_gumbel_search(rules,inference,auxiliary_inference,statistics,informatio
             self.rules.begin_search_device(self.domain_budget_ms)
             return super().initialize(*args,**kwargs)
     search=DomainGumbelSearch(rules,inference,auxiliary_inference,statistics,information_keys,
-        rows=rules.rows,max_actions=rules.max_actions,simulations=32,gumbel_candidates=16,max_depth=10,terminal_horizon=3,
+        rows=rules.rows,max_actions=rules.max_actions,simulations=32,gumbel_candidates=16,max_depth=10,terminal_horizon=3,phase_gating=phase_gating,
         teacher_mode='covered_value',random=random,noise=noise,device=rules.device,
         allow_cpu_reference=allow_cpu_oracle,allow_synthetic=allow_cpu_oracle,
         opponent_mode='rule',reuse_sampled_world=False,reuse_root_decision=False,q_scale='mctx_default')

@@ -24,6 +24,10 @@
 
 `make_gumbel_search` 固定 32 次模拟、最多 16 个 Gumbel 候选、H3、最大深度 10、`per_simulation`、`mctx_default`。它是显式未验收入口，不自动成为训练后端。
 
+`make_gumbel_search(..., phase_gating=True)` 可显式启用 GPU 阶段条件分支。每个阶段沿用该 tick 开始时冻结的原活动掩码；整批没有该阶段工作时，设备跳过整个阶段，包含其状态租约、观察、推理和教师调用。有工作时仍执行原阶段的完整计算，错误根的清理独立于正常活动掩码。分支只执行一次，真实搜索／H3 截止仍由原外层预算决定；不减少模拟、候选或教师步数。初始化先建立持久搜索输出，阶段间只通过这些已有输出传递结果。原平铺路径保持默认，条件分支不授予训练或整局资格。
+
+分支的实际原生子流通过 `DeviceGameLoop` 统一登记到统计存储及随机计划；不得手工猜测流身份。验证 `tests.test_duel_v2_device_search` 的逐项等价与失败根释放，以及 `tests.test_duel_v2_device_search_phase_gate` 的实际 CUDA 空阶段／非空阶段图重放。
+
 ## 本地诊断与设备验收
 
 CPU 编译器 oracle 必须显式传入 `device='cpu', allow_cpu_oracle=True, allow_unqualified=True`。它编译同一份领域源，用于与正式引擎逐字段比较；不构成 GPU、400 并发或训练资格。

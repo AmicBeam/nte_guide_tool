@@ -1419,3 +1419,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 直接领域 GPU 验证入口 `tests.test_duel_v2_domain_soa_execution_cuda` 与 `tests.test_duel_v2_domain_soa_search_cuda` 复用正式完整状态对拍夹具，分别覆盖物理图重放／自然终局及真实 H3／起手换牌采样。完整物理 CUDA 函数显式非内联并预先配置调用栈；起手采样保持正式行动代理及恢复后的双重信息检查。组件通过仍不自动授予 400 并发、速度或训练资格。
 
 直接领域 GPU 的临时属性归约与伤害列表使用逐根工作区，只读查询避免内联展开并复用父观察的私有快照，减少设备栈与重复字段占用。规则容量、完整特征和 Gumbel32/H3 参数不变；验证及内存生命周期见 [直接领域 GPU 执行器](../../../docs/duel-v2-domain-gpu-executor.md)，400 并发和整局性能仍分别验收。
+
+直接领域搜索支持显式 `phase_gating=True`，由 GPU 条件分支跳过没有活跃根的整个搜索阶段，保留完整模拟、H3、错误清理与原截止语义。默认路径保持不变；验证使用 `tests.test_duel_v2_device_search` 与 `tests.test_duel_v2_device_search_phase_gate`，实际并发和整局速度另行验收。

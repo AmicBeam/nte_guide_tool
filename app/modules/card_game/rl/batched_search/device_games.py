@@ -463,6 +463,8 @@ class DeviceGameLoop:
                 owner.bind_capture_streams(stream,stream)
         for runner in runners:
             runner.register_capture_stream_callback(self._register_native_capture_stream)
+        gates=getattr(self.search,'phase_gates',None)
+        if gates is not None:gates.register_capture_stream_callback(self._register_native_capture_stream)
 
     def capture(self, roots, job_seeds, policy_index_by_side, auxiliary_index_by_side,
                 train_sides):

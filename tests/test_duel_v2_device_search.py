@@ -253,7 +253,7 @@ class DeviceSearchTest(unittest.TestCase):
         for dense, compact in zip(results[0], results[1]):
             self.assertTrue(torch.equal(dense, compact))
 
-    def engine(self, rows=2, device='cpu', simulations=32, actions=3,group_ready_leaves=False,reuse_interior_observation=False):
+    def engine(self, rows=2, device='cpu', simulations=32, actions=3,group_ready_leaves=False,reuse_interior_observation=False,phase_gating=False):
         fixture = TensorTreeFixture(rows, device, actions=actions)
         stats = DeviceStatisticsPool(rows*(simulations+1), actions, device=str(fixture.device),
             max_batch=rows, max_path_len=4, allow_cpu_reference=device == 'cpu')
@@ -261,8 +261,48 @@ class DeviceSearchTest(unittest.TestCase):
             InjectiveFixtureKeys(), rows=rows, max_actions=actions, simulations=simulations,
             max_depth=4, terminal_horizon=3, device=str(fixture.device),
             allow_cpu_reference=device == 'cpu', allow_synthetic=True,
-            group_ready_leaves=group_ready_leaves,reuse_interior_observation=reuse_interior_observation)
+            group_ready_leaves=group_ready_leaves,reuse_interior_observation=reuse_interior_observation,phase_gating=phase_gating)
         return engine, fixture
+
+    def test_phase_gates_skip_empty_teacher_work_without_changing_search(self):
+        import torch
+        torch.set_num_threads(1)
+        reference,original=self.engine(rows=3)
+        gated,fixture=self.engine(rows=3,phase_gating=True)
+        teacher=fixture.teacher_continue_device
+        def require_active(states,viewers,*,horizon):
+            self.assertTrue(bool(states.active.any()))
+            return teacher(states,viewers,horizon=horizon)
+        fixture.teacher_continue_device=require_active
+        try:
+            for engine,worlds in ((reference,original),(gated,fixture)):
+                self.initialize(engine,worlds,active=[True,False,True])
+            expected=self.finish_cpu(reference);actual=self.finish_cpu(gated)
+            for name in ('errors','complete','completed','requested','actions','policy','visits','information_keys','node_count','phase_work'):
+                torch.testing.assert_close(getattr(actual,name),getattr(expected,name),rtol=0,atol=0)
+            torch.testing.assert_close(fixture.sample_seeds,original.sample_seeds,rtol=0,atol=0)
+            self.assertEqual(int(fixture.live.sum()),int(original.live.sum()))
+            self.assertGreater(int(gated.phase_executions.sum()),0)
+        finally:reference.close();gated.close()
+
+    def test_phase_gates_still_drain_failed_roots(self):
+        import torch
+        torch.set_num_threads(1)
+        results=[]
+        for gated in (False,True):
+            engine,fixture=self.engine(phase_gating=gated)
+            try:
+                viewers=fixture.viewer.clone();fixture.viewer[0]=1
+                roots=fixture.roots();ids=torch.zeros((2,2),dtype=torch.int64)
+                engine.initialize(roots,viewers,torch.zeros((2,5),dtype=torch.int64),ids,ids)
+                result=self.finish_cpu(engine)
+                self.assertEqual(int(fixture.live.sum()),2)
+                self.assertTrue(bool(fixture.live[roots.slots].all()))
+                results.append({n:getattr(result,n).clone()for n in ('errors','complete','completed','actions','visits')})
+            finally:engine.close()
+        self.assertFalse(bool(results[1]['complete'][0]))
+        self.assertTrue(bool(results[1]['complete'][1]))
+        for name in results[0]:torch.testing.assert_close(results[0][name],results[1][name],rtol=0,atol=0)
 
     def initialize(self, engine, fixture, active=None):
         import torch

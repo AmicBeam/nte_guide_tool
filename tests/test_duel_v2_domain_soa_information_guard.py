@@ -18,6 +18,11 @@ def backend(layout,device='cpu',**kw):
 
 
 class InformationGuardTest(unittest.TestCase):
+    def test_sampler_window_must_cover_exactly_all_800_candidates(self):
+        for window in (0,33,801,True):
+            with self.assertRaisesRegex(ValueError,'partition all800'):
+                sampler_oracle(guard_window=window)
+
     def fixtures(self):
         states=[state(20+i,a=key,b=key)for i,key in enumerate(('starter','weave-rush','quick-rush','zhenhong','murk','collapse','lingke'))]
         for st in states:st['active_side']='a';st['sides']['a']['ap']=100
@@ -56,6 +61,28 @@ class InformationGuardTest(unittest.TestCase):
             out=guard.launch(guard.prepare(before,after,torch.zeros(1,dtype=torch.int64),torch.ones(1,dtype=torch.bool)))
             self.assertEqual(int(out['errors'][0]),INFORMATION_CHANGED);self.assertFalse(out['accepted'][0])
 
+    def test_large_windows_preserve_all_candidates_and_rejection(self):
+        from dataclasses import replace
+        st=state(110);st['active_side']='a';st['sides']['a']['ap']=100
+        changed=deepcopy(st)
+        plays=[a for a in legal_actions(st,'a')if a['type']=='play_card']
+        card=next(c for c in changed['sides']['a']['hand']if c['instance_id']==plays[-1]['card_id'])
+        card['additional_ap_cost']=1
+        layout,before=pack([st,st]);_,after=pack([st,changed],layout=layout)
+        outputs=[]
+        for window in (16,200):
+            with backend(layout,max_actions=800,window=window)as guard:
+                p=guard.prepare(before,after,torch.zeros(2,dtype=torch.int64),torch.ones(2,dtype=torch.bool))
+                result=guard.launch(p)
+                self.assertEqual(result['errors'].tolist(),[0,INFORMATION_CHANGED])
+                # Compare all800 rows, including padded rows and every boundary.
+                chunks=[]
+                for offset in range(0,800,window):
+                    out=guard.candidates.launch(replace(p.source_candidates,action_start=offset))
+                    chunks.append(out['features'].clone())
+                outputs.append(torch.cat(chunks,1))
+        self.assertTrue(torch.equal(outputs[0],outputs[1]))
+
     def test_errors_replay_and_no_pruning_on_capacity_failure(self):
         states=self.fixtures()[:2];layout,before=pack(states);_,after=pack(states,layout=layout)
         with backend(layout,max_actions=1,window=1)as guard:
@@ -67,6 +94,27 @@ class InformationGuardTest(unittest.TestCase):
             self.assertEqual(out['errors'].tolist(),[64,1]);self.assertFalse(out['accepted'].any())
             after['row_error'].zero_();after['catalog_digest'][1,0]^=1;out=guard.launch(p)
             self.assertTrue(out['accepted'].all())
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_large_window_replays_candidate_only_changes(self):
+        st=state(110);st['active_side']='a';st['sides']['a']['ap']=100
+        layout,before=pack([st,st],device='cuda');_,after=pack([st,st],layout=layout,device='cuda')
+        active=torch.ones(2,dtype=torch.bool,device='cuda');viewers=torch.zeros(2,dtype=torch.int64,device='cuda')
+        with backend(layout,'cuda',max_actions=800,window=200)as guard:
+            p=guard.prepare(before,after,viewers,active);guard.launch(p);torch.cuda.synchronize()
+            graph=torch.cuda.CUDAGraph()
+            with torch.cuda.graph(graph):out=guard.launch(p)
+            graph.replay();torch.cuda.synchronize();self.assertEqual(out['errors'].cpu().tolist(),[0,0])
+            plays=[a for a in legal_actions(st,'a')if a['type']=='play_card']
+            instance=int(plays[-1]['card_id'].split('-')[-1])
+            ref=int(((after['card_instance_slot'][0]==instance)&(after['card_side'][0]==0)).nonzero()[0])
+            key=CARD_INT_FIELDS.index('additional_ap_cost')
+            after['card_int_presence'][0,ref,key]=2;after['card_int_value'][0,ref,key]=1
+            after['row_error'][1]=64
+            graph.replay();torch.cuda.synchronize()
+            self.assertEqual(out['errors'].cpu().tolist(),[INFORMATION_CHANGED,64])
+            active.zero_();graph.replay();torch.cuda.synchronize()
+            self.assertEqual(out['errors'].cpu().tolist(),[0,0]);self.assertFalse(out['accepted'].any())
 
     @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
     def test_cuda_400_captured_complete_guard(self):

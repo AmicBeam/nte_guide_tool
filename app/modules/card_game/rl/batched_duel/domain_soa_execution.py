@@ -86,7 +86,7 @@ void apply_domain_action('''+','.join(params)+''',const int*sides,const long lon
  const long long*counts,const int*prior_errors,const long long*payloads,const long long*selected,
  const long long*top,const long long*bottom,const unsigned char*bottom_plural,int*error_sites,double*query_workspace,int*damage_workspace,int B){
 #if defined(__CUDACC__) || defined(__CUDACC_RTC__)
- int row=blockIdx.x*blockDim.x+threadIdx.x;if(row>=B)return;
+ int row=blockIdx.x;if(threadIdx.x!=0||row>=B)return;
 #else
  for(int row=0;row<B;row++){
 #endif
@@ -176,7 +176,7 @@ class DomainSoAExecution:
         pointers.extend((p.side_wire,p.selectors,p.active.view(t.uint8),out['counts'],out['errors'],out['payloads'],out['selected'],out['top'],out['bottom'],out['bottom_plural'].view(t.uint8),p.error_sites))
         pointers.extend(p.workspace)
         B=p.active.shape[0]
-        if self.module:self.module.launch('apply_domain_action',pointers+[B],grid=((B+63)//64,),block=(64,),capture_safe=True)
+        if self.module:self.module.launch('apply_domain_action',pointers+[B],grid=(B,),block=(32,),capture_safe=True)
         else:self.kernel(*[ctypes.c_void_p(v.data_ptr())for v in pointers],B)
         failed=p.fields['row_error']!=0
         for name,v in p.fields.items():

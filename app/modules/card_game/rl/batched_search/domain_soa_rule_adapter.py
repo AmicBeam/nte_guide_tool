@@ -33,7 +33,7 @@ class DomainSoARuleAdapter:
     host_rule_callbacks=False
     no_vm=True
 
-    def __init__(self,layout,*,rows,max_actions=800,capacity=None,device='cuda',allow_cpu_oracle=False,allow_unqualified=False):
+    def __init__(self,layout,*,rows,max_actions=800,capacity=None,device='cuda',allow_cpu_oracle=False,allow_unqualified=False,information_window=16):
         import torch
         if allow_unqualified is not True:raise RuntimeError('Physical rule/search integration has not passed acceptance')
         if type(rows)is not int or not 1<=rows<=min(400,layout.game_capacity):raise ValueError('Bounded physical cohort required')
@@ -64,7 +64,7 @@ class DomainSoARuleAdapter:
             self.candidates=DomainCandidateWorkspace(rows=min(32,B),actions=A,cards=2*layout.max_cards,selection_width=S,device=self.device,allow_cpu_oracle=allow_cpu_oracle)
             self.observation=DomainSoAObservation(layout,device=self.device,allow_cpu_oracle=allow_cpu_oracle)
             self.observation_buffers=self.observation.prepare(self.fields,self.viewers,self.active)
-            self.sampler=DomainSoASampler(layout,device=self.device,allow_cpu_oracle=allow_cpu_oracle,guard=True,seed_words=5)
+            self.sampler=DomainSoASampler(layout,device=self.device,allow_cpu_oracle=allow_cpu_oracle,guard=True,seed_words=5,guard_window=information_window)
             self.sample_buffers=self.sampler.prepare(self.fields,self.viewers,self.seeds,self.sample_active)
             self.sample_original_phase=t.zeros_like(self.fields['phase']);self.sample_original_actor=t.zeros_like(self.fields['active_side'])
             self.apply_buffers=self.execution.prepare(self.fields,self.actors,self.indices,self.active)
@@ -215,7 +215,7 @@ class DomainSoARuleAdapter:
     def __exit__(self,*args):self.close()
 
 
-def make_gumbel_search(rules,inference,auxiliary_inference,statistics,information_keys,*,random=None,noise=False,budget_seconds=120,allow_cpu_oracle=False,phase_gating=False):
+def make_gumbel_search(rules,inference,auxiliary_inference,statistics,information_keys,*,random=None,noise=False,budget_seconds=120,allow_cpu_oracle=False,phase_gating=False,group_ready_leaves=False):
     """Bind the unchanged 32/cap16/H3/depth10/per-simulation/mctx_default profile.
 
     Still an explicit integration sandbox. This is not a training approval gate.
@@ -234,7 +234,7 @@ def make_gumbel_search(rules,inference,auxiliary_inference,statistics,informatio
             self.rules.begin_search_device(self.domain_budget_ms)
             return super().initialize(*args,**kwargs)
     search=DomainGumbelSearch(rules,inference,auxiliary_inference,statistics,information_keys,
-        rows=rules.rows,max_actions=rules.max_actions,simulations=32,gumbel_candidates=16,max_depth=10,terminal_horizon=3,phase_gating=phase_gating,
+        rows=rules.rows,max_actions=rules.max_actions,simulations=32,gumbel_candidates=16,max_depth=10,terminal_horizon=3,phase_gating=phase_gating,group_ready_leaves=group_ready_leaves,
         teacher_mode='covered_value',random=random,noise=noise,device=rules.device,
         allow_cpu_reference=allow_cpu_oracle,allow_synthetic=allow_cpu_oracle,
         opponent_mode='rule',reuse_sampled_world=False,reuse_root_decision=False,q_scale='mctx_default')

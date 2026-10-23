@@ -723,7 +723,7 @@ class DomainSoASampler:
     gpu_qualified = False
 
     def __init__(self, layout=None, catalog=None, *, device='cuda', allow_cpu_oracle=False,
-                 max_draws=4096, guard=True, seed_words=1):
+                 max_draws=4096, guard=True, seed_words=1, guard_window=16):
         import torch
         if layout is None:
             layout = DomainSoALayout()
@@ -739,6 +739,9 @@ class DomainSoASampler:
         if type(guard)is not bool:raise TypeError('Explicit guard selection required')
         if layout.max_zone>128 or layout.max_cards>512:
             raise ValueError('Direct sampler supports max_zone<=128 and max_cards<=512')
+        if type(guard_window)is not int or not 1<=guard_window<=800 or 800%guard_window:
+            raise ValueError('Guard window must partition all800 candidates')
+        self.guard_window=guard_window
         self.guard = guard
         self.device = torch.device(device)
         self.specs = array_specs(layout)
@@ -798,7 +801,7 @@ class DomainSoASampler:
             from .domain_soa_information_guard import DomainInformationGuard
             try:
                 self._information_guard=DomainInformationGuard(layout,device=self.device,
-                    allow_cpu_oracle=allow_cpu_oracle,max_actions=800,window=16)
+                    allow_cpu_oracle=allow_cpu_oracle,max_actions=800,window=guard_window)
             except BaseException:
                 self.close()
                 raise

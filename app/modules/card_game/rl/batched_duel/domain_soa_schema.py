@@ -186,7 +186,7 @@ PLAYER_BOOL_FIELDS: tuple[str, ...] = (
     "life_locked",
     "harmony_available",
 )
-PLAYER_STR_FIELDS: tuple[str, ...] = ("extra_genesis_actor",)
+PLAYER_STR_FIELDS: tuple[str, ...] = ("extra_genesis_actor", "seal_normal_attack")
 
 CHARACTER_INT_FIELDS: tuple[str, ...] = (
     "attack",

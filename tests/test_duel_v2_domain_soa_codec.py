@@ -179,6 +179,18 @@ class DomainSoACodecTest(unittest.TestCase):
         self.assertEqual(restored[-1]["rng"], (1 << 63) - 1)
         self.assertGreaterEqual(max(state["rng"].bit_length() for state in states), 63)
 
+    def test_normal_attack_seal_preserves_absence_null_and_runtime_reference(self):
+        states=[]
+        for value in (None,'','summon_e123'):
+            st=_fourteen_initial_states()[0]
+            st['sides']['b']['seal_normal_attack']=value
+            states.append(st)
+        states.append(_fourteen_initial_states()[0])
+        encoded=encode_domain_states(states,presentation='drop')
+        decoded=decode_domain_states(encoded)
+        for expected,actual in zip(states,decoded):
+            _assert_same(_authoritative(expected),actual)
+
     def test_entities_cards_and_zone_order(self):
         state = _fourteen_initial_states()[0]
         packed = encode_domain_states([state], presentation="drop")

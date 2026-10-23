@@ -106,9 +106,23 @@ OP_FLAG_KEYS: tuple[str, ...] = (
     "pending_sortie",
     "record_candidate_unused",
     "heiyu_after_placement",
+    "heiyu_hand_to_top",
+    "skip_nightmare",
+    "support_notified",
+    "no_counter",
 )
-OP_INT_KEYS: tuple[str, ...] = ("ap_paid", "card_bonus", "card_set_attack", "last_attack_amount", "sortie_attack_bonus")
+OP_INT_KEYS: tuple[str, ...] = ("ap_paid", "card_bonus", "card_set_attack", "last_attack_amount", "sortie_attack_bonus", "collapse_bonus")
 OP_STR_KEYS: tuple[str, ...] = ("heiyu_after_divination",)
+SORTIE_INT_KEYS: tuple[str, ...] = (
+    "bonus", "hits", "low_hp_bonus", "low_hp_max", "awake_player_bonus",
+    "harmony_bonus", "additional_damage_bonus", "penetrate_brand", "shield_after_shape",
+)
+SORTIE_BOOL_KEYS: tuple[str, ...] = (
+    "ignore_shield", "no_counter", "stay_bench", "additional_attack", "bypass",
+    "front_only", "no_combat_resources", "no_counter_harmony", "support_allows_counter",
+    "sync_attack", "penetrate_harmony", "penetrate_low_hp",
+)
+SORTIE_ATTRIBUTES: tuple[str, ...] = ("光", "暗", "灵", "魂", "相", "咒")
 ZONE_STATUS_KEYS: tuple[str, ...] = ("delay", "burn", "star", "weave", "stain")
 LINGKE_CHAIN_KEYS: tuple[str, ...] = ("entity_id", "character_id", "count")
 EFFECT_OPS: tuple[str, ...] = ("add", "multiply", "set", "allow", "forbid")
@@ -126,6 +140,8 @@ EFFECT_CLEAR_EVENTS: tuple[str, ...] = (
     "card_use",
     "ultimate_end",
     "battle",
+    "leave",
+    "source_removed",
 )
 
 EFFECT_CONDITION_IDS: tuple[str, ...] = (
@@ -559,7 +575,7 @@ def array_specs(layout):
     n_chstr = len(CHOICE_STR_KEYS)
     n_opflag = len(OP_FLAG_KEYS)
     n_opint = len(OP_INT_KEYS)
-    return {
+    specs = {
         "catalog_digest": (u8, (32,)),
         "row_valid": (b, ()),
         "row_error": (i32, ()),
@@ -614,6 +630,8 @@ def array_specs(layout):
         "choice_actor_slot": (i16, ()),
         "choice_continuation_presence": (u8, ()),
         "choice_continuation_slot": (i32, ()),
+        "op_return_entity_presence": (u8, ()),
+        "op_return_entity": (i32, ()),
         "op_side": (i8, ()),
         "op_actor_slot": (i16, ()),
         "op_card_index": (i32, ()),
@@ -632,6 +650,15 @@ def array_specs(layout):
         "op_pending_stay_bench": (b, ()),
         "op_pending_bonus_presence": (u8, ()),
         "op_pending_bonus": (i32, ()),
+        "op_sortie_int_presence": (u8, (len(SORTIE_INT_KEYS),)),
+        "op_sortie_int_value": (i32, (len(SORTIE_INT_KEYS),)),
+        "op_sortie_bool_presence": (u8, (len(SORTIE_BOOL_KEYS),)),
+        "op_sortie_bool_value": (b, (len(SORTIE_BOOL_KEYS),)),
+        "op_sortie_target_presence": (u8, ()),
+        "op_sortie_target_side": (i8, ()),
+        "op_sortie_target_actor": (i16, ()),
+        "op_sortie_attribute_presence": (u8, ()),
+        "op_sortie_attribute": (i8, ()),
         "op_str_presence": (u8, (len(OP_STR_KEYS),)),
         "op_str_slot": (i32, (len(OP_STR_KEYS),)),
         "op_option_id_presence": (u8, ()),
@@ -731,6 +758,7 @@ def array_specs(layout):
         "character_lingke_entity_slot": (i32, (2, C)),
         "character_lingke_id_slot": (i32, (2, C)),
         "character_lingke_count": (i32, (2, C)),
+        "card_is_snapshot": (b, (K,)),
         "card_is_view": (b, (K,)),
         "card_physical_index": (i32, (K,)),
         "card_valid": (b, (K,)),
@@ -833,6 +861,13 @@ def array_specs(layout):
         "string_length": (i32, (layout.max_string_slots,)),
         "string_bytes": (u8, (layout.max_string_bytes,)),
     }
+
+    specs['mark_queue_presence'] = (u8, ())
+    specs['mark_queue_count'] = (i16, ())
+    for name, (dtype, shape) in tuple(specs.items()):
+        if name.startswith('op_') or name == 'operation_present':
+            specs['mark_' + name] = (dtype, (layout.max_deferred_marks,) + shape)
+    return specs
 
 
 ARRAY_NAMES: tuple[str, ...] = tuple(array_specs(DomainSoALayout()).keys())

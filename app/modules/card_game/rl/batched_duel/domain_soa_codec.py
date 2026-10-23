@@ -60,6 +60,7 @@ from .domain_soa_schema import (
     OP_FLAG_KEYS,
     OP_INT_KEYS,
     OP_STR_KEYS,
+    SORTIE_INT_KEYS, SORTIE_BOOL_KEYS, SORTIE_ATTRIBUTES,
     PLAYER_BOOL_FIELDS,
     PLAYER_INT_FIELDS,
     PLAYER_KEYS,
@@ -112,6 +113,7 @@ OP_ALLOWED = (
             "option_id",
             "last_attack_target",
             "choice_cards",
+            "return_after_resources",
         }
     )
     | frozenset(OP_FLAG_KEYS)
@@ -121,10 +123,8 @@ OP_ALLOWED = (
 DEFERRED_ALLOWED = frozenset({"side", "actor", "entity_id", "kind"})
 MISSING_SCHEMA_FIELDS = (
     "Player.records payloads",
-    "pending_sortie specs beyond optional integer bonus",
     "PendingChoice.choices card list",
     "Effect.clear_on values outside EFFECT_CLEAR_EVENTS",
-    "_deferred_card_marks operation list",
 )
 UNSUPPORTED_REMAINING = (
     "unknown keys at any allowlisted object",
@@ -150,7 +150,7 @@ def coverage():
         "authoritative_encoded": (
             "game scalars including rng/version/phase/sides/turn/winner/reason",
             "two PlayerEntity rows with vitals, used, harmonized, front/last_front",
-            "CharacterEntity rows including summoned ids interned when not public-17",
+            "CharacterEntity rows with interned public and summoned identities",
             "CardEntity table plus ordered hand/deck/discard/removed",
             "entity class, entity_id, instance_id, aliases across zones/choice/operation",
             "typed effects with expiry clocks and known clear_on events",
@@ -158,6 +158,7 @@ def coverage():
             "last_hit_source, lingke_chain, beast_fangs, flavor, disappeared, support_turn, effect_seq",
             "pending_choice including deck_cards/deck_order/snapshot_n/continuation strings",
             "deferred_actions empty-list vs absent via presence, response locks, down-response queue",
+            "full typed pending sortie with target/attribute and marked-card operation snapshots",
             "front_debuff delay/burn/star/weave/stain/dots",
             "equipment, shape, copy, jingu_mark",
             "absent vs null vs zero via presence codes",
@@ -519,7 +520,6 @@ def _entity_text(number):
 def _encode_row(state, arrays, row, layout, presentation):
     _unknown(state, GAME_KEYS, "game")
     _forbid(state, UNSUPPORTED_GAME_KEYS, "unsupported")
-    _forbid(state, ("_deferred_card_marks",), "deferred-mark")
     for key in NON_AUTHORITATIVE_GAME_KEYS:
         if key in state and presentation == "reject":
             raise DomainSoAUnsupportedError(
@@ -571,6 +571,7 @@ def _encode_row(state, arrays, row, layout, presentation):
     card_by_obj = {}
     card_n = [0]
     zone_seen = set()
+    snapshot_mode = [False]
 
     def register_entity(entity, expected_type, *, instance=None):
         if type(entity) is not expected_type:
@@ -589,7 +590,11 @@ def _encode_row(state, arrays, row, layout, presentation):
     def register_card(card, side):
         physical = card.get('_physical_card', _MISSING)
         if physical is _MISSING:
-            register_entity(card, CardEntity, instance=card.get("instance_id"))
+            if snapshot_mode[0]:
+                if type(card) is not CardEntity:
+                    raise DomainSoAUnsupportedError("queued card snapshot requires CardEntity")
+            else:
+                register_entity(card, CardEntity, instance=card.get("instance_id"))
         else:
             if not isinstance(card, CardEntity) or not isinstance(physical, CardEntity):
                 raise DomainSoAUnsupportedError('physical card view must reference a CardEntity')
@@ -609,6 +614,7 @@ def _encode_row(state, arrays, row, layout, presentation):
         if physical is not _MISSING:
             arrays['card_is_view'][row, idx] = True
             arrays['card_physical_index'][row, idx] = register_card(physical, side)
+        arrays["card_is_snapshot"][row, idx] = snapshot_mode[0]
         _encode_card(card, side, arrays, row, idx, strings)
         return idx
 
@@ -629,6 +635,7 @@ def _encode_row(state, arrays, row, layout, presentation):
         _encode_player(team, arrays, row, s, layout, strings, register_zone_card)
     _encode_choice(state, arrays, row, layout, strings, register_card)
     _encode_operation(state, arrays, row, layout, strings, register_card)
+    _encode_mark_queue(state, arrays, row, layout, strings, register_card, snapshot_mode)
     _encode_deferred(state, arrays, row, layout, strings)
     _encode_down_responses(state, arrays, row, layout, strings)
     strings.dump(arrays, row)
@@ -859,6 +866,7 @@ def _encode_character(hero, cid, arrays, row, s, slot, layout, strings):
     if cid in CHARACTER_VOCAB:
         catalog = lookup_character(cid)
         arrays["character_template"][row, s, slot] = CHARACTER_VOCAB[cid]
+        arrays["character_id_slot"][row, s, slot] = strings.intern(cid)
     elif summoned:
         arrays["character_template"][row, s, slot] = 0
         arrays["character_id_slot"][row, s, slot] = strings.intern(cid)
@@ -1502,12 +1510,30 @@ def _encode_operation(state, arrays, row, layout, strings, register_card):
         spec = pending_sortie['spec']
         if type(spec) is not dict:
             raise TypeError('pending_sortie.spec must be a dict')
-        _unknown(spec, frozenset({'bonus'}), 'pending_sortie.spec')
+        _unknown(spec, frozenset(SORTIE_INT_KEYS + SORTIE_BOOL_KEYS + ('target', 'attribute')), 'pending_sortie.spec')
         arrays['op_pending_sortie_presence'][row] = PRESENCE_VALUE
         arrays['op_pending_stay_bench'][row] = _as_bool('pending_sortie.stay_bench', pending_sortie['stay_bench'])
         if 'bonus' in spec:
             arrays['op_pending_bonus_presence'][row] = PRESENCE_VALUE
             arrays['op_pending_bonus'][row] = _as_int('pending_sortie.spec.bonus', spec['bonus'])
+        for i, key in enumerate(SORTIE_INT_KEYS):
+            _put_optional_int(spec, key, arrays['op_sortie_int_presence'][row], arrays['op_sortie_int_value'][row], i)
+        for i, key in enumerate(SORTIE_BOOL_KEYS):
+            _put_optional_bool(spec, key, arrays['op_sortie_bool_presence'][row], arrays['op_sortie_bool_value'][row], i)
+        if 'attribute' in spec:
+            arrays['op_sortie_attribute_presence'][row] = PRESENCE_VALUE
+            arrays['op_sortie_attribute'][row] = SORTIE_ATTRIBUTES.index(spec['attribute'])
+        if 'target' in spec:
+            target = spec['target']
+            if type(target) is not tuple or len(target) != 2:
+                raise DomainSoAUnsupportedError('sortie.target must be a (side, character) tuple')
+            ts = side_index(target[0])
+            arrays['op_sortie_target_presence'][row] = PRESENCE_VALUE
+            arrays['op_sortie_target_side'][row] = ts
+            arrays['op_sortie_target_actor'][row] = -1 if target[1] == 'player' else _char_slot(list(state['sides'][target[0]]['characters']), target[1], 'sortie target')
+    if 'return_after_resources' in operation:
+        arrays['op_return_entity_presence'][row] = PRESENCE_VALUE
+        arrays['op_return_entity'][row] = _parse_entity_num(operation['return_after_resources'])
     for i, key in enumerate(OP_STR_KEYS):
         _put_optional_str(operation, key, arrays["op_str_presence"][row], arrays["op_str_slot"][row], i, strings, allow_value=True)
     if "option_id" not in operation:
@@ -1676,6 +1702,11 @@ def _decode_row(batch, row):
             (_side_from(batch.down_response_side[row, i]), _load_string(batch, row, batch.down_response_target_slot[row, i]))
             for i in range(down_n)
         ]
+    mark_p = int(batch.mark_queue_presence[row])
+    if mark_p == PRESENCE_VALUE:
+        state['_deferred_card_marks'] = _decode_mark_queue(batch, row, state, cards)
+    elif mark_p != PRESENCE_ABSENT:
+        raise DomainSoADecodeError('invalid marked-card queue presence')
     return state
 
 
@@ -2374,6 +2405,11 @@ def _decode_operation(batch, row, state, cards):
         _apply_optional(operation, key, _take_optional(batch.op_int_presence[row], batch.op_int_value[row], i, int))
     for i, key in enumerate(OP_STR_KEYS):
         _apply_optional(operation, key, _take_optional(batch.op_str_presence[row], batch.op_str_slot[row], i, lambda slot: _load_string(batch, row, slot)))
+    p = int(batch.op_return_entity_presence[row])
+    if p == PRESENCE_VALUE:
+        operation['return_after_resources'] = _entity_text(batch.op_return_entity[row])
+    elif p != PRESENCE_ABSENT:
+        raise DomainSoADecodeError('invalid return-after-resources entity presence')
     pending_p = int(batch.op_pending_sortie_presence[row])
     if pending_p == PRESENCE_VALUE:
         spec = {}
@@ -2382,6 +2418,24 @@ def _decode_operation(batch, row, state, cards):
             spec['bonus'] = int(batch.op_pending_bonus[row])
         elif bonus_p != PRESENCE_ABSENT:
             raise DomainSoADecodeError('invalid pending_sortie bonus presence')
+        for i, key in enumerate(SORTIE_INT_KEYS):
+            _apply_optional(spec, key, _take_optional(batch.op_sortie_int_presence[row], batch.op_sortie_int_value[row], i, int))
+        for i, key in enumerate(SORTIE_BOOL_KEYS):
+            _apply_optional(spec, key, _take_optional(batch.op_sortie_bool_presence[row], batch.op_sortie_bool_value[row], i, bool))
+        p = int(batch.op_sortie_attribute_presence[row])
+        if p == PRESENCE_VALUE:
+            spec['attribute'] = _enum_from(batch.op_sortie_attribute[row], SORTIE_ATTRIBUTES, 'sortie attribute')
+        elif p != PRESENCE_ABSENT:
+            raise DomainSoADecodeError('invalid sortie attribute presence')
+        p = int(batch.op_sortie_target_presence[row])
+        if p == PRESENCE_VALUE:
+            ts = int(batch.op_sortie_target_side[row]); ch = int(batch.op_sortie_target_actor[row])
+            if ts not in (0, 1) or ch < -1 or ch >= int(batch.player_character_count[row, ts]):
+                raise DomainSoADecodeError('invalid sortie target')
+            target_id = 'player' if ch == -1 else _load_string(batch, row, batch.character_id_slot[row, ts, ch])
+            spec['target'] = (SIDES[ts], target_id)
+        elif p != PRESENCE_ABSENT:
+            raise DomainSoADecodeError('invalid sortie target presence')
         operation['pending_sortie'] = {'spec':spec,'stay_bench':bool(batch.op_pending_stay_bench[row])}
     elif pending_p != PRESENCE_ABSENT:
         raise DomainSoADecodeError('invalid pending_sortie presence')
@@ -2428,3 +2482,44 @@ def _decode_deferred(batch, row, state, count):
             "kind": _load_string(batch, row, batch.deferred_kind_slot[row, i]),
         })
     return items
+
+
+def _encode_mark_queue(state, arrays, row, layout, strings, register_card, snapshot_mode):
+    if '_deferred_card_marks' not in state:
+        return
+    queue = state['_deferred_card_marks']
+    if type(queue) is not list:
+        raise DomainSoAUnsupportedError('marked-card queue must be a list')
+    if len(queue) > layout.max_deferred_marks:
+        raise DomainSoACapacityError('marked-card queue exceeds layout capacity')
+    arrays['mark_queue_presence'][row] = PRESENCE_VALUE
+    arrays['mark_queue_count'][row] = len(queue)
+    names = [name for name in arrays if name.startswith('op_') or name == 'operation_present']
+    saved = {name: arrays[name][row].copy() for name in names}
+    try:
+        snapshot_mode[0] = True
+        for j, operation in enumerate(queue):
+            if type(operation) is not dict:
+                raise DomainSoAUnsupportedError('marked-card snapshot must be an operation')
+            for name in names:
+                arrays[name][row] = 0
+            _encode_operation({**state, 'operation': operation}, arrays, row, layout, strings, register_card)
+            for name in names:
+                arrays['mark_' + name][row, j] = arrays[name][row]
+    finally:
+        snapshot_mode[0] = False
+        for name in names:
+            arrays[name][row] = saved[name]
+
+
+def _decode_mark_queue(batch, row, state, cards):
+    count = int(batch.mark_queue_count[row])
+    if not 0 <= count <= batch.layout.max_deferred_marks:
+        raise DomainSoADecodeError('marked-card queue count exceeds layout')
+    class MarkRow:
+        def __init__(self, index): self.index = index
+        def __getattr__(self, name):
+            if name.startswith('op_') or name == 'operation_present':
+                return getattr(batch, 'mark_' + name)[row:row+1, self.index]
+            return getattr(batch, name)[row:row+1]
+    return [_decode_operation(MarkRow(i), 0, state, cards) for i in range(count)]

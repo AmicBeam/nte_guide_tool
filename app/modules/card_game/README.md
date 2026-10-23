@@ -1411,3 +1411,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 设备采样在重建牌池前扣除已分配为临时牌的公开 A03，派生 A03 不计入原牌上界；采样器测试覆盖临时数量为零／非零的种子及完整随机状态。角色存储可显式采用 16 槽保留累计消失召唤物，默认 8 槽超界仍明确拒绝，不能丢弃旧实体来适配容量；完整整局容量仍另行验收。
 
 物理规则主链从 `rl/batched_duel/domain_soa_physical.py` 接入直接状态变更原语，当前覆盖抽牌、小吱加手牌标记、溢出弃置／移出与空库终局；验证用 `python -m unittest tests.test_duel_v2_domain_soa_physical -v`。本机显式 C++ 对拍与实际 CUDA 检查分开计数，完整出牌／战斗／回合执行器和 H3 仍未接通，不据此恢复已截止训练。
+
+域状态编解码保留暂停出击的全部具名数值／布尔参数、目标与属性，以及响应延后结算的完整操作快照；快照牌与区域中的原牌保留独立对象身份，区域重复身份仍拒绝。验证：`python -m unittest tests.test_duel_v2_domain_soa_pending_sortie tests.test_duel_v2_domain_soa_mark_queue -v`。这些无损状态字段不授予完整物理执行、H3 或实际 CUDA 资格。

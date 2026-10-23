@@ -133,3 +133,22 @@ class PublicCardsTest(unittest.TestCase):
             graph.replay();torch.cuda.synchronize();self.assertEqual(out['errors'][:3].cpu().tolist(),[0,32,1]);self.assertFalse(out['valid'][1:3].any())
             first={k:v[:1]for k,v in out.items()if isinstance(v,torch.Tensor)};first.update(full_duel_qualified=False,legal_actions_available=False,card_fields=out['card_fields'])
             self.compare(states[:1],[1],first)
+            # Reset, then bind public table and error buffers directly into the
+            # candidate encoder. Host actions are diagnostics, not GPU legality.
+            vi.copy_(torch.tensor(viewers,device='cuda'));fields['row_error'].zero_();fields['catalog_digest'][2,0]^=1
+            enc.launch(p)
+            views=[observe(st,('a','b')[v],include_previews=False)for st,v in zip(states,viewers)]
+            actions=[[{'type':'end_turn'},{'type':'play_card','card_id':st['sides'][('a','b')[v]]['hand'][0]['instance_id']}]for st,v in zip(states,viewers)]
+            args=numeric(views,actions,device='cuda');args['cards']=out['cards'];args['prior_errors']=out['errors']
+            args['actions'][:,1,2].copy_(out['hand_refs'][:,0])
+            with DomainSoACandidates(device='cuda')as candidate:
+                cp=candidate.prepare(**args);candidate.launch(cp);torch.cuda.synchronize();combined=torch.cuda.CUDAGraph()
+                with torch.cuda.graph(combined):
+                    enc.launch(p);encoded=candidate.launch(cp)
+                combined.replay();torch.cuda.synchronize()
+                from tests.test_duel_v2_domain_soa_candidates import CandidatesTest
+                CandidatesTest().compare(views,actions,encoded)
+                fields['row_error'][1]=32;fields['catalog_digest'][2,0]^=1
+                combined.replay();torch.cuda.synchronize()
+                self.assertEqual(encoded['errors'][:3].cpu().tolist(),[0,32,1]);self.assertFalse(encoded['valid'][1:3].any())
+

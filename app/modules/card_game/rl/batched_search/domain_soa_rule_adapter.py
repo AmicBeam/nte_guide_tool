@@ -82,8 +82,7 @@ class DomainSoARuleAdapter:
     def _load(self,states):
         if self.closed or not isinstance(states,DeviceStateBatch)or states.pool is not self.pool:raise ValueError('Live bound state pool required')
         if states.slots.shape!=(self.rows,):raise ValueError('Fixed cohort size required')
-        fields=self.pool.gather_device(states,shared_reads=True)
-        for name,target in self.fields.items():target.copy_(fields[name])
+        self.pool.gather_device(states,shared_reads=True,out=self.fields)
         errors=states.errors|self.fields['row_error']
         self.fields['row_error'].copy_(errors)
         self.active.copy_(states.active&(errors==0))
@@ -153,7 +152,7 @@ class DomainSoARuleAdapter:
         bad=mulligan&(checked['errors']!=0)
         fields['row_error'].bitwise_or_(t.where(mulligan,checked['errors'],t.zeros_like(checked['errors'])))
         for name,value in fields.items():
-            if name!='row_error':value.copy_(t.where(bad.reshape((self.rows,)+(1,)*(value.ndim-1)),self.fields[name],value))
+            if name!='row_error':t.where(bad.reshape((self.rows,)+(1,)*(value.ndim-1)),self.fields[name],value,out=value)
         return self.pool.put_device(dict(fields),states.owners,self.active,errors=errors|fields['row_error'])
 
     def step_device(self,states,actors,decision,action_indices,*,physical=False):

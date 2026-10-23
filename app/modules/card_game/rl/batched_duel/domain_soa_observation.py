@@ -99,7 +99,7 @@ class DomainSoAObservation:
             value=self.partial._column(cols,name,rows);sources[name]=value
             packed[name]=value.clone(memory_format=t.contiguous_format)
         vi=viewers.clone(memory_format=t.contiguous_format);ac=active.clone(memory_format=t.contiguous_format)
-        return PreparedObservation(self,sources,packed,viewers,vi,active,ac,self.queries.prepare(packed,ac),
+        return PreparedObservation(self,sources,packed,viewers,vi,active,ac,self.queries.prepare(packed,ac,_borrow_fields=True),
                                    t.empty((rows,len(FEATURE_NAMES)),dtype=t.float32,device=self.device),
                                    t.empty(rows,dtype=t.int32,device=self.device))
 

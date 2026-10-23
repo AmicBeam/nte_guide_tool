@@ -29,6 +29,8 @@ def kernel_source(layout,capacity,selection_width):
         typ=_TYPES[np.dtype(dtype).name]
         for obj,table in (('original','input_columns'),('anonymous','anonymous_columns'),('work','work_columns')):
             binds.append(f'{obj}.{name}=({typ}*){table}[{i}]+row*{prod(shape)};')
+    for obj in ('original','anonymous','work'):
+        binds.append(f'{obj}.query_scratch=(unsigned char*)(query_workspace+row*2*MAXQ);{obj}.damage_scratch=damage_workspace+row*MAXQ;')
     source=execution_source(layout)+emit_source(layout)
     source+='''
 #if defined(__CUDACC__) || defined(__CUDACC_RTC__)
@@ -40,7 +42,7 @@ void domain_rule_previews(const long long*input_columns,const long long*anonymou
  const int*sides,const unsigned char*active,const long long*counts,const int*prior_errors,
  const long long*payloads,const unsigned char*battle,const long long*selected,const long long*top,
  const long long*bottom,const unsigned char*bottom_plural,double*attack,double*attack_count,
- double*genesis,double*counter,int*errors,int B){
+ double*genesis,double*counter,int*errors,double*query_workspace,int*damage_workspace,int B){
 #if defined(__CUDACC__) || defined(__CUDACC_RTC__)
  int row=blockIdx.x,thread=threadIdx.x,stride=blockDim.x;if(row>=B)return;
  __shared__ DS original,anonymous,work;
@@ -87,4 +89,4 @@ void domain_rule_previews(const long long*input_columns,const long long*anonymou
 #endif
 }
 '''
-    return source,['int64*','int64*','int64*','int32*','uint8*','int64*','int32*','int64*','uint8*','int64*','int64*','int64*','uint8*','float64*','float64*','float64*','float64*','int32*','int32']
+    return source,['int64*','int64*','int64*','int32*','uint8*','int64*','int32*','int64*','uint8*','int64*','int64*','int64*','uint8*','float64*','float64*','float64*','float64*','int32*','float64*','int32*','int32']

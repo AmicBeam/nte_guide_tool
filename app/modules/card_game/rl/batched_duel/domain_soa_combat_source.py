@@ -424,7 +424,8 @@ DFN int combat_damage(DX* c,DR target,int amount,DR source,int kind,int bypass,i
   int resist=(int)d_evaluate(c,target,"damage.resistance",0.0,&q);
   int popped=combat_pop_next_resistance(c,target,attrv);
   amount-=resist+popped; if(amount<0)amount=0;
-  int ids[MAXQ]; int ni=0, herr=0, subject=d_holder(c,target.side,target.slot);
+  /* Consumed before any callback or recursive damage; scratch is root-private. */
+  int*ids=c->s->damage_scratch; int ni=0, herr=0, subject=d_holder(c,target.side,target.slot);
   for(int h=0;h<H;h++) if(exists(c->s,h)){
    int count=c->s->holder_effect_count[h]; if(count<0||count>E){d_fail(c,1);break;}
    for(int j=0;j<count;j++){

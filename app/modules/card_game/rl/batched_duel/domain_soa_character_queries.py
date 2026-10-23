@@ -264,7 +264,7 @@ QFN void character_query(const QRow*f,int side,int c,double*out,int*err){
 '''
 
 
-def _source(layout):
+def _source(layout, *, separate_query_frame=False):
     from app.modules.card_game.content.duel_v2 import CHARACTERS, CARDS
     from app.modules.card_game.content.duel_v2.registry import shape_attack_bonus
     from app.modules.card_game.engine.duel_v2.state import energy_max
@@ -358,6 +358,11 @@ extern "C" __global__ void domain_character_queries('''+params+''',const unsigne
 extern "C" void domain_character_queries('''+params+''',const unsigned char*active,double*values,int*errors,int rows){for(int i=0;i<rows*2*(C+1);i++)run_query('''+args+''',active,values,errors,i);}
 #endif
 '''
+    if separate_query_frame:
+        # A character asks several properties serially. Force-inlining query
+        # duplicates its MAXQ array in one frame on CUDA; one callee reuses it.
+        header+='\n#if defined(__CUDACC__) || defined(__CUDACC_RTC__)\n#define QQUERY __device__ __noinline__\n#else\n#define QQUERY inline\n#endif\n'
+        body=body.replace('QFN double query(', 'QQUERY double query(')
     return header+''.join(meta)+''.join(tables)+'struct QRow{'+declarations+'};\n'+body+common+tail, tuple(names)
 
 
@@ -382,7 +387,7 @@ class DomainCharacterQueries:
         if not isinstance(self.layout,DomainSoALayout) or not (4<=self.layout.max_characters<=16 and self.layout.max_effects<=32 and self.layout.max_timed_attack<=16 and self.layout.max_conditions<=8):
             raise ValueError('Bounded current character query layout required')
         self.module=None;self.library=None;self.temporary=None;self.closed=False
-        source,self.names=_source(self.layout);self.specs=array_specs(self.layout)
+        source,self.names=_source(self.layout,separate_query_frame=True);self.specs=array_specs(self.layout)
         if self.device.type=='cuda':
             if not torch.cuda.is_available():raise RuntimeError('Actual CUDA required; no query CPU fallback')
             if self.device.index is None:self.device=torch.device('cuda',torch.cuda.current_device())
@@ -400,8 +405,9 @@ class DomainCharacterQueries:
         else:raise ValueError('CUDA or explicit CPU compiler oracle required')
         self.digest=torch.tensor(list(catalog_fingerprint()),dtype=torch.uint8,device=self.device)
 
-    def prepare(self, fields, active):
+    def prepare(self, fields, active, *, _borrow_fields=False):
         t=self.t
+        if type(_borrow_fields)is not bool:raise TypeError('Static internal borrow flag required')
         if self.closed:raise RuntimeError('Query backend closed')
         if self.device.type=='cuda' and t.cuda.is_current_stream_capturing():raise RuntimeError('Prepare stable query buffers outside capture')
         cols=fields if isinstance(fields,dict)else getattr(fields,'arrays',None)
@@ -415,7 +421,10 @@ class DomainCharacterQueries:
             value=cols.get(name);kind,tail=self.specs[name]
             if not isinstance(value,t.Tensor)or value.device!=self.device or value.dtype!=dtype[str(np.dtype(kind))]or tuple(value.shape)!=(rows,)+tuple(tail):raise ValueError('Resident typed query field required: '+name)
             sources[name]=value
-        packed={name:value.clone(memory_format=t.contiguous_format)for name,value in sources.items()}
+        # The enclosing observation owns a stable private snapshot. Its query
+        # kernels are read-only and finish before that snapshot is reused.
+        if _borrow_fields and any(not value.is_contiguous()for value in sources.values()):raise ValueError('Borrowed query columns must be contiguous')
+        packed=dict(sources)if _borrow_fields else {name:value.clone(memory_format=t.contiguous_format)for name,value in sources.items()}
         C=self.layout.max_characters
         return PreparedCharacterQueries(self,sources,packed,active,active.clone(memory_format=t.contiguous_format),
             t.empty((rows,2,C+1,len(OUTPUT_NAMES)),dtype=t.float64,device=self.device),
@@ -425,7 +434,8 @@ class DomainCharacterQueries:
         t=self.t
         if self.closed:raise RuntimeError('Query backend closed')
         if not isinstance(batch,PreparedCharacterQueries)or batch.owner is not self:raise ValueError('Foreign query buffers')
-        for name in self.names:batch.fields[name].copy_(batch.sources[name])
+        for name in self.names:
+            if batch.fields[name]is not batch.sources[name]:batch.fields[name].copy_(batch.sources[name])
         batch.active_input.copy_(batch.active)
         args=[batch.fields[name].view(t.uint8)for name in self.names]+[batch.active_input.view(t.uint8),batch.values,batch.character_errors]
         rows=int(batch.active.shape[0])

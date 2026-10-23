@@ -182,6 +182,16 @@ class DomainSoAStatePool:
         a zero delta even if their ranked dest collides with a live write.
         """
         t = self.t
+        if (self._copy_kernel is not None and source.is_contiguous()
+                and source.untyped_storage().data_ptr()!=destination.untyped_storage().data_ptr()):
+            # Domain columns are contiguous within each row but share a packed
+            # dtype allocation. Copy only their bytes, not an arithmetic delta
+            # through a widened temporary covering the entire pool capacity.
+            width=prod(destination.shape[1:])
+            dest_rows=destination.as_strided((destination.shape[0],width),(destination.stride(0),1))
+            src_rows=source.reshape(source.shape[0],width)
+            self._copy_kernel.scatter(dest_rows.view(t.uint8),dest_idx,src_rows.view(t.uint8),good)
+            return
         dest_bits = self._bits(destination)
         src_bits = self._bits(source)
         if dest_bits.dtype in (t.uint8, t.int8):
@@ -302,8 +312,27 @@ class DomainSoAStatePool:
         self._copy_slots(src, dest, good)
         return destinations
 
-    def gather_device(self, states, *, shared_reads=False):
+    def gather_device(self, states, *, shared_reads=False, out=None):
+        if out is not None:
+            self._check_fields(out,states.slots.shape[0])
+            pool_storage={v.untyped_storage().data_ptr()for v in self._packed.values()}
+            if any(not v.is_contiguous()or v.untyped_storage().data_ptr()in pool_storage for v in out.values()):
+                raise ValueError('Gather output must be contiguous and independent of the pool')
         indices, good = self.validate(states, shared_reads=shared_reads)
+        if out is not None:
+            # The adapter owns these buffers for its whole lifetime. Avoid a
+            # gathered world and a second masked world at every captured load.
+            invalid=~good
+            for name,target in out.items():
+                if self._copy_kernel is not None:
+                    source=self.columns[name];width=prod(source.shape[1:])
+                    src_rows=source.as_strided((source.shape[0],width),(source.stride(0),1))
+                    self._copy_kernel.gather(target.reshape(target.shape[0],width).view(self.t.uint8),
+                                             indices,src_rows.view(self.t.uint8),good)
+                else:
+                    self.t.index_select(self.columns[name],0,indices,out=target)
+                    target.masked_fill_(self._row_mask(invalid,target.ndim),0)
+            return MappingProxyType(out)
         packed = {}
         for kind, storage in self._packed.items():
             gathered = storage.index_select(0, indices)

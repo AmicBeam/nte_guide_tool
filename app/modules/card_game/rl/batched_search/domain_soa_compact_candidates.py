@@ -55,7 +55,7 @@ class DomainCompactCandidates(CompactDeviceCandidates):
         for name,dst in self.fields.items():
             src=other.fields[name]
             if src.shape!=dst.shape or src.dtype!=dst.dtype:raise ValueError('Stable public descriptor layout required')
-            dst.copy_(t.where(mask.reshape((self._rows,)+(1,)*(dst.ndim-1)),src,dst))
+            t.where(mask.reshape((self._rows,)+(1,)*(dst.ndim-1)),src,dst,out=dst)
         return t.zeros(self._rows,dtype=t.int32,device=self.device)
     def encode_slice_device(self,start,stop,active):
         if type(start)is not int or type(stop)is not int or not 0<=start<stop<=self._rows or stop-start>self.scratch_rows:raise ValueError('Bounded static candidate row slice required')

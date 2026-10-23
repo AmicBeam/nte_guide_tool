@@ -974,7 +974,7 @@ class DomainSoASampler:
         for name,value in batch.outputs.items():
             if name != 'row_error':
                 mask=failed.view((rows,)+(1,)*(value.ndim-1))
-                value.copy_(t.where(mask,batch.sources[name],value))
+                t.where(mask,batch.sources[name],value,out=value)
         return result
 
     def determinize(self, fields, viewers, seeds, active):

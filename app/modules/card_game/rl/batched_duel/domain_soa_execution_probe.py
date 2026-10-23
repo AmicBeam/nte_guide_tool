@@ -39,7 +39,7 @@ class DomainPrimitiveOracle:
         for name,(dtype,shape)in self.specs.items():
             typ=_TYPES[np.dtype(dtype).name];params.append(typ+'* a_'+name)
             rows.append(f'f.{name}=a_{name};')
-        source=primitive_source(self.layout)+'\nextern "C" int primitive_probe('+','.join(params)+',int mode,int side,int actor,int amount){DS f;'+''.join(rows)+'''DX x={&f,side,actor,-1,DR{side,actor},0};
+        source=primitive_source(self.layout)+'\nextern "C" int primitive_probe('+','.join(params)+',int mode,int side,int actor,int amount){DS f;'+''.join(rows)+'''double query_workspace[2*MAXQ];int damage_workspace[MAXQ];f.query_scratch=(unsigned char*)query_workspace;f.damage_scratch=damage_workspace;DX x={&f,side,actor,-1,DR{side,actor},0};
  if(mode==0){d_zone_set(&x,side,"delay","slow_turn",amount);d_zone_set(&x,side,"delay","by",1-side);d_zone_set(&x,side,"delay","slow",3);d_zone_set(&x,side,"delay","left",2);}
  else if(mode==1){d_reset_operation(&x);d_set_op_target(&x,"target_id",DR{1-side,actor});d_set_op_int(&x,"card_bonus",amount);d_set_op_int(&x,"normal_attack",1,1);}
  else if(mode==2){DEffect e={"probe.attack","attack.panel",(double)amount,"add",0,"self","independent",nullptr,-1,0,nullptr,nullptr,"down",nullptr,nullptr,nullptr,0};d_effect(&x,DR{side,actor},&e);}

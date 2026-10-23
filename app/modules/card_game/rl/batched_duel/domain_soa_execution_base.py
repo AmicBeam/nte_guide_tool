@@ -9,6 +9,7 @@ import numpy as np
 from . import domain_soa_schema as schema
 from .domain_soa_character_queries import _source as query_source
 from .random_source import emit_random_source
+from .domain_soa_execution_workspace import use_query_workspace
 
 supports_full_duel_rules=False
 
@@ -57,7 +58,9 @@ def emit_header(layout):
     text=text[:text.index('QFN void run_query(')]
     specs=schema.array_specs(layout)
     members=''.join(_TYPES[np.dtype(dtype).name]+'* '+name+';\n'for name,(dtype,shape)in specs.items())
-    text=re.sub(r'struct QRow\{.*?\};',lambda _: 'struct QRow{'+members+'int choice_serial;int error_site;};',text,count=1,flags=re.S)
+    text=re.sub(r'struct QRow\{.*?\};',lambda _: 'struct QRow{'+members+'unsigned char*query_scratch;int*damage_scratch;int choice_serial;int error_site;};',text,count=1,flags=re.S)
+    text=use_query_workspace(text)
+    text+='\nstatic_assert(sizeof(Candidate)==16 && alignof(Candidate)<=8,"Physical query workspace ABI");\n'
     text=text.replace('#define QFN __device__ __forceinline__','#define QFN __device__ __noinline__')
     text+='\n#if defined(__CUDACC__) || defined(__CUDACC_RTC__)\n#define DFN __device__ __noinline__\n#define BMT_DEVICE __device__\n#else\n#define DFN inline\n#define BMT_DEVICE\n#endif\n'+emit_random_source()
     values=dict(K=layout.max_cards,Z=layout.max_zone,CH=layout.max_choice_cards,CL=layout.max_clear_on,DF=layout.max_deferred,DRMAX=layout.max_down_responses,COMBAT_D=layout.max_dots,PART=layout.max_participants,

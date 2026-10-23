@@ -79,6 +79,39 @@ class DomainSoAStatePoolTests(unittest.TestCase):
         self.assertEqual(gathered['field_99'].tolist(),[[91,92]])
         self.assertEqual(len({v.untyped_storage().data_ptr()for v in pool.columns.values()}),1)
 
+    def _check_reused_gather(self, device):
+        from dataclasses import replace
+        pool=self.pool(capacity=4,device=device)
+        try:
+            lease=self.put(pool,2,score=[float('nan'),-0.0],flag=[True,False],stamp=[255,17])
+            out=self.fields(pool,2)
+            if device=='cuda':
+                pool.gather_device(lease,out=out);torch.cuda.synchronize()
+                graph=torch.cuda.CUDAGraph()
+                with torch.cuda.graph(graph):pool.gather_device(lease,out=out)
+                refresh=graph.replay
+            else:refresh=lambda:pool.gather_device(lease,out=out)
+            for invalid in (False,True):
+                if invalid:lease.owners[1]=-1
+                refresh()
+                if device=='cuda':torch.cuda.synchronize()
+                expected=pool.gather_device(lease)
+                for name,value in out.items():
+                    lhs=pool._bits(value);rhs=pool._bits(expected[name])
+                    self.assertTrue(torch.equal(lhs,rhs),name)
+                if invalid:self.assertEqual(int(lease.errors[1]),INVALID_LEASE)
+            full=replace(lease,slots=torch.arange(4,device=device),generations=torch.zeros(4,dtype=torch.int64,device=device))
+            with self.assertRaisesRegex(ValueError,'independent'):
+                pool.gather_device(full,out=dict(pool.columns))
+        finally:pool.close()
+
+    def test_preallocated_gather_preserves_bits_and_clears_invalid_rows(self):
+        self._check_reused_gather('cpu')
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_preallocated_gather_replays_changed_leases(self):
+        self._check_reused_gather('cuda')
+
     @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
     def test_fused_cuda_fork_preserves_nan_signed_zero_and_extreme_bits(self):
         from dataclasses import replace

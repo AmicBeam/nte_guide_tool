@@ -74,6 +74,7 @@ DFN void d_clear_effects(DX*c,const char*boundary){d_consume_holder(c,d_holder(c
 
 
 def emit_evaluate_source(layout):
+    from .domain_soa_execution_workspace import use_query_workspace
     from .domain_soa_character_queries import _source, ATTRIBUTES
     from .domain_soa_execution_base import _literal
     source,_=_source(layout)
@@ -84,6 +85,7 @@ def emit_evaluate_source(layout):
     old='yes=f->effect_condition_arg_presence[ab+ARG_attribute]<=1;'
     cond=cond.replace(old,'yes=damage_attribute<=0&&f->effect_condition_arg_presence[ab+ARG_attribute]<=1;'+''.join(f'if(damage_attribute=={i+1}&&f->effect_condition_arg_presence[ab+ARG_attribute]==2&&f->effect_condition_arg_kind[ab+ARG_attribute]==3&&qeq(f,f->effect_condition_arg_string[ab+ARG_attribute],{_literal(a)},err))yes=1;'for i,a in enumerate(ATTRIBUTES)))
     body=source[source.index('QFN double query('):source.index('QFN void compatibility(')]
+    body=use_query_workspace(body)
     body=body.replace('QFN double query(const QRow*f,int subject,int property,double base,int*present,int*err)', 'QFN double d_query(const QRow*f,int subject,int property,const char*name,double base,int damage_attribute,int attacker,int battle,const Candidate*extra,int nextra,int*present,int*err)')
     start=body.index('if(property==0)match=');end=body.index('\n   if(match',start)
     body=body[:start]+'match=qeq(f,slot,name,err);'+body[end:]

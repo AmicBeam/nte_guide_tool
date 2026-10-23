@@ -21,7 +21,7 @@ supports_full_duel_rules=False
 
 
 def source(layout):
-    text,names=_source(layout);specs=array_specs(layout)
+    text,names=_source(layout,separate_query_frame=True);specs=array_specs(layout)
     types={'bool':'unsigned char','uint8':'unsigned char','int8':'signed char','int16':'short','int32':'int','int64':'long long','float64':'double'}
     params=','.join('const %s*p_%s'%(types[str(np.dtype(specs[n][0]))],n)for n in names)
     initialize=''.join('f.%s=p_%s+row*%d;'%(n,n,prod(specs[n][1]))for n in names)
@@ -94,8 +94,9 @@ class DomainRuleQueries:
         else:raise ValueError('CUDA or explicit CPU compiler oracle required')
         self.digest=torch.tensor(list(catalog_fingerprint()),dtype=torch.uint8,device=self.device)
 
-    def prepare(self,fields,subjects,properties,bases,base_present,active):
+    def prepare(self,fields,subjects,properties,bases,base_present,active,*,_borrow_fields=False):
         t=self.t
+        if type(_borrow_fields)is not bool:raise TypeError('Static internal borrow flag required')
         if self.closed:raise RuntimeError('Rule query backend closed')
         if self.device.type=='cuda'and t.cuda.is_current_stream_capturing():raise RuntimeError('Prepare rule buffers outside capture')
         if not isinstance(subjects,t.Tensor)or subjects.ndim!=2:raise ValueError('Rank-two resident subjects required')
@@ -112,7 +113,11 @@ class DomainRuleQueries:
             v=cols.get(name);kind,tail=self.specs[name]
             if not isinstance(v,t.Tensor)or v.device!=self.device or v.dtype!=dtype[str(np.dtype(kind))]or tuple(v.shape)!=(B,)+tuple(tail):raise ValueError('Resident typed rule field required: '+name)
             sources[name]=v
-        return PreparedRuleQueries(self,sources,{k:v.clone(memory_format=t.contiguous_format)for k,v in sources.items()},inputs,
+        # Only the action composer's private observation snapshot opts in.
+        # No query mutates these columns or survives the next snapshot refresh.
+        if _borrow_fields and any(not v.is_contiguous()for v in sources.values()):raise ValueError('Borrowed query columns must be contiguous')
+        packed=dict(sources)if _borrow_fields else {k:v.clone(memory_format=t.contiguous_format)for k,v in sources.items()}
+        return PreparedRuleQueries(self,sources,packed,inputs,
             {k:v.clone(memory_format=t.contiguous_format)for k,v in inputs.items()},
             t.empty((B,N),dtype=t.float64,device=self.device),t.empty((B,N),dtype=t.bool,device=self.device),
             t.empty((B,N),dtype=t.int32,device=self.device),t.empty((B,N),dtype=t.bool,device=self.device))
@@ -120,7 +125,8 @@ class DomainRuleQueries:
     def launch(self,p):
         t=self.t
         if self.closed or not isinstance(p,PreparedRuleQueries)or p.owner is not self:raise ValueError('Closed or foreign query buffers')
-        for k,v in p.fields.items():v.copy_(p.sources[k])
+        for k,v in p.fields.items():
+            if v is not p.sources[k]:v.copy_(p.sources[k])
         for k,v in p.buffers.items():v.copy_(p.inputs[k])
         B,N=p.values.shape
         args=[p.fields[n].view(t.uint8)for n in self.names]+[p.buffers['subjects'],p.buffers['properties'],p.buffers['bases'],p.buffers['base_present'].view(t.uint8),p.buffers['active'].view(t.uint8),p.values,p.present.view(t.uint8),p.errors]

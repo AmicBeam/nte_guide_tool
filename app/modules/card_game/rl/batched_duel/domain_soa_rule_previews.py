@@ -12,6 +12,7 @@ import tempfile
 import numpy as np
 from . import domain_soa_schema as schema
 from .domain_soa_preview_source import kernel_source
+from .domain_soa_execution_workspace import prepare_workspace
 
 
 class DomainRulePreviews:
@@ -37,7 +38,7 @@ class DomainRulePreviews:
             if self.device.type=='cuda':
                 from .cuda_runtime import CudaModule
                 self.module=CudaModule(source,{'domain_rule_previews':abi},device=str(self.device))
-                self.module.ensure_stack(65536)
+                self.module.ensure_stack(32768)
             else:
                 compiler=shutil.which('clang++')or shutil.which('g++')
                 if not compiler:raise RuntimeError('C++ compiler required')
@@ -68,7 +69,7 @@ class DomainRulePreviews:
             side_wire=sides.to(t.int32),active=active.clone(),battle=t.empty((B,A),dtype=t.bool,device=self.device),
             attack=t.empty((B,A),dtype=t.float64,device=self.device),attack_count=t.empty((B,A),dtype=t.float64,device=self.device),
             genesis=t.empty((B,A),dtype=t.float64,device=self.device),counter=t.empty((B,A),dtype=t.float64,device=self.device),
-            errors=t.empty(B,dtype=t.int32,device=self.device))
+            errors=t.empty(B,dtype=t.int32,device=self.device),workspace=prepare_workspace(t,self.layout,B,self.device))
 
     def launch(self,p):
         if self.closed or p.owner is not self:raise ValueError('Closed or foreign preview buffers')
@@ -79,6 +80,7 @@ class DomainRulePreviews:
         legal=t.arange(A,device=self.device)[None,:]<out['counts'][:,None]
         p.battle.copy_(legal&(out['payloads'][...,0]==3)&(public_kind>=0)&self.battle_catalog[public_kind.clamp(0,self.battle_catalog.shape[0]-1)])
         pointers=list(p.tables)+[p.side_wire,p.active.view(t.uint8),out['counts'],out['errors'],out['payloads'],p.battle.view(t.uint8),out['selected'],out['top'],out['bottom'],out['bottom_plural'].view(t.uint8),p.attack,p.attack_count,p.genesis,p.counter,p.errors]
+        pointers.extend(p.workspace)
         if self.module:self.module.launch('domain_rule_previews',pointers+[B],grid=(B,),block=(256,),capture_safe=True)
         else:self.kernel(*[ctypes.c_void_p(v.data_ptr())for v in pointers],B)
         p.errors.copy_(t.where(p.source_active,out['errors']|p.errors,t.zeros_like(p.errors)))

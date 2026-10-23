@@ -13,6 +13,7 @@ from . import domain_soa_runtime_source as runtime
 from . import domain_soa_mutation_source as mutations
 from . import domain_soa_execution_gc as collection
 from . import domain_soa_action_source as actions
+from .domain_soa_execution_workspace import prepare_workspace
 
 supports_full_duel_rules=False
 gpu_qualified=False
@@ -83,13 +84,13 @@ extern "C"
 #endif
 void apply_domain_action('''+','.join(params)+''',const int*sides,const long long*selectors,const unsigned char*active,
  const long long*counts,const int*prior_errors,const long long*payloads,const long long*selected,
- const long long*top,const long long*bottom,const unsigned char*bottom_plural,int*error_sites,int B){
+ const long long*top,const long long*bottom,const unsigned char*bottom_plural,int*error_sites,double*query_workspace,int*damage_workspace,int B){
 #if defined(__CUDACC__) || defined(__CUDACC_RTC__)
  int row=blockIdx.x*blockDim.x+threadIdx.x;if(row>=B)return;
 #else
  for(int row=0;row<B;row++){
 #endif
- DS f;'''+''.join(bind)+'''f.error_site=0;error_sites[row]=0;
+ DS f;'''+''.join(bind)+'''f.query_scratch=(unsigned char*)(query_workspace+row*2*MAXQ);f.damage_scratch=damage_workspace+row*MAXQ;f.error_site=0;error_sites[row]=0;
  if(active[row]&&f.row_error[0]==0){
   if(prior_errors[row])f.row_error[0]=prior_errors[row];
   else if(selectors[row]<0||selectors[row]>=counts[row]||counts[row]>'''+str(action_capacity)+''')f.row_error[0]=1;
@@ -101,7 +102,7 @@ void apply_domain_action('''+','.join(params)+''',const int*sides,const long lon
 #endif
 }
 '''
-    return source,abi+['int32*','int64*','uint8*','int64*','int32*','int64*','int64*','int64*','int64*','uint8*','int32*','int32']
+    return source,abi+['int32*','int64*','uint8*','int64*','int32*','int64*','int64*','int64*','int64*','uint8*','int32*','float64*','int32*','int32']
 
 
 class DomainSoAExecution:
@@ -130,7 +131,7 @@ class DomainSoAExecution:
             if self.device.type=='cuda':
                 from .cuda_runtime import CudaModule
                 self.module=CudaModule(source,{'apply_domain_action':abi},device=str(self.device))
-                self.module.ensure_stack(65536)
+                self.module.ensure_stack(32768)
             else:
                 compiler=shutil.which('clang++')or shutil.which('g++')
                 if not compiler:raise RuntimeError('C++ compiler required')
@@ -160,7 +161,7 @@ class DomainSoAExecution:
             outputs[name]=v.clone(memory_format=t.contiguous_format)
         si=sides.clone();pick=selectors.clone();on=active.clone()
         return SimpleNamespace(owner=self,sources=dict(fields),fields=outputs,query_sources=(sides,selectors,active),
-                               sides=si,selectors=pick,active=on,side_wire=si.to(t.int32),
+                               sides=si,selectors=pick,active=on,side_wire=si.to(t.int32),workspace=prepare_workspace(t,self.layout,B,self.device),
                                action_buffers=self.actions.prepare(outputs,si,on),error_sites=t.zeros(B,dtype=t.int32,device=self.device))
 
     def launch(self,p):
@@ -173,12 +174,13 @@ class DomainSoAExecution:
         out=self.actions.launch(p.action_buffers)
         pointers=[p.fields[name]if np.dtype(self.specs[name][0]).name in ('int32','int64','float64')else p.fields[name].view(t.uint8)for name in self.specs]
         pointers.extend((p.side_wire,p.selectors,p.active.view(t.uint8),out['counts'],out['errors'],out['payloads'],out['selected'],out['top'],out['bottom'],out['bottom_plural'].view(t.uint8),p.error_sites))
+        pointers.extend(p.workspace)
         B=p.active.shape[0]
         if self.module:self.module.launch('apply_domain_action',pointers+[B],grid=((B+63)//64,),block=(64,),capture_safe=True)
         else:self.kernel(*[ctypes.c_void_p(v.data_ptr())for v in pointers],B)
         failed=p.fields['row_error']!=0
         for name,v in p.fields.items():
-            if name!='row_error':v.copy_(t.where(failed.reshape((B,)+(1,)*(v.ndim-1)),p.sources[name],v))
+            if name!='row_error':t.where(failed.reshape((B,)+(1,)*(v.ndim-1)),p.sources[name],v,out=v)
         return dict(fields=p.fields,errors=p.fields['row_error'],error_sites=p.error_sites,legal_counts=out['counts'],full_duel_qualified=False,gpu_qualified=False)
 
     def close(self):

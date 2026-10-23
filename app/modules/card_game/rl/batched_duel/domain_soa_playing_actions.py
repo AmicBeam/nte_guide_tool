@@ -62,7 +62,7 @@ class DomainPlayingActions:
             'properties':t.cat((t.full((B,self.C),6,dtype=t.int32,device=self.device),t.full((B,self.H),5,dtype=t.int32,device=self.device)),1),
             'bases':t.zeros((B,N),dtype=t.float64,device=self.device),'base_present':t.ones((B,N),dtype=t.bool,device=self.device),
             'active':t.zeros((B,N),dtype=t.bool,device=self.device)}
-        rule=self.rules.prepare(pub.observation.fields,**ri)
+        rule=self.rules.prepare(pub.observation.fields,**ri,_borrow_fields=True)
         ti={'sides':t.zeros((B,N),dtype=t.int64,device=self.device),'card_kinds':t.zeros((B,N),dtype=t.int64,device=self.device),
             'owners':t.zeros((B,N),dtype=t.int64,device=self.device),'is_battle':t.zeros((B,N),dtype=t.bool,device=self.device),
             'active':t.zeros((B,N),dtype=t.bool,device=self.device),'prior_errors':t.zeros((B,N),dtype=t.int32,device=self.device),

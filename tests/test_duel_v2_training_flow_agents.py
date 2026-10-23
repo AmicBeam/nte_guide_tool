@@ -272,7 +272,7 @@ class StageAgentTest(unittest.TestCase):
             }
 
         handlers = bind_stage_handlers(flow, runner=runner)
-        result = handlers["preflight"](assignment)
+        result = handlers["preflight"](assignment, now=NOW)
         self.assertEqual(result["verdict"], "failed")
         self.assertEqual(result["summary"], "synthetic handler")
 

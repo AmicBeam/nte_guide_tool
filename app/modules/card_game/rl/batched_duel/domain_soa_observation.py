@@ -235,10 +235,16 @@ class DomainSoAObservation:
             if key not in ZONE_KEYS[z]:return t.zeros((rows,2),dtype=t.int32,device=self.device)
             keys=ZONE_KEYS[z];bit=keys.index(key);mask=f['zone_status_i32'][:,:,z,7]
             has=(f['zone_status_presence'][:,:,z]==2)&((mask&(1<<bit))!=0)
-            if key in ZONE_INTS:arr=f['zone_status_i32'][:,:,z,list(k for k in keys if k in ZONE_INTS).index(key)]
-            elif key in ZONE_SIDES:arr=f['zone_status_side'][:,:,z,list(k for k in keys if k in ZONE_SIDES).index(key)]
-            elif key=='infinite':arr=f['zone_status_bool'][:,:,z,0]
+            if key in ZONE_INTS:
+                store=f['zone_status_i32'][:,:,z];previous=[k for k in keys[:bit]if k in ZONE_INTS]
+            elif key in ZONE_SIDES:
+                store=f['zone_status_side'][:,:,z];previous=[k for k in keys[:bit]if k in ZONE_SIDES]
+            elif key=='infinite':
+                store=f['zone_status_bool'][:,:,z];previous=[]
             else:raise ValueError('Non-numeric status requested')
+            index=t.zeros_like(mask,dtype=t.int64)
+            for before in previous:index+=((mask&(1<<keys.index(before)))!=0).long()
+            arr=store.gather(-1,index[...,None]).squeeze(-1)
             return t.where(has,arr,t.zeros_like(arr))
         def zone_has(z,key):
             if key not in ZONE_KEYS[z]:return t.zeros((rows,2),dtype=t.bool,device=self.device)

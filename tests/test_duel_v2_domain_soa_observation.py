@@ -76,6 +76,17 @@ class ObservationTest(unittest.TestCase):
         viewers=[i%2 for i in range(len(states))];layout,fields=pack(states)
         with cpu(layout)as enc:self.compare(states,viewers,enc.observe(fields,torch.tensor(viewers),torch.ones(len(states),dtype=torch.bool)))
 
+    def test_sparse_status_fields_follow_packed_presence_order(self):
+        states=[]
+        for zone in ({'burn':{'by':'a','stacks':5}},
+                     {'delay':{'by':'a','slow':2,'slow_turn':1}},
+                     {'star':{'by':'b','renewals':2}},
+                     {'delay':{'left':2,'by':'b'},'burn':{'stacks':3,'by':'b','infinite':True}}):
+            st=state(80,a='murk');st['turn']=1;st['sides']['a']['front_debuff']=zone
+            states.extend((deepcopy(st),deepcopy(st)))
+        viewers=[i%2 for i in range(len(states))];layout,fields=pack(states)
+        with cpu(layout)as enc:self.compare(states,viewers,enc.observe(fields,torch.tensor(viewers),torch.ones(len(states),dtype=torch.bool)))
+
     def test_hidden_cards_deck_order_and_rng_do_not_change_public_vector(self):
         st=state(64);layout,fields=pack([st])
         with cpu(layout)as enc:
@@ -118,6 +129,9 @@ class ObservationTest(unittest.TestCase):
         base.extend((deepcopy(terminal),deepcopy(terminal)))
         terminal=state(72,a='murk');terminal['sides']['a']['characters']['adler']['shield']=7;terminal.update(phase='finished',winner='a',reason='player_hp')
         base.extend((deepcopy(terminal),deepcopy(terminal)))
+        sparse=state(81,a='murk');sparse['sides']['a']['front']=sparse['sides']['a']['order'][0]
+        sparse['sides']['a']['front_debuff']={'burn':{'by':'a','stacks':5},'delay':{'by':'b','slow':2,'slow_turn':sparse['turn']}}
+        base.extend((deepcopy(sparse),deepcopy(sparse)))
         states=[base[i%len(base)]for i in range(400)]
         viewers=[i%2 for i in range(400)];layout,fields=pack(states,'cuda')
         with DomainSoAObservation(layout,device='cuda')as enc:

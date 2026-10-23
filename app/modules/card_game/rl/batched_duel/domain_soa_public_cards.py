@@ -25,6 +25,7 @@ class PreparedPublicCards:
     hand_refs: object
     choice_refs: object
     errors: object
+    rule_fields: object
 
 
 class DomainPublicCards:
@@ -35,11 +36,14 @@ class DomainPublicCards:
         self.observation=DomainSoAObservation(layout,device=device,allow_cpu_oracle=allow_cpu_oracle)
         self.t=self.observation.t;self.device=self.observation.device;self.layout=self.observation.layout;self.closed=False
         t=self.t
-        for text in ('form','set'):
+        for text in ('form','set','battle','harmony_damage','surplus','own_burn'):
             self.observation.literals[text]=t.tensor(list(text.encode()),dtype=t.uint8,device=self.device)
         self.catalog_bool=t.tensor([[bool(CARDS[c].get(k))for k in CARD_BOOL_FIELDS]for c in seven.CARD_IDS],device=self.device)
         self.catalog_int=t.tensor([[int(CARDS[c].get(k)or 0)for k in CARD_INT_FIELDS]for c in seven.CARD_IDS],dtype=t.int64,device=self.device)
         self.catalog_form=t.tensor([CARDS[c].get('type')=='form'for c in seven.CARD_IDS],device=self.device)
+        self.catalog_battle=t.tensor([CARDS[c].get('type')=='battle'for c in seven.CARD_IDS],device=self.device)
+        self.catalog_require=t.tensor([('harmony_damage','surplus','own_burn').index(CARDS[c]['require'])+1 if CARDS[c].get('require')in ('harmony_damage','surplus','own_burn')else 0 for c in seven.CARD_IDS],dtype=t.int64,device=self.device)
+        self.catalog_options=t.tensor([bool(CARDS[c].get('play_options'))for c in seven.CARD_IDS],device=self.device)
         self.catalog_set=t.tensor([CARDS[c].get('attack_mode')=='set'for c in seven.CARD_IDS],device=self.device)
 
     def prepare(self,fields,viewers,active):
@@ -49,9 +53,13 @@ class DomainPublicCards:
             t.empty((B,2*K),dtype=t.bool,device=self.device),
             t.empty((B,self.layout.max_zone),dtype=t.int64,device=self.device),
             t.empty((B,self.layout.max_choice_cards),dtype=t.int64,device=self.device),
-            t.empty(B,dtype=t.int32,device=self.device))
+            t.empty(B,dtype=t.int32,device=self.device),
+            {key:t.empty((B,self.layout.max_zone),dtype=dtype,device=self.device)for key,dtype in
+             [('kind',t.int64),('owner',t.int64),('owner_slot',t.int64),('is_battle',t.bool),('plays_instant',t.bool),
+              ('cost',t.int64),('spend_all_ap',t.int64),('require',t.int64),('playable_downed',t.bool),('options',t.bool)]})
 
-    def launch(self,p):
+    def launch(self,p,*,_include_rules=False):
+        if type(_include_rules)is not bool:raise TypeError('Internal rules flag must be a static bool')
         if self.closed or not isinstance(p,PreparedPublicCards)or p.owner is not self:raise ValueError('Closed or foreign public card buffers')
         t=self.t;out=self.observation.launch(p.observation,_include_private=True);b=p.observation;f=b.fields;meta=out['_private_card_fields']
         B=f['row_error'].shape[0];K=self.layout.max_cards;C=self.layout.max_characters
@@ -146,8 +154,29 @@ class DomainPublicCards:
         p.cards[...,0].masked_fill_(~valid,-1)
         p.hand_refs.copy_(t.where(hvalid&b.active[:,None]&(errors==0)[:,None],safe_hand,-1))
         p.choice_refs.copy_(t.where(cvalid&b.active[:,None]&(errors==0)[:,None],safe_choice+K,-1))
-        return {'cards':p.cards,'valid':p.valid,'hand_refs':p.hand_refs,'choice_refs':p.choice_refs,'errors':p.errors,
+        result={'cards':p.cards,'valid':p.valid,'hand_refs':p.hand_refs,'choice_refs':p.choice_refs,'errors':p.errors,
                 'card_fields':CARD_FIELDS,'observation':out['features'],'legal_actions_available':False,'full_duel_qualified':False}
+        if _include_rules:
+            battle,_=kstring('type','battle',self.catalog_battle[raw])
+            battle=t.where(transformed,self.catalog_battle[effective],battle)&(meta['transformed']!=2)
+            cost=t.where(transformed,self.catalog_int[effective,KI['cost']],kint('cost'))
+            cost=t.where(meta['transformed']==2,1,cost)
+            limit=t.where(transformed,self.catalog_int[effective,KI['spend_all_ap']],kint('spend_all_ap'))
+            req=t.where(f['card_str_presence'][...,KS['require']]==3,self.catalog_require[raw],0)
+            for i,text in enumerate(('harmony_damage','surplus','own_burn')):
+                eq,_=self.observation._eq(f,f['card_str_slot'][...,KS['require']],text)
+                req=t.where((f['card_str_presence'][...,KS['require']]==2)&eq,i+1,req)
+            req=t.where(transformed,self.catalog_require[effective],req)
+            play_down=t.where(transformed,self.catalog_bool[effective,KB['playable_downed']],kbool('playable_downed'))
+            options=t.where(transformed,self.catalog_options[effective],self.catalog_options[raw]&(f['card_play_options_presence']==3))
+            full=dict(kind=effective,owner=owner,owner_slot=owner_slot,is_battle=battle,plays_instant=plays_instant,
+                      cost=cost,spend_all_ap=limit,require=req,playable_downed=play_down,options=options)
+            for name,dest in p.rule_fields.items():
+                value=full[name].gather(1,safe_hand)
+                dest.copy_(t.where(hvalid&b.active[:,None]&(errors==0)[:,None],value,t.zeros_like(value)))
+            result['_hand_rules']=p.rule_fields
+            result['_character_queries']=meta['queries']['values']
+        return result
 
     def project(self,fields,viewers,active):return self.launch(self.prepare(fields,viewers,active))
     def close(self):

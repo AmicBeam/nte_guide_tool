@@ -35,7 +35,7 @@ class PublicCardsTest(unittest.TestCase):
             if actual:self.assertTrue(torch.equal(torch.stack(actual),torch.stack(gold)),str((b,[(i,seven.CARD_IDS[int(a[0])],[(k,float(x),float(y))for k,x,y in zip(out['card_fields'],a,g)if x!=y])for i,(a,g)in enumerate(zip(actual,gold))if not torch.equal(a,g)])))
             self.assertEqual(int(out['valid'][b].sum()),n+m)
             self.assertFalse(out['valid'][b][out['cards'][b,:,0]<0].any())
-        self.assertFalse(out['full_duel_qualified']);self.assertFalse(out['legal_actions_available'])
+        self.assertFalse(out['full_duel_qualified']);self.assertFalse(out['legal_actions_available']);self.assertNotIn('_hand_rules',out)
 
     def test_initial_natural_and_both_views(self):
         from tests.test_duel_v2_domain_soa_codec import _natural_states,_fourteen_initial_states

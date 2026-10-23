@@ -93,7 +93,7 @@ REQUIRED = (
     'player_revealed_side','player_revealed_instance',
 )
 MISSING_STAGES = (
-    'visible-deck constraints are preserved by schema but active such roots are refused',
+    'active effective physical-card views are refused',
     'seeds are nonnegative int64; arbitrary Python ints are not represented',
     'Random._randbelow is bounded by max_draws instead of an unbounded host loop',
     'card-table holes are not compacted into codec registration order',
@@ -118,6 +118,7 @@ def coverage():
             'A03 public ephemeral assignment, xiaozhi jingu, own-deck JSON sort+shuffle',
             'entity/instance reissue, formal CPython MT19937 seed/shuffle/choice/randrange',
             'revealed enemy hand preserves original identity, order and metadata',
+            'visible own-deck order skips both canonical sort and shuffle RNG',
             'full information-guard capability fails closed until integrated',
         ),
         'missing_stages': MISSING_STAGES,
@@ -371,7 +372,7 @@ SOA_FN void soa_sample_row(
  int hand_n,deck_n,keep_n=0,family,hidden_family,surplus,budget=0,place,has_x,has_c,has_a,has_h,has_d,has_l;
  int copies_q=0,copies_c=0,lim[6],alloc[6],alloc_order[4],alloc_n=0,temporary=0,remaining=0,extended=0,pool_n=0,turn_v=turn[row];
  int known_q,known_c,disc_c02,disc_af01,disc_a03,disc_a04,pub_a03,spec_sum,a_known,nposs,t,left;
- int kinds[6],nk=0,free_n=0,hid_n,own_n,next_i,next_e,xiaozhi_hp=0,xiaozhi_aw=0,xiaozhi_ent=0;
+ int kinds[6],nk=0,free_n=0,hid_n,own_n,next_i,next_e,xiaozhi_hp=0,xiaozhi_aw=0,xiaozhi_ent=0,own_visible=0;
  bmt_state_t rng,saved;unsigned long long raw,draw;uint32_t words[2];char ka[192],kb[192];
  if(viewer!=0&&viewer!=1){errors[row]=1;return;}
  if(seeds[row]<0){errors[row]=1;return;}
@@ -538,8 +539,9 @@ SOA_FN void soa_sample_row(
  for(i=0;i<hid_n;i++)idx[i]=i;if((err=rng_shuffle(&rng,idx,hid_n,max_draws))){errors[row]=err;return;}
  {int tmpc[128],tmpe[128];for(i=0;i<hid_n;i++){tmpc[i]=pool_cid[idx[i]];tmpe[i]=pool_eph[idx[i]];}for(i=0;i<hid_n;i++){pool_cid[i]=tmpc[i];pool_eph[i]=tmpe[i];}}
  own_n=i16(zcount,(row*2+viewer)*4+1);
+ own_visible=(i8(active_side,row)==viewer&&u8(pint_p,(row*2+viewer)*n_pint+VISIBLE_DECK_INDEX)==2&&pint_v[(row*2+viewer)*n_pint+VISIBLE_DECK_INDEX]==turn_v);
  for(pos=0;pos<own_n;pos++)own_slot[pos]=zindex[((row*2+viewer)*4+1)*Z+pos];
- for(i=1;i<own_n;i++){
+ for(i=1;!own_visible&&i<own_n;i++){
   int key=own_slot[i],j=i-1;
   while(j>=0){
    int oa=own_slot[j],ob=key,ba=row*K+oa,bb=row*K+ob,ta=i16(ktmpl,ba),tb=i16(ktmpl,bb),na,nb,pa,pb;
@@ -553,7 +555,7 @@ SOA_FN void soa_sample_row(
   }
   own_slot[j+1]=key;
  }
- if((err=rng_shuffle(&rng,own_slot,own_n,max_draws))){errors[row]=err;return;}
+ if(!own_visible&&(err=rng_shuffle(&rng,own_slot,own_n,max_draws))){errors[row]=err;return;}
  {int* otmpl=specc+vc;for(i=0;i<own_n;i++){int src=own_slot[i],b=row*K+src;otmpl[i]=i16(ktmpl,b);otmpl[Z+i]=u8(kbool_p,b*n_kbool+0);otmpl[2*Z+i]=u8(kbool_v,b*n_kbool+0);otmpl[3*Z+i]=u8(kint_p,b*n_kint+6);otmpl[4*Z+i]=kint_v[b*n_kint+6];otmpl[5*Z+i]=u8(kint_p,b*n_kint+5);otmpl[6*Z+i]=kint_v[b*n_kint+5];otmpl[7*Z+i]=u8(kj_p,b);otmpl[8*Z+i]=kj_d[b];otmpl[9*Z+i]=kj_s[b];otmpl[10*Z+i]=u8(kstr_p,b*n_kstr+5);otmpl[11*Z+i]=kstr_s[b*n_kstr+5];otmpl[12*Z+i]=u8(kstr_p,b*n_kstr+6);otmpl[13*Z+i]=kstr_s[b*n_kstr+6];}}
  next_i=0;next_e=0;
  for(s=0;s<2;s++){
@@ -659,7 +661,7 @@ extern "C" void domain_soa_sample(
 #endif
 }
 '''
-    return prefix + '\n#define N_CHAR_TEMPLATES '+str(VOCAB_CHARS+1)+'\n' + emit_random_source() + body.replace('SUPPORTED_ROOT_CHOICE', '('+'||'.join('kind=='+str(v)for v in sorted(SUPPORTED_CHOICE))+')')
+    return prefix + '\n#define N_CHAR_TEMPLATES '+str(VOCAB_CHARS+1)+'\n' + emit_random_source() + body.replace('VISIBLE_DECK_INDEX',str(PLAYER_INT_FIELDS.index('deck_visible_turn'))).replace('SUPPORTED_ROOT_CHOICE', '('+'||'.join('kind=='+str(v)for v in sorted(SUPPORTED_CHOICE))+')')
 
 
 _PTR_TYPES = (
@@ -884,13 +886,6 @@ class DomainSoASampler:
         source_error.copy_(t.where(bad&(source_error==0),INVALID_INPUT,source_error))
         unsupported_view = (batch.active != 0) & batch.sources['card_is_view'].any(1)
         source_error.copy_(t.where(unsupported_view & (source_error == 0), UNSUPPORTED_ROOT, source_error))
-        # Visibility constraints are preserved by the codec, but this numeric
-        # sampler has not implemented their public-consistency proof yet.
-        visibility=t.zeros(rows,dtype=t.bool,device=self.device)
-        vi=PLAYER_INT_FIELDS.index('deck_visible_turn')
-        visibility=visibility|((batch.sources['player_int_presence'][:,:,vi]==2)&
-                              (batch.sources['player_int_value'][:,:,vi]==batch.sources['turn'][:,None])).any(1)
-        source_error.copy_(t.where((batch.active!=0)&visibility&(source_error==0),UNSUPPORTED_ROOT,source_error))
         L = self.layout
         scalars = (
             rows, L.max_characters, L.max_cards, L.max_zone, L.max_choice_cards,

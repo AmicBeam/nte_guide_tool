@@ -1388,13 +1388,13 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 
 七队完整观察列由 `rl/batched_duel/domain_soa_observation.py` 组装，保留冻结编码接口、手牌牌面变换、可见性、复制异能与终局行为；源字段和观察者在设备图中重读。它不提供完整动作特征、物理推进或 H3 资格，采样保护仍保留。验证：`python -m unittest tests.test_duel_v2_domain_soa_observation -v`；数值列和完整对局资格分别验收。
 
-直接设备候选编码组件 `rl/batched_duel/domain_soa_candidates.py` 将公共数值牌表和显式动作描述拼成七队模型的完整 1576 维候选，支持有序牌库选择、组合牌袋及动态上下文；尚未生成完整合法动作或从原始状态投影公共牌表。验证：`python -m unittest tests.test_duel_v2_domain_soa_candidates -v`；组件通过不代表完整 GPU 对局或训练通过。
+直接设备候选编码组件 `rl/batched_duel/domain_soa_candidates.py` 将公共数值牌表和显式动作描述拼成七队模型的完整 1576 维候选，支持有序牌库选择、组合牌袋及动态上下文；本组件接收显式描述，完整合法动作与原始状态的公共牌表由独立模块产生。验证：`python -m unittest tests.test_duel_v2_domain_soa_candidates -v`；组件通过不代表完整 GPU 对局或训练通过。
 
-公共候选牌表 `rl/batched_duel/domain_soa_public_cards.py` 在设备端筛选自己的手牌与可见待选牌，保留变换牌面、物理原牌和动态瞬发，供完整候选编码使用；完整动作生成与物理推进仍未接通。`rl/batched_duel/domain_soa_rule_queries.py` 提供固定具名属性的修正器归约，用于后续费用／出击瞬发等接线，不是完整支付或动作执行。验证：`python -m unittest tests.test_duel_v2_domain_soa_public_cards tests.test_duel_v2_domain_soa_rule_queries -v`。
+公共候选牌表 `rl/batched_duel/domain_soa_public_cards.py` 在设备端筛选自己的手牌与可见待选牌，保留变换牌面、物理原牌和动态瞬发，供完整候选编码使用；完整动作由全阶段枚举器产生，物理推进仍未接通。`rl/batched_duel/domain_soa_rule_queries.py` 提供固定具名属性的修正器归约，用于后续费用／出击瞬发等接线，不是完整支付或动作执行。验证：`python -m unittest tests.test_duel_v2_domain_soa_public_cards tests.test_duel_v2_domain_soa_rule_queries -v`。
 
-设备目标筛选 `rl/batched_duel/domain_soa_targets.py` 保留目标规则、角色／召唤物及弃牌实例顺序，处理残虹战斗牌与普通出击的不同空列表语义；支付、完整合法动作组合和物理推进仍单独接线。验证：`python -m unittest tests.test_duel_v2_domain_soa_targets -v`。
+设备目标筛选 `rl/batched_duel/domain_soa_targets.py` 保留目标规则、角色／召唤物及弃牌实例顺序，处理残虹战斗牌与普通出击的不同空列表语义；支付与合法动作组合由行动组合器负责，物理推进仍单独接线。验证：`python -m unittest tests.test_duel_v2_domain_soa_targets -v`。
 
-行动阶段设备组合器 `rl/batched_duel/domain_soa_playing_actions.py` 按正式顺序合并费用、出击、终结、用牌限制、目标和选项，并独立保留物理身份载荷；换牌／选择枚举与物理规则、H3 仍须接线。验证：`python -m unittest tests.test_duel_v2_domain_soa_playing_actions -v`。
+行动阶段设备组合器 `rl/batched_duel/domain_soa_playing_actions.py` 按正式顺序合并费用、出击、终结、用牌限制、目标和选项，并独立保留物理身份载荷；换牌／选择枚举由全阶段入口合并，物理规则、H3 仍须接线。验证：`python -m unittest tests.test_duel_v2_domain_soa_playing_actions -v`。
 
 全阶段设备枚举入口 `rl/batched_duel/domain_soa_actions.py` 合并行动、换牌、选牌与牌库排序，保留实例载荷、单／多底部形式和设备图跨阶段重放；它不执行物理规则，也不自动开放采样、H3 或训练。验证：`python -m unittest tests.test_duel_v2_domain_soa_actions -v`。
 
@@ -1402,4 +1402,6 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 
 物理卡表规范化阶段 `rl/batched_duel/domain_soa_card_order.py` 重排首次引用顺序与全部相关引用，保留实体身份，拒绝未覆盖的有效牌面视图及错误占用；验证用 `python -m unittest tests.test_duel_v2_domain_soa_card_order -v`。完整字符串规范化、采样资格与物理执行仍须分别验收。
 
-设备数值采样已保留对手已揭示手牌的实体与原顺序，并与敌手牌选择的公开引用合并；完整验证仍用 `python -m unittest tests.test_duel_v2_domain_soa_sampler -v`。可见牌库、有效牌面视图、默认资格门禁和完整搜索训练接线尚未开放。
+设备数值采样已保留对手已揭示手牌的实体与原顺序，并与敌手牌选择的公开引用合并；完整验证仍用 `python -m unittest tests.test_duel_v2_domain_soa_sampler -v`。有效牌面视图、默认资格门禁和完整搜索训练接线尚未开放。
+
+设备数值采样按实际观察方与当前行动方处理己方可见牌库：可见时保序并跳过洗牌随机消耗，标记过期或非当前行动方时按正式算法采样；同一图重放与严格导出仍由采样器测试覆盖。有效牌面视图、默认门禁和物理整局尚未开放。

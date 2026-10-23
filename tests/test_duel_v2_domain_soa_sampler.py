@@ -92,7 +92,7 @@ class DomainSoASamplerTest(unittest.TestCase):
         self.assertIn('bmt_seed_words', source)
         self.assertIn('generation allocation including recovery/deck-generator retry', info['implemented'])
 
-    def test_revealed_hand_supported_but_visible_deck_still_refused(self):
+    def test_revealed_hand_and_visible_own_deck_are_supported(self):
         states=[_state(),_state()]
         states[0]['sides']['b']['revealed_ids']=[states[0]['sides']['b']['hand'][0]['instance_id']]
         states[1]['sides']['a']['deck_visible_turn']=states[1]['turn']
@@ -100,8 +100,10 @@ class DomainSoASamplerTest(unittest.TestCase):
         _,fields=_torch_fields(states,layout)
         with cpu_oracle(layout,guard=False)as sampler:
             out=sampler.determinize(fields,torch.zeros(2,dtype=torch.int64),torch.tensor([11,12],dtype=torch.int64),torch.ones(2,dtype=torch.int32))
-            self.assertEqual(out['row_error'].tolist(),[0,UNSUPPORTED_ROOT])
-            self.assertTrue(torch.equal(out['zone_card_index'][1],fields['zone_card_index'][1]))
+            self.assertEqual(out['row_error'].tolist(),[0,0])
+            gold=oracle_determinize(states[1],'a',12)
+            self.assertEqual(_zone_ids(out,1,0,1),[c['card_id']for c in gold['sides']['a']['deck']])
+            self.assertEqual(int(out['rng'][1]),gold['rng'])
 
     def test_physical_views_reject_even_diagnostic_sampling(self):
         layout = DomainSoALayout(game_capacity=1)
@@ -570,3 +572,54 @@ class RevealedSamplerTest(unittest.TestCase):
             seed.add_(1000);vi.copy_(1-vi);g.replay();torch.cuda.synchronize();self.assertTrue(checked['accepted'].all());self.verify(states[:14],vi[:14].cpu().tolist(),seed[:14].cpu().tolist(),f,out)
             foe=1-int(vi[0]);ref=int(f['zone_card_index'][0,foe,0,0]);f['card_template'][0,ref]=32767
             g.replay();torch.cuda.synchronize();self.assertEqual(int(out['row_error'][0]),INVALID_INPUT);self.assertFalse(checked['accepted'][0]);self.assertTrue(checked['accepted'][1:].all())
+
+
+class VisibleDeckSamplerTest(unittest.TestCase):
+    def fixtures(self):
+        states=[];viewers=[]
+        for i,key in enumerate(('starter','weave-rush','quick-rush','zhenhong','murk','collapse','lingke')):
+            for v in (0,1):
+                for active in (True,False):
+                    st=_state(seed=40+i,a=key,b=key,first=('a','b')[v if active else 1-v])
+                    st['sides'][('a','b')[v]]['deck_visible_turn']=st['turn']
+                    st['sides'][('a','b')[1-v]]['deck_visible_turn']=st['turn']
+                    states.append(st);viewers.append(v)
+        return states,viewers
+
+    def verify(self,states,viewers,seeds,out):
+        self.assertFalse(out['row_error'].any())
+        for b,(st,v,seed)in enumerate(zip(states,viewers,seeds)):
+            gold=oracle_determinize(st,('a','b')[v],seed)
+            for side,zone in ((v,1),(1-v,0),(1-v,1)):
+                self.assertEqual(_zone_ids(out,b,side,zone),[c['card_id']for c in gold['sides'][('a','b')[side]][('hand','deck')[zone]]],str((b,side,zone)))
+            self.assertEqual(int(out['rng'][b]),gold['rng']);self.assertEqual(int(out['next_entity'][b]),gold['next_entity']);self.assertEqual(int(out['next_instance'][b]),gold['next_instance'])
+
+    def test_visible_deck_only_when_viewer_active_and_strict_export(self):
+        from app.modules.card_game.rl.batched_duel.domain_soa_information_guard import DomainInformationGuard
+        from app.modules.card_game.rl.batched_duel.domain_soa_card_order import DomainCardOrder
+        from app.modules.card_game.rl.batched_duel.domain_soa_schema import DomainSoABatch
+        from app.modules.card_game.rl.batched_duel.domain_soa_codec import decode_domain_states
+        states,viewers=self.fixtures();B=len(states);seeds=list(range(70,70+B));L=DomainSoALayout(game_capacity=B);_,f=_torch_fields(states,L)
+        with cpu_oracle(L,guard=False)as sampler,DomainInformationGuard(L,device='cpu',allow_cpu_oracle=True,max_actions=64)as guard,DomainCardOrder(L,device='cpu',allow_cpu_oracle=True)as order:
+            vi=torch.tensor(viewers);ac=torch.ones(B,dtype=torch.bool);out=sampler.determinize(f,vi,torch.tensor(seeds),ac.int());self.verify(states,viewers,seeds,out)
+            checked=guard.launch(guard.prepare(f,out,vi,ac));self.assertTrue(checked['accepted'].all())
+            ordered=order.launch(order.prepare(out,ac));self.assertFalse(ordered['errors'].any())
+            worlds=decode_domain_states(DomainSoABatch(layout=L,**{k:v.numpy()for k,v in ordered['fields'].items()}))
+            for b,w in enumerate(worlds):
+                gold=oracle_determinize(states[b],('a','b')[viewers[b]],seeds[b]);gold.pop('events',None);self.assertEqual(w,gold)
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_400_visible_deck_graph_refreshes_visibility_and_rng(self):
+        from app.modules.card_game.rl.batched_duel.domain_soa_information_guard import DomainInformationGuard
+        from app.modules.card_game.rl.batched_duel.domain_soa_schema import PLAYER_INT_FIELDS
+        base,vs=self.fixtures();states=[base[i%len(base)]for i in range(400)];viewers=[vs[i%len(vs)]for i in range(400)];L=DomainSoALayout(game_capacity=400);_,f=_torch_fields(states,L,'cuda')
+        vi=torch.tensor(viewers,device='cuda');seeds=torch.arange(400,device='cuda')+70;ac=torch.ones(400,dtype=torch.bool,device='cuda')
+        with DomainSoASampler(L,device='cuda',guard=False)as sampler,DomainInformationGuard(L,device='cuda',max_actions=64)as guard:
+            p=sampler.prepare(f,vi,seeds,ac.int());sampler.launch(p);check=guard.prepare(f,p.outputs,vi,ac);guard.launch(check);torch.cuda.synchronize();g=torch.cuda.CUDAGraph()
+            with torch.cuda.graph(g):out=sampler.launch(p);checked=guard.launch(check)
+            g.replay();torch.cuda.synchronize();self.assertTrue(checked['accepted'].all());self.verify(states[:28],viewers[:28],seeds[:28].cpu().tolist(),out)
+            key=PLAYER_INT_FIELDS.index('deck_visible_turn');f['player_int_value'][:,:,key]-=1
+            replacements=deepcopy(states[:28])
+            for st in replacements:
+                for team in st['sides'].values():team['deck_visible_turn']-=1
+            seeds.add_(1000);g.replay();torch.cuda.synchronize();self.assertTrue(checked['accepted'].all());self.verify(replacements,viewers[:28],seeds[:28].cpu().tolist(),out)

@@ -68,6 +68,32 @@ def fixtures():
 class NativeExecutionSemanticsTest(unittest.TestCase):
  device="cpu"
  def pack(self,worlds,**kwargs):return pack(worlds,device=self.device,**kwargs)
+ def test_a06_only_soul_or_curse_front_grants_free_harmony(self):
+  cases=[]
+  for front in (None,'anhunqu','dafutier','heiyu','canhong'):
+   for collapse in (False,True):
+    world=state(731,a='collapse',b='starter');own=world['sides']['a'];foe=world['sides']['b']
+    own.update(front=front,ap=9,normal_attack_available=True,ultimate_available=False)
+    foe['front']=foe['order'][0]
+    if front:
+     own['characters'][front]['harmony']=2
+     if collapse:own['characters'][front]['flags']['collapse']={'side':'b','until':2}
+    own['discard'].extend(own['hand']);own['hand']=[card_instance(world,'A06','a')]
+    action={'type':'play_card','card_id':own['hand'][0]['instance_id']}
+    legal=[a for a in legal_actions(world,'a')if a['type']!='concede']
+    if front=='anhunqu'and collapse:
+     self.assertNotIn(action,legal)
+     continue
+    cases.append((front,collapse,world,legal.index(action),action))
+  layout,fields=self.pack([c[2]for c in cases]);n=len(cases)
+  with DomainSoAExecution(layout,device=self.device,allow_cpu_oracle=self.device=='cpu',allow_unqualified=True)as core:
+   out=core.launch(core.prepare(fields,torch.zeros(n,dtype=torch.int64,device=self.device),torch.tensor([c[3]for c in cases],device=self.device),torch.ones(n,dtype=torch.bool,device=self.device)))
+   self.assertFalse(out['errors'].any(),out['errors'].tolist())
+   batch=DomainSoABatch(layout=layout,**{k:v.cpu().numpy()for k,v in out['fields'].items()})
+   for row,(front,collapse,world,index,action)in enumerate(cases):
+    with self.subTest(front=front,collapse=collapse):
+     gold=apply_action(world,'a',action);gold.pop('events',None);gold.pop('_public_board',None)
+     self.assertEqual(differences(gold,_decode_row(batch,row)),[])
  def test_codec_preserves_continuous_damage_iteration_order(self):
   from app.modules.card_game.engine.duel_v2.continuous import apply_dot
   world=state(200)

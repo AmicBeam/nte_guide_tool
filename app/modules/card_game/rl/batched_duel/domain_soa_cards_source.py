@@ -304,10 +304,11 @@ DFN void kit_card_A04(DX* x) {
 DFN void kit_card_A05(DX*x){DCombatSpec spec=combat_spec_from_attack(x,nullptr);spec.target=d_op_target(x);spec.has_target=1;spec.stay_bench=d_front(x,x->side)!=x->actor;spec.base.no_counter=spec.stay_bench;spec.bool_presence[1]=2;spec.bool_presence[2]=2;combat_sortie_ex(x,&spec);}
 DFN void kit_card_A06(DX* x) {
   int front = d_front(x, x->side);
-  if (front >= 0 && front != x->actor && !d_collapsed(x, x->side, front) && d_attribute_is_dark_family(x, x->side, front)) {
+  int attribute = front >= 0 ? combat_attr(x, x->side, front) : ATTR_NONE;
+  if (front >= 0 && front != x->actor && !d_collapsed(x, x->side, front) && (attribute == ATTR_SOUL || attribute == ATTR_HEX)) {
     d_set_op_int(x, "skip_nightmare", 1, 1);
     d_enter(x, 1, 0);
-    combat_apply_enter_harmony(x,front,d_cstr_is(x,x->side,front,"attribute","curse")?3:4,1,0);
+    combat_apply_enter_harmony(x,front,attribute == ATTR_HEX ? HK_BURN : HK_STAR,1,0);
     d_sortie(x, 0);
     return;
   }

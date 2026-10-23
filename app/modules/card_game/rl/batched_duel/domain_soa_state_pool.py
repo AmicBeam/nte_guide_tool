@@ -307,7 +307,7 @@ class DomainSoAStatePool:
         packed = {}
         for kind, storage in self._packed.items():
             gathered = storage.index_select(0, indices)
-            packed[kind] = self.t.where(self._row_mask(good, gathered.ndim), gathered, 0)
+            packed[kind] = self.t.where(self._row_mask(good, gathered.ndim), gathered, self.t.zeros((), dtype=gathered.dtype, device=self.device))
         rows=indices.shape[0]
         fields = {spec.name: packed[spec.dtype][
             :,self._offsets[spec.name]:self._offsets[spec.name]+prod(spec.tail)

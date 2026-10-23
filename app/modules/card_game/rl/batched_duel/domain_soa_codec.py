@@ -120,7 +120,7 @@ OP_ALLOWED = (
     | frozenset(OP_INT_KEYS)
     | frozenset(OP_STR_KEYS)
 )
-DEFERRED_ALLOWED = frozenset({"side", "actor", "entity_id", "kind"})
+DEFERRED_ALLOWED = frozenset({"side", "actor", "entity_id", "kind", "card", "attribute", "support_actor"})
 MISSING_SCHEMA_FIELDS = (
     "Player.records payloads",
     "PendingChoice.choices card list",
@@ -636,7 +636,7 @@ def _encode_row(state, arrays, row, layout, presentation):
     _encode_choice(state, arrays, row, layout, strings, register_card)
     _encode_operation(state, arrays, row, layout, strings, register_card)
     _encode_mark_queue(state, arrays, row, layout, strings, register_card, snapshot_mode)
-    _encode_deferred(state, arrays, row, layout, strings)
+    _encode_deferred(state, arrays, row, layout, strings, register_card)
     _encode_down_responses(state, arrays, row, layout, strings)
     strings.dump(arrays, row)
 
@@ -1361,9 +1361,7 @@ def _encode_front_debuff(zone, arrays, row, s, layout, strings):
     if extra:
         raise DomainSoAUnsupportedError(f"unsupported dot kinds {extra}")
     n = 0
-    for kind in DOT_KINDS:
-        if kind not in dots:
-            continue
+    for kind in dots:
         spec = dots[kind]
         if type(spec) is not dict:
             raise TypeError("dot must be a dict")
@@ -1601,7 +1599,7 @@ def _encode_card_mark(operation, arrays, row):
     arrays["op_card_mark_source_slot"][row] = _parse_entity_num(mark["source_entity_id"])
 
 
-def _encode_deferred(state, arrays, row, layout, strings):
+def _encode_deferred(state, arrays, row, layout, strings, register_card):
     deferred = state.get("deferred_actions", _MISSING)
     if deferred is _MISSING:
         arrays["deferred_presence"][row] = PRESENCE_ABSENT
@@ -1627,6 +1625,21 @@ def _encode_deferred(state, arrays, row, layout, strings):
         )
         arrays["deferred_entity_slot"][row, i] = _parse_entity_num(item["entity_id"])
         arrays["deferred_kind_slot"][row, i] = strings.intern(item["kind"])
+        if 'card' in item:
+            arrays['deferred_card_presence'][row, i] = PRESENCE_NULL if item['card'] is None else PRESENCE_VALUE
+            if item['card'] is not None: arrays['deferred_card_index'][row, i] = register_card(item['card'], item['side'])
+        if 'attribute' in item:
+            arrays['deferred_attribute_presence'][row, i] = PRESENCE_VALUE
+            arrays['deferred_attribute'][row, i] = SORTIE_ATTRIBUTES.index(item['attribute'])
+        if 'support_actor' in item:
+            actor = item['support_actor']
+            arrays['deferred_support_presence'][row, i] = PRESENCE_NULL if actor is None else PRESENCE_VALUE
+            if actor is not None:
+                if type(actor) is not dict or set(actor) != {'character_id', 'entity_id'}:
+                    raise DomainSoAUnsupportedError('deferred support actor must retain exact identity')
+                arrays['deferred_support_actor'][row, i] = _char_slot(list(state['sides'][item['side']]['characters']), actor['character_id'])
+                arrays['deferred_support_entity'][row, i] = _parse_entity_num(actor['entity_id'])
+
 
 
 def _encode_down_responses(state, arrays, row, layout, strings):
@@ -1693,7 +1706,7 @@ def _decode_row(batch, row):
     if deferred_p == PRESENCE_NULL:
         state["deferred_actions"] = None
     elif deferred_p == PRESENCE_VALUE:
-        state["deferred_actions"] = _decode_deferred(batch, row, state, int(batch.deferred_count[row]))
+        state["deferred_actions"] = _decode_deferred(batch, row, state, int(batch.deferred_count[row]), cards)
     elif deferred_p != PRESENCE_ABSENT:
         raise DomainSoADecodeError("invalid deferred_actions presence")
     down_n = int(batch.down_response_count[row])
@@ -2471,7 +2484,7 @@ def _decode_operation(batch, row, state, cards):
     return operation
 
 
-def _decode_deferred(batch, row, state, count):
+def _decode_deferred(batch, row, state, count, cards):
     items = []
     for i in range(count):
         side = _side_from(batch.deferred_side[row, i])
@@ -2481,6 +2494,21 @@ def _decode_deferred(batch, row, state, count):
             "entity_id": _entity_text(batch.deferred_entity_slot[row, i]),
             "kind": _load_string(batch, row, batch.deferred_kind_slot[row, i]),
         })
+        item = items[-1]
+        p = int(batch.deferred_card_presence[row, i])
+        if p == PRESENCE_VALUE: item['card'] = _card_from(cards, batch.deferred_card_index[row, i], 'deferred card')
+        elif p == PRESENCE_NULL: item['card'] = None
+        elif p != PRESENCE_ABSENT: raise DomainSoADecodeError('invalid deferred card presence')
+        p = int(batch.deferred_attribute_presence[row, i])
+        if p == PRESENCE_VALUE: item['attribute'] = _enum_from(batch.deferred_attribute[row, i], SORTIE_ATTRIBUTES, 'deferred attribute')
+        elif p != PRESENCE_ABSENT: raise DomainSoADecodeError('invalid deferred attribute presence')
+        p = int(batch.deferred_support_presence[row, i])
+        if p == PRESENCE_VALUE:
+            actor = int(batch.deferred_support_actor[row, i]); side = item['side']
+            if not 0 <= actor < len(state['sides'][side]['characters']): raise DomainSoADecodeError('invalid deferred support actor')
+            item['support_actor'] = {'character_id': list(state['sides'][side]['characters'])[actor], 'entity_id': _entity_text(batch.deferred_support_entity[row, i])}
+        elif p == PRESENCE_NULL: item['support_actor'] = None
+        elif p != PRESENCE_ABSENT: raise DomainSoADecodeError('invalid deferred support presence')
     return items
 
 

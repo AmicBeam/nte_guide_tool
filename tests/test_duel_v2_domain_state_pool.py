@@ -58,6 +58,15 @@ class DomainSoAStatePoolTests(unittest.TestCase):
         self.assertFalse(self.pool().supports_full_duel_rules)
         self.assertFalse(transition_full)
 
+    def test_gather_keeps_exact_boolean_and_numeric_dtypes(self):
+        pool=self.pool(capacity=4)
+        lease=self.put(pool,2,mask=[True,False],flag=[True,True],stamp=[255,255],score=[-0.0,3.])
+        gathered=pool.gather_device(lease)
+        for name,column in pool.columns.items():self.assertEqual(gathered[name].dtype,column.dtype,name)
+        self.assertEqual(gathered['flag'].tolist(),[True,False])
+        self.assertEqual(gathered['stamp'].tolist(),[255,0])
+        self.assertTrue(torch.signbit(gathered['score'][0]))
+
     def test_fork_storage_is_packed_by_dtype_not_field(self):
         specs=tuple(FieldSpec('field_'+str(i),'int32',(2,))for i in range(100))
         pool=self.pool(capacity=4,specs=specs)

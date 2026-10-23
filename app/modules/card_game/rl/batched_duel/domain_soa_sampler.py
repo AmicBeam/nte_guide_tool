@@ -228,7 +228,8 @@ def prepare_sampler_catalog(device, torch_module=None):
     return FrozenSamplerCatalog(device=device, tables=tables, scalars=scalars, fingerprint=catalog_fingerprint())
 
 
-def sampler_source():
+def sampler_source(seed_words=1):
+    if seed_words not in (1,5):raise ValueError("Sampler seed ABI must be scalar63 or full320")
     prefix = r'''
 #if defined(__CUDACC__) || defined(__CUDACC_RTC__)
 #define SOA_FN __device__
@@ -368,7 +369,7 @@ SOA_FN void soa_sample_row(
  const unsigned char* cat_int_p,const int* cat_int_v,const unsigned char* cat_bool_p,const unsigned char* cat_bool_v,
  const unsigned char* cat_str_p,const unsigned char* cat_src,const unsigned char* cat_play,const int* operation_card,
  const unsigned char* revealed_count,const unsigned char* revealed_side,const int* revealed_instance,
- const unsigned char* card_views,const int* physical_cards){
+ const unsigned char* card_views,const int* physical_cards,const unsigned char* protected_cards){
  if(errors[row]!=0||!active[row])return;
  int viewer=(int)viewers[row],foe,phase_v=i16(phase,row),choosing,kind=-1,err=0,i,s,z,pos,slot,P=2*Z;
  int nf01=sp[0],a03=sp[1],af01=sp[2],ff01=sp[3],q05=sp[4],c02=sp[5],a04=sp[6],pf01=sp[7];
@@ -378,9 +379,11 @@ SOA_FN void soa_sample_row(
  int copies_q=0,copies_c=0,lim[6],alloc[6],alloc_order[4],alloc_n=0,temporary=0,remaining=0,extended=0,pool_n=0,turn_v=turn[row];
  int known_q,known_c,disc_c02,disc_af01,disc_a03,disc_a04,pub_a03,spec_sum,a_known,nposs,t,left;
  int kinds[6],nk=0,free_n=0,hid_n,own_n,next_i,next_e,xiaozhi_hp=0,xiaozhi_aw=0,xiaozhi_ent=0,own_visible=0;
- bmt_state_t rng,saved;unsigned long long raw,draw;uint32_t words[2];char ka[192],kb[192];
+ bmt_state_t rng,saved;unsigned long long raw,draw;uint32_t words[SOA_SEED_WORDS*2];char ka[192],kb[192];
  if(viewer!=0&&viewer!=1){errors[row]=1;return;}
+ #if SOA_SEED_WORDS==1
  if(seeds[row]<0){errors[row]=1;return;}
+ #endif
  foe=1-viewer;choosing=phase_v==2;
  for(s=0;s<2;s++)for(z=0;z<4;z++){
   int count=i16(zcount,(row*2+s)*4+z);
@@ -443,8 +446,8 @@ SOA_FN void soa_sample_row(
   slot=keep[i];int tmpl=i16(ktmpl,row*K+slot),der=u8(card_derived,tmpl)||opt_bool(kbool_p,kbool_v,row*K+slot,3,n_kbool);
   if(tmpl==nf01)continue;if(der){specc[tmpl]++;spec_sum++;}else orig[tmpl]++;if(tmpl==a03)pub_a03++;
  }
- raw=(unsigned long long)seeds[row];words[0]=(uint32_t)raw;words[1]=(uint32_t)(raw>>32);
- bmt_seed_words(&rng,words,words[1]?2:1);saved=rng;
+ for(int seed_word=0;seed_word<SOA_SEED_WORDS;seed_word++){raw=(unsigned long long)seeds[row*SOA_SEED_WORDS+seed_word];words[seed_word*2]=(uint32_t)raw;words[seed_word*2+1]=(uint32_t)(raw>>32);}
+ int word_count=SOA_SEED_WORDS*2;while(word_count>1&&words[word_count-1]==0)word_count--;bmt_seed_words(&rng,words,word_count);saved=rng;
  {int pass,ok_alloc=0,retry=budget||has_x||has_h;
   for(pass=0;pass<2&&!ok_alloc;pass++){
    int recovered=pass?budget:0,deck_gen=pass?1:0,tmax=(orig[a03]<disc_af01?orig[a03]:disc_af01)+1,poss_t[129],nposs=0;
@@ -593,6 +596,7 @@ SOA_FN void soa_sample_row(
    }
    if(u8(operation,row)&&operation_card[row]>=0)used[operation_card[row]]=1;
   }
+  for(i=0;i<K;i++)if(u8(protected_cards,row*K+i)){if(!u8(kvalid,row*K+i)){errors[row]=1;return;}used[i]=1;if(kentity[row*K+i]>next_e)next_e=kentity[row*K+i];if(kinst[row*K+i]>next_i)next_i=kinst[row*K+i];}
   for(i=0;i<K;i++)if(used[i]&&u8(card_views,row*K+i)){
    int pi=physical_cards[row*K+i];
    if(pi<0||pi>=K||pi==i||!u8(kvalid,row*K+pi)||u8(card_views,row*K+pi)
@@ -666,16 +670,16 @@ extern "C" void domain_soa_sample(
  const unsigned char* cat_int_p,const int* cat_int_v,const unsigned char* cat_bool_p,const unsigned char* cat_bool_v,
  const unsigned char* cat_str_p,const unsigned char* cat_src,const unsigned char* cat_play,const int* operation_card,
  const unsigned char* revealed_count,const unsigned char* revealed_side,const int* revealed_instance,
- const unsigned char* card_views,const int* physical_cards){
+ const unsigned char* card_views,const int* physical_cards,const unsigned char* protected_cards){
 #if defined(__CUDACC__) || defined(__CUDACC_RTC__)
  int row=(int)(blockIdx.x*blockDim.x+threadIdx.x);if(row>=rows)return;
- soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance,card_views,physical_cards);
+ soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance,card_views,physical_cards,protected_cards);
 #else
- int row;for(row=0;row<rows;row++)soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance,card_views,physical_cards);
+ int row;for(row=0;row<rows;row++)soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance,card_views,physical_cards,protected_cards);
 #endif
 }
 '''
-    return prefix + '\n#define N_CHAR_TEMPLATES '+str(VOCAB_CHARS+1)+'\n' + emit_random_source() + body.replace('VISIBLE_DECK_INDEX',str(PLAYER_INT_FIELDS.index('deck_visible_turn'))).replace('SUPPORTED_ROOT_CHOICE', '('+'||'.join('kind=='+str(v)for v in sorted(SUPPORTED_CHOICE))+')')
+    return prefix + '\n#define SOA_SEED_WORDS '+str(seed_words)+'\n#define N_CHAR_TEMPLATES '+str(VOCAB_CHARS+1)+'\n' + emit_random_source() + body.replace('VISIBLE_DECK_INDEX',str(PLAYER_INT_FIELDS.index('deck_visible_turn'))).replace('SUPPORTED_ROOT_CHOICE', '('+'||'.join('kind=='+str(v)for v in sorted(SUPPORTED_CHOICE))+')')
 
 
 _PTR_TYPES = (
@@ -688,7 +692,7 @@ _PTR_TYPES = (
     'int32*', 'int32*', 'int64*', 'int32*', 'int32*', 'int32*', 'int32*', 'uint8*',
     'uint8*', 'int32*', 'int32*', 'uint8*', 'int32*', 'uint8*', 'int32*', 'int32*',
     'int32*', 'uint8*', 'int32*', 'uint8*', 'uint8*', 'uint8*', 'uint8*', 'uint8*',
-)+('int32*','uint8*','uint8*','int32*','uint8*','int32*')
+)+('int32*','uint8*','uint8*','int32*','uint8*','int32*','uint8*')
 _SCALAR_N = 15
 
 
@@ -705,6 +709,7 @@ class PreparedSample:
     scratch: object
     information: object = None
     information_active: object = None
+    extra_protected: object = None
 
 
 def cpu_oracle(layout=None, **kwargs):
@@ -718,7 +723,7 @@ class DomainSoASampler:
     gpu_qualified = False
 
     def __init__(self, layout=None, catalog=None, *, device='cuda', allow_cpu_oracle=False,
-                 max_draws=4096, guard=True):
+                 max_draws=4096, guard=True, seed_words=1):
         import torch
         if layout is None:
             layout = DomainSoALayout()
@@ -729,6 +734,8 @@ class DomainSoASampler:
         self.t = torch
         self.layout = layout
         self.max_draws = max_draws
+        if type(seed_words)is not int or seed_words not in (1,5):raise ValueError("Explicit scalar63 or full320 seed ABI required")
+        self.seed_words=seed_words
         if type(guard)is not bool:raise TypeError('Explicit guard selection required')
         if layout.max_zone>128 or layout.max_cards>512:
             raise ValueError('Direct sampler supports max_zone<=128 and max_cards<=512')
@@ -748,7 +755,7 @@ class DomainSoASampler:
                 self.device = torch.device('cuda', torch.cuda.current_device())
             from .cuda_runtime import CudaModule
             spec = ['int32'] * _SCALAR_N + list(_PTR_TYPES)
-            self._module = CudaModule(sampler_source(), {'domain_soa_sample': spec}, device=str(self.device))
+            self._module = CudaModule(sampler_source(self.seed_words), {'domain_soa_sample': spec}, device=str(self.device))
         elif self.device.type == 'cpu' and allow_cpu_oracle is True:
             compiler = shutil.which('clang++') or shutil.which('g++')
             if compiler is None:
@@ -759,7 +766,7 @@ class DomainSoASampler:
             import sys
             library = root / ('sampler.dll' if os.name == 'nt' else
                               'sampler.dylib' if sys.platform == 'darwin' else 'sampler.so')
-            source.write_text(sampler_source(), encoding='utf-8')
+            source.write_text(sampler_source(self.seed_words), encoding='utf-8')
             try:
                 result = subprocess.run(
                     [compiler, '-std=c++17', '-shared', '-fPIC', '-O2', str(source), '-o', str(library)],
@@ -846,8 +853,8 @@ class DomainSoASampler:
         if not 1 <= rows <= self.layout.game_capacity:
             raise ValueError('Nonempty viewer batch within layout.game_capacity required')
         if (not isinstance(seeds, t.Tensor) or seeds.device != self.device or seeds.dtype != t.int64
-                or seeds.shape != (rows,) or not seeds.is_contiguous()):
-            raise ValueError('Resident int64 seeds required')
+                or seeds.shape != ((rows,)if self.seed_words==1 else(rows,5)) or not seeds.is_contiguous()):
+            raise ValueError('Resident seed words matching the bound seed ABI required')
         if (not isinstance(active, t.Tensor) or active.device != self.device or active.dtype != t.int32
                 or active.shape != (rows,) or not active.is_contiguous()):
             raise ValueError('Resident int32 active mask required')
@@ -858,6 +865,7 @@ class DomainSoASampler:
         errors = outputs['row_error']
         L = self.layout
         cat = self.catalog.tables
+        extra_protected=t.zeros((rows,self.layout.max_cards),dtype=t.bool,device=self.device)
         pointers = (
             self._specials, scratch, seeds, viewers, active, errors,
             self._bytes(packed['phase']), packed['turn'], self._bytes(packed['active_side']),
@@ -887,13 +895,13 @@ class DomainSoASampler:
             cat['cat_int_p'], cat['cat_int_v'], cat['cat_bool_p'], cat['cat_bool_v'],
             cat['cat_str_p'], cat['cat_src'], cat['cat_play'], packed['op_card_index'],
             self._bytes(packed['player_revealed_count']),self._bytes(packed['player_revealed_side']),packed['player_revealed_instance'],
-            self._bytes(packed['card_is_view']),packed['card_physical_index'],
+            self._bytes(packed['card_is_view']),packed['card_physical_index'],extra_protected.view(t.uint8),
         )
         if len(pointers) != len(_PTR_TYPES):
             raise RuntimeError('Sampler pointer arity drifted')
         info_active=t.zeros(rows,dtype=t.bool,device=self.device) if self.guard else None
         info=(self._information_guard.prepare(sources,outputs,viewers,info_active) if self.guard else None)
-        return PreparedSample(self, packed, outputs, viewers, seeds, active, pointers, sources, scratch,info,info_active)
+        return PreparedSample(self, packed, outputs, viewers, seeds, active, pointers, sources, scratch,info,info_active,extra_protected)
 
     def launch(self, batch):
         t = self.t
@@ -920,6 +928,24 @@ class DomainSoASampler:
             bad_view|=f[name]!=f[name].gather(1,safe)
         unsupported_view = (batch.active != 0) & (f['card_is_view']&bad_view).any(1)
         source_error.copy_(t.where(unsupported_view & (source_error == 0), UNSUPPORTED_ROOT, source_error))
+        # Keep every externally referenced card snapshot/alias immutable while
+        # determinizing hidden zones. These are typed physical references.
+        mask_refs=[];mask_live=[];CH=self.layout.max_choice_cards;M=self.layout.max_deferred_marks;DF=self.layout.max_deferred
+        def protect(refs,live):mask_refs.append(refs.long().reshape(rows,-1));mask_live.append(live.reshape(rows,-1))
+        protect(f['op_card_index'][:,None],f['operation_present'][:,None]&(f['op_card_index'][:,None]>=0))
+        protect(f['op_choice_card_index'],f['operation_present'][:,None]&(t.arange(CH,device=self.device)[None,:]<f['op_choice_card_count'][:,None]))
+        mark=(f['mark_queue_presence']==2)[:,None]&(t.arange(M,device=self.device)[None,:]<f['mark_queue_count'][:,None])&f['mark_operation_present']
+        protect(f['mark_op_card_index'],mark&(f['mark_op_card_index']>=0))
+        protect(f['mark_op_choice_card_index'],mark[...,None]&(t.arange(CH,device=self.device)[None,None,:]<f['mark_op_choice_card_count'][...,None]))
+        protect(f['deferred_card_index'],(f['deferred_presence']==2)[:,None]&(t.arange(DF,device=self.device)[None,:]<f['deferred_count'][:,None])&(f['deferred_card_presence']==2))
+        refs=t.cat(mask_refs,1);live=t.cat(mask_live,1);safe_refs=refs.clamp(0,K-1)
+        invalid=(live&((refs<0)|(refs>=K)|~f['card_valid'].gather(1,safe_refs))).any(-1)
+        invalid|=f['operation_present']&((f['op_choice_card_count']<0)|(f['op_choice_card_count']>CH))
+        invalid|=(f['mark_queue_presence']==2)&((f['mark_queue_count']<0)|(f['mark_queue_count']>M))
+        invalid|=(f['deferred_presence']==2)&((f['deferred_count']<0)|(f['deferred_count']>DF))
+        source_error.copy_(t.where((batch.active!=0)&invalid&(source_error==0),INVALID_INPUT,source_error))
+        counts=t.zeros((rows,K),dtype=t.int32,device=self.device);counts.scatter_add_(1,safe_refs,live.int())
+        batch.extra_protected.copy_(counts>0)
         L = self.layout
         scalars = (
             rows, L.max_characters, L.max_cards, L.max_zone, L.max_choice_cards,
@@ -934,6 +960,9 @@ class DomainSoASampler:
         else:
             args = list(scalars) + [ctypes.c_void_p(item.data_ptr()) for item in batch.pointers]
             self._kernel(*args)
+        changed=batch.outputs['card_valid']&(batch.outputs['card_entity_slot']!=batch.sources['card_entity_slot'])
+        for name in ('card_is_view','card_is_snapshot'):batch.outputs[name].masked_fill_(changed,False)
+        batch.outputs['card_physical_index'].masked_fill_(changed,0)
         if self.guard:
             batch.information_active.copy_(batch.active!=0)
             checked=self._information_guard.launch(batch.information)

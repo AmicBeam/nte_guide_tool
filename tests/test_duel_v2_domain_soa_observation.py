@@ -34,6 +34,7 @@ class ObservationTest(unittest.TestCase):
             self.compare(states,viewers,out)
             self.assertEqual(out['features'].shape[1],3479)
             self.assertFalse(out['full_duel_qualified']);self.assertFalse(out['action_features_available'])
+            self.assertNotIn('_private_card_fields',out)
 
     def test_natural_playing_choices_effects_and_summons(self):
         from tests.test_duel_v2_domain_soa_codec import _natural_states

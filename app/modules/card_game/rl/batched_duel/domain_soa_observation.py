@@ -128,7 +128,8 @@ class DomainSoAObservation:
 
     def _ratio(self,v,d):return (v.to(self.t.float64)/d).to(self.t.float32)
 
-    def launch(self,b):
+    def launch(self,b,*,_include_private=False):
+        if type(_include_private)is not bool:raise TypeError('Internal projection flag must be a static bool')
         t=self.t
         if self.closed:raise RuntimeError('Observation backend closed')
         if not isinstance(b,PreparedObservation)or b.owner is not self:raise ValueError('Foreign observation buffers')
@@ -348,10 +349,13 @@ class DomainSoAObservation:
         errors=t.where(f['row_error']!=0,f['row_error'],errors)
         b.errors.copy_(errors)
         b.features.copy_(t.where((b.active&(errors==0))[:,None],features,t.zeros_like(features)))
-        return {'features':b.features,'errors':b.errors,'feature_names':FEATURE_NAMES,
-                'full_duel_qualified':False,'action_features_available':False,
-                '_private_card_fields':{'raw_kind':raw_kind,'raw_owner':raw_owner,'kind':effective,'owner':owner,'transformed':transformed,
-                    'revealed':revealed,'queries':q,'selected_characters':selected}}
+        result={'features':b.features,'errors':b.errors,'feature_names':FEATURE_NAMES,
+                'full_duel_qualified':False,'action_features_available':False}
+        if _include_private:
+            result['_private_card_fields']={'raw_kind':raw_kind,'raw_owner':raw_owner,
+                'kind':effective,'owner':owner,'transformed':transformed,'revealed':revealed,
+                'queries':q,'selected_characters':selected}
+        return result
 
     def observe(self,fields,viewers,active):return self.launch(self.prepare(fields,viewers,active))
     def close(self):

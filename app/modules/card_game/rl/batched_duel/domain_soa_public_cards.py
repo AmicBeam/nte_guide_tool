@@ -53,7 +53,7 @@ class DomainPublicCards:
 
     def launch(self,p):
         if self.closed or not isinstance(p,PreparedPublicCards)or p.owner is not self:raise ValueError('Closed or foreign public card buffers')
-        t=self.t;out=self.observation.launch(p.observation);b=p.observation;f=b.fields;meta=out['_private_card_fields']
+        t=self.t;out=self.observation.launch(p.observation,_include_private=True);b=p.observation;f=b.fields;meta=out['_private_card_fields']
         B=f['row_error'].shape[0];K=self.layout.max_cards;C=self.layout.max_characters
         rows=t.arange(B,device=self.device);own=b.viewers.clamp(0,1)
         raw=meta['raw_kind'];effective=meta['kind'];owner=meta['owner'];raw_owner=meta['raw_owner'];transformed=meta['transformed']!=0

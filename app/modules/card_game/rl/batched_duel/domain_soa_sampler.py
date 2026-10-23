@@ -447,7 +447,7 @@ SOA_FN void soa_sample_row(
  bmt_seed_words(&rng,words,words[1]?2:1);saved=rng;
  {int pass,ok_alloc=0,retry=budget||has_x||has_h;
   for(pass=0;pass<2&&!ok_alloc;pass++){
-   int recovered=pass?budget:0,deck_gen=pass?1:0,tmax=(pub_a03<disc_af01?pub_a03:disc_af01)+1,poss_t[129],nposs=0;
+   int recovered=pass?budget:0,deck_gen=pass?1:0,tmax=(orig[a03]<disc_af01?orig[a03]:disc_af01)+1,poss_t[129],nposs=0;
    if(pass)rng=saved;
    if(tmax>129){errors[row]=14;return;}
    for(t=0;t<tmax;t++){
@@ -497,6 +497,7 @@ SOA_FN void soa_sample_row(
    }
   }
  }
+ orig[a03]-=temporary;
  {int a03n=0;for(pos=0;pos<i16(zcount,(row*2+foe)*4+2);pos++){slot=zindex[((row*2+foe)*4+2)*Z+pos];if(i16(ktmpl,row*K+slot)==a03)idx[a03n++]=slot;}
   for(i=0;i<keep_n;i++)if(i16(ktmpl,row*K+keep[i])==a03)idx[a03n++]=keep[i];
   if((err=rng_shuffle(&rng,idx,a03n,max_draws))){errors[row]=err;return;}

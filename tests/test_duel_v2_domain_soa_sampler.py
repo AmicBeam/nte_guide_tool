@@ -698,3 +698,79 @@ class IntegratedGuardSamplerTest(unittest.TestCase):
             g.replay();torch.cuda.synchronize();self.assertEqual(out['row_error'][:3].cpu().tolist(),[64,INVALID_INPUT,0])
             for k in f:
                 if k!='row_error':self.assertTrue(torch.equal(out[k][:3],f[k][:3]),k)
+
+
+class A03PublicTemporarySamplerTest(unittest.TestCase):
+    def fixture(self,derived=False):
+        st=_state(seed=7,first='b',a='murk',b='murk');team=st['sides']['b']
+        for cid in ('A04','A03'):
+            for zone in ('hand','deck'):
+                card=next((c for c in team[zone]if c['card_id']==cid),None)
+                if card:team[zone].remove(card);team['discard'].append(card);break
+        team['discard'].append(card_instance(st,'AF01','b'));extra=card_instance(st,'A03','b');extra['ephemeral_turn']=st['turn']
+        if derived:extra['derived']=True
+        team['discard'].append(extra);return st
+
+    def verify(self,states,seeds,out):
+        self.assertFalse(out['row_error'].any())
+        for b,(st,seed)in enumerate(zip(states,seeds)):
+            gold=oracle_determinize(st,'a',seed)
+            for side,zone in ((0,1),(1,0),(1,1)):
+                self.assertEqual(_zone_ids(out,b,side,zone),[c['card_id']for c in gold['sides'][('a','b')[side]][('hand','deck')[zone]]],str((b,side,zone)))
+            self.assertEqual(_eph(out,b,1,2),[c.get('ephemeral_turn')for c in gold['sides']['b']['discard']])
+            self.assertEqual(int(out['rng'][b]),gold['rng']);self.assertEqual(int(out['next_entity'][b]),gold['next_entity']);self.assertEqual(int(out['next_instance'][b]),gold['next_instance'])
+
+    def test_public_temporary_is_removed_from_original_counts_and_derived_is_not_original(self):
+        states=[self.fixture(derived=d)for d in(False,True)for _ in range(8)];seeds=list(range(8))*2;L=DomainSoALayout(game_capacity=16);_,f=_torch_fields(states,L)
+        with cpu_oracle(L)as sampler:
+            out=sampler.determinize(f,torch.zeros(16,dtype=torch.int64),torch.tensor(seeds),torch.ones(16,dtype=torch.int32));self.verify(states,seeds,out)
+        gold=[oracle_determinize(self.fixture(),'a',seed)for seed in range(8)]
+        count=[sum(c.get('ephemeral_turn')is not None for c in g['sides']['b']['discard']if c['card_id']=='A03')for g in gold]
+        self.assertIn(0,count);self.assertIn(1,count)
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_400_public_temporary_default_guard_replay(self):
+        states=[self.fixture(derived=bool(i%2))for i in range(400)];L=DomainSoALayout(game_capacity=400);_,f=_torch_fields(states,L,'cuda');vi=torch.zeros(400,dtype=torch.int64,device='cuda');seeds=torch.arange(400,device='cuda')%8;ac=torch.ones(400,dtype=torch.int32,device='cuda')
+        with DomainSoASampler(L,device='cuda')as sampler:
+            p=sampler.prepare(f,vi,seeds,ac);sampler.launch(p);torch.cuda.synchronize();g=torch.cuda.CUDAGraph()
+            with torch.cuda.graph(g):out=sampler.launch(p)
+            g.replay();torch.cuda.synchronize();self.verify(states[:16],seeds[:16].cpu().tolist(),out)
+            seeds.add_(8);g.replay();torch.cuda.synchronize();self.verify(states[:16],seeds[:16].cpu().tolist(),out)
+
+
+class AdvancedSamplerCapacityTest(unittest.TestCase):
+    def fixture(self):
+        from tests.test_duel_v2_domain_soa_codec import _natural_states
+        roots=[s for s in _natural_states(120)if s['phase']in('playing','choice')]
+        st=max(roots,key=lambda s:max(len(t['characters'])for t in s['sides'].values()))
+        self.assertGreater(max(len(t['characters'])for t in st['sides'].values()),8)
+        self.assertEqual(st['phase'],'playing');return st
+
+    def verify(self,states,viewers,seeds,L,out,active,device):
+        from app.modules.card_game.rl.batched_duel.domain_soa_card_order import DomainCardOrder
+        from app.modules.card_game.rl.batched_duel.domain_soa_schema import DomainSoABatch
+        from app.modules.card_game.rl.batched_duel.domain_soa_codec import decode_domain_states
+        self.assertFalse(out['row_error'].any())
+        with DomainCardOrder(L,device=device,allow_cpu_oracle=device=='cpu')as order:
+            result=order.launch(order.prepare(out,active));self.assertFalse(result['errors'].any())
+            worlds=decode_domain_states(DomainSoABatch(layout=L,**{k:v[:len(states)].cpu().numpy()for k,v in result['fields'].items()}))
+        for b,w in enumerate(worlds):
+            gold=oracle_determinize(states[b],('a','b')[viewers[b]],seeds[b]);gold.pop('events',None);self.assertEqual(w,gold)
+            for side in('a','b'):self.assertEqual(list(w['sides'][side]['characters']),list(states[b]['sides'][side]['characters']))
+
+    def test_larger_storage_keeps_disappeared_summon_identities(self):
+        from app.modules.card_game.rl.batched_duel.domain_soa_schema import DomainSoACapacityError
+        st=self.fixture()
+        with self.assertRaises(DomainSoACapacityError):_torch_fields([st],DomainSoALayout(game_capacity=1))
+        L=DomainSoALayout(game_capacity=2,max_characters=16);_,f=_torch_fields([st,st],L);vi=torch.tensor([0,1]);seeds=torch.tensor([710096,710097]);active=torch.ones(2,dtype=torch.int32)
+        with cpu_oracle(L)as sampler:
+            out=sampler.determinize(f,vi,seeds,active);self.verify([st,st],[0,1],seeds.tolist(),L,out,active.bool(),'cpu')
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_400_larger_storage_full_guard_and_complete_world_export(self):
+        st=self.fixture();L=DomainSoALayout(game_capacity=400,max_characters=16);_,f=_torch_fields([st]*400,L,'cuda');vi=torch.arange(400,device='cuda')%2;seeds=torch.arange(400,device='cuda')+710096;active=torch.ones(400,dtype=torch.int32,device='cuda')
+        with DomainSoASampler(L,device='cuda')as sampler:
+            p=sampler.prepare(f,vi,seeds,active);sampler.launch(p);torch.cuda.synchronize();g=torch.cuda.CUDAGraph()
+            with torch.cuda.graph(g):out=sampler.launch(p)
+            g.replay();torch.cuda.synchronize();self.verify([st]*32,vi[:32].cpu().tolist(),seeds[:32].cpu().tolist(),L,out,active.bool(),'cuda')
+            seeds.add_(1000);g.replay();torch.cuda.synchronize();self.verify([st]*32,vi[:32].cpu().tolist(),seeds[:32].cpu().tolist(),L,out,active.bool(),'cuda')

@@ -623,3 +623,37 @@ class VisibleDeckSamplerTest(unittest.TestCase):
             for st in replacements:
                 for team in st['sides'].values():team['deck_visible_turn']-=1
             seeds.add_(1000);g.replay();torch.cuda.synchronize();self.assertTrue(checked['accepted'].all());self.verify(replacements,viewers[:28],seeds[:28].cpu().tolist(),out)
+
+
+class EffectiveViewSamplerTest(unittest.TestCase):
+    def fixtures(self):
+        from tests import test_duel_v2_domain_soa_card_order as view_cases
+        return view_cases.EffectiveViewOrderTest().fixtures()
+
+    def check_worlds(self,states,viewers,seeds,L,out,active,device):
+        from app.modules.card_game.rl.batched_duel.domain_soa_card_order import DomainCardOrder
+        from app.modules.card_game.rl.batched_duel.domain_soa_schema import DomainSoABatch
+        from app.modules.card_game.rl.batched_duel.domain_soa_codec import decode_domain_states
+        with DomainCardOrder(L,device=device,allow_cpu_oracle=device=='cpu')as order:
+            ordered=order.launch(order.prepare(out,active));self.assertFalse(ordered['errors'].any())
+            worlds=decode_domain_states(DomainSoABatch(layout=L,**{k:v[:len(states)].cpu().numpy()for k,v in ordered['fields'].items()}))
+            for b,w in enumerate(worlds):
+                gold=oracle_determinize(states[b],('a','b')[viewers[b]],seeds[b]);gold.pop('events',None);self.assertEqual(w,gold)
+                view=w['pending_choice']['cards'][0];self.assertIs(view,w['operation']['card']);self.assertIs(view['_physical_card'],w['operation']['choice_cards'][1])
+
+    def test_effective_view_retains_physical_row_and_shared_visible_identity(self):
+        from app.modules.card_game.rl.batched_duel.domain_soa_information_guard import DomainInformationGuard
+        states=self.fixtures();L=DomainSoALayout(game_capacity=2);_,f=_torch_fields(states,L);vi=torch.zeros(2,dtype=torch.int64);seeds=torch.tensor([5,19]);ac=torch.ones(2,dtype=torch.bool)
+        with cpu_oracle(L,guard=False)as sampler,DomainInformationGuard(L,device='cpu',allow_cpu_oracle=True,max_actions=64)as guard:
+            out=sampler.determinize(f,vi,seeds,ac.int());self.assertFalse(out['row_error'].any());checked=guard.launch(guard.prepare(f,out,vi,ac));self.assertTrue(checked['accepted'].all());self.check_worlds(states,[0,0],[5,19],L,out,ac,'cpu')
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_400_effective_view_sampling_guard_graph_and_aliases(self):
+        from app.modules.card_game.rl.batched_duel.domain_soa_information_guard import DomainInformationGuard
+        base=self.fixtures();states=[base[i%2]for i in range(400)];L=DomainSoALayout(game_capacity=400);_,f=_torch_fields(states,L,'cuda');vi=torch.zeros(400,dtype=torch.int64,device='cuda');seeds=torch.arange(400,device='cuda')+5;ac=torch.ones(400,dtype=torch.bool,device='cuda')
+        with DomainSoASampler(L,device='cuda',guard=False)as sampler,DomainInformationGuard(L,device='cuda',max_actions=64)as guard:
+            p=sampler.prepare(f,vi,seeds,ac.int());sampler.launch(p);check=guard.prepare(f,p.outputs,vi,ac);guard.launch(check);torch.cuda.synchronize();g=torch.cuda.CUDAGraph()
+            with torch.cuda.graph(g):out=sampler.launch(p);checked=guard.launch(check)
+            g.replay();torch.cuda.synchronize();self.assertFalse(out['row_error'].any());self.assertTrue(checked['accepted'].all());self.check_worlds(states[:14],[0]*14,seeds[:14].cpu().tolist(),L,out,ac,'cuda')
+            seeds.add_(1000);g.replay();torch.cuda.synchronize();self.assertTrue(checked['accepted'].all());self.check_worlds(states[:14],[0]*14,seeds[:14].cpu().tolist(),L,out,ac,'cuda')
+            ref=int(f['choice_card_index'][0,0]);f['card_physical_index'][0,ref]=ref;g.replay();torch.cuda.synchronize();self.assertEqual(int(out['row_error'][0]),UNSUPPORTED_ROOT);self.assertFalse(checked['accepted'][0]);self.assertTrue(checked['accepted'][1:].all())

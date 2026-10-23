@@ -90,10 +90,10 @@ REQUIRED = (
     'player_int_value','character_valid','character_template',
     'character_entity_slot','character_hp','character_bool_presence',
     'character_bool_value','zone_count','player_revealed_count',
-    'player_revealed_side','player_revealed_instance',
+    'player_revealed_side','player_revealed_instance','card_is_view','card_physical_index',
 )
 MISSING_STAGES = (
-    'active effective physical-card views are refused',
+    'nested, invalid, or identity-mismatched effective physical-card views are refused',
     'seeds are nonnegative int64; arbitrary Python ints are not represented',
     'Random._randbelow is bounded by max_draws instead of an unbounded host loop',
     'card-table holes are not compacted into codec registration order',
@@ -119,6 +119,7 @@ def coverage():
             'entity/instance reissue, formal CPython MT19937 seed/shuffle/choice/randrange',
             'revealed enemy hand preserves original identity, order and metadata',
             'visible own-deck order skips both canonical sort and shuffle RNG',
+            'visible effective-card views retain their physical row and shared aliases',
             'full information-guard capability fails closed until integrated',
         ),
         'missing_stages': MISSING_STAGES,
@@ -363,7 +364,8 @@ SOA_FN void soa_sample_row(
  const int* hid_len,const unsigned char* hid_bytes,const int* char_seat,const int* kit_n,const int* kit,
  const unsigned char* cat_int_p,const int* cat_int_v,const unsigned char* cat_bool_p,const unsigned char* cat_bool_v,
  const unsigned char* cat_str_p,const unsigned char* cat_src,const unsigned char* cat_play,const int* operation_card,
- const unsigned char* revealed_count,const unsigned char* revealed_side,const int* revealed_instance){
+ const unsigned char* revealed_count,const unsigned char* revealed_side,const int* revealed_instance,
+ const unsigned char* card_views,const int* physical_cards){
  if(errors[row]!=0||!active[row])return;
  int viewer=(int)viewers[row],foe,phase_v=i16(phase,row),choosing,kind=-1,err=0,i,s,z,pos,slot,P=2*Z;
  int nf01=sp[0],a03=sp[1],af01=sp[2],ff01=sp[3],q05=sp[4],c02=sp[5],a04=sp[6],pf01=sp[7];
@@ -383,6 +385,7 @@ SOA_FN void soa_sample_row(
   for(pos=0;pos<count;pos++){
    int ci=zindex[((row*2+s)*4+z)*Z+pos];
    if(ci<0||ci>=K||!u8(kvalid,row*K+ci)){errors[row]=1;return;}
+   if(u8(card_views,row*K+ci)){errors[row]=3;return;}
    if(z==2||(s==viewer&&(z==0||z==1))){
     int tmpl=i16(ktmpl,row*K+ci);if(tmpl<1||tmpl>=vc){errors[row]=1;return;}
    }
@@ -586,6 +589,12 @@ SOA_FN void soa_sample_row(
    }
    if(u8(operation,row)&&operation_card[row]>=0)used[operation_card[row]]=1;
   }
+  for(i=0;i<K;i++)if(used[i]&&u8(card_views,row*K+i)){
+   int pi=physical_cards[row*K+i];
+   if(pi<0||pi>=K||pi==i||!u8(kvalid,row*K+pi)||u8(card_views,row*K+pi)
+      ||kentity[row*K+pi]!=kentity[row*K+i]||kinst[row*K+pi]!=kinst[row*K+i]||i8(kside,row*K+pi)!=i8(kside,row*K+i)){errors[row]=3;return;}
+   used[pi]=1;
+  }
   if(next_i>2147483647-need||next_e>2147483647-need){errors[row]=14;return;}
   free_n=0;for(i=0;i<K;i++)if(!used[i]&&free_n<need)idx[free_n++]=i;
   if(free_n<need){errors[row]=14;return;}
@@ -652,12 +661,13 @@ extern "C" void domain_soa_sample(
  const int* hid_len,const unsigned char* hid_bytes,const int* char_seat,const int* kit_n,const int* kit,
  const unsigned char* cat_int_p,const int* cat_int_v,const unsigned char* cat_bool_p,const unsigned char* cat_bool_v,
  const unsigned char* cat_str_p,const unsigned char* cat_src,const unsigned char* cat_play,const int* operation_card,
- const unsigned char* revealed_count,const unsigned char* revealed_side,const int* revealed_instance){
+ const unsigned char* revealed_count,const unsigned char* revealed_side,const int* revealed_instance,
+ const unsigned char* card_views,const int* physical_cards){
 #if defined(__CUDACC__) || defined(__CUDACC_RTC__)
  int row=(int)(blockIdx.x*blockDim.x+threadIdx.x);if(row>=rows)return;
- soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance);
+ soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance,card_views,physical_cards);
 #else
- int row;for(row=0;row<rows;row++)soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance);
+ int row;for(row=0;row<rows;row++)soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance,card_views,physical_cards);
 #endif
 }
 '''
@@ -674,7 +684,7 @@ _PTR_TYPES = (
     'int32*', 'int32*', 'int64*', 'int32*', 'int32*', 'int32*', 'int32*', 'uint8*',
     'uint8*', 'int32*', 'int32*', 'uint8*', 'int32*', 'uint8*', 'int32*', 'int32*',
     'int32*', 'uint8*', 'int32*', 'uint8*', 'uint8*', 'uint8*', 'uint8*', 'uint8*',
-)+('int32*','uint8*','uint8*','int32*')
+)+('int32*','uint8*','uint8*','int32*','uint8*','int32*')
 _SCALAR_N = 15
 
 
@@ -862,6 +872,7 @@ class DomainSoASampler:
             cat['cat_int_p'], cat['cat_int_v'], cat['cat_bool_p'], cat['cat_bool_v'],
             cat['cat_str_p'], cat['cat_src'], cat['cat_play'], packed['op_card_index'],
             self._bytes(packed['player_revealed_count']),self._bytes(packed['player_revealed_side']),packed['player_revealed_instance'],
+            self._bytes(packed['card_is_view']),packed['card_physical_index'],
         )
         if len(pointers) != len(_PTR_TYPES):
             raise RuntimeError('Sampler pointer arity drifted')
@@ -884,7 +895,13 @@ class DomainSoASampler:
              |(batch.sources['catalog_digest']!=self._catalog_digest[None,:]).any(1)
              |(batch.active<0)|(batch.active>1)))
         source_error.copy_(t.where(bad&(source_error==0),INVALID_INPUT,source_error))
-        unsupported_view = (batch.active != 0) & batch.sources['card_is_view'].any(1)
+        f=batch.sources;K=self.layout.max_cards
+        physical=f['card_physical_index'].long();safe=physical.clamp(0,K-1)
+        bad_view=(physical<0)|(physical>=K)|(physical==t.arange(K,device=self.device)[None,:])
+        bad_view|=~f['card_valid'].gather(1,safe)|f['card_is_view'].gather(1,safe)
+        for name in ('card_entity_slot','card_instance_slot','card_side'):
+            bad_view|=f[name]!=f[name].gather(1,safe)
+        unsupported_view = (batch.active != 0) & (f['card_is_view']&bad_view).any(1)
         source_error.copy_(t.where(unsupported_view & (source_error == 0), UNSUPPORTED_ROOT, source_error))
         L = self.layout
         scalars = (

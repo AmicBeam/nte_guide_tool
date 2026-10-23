@@ -1397,3 +1397,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 行动阶段设备组合器 `rl/batched_duel/domain_soa_playing_actions.py` 按正式顺序合并费用、出击、终结、用牌限制、目标和选项，并独立保留物理身份载荷；换牌／选择枚举与物理规则、H3 仍须接线。验证：`python -m unittest tests.test_duel_v2_domain_soa_playing_actions -v`。
 
 全阶段设备枚举入口 `rl/batched_duel/domain_soa_actions.py` 合并行动、换牌、选牌与牌库排序，保留实例载荷、单／多底部形式和设备图跨阶段重放；它不执行物理规则，也不自动开放采样、H3 或训练。验证：`python -m unittest tests.test_duel_v2_domain_soa_actions -v`。
+
+设备端信息一致性检查由 `rl/batched_duel/domain_soa_information_guard.py` 比较完整观察和原行动表的全部候选特征，逐窗口检查整个容量；验证用 `python -m unittest tests.test_duel_v2_domain_soa_information_guard -v`。它是独立只读检查器，不开放原采样器默认门禁，也不表示物理整局、H3 或训练已经可运行。

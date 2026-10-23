@@ -92,7 +92,7 @@ class DomainSoASamplerTest(unittest.TestCase):
         self.assertIn('bmt_seed_words', source)
         self.assertIn('generation allocation including recovery/deck-generator retry', info['implemented'])
 
-    def test_visible_roots_are_explicitly_refused_by_numeric_sampler(self):
+    def test_revealed_hand_supported_but_visible_deck_still_refused(self):
         states=[_state(),_state()]
         states[0]['sides']['b']['revealed_ids']=[states[0]['sides']['b']['hand'][0]['instance_id']]
         states[1]['sides']['a']['deck_visible_turn']=states[1]['turn']
@@ -100,8 +100,8 @@ class DomainSoASamplerTest(unittest.TestCase):
         _,fields=_torch_fields(states,layout)
         with cpu_oracle(layout,guard=False)as sampler:
             out=sampler.determinize(fields,torch.zeros(2,dtype=torch.int64),torch.tensor([11,12],dtype=torch.int64),torch.ones(2,dtype=torch.int32))
-            self.assertEqual(out['row_error'].tolist(),[UNSUPPORTED_ROOT]*2)
-            self.assertTrue(torch.equal(out['zone_card_index'],fields['zone_card_index']))
+            self.assertEqual(out['row_error'].tolist(),[0,UNSUPPORTED_ROOT])
+            self.assertTrue(torch.equal(out['zone_card_index'][1],fields['zone_card_index'][1]))
 
     def test_physical_views_reject_even_diagnostic_sampling(self):
         layout = DomainSoALayout(game_capacity=1)
@@ -512,3 +512,61 @@ class DomainSoASamplerTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RevealedSamplerTest(unittest.TestCase):
+    def fixtures(self):
+        states=[]
+        for i,key in enumerate(('starter','weave-rush','quick-rush','zhenhong','murk','collapse','lingke')):
+            st=_state(seed=11+i,a=key,b=key)
+            for side in ('a','b'):
+                team=st['sides'][side];team['revealed_ids']=[team['hand'][2]['instance_id'],team['hand'][0]['instance_id'],team['hand'][2]['instance_id']]
+            states.append(st)
+        return states
+
+    def verify(self,states,viewers,seeds,fields,out):
+        self.assertFalse(out['row_error'].any())
+        for b,(st,v,seed)in enumerate(zip(states,viewers,seeds)):
+            gold=oracle_determinize(st,('a','b')[v],seed)
+            for side,zone in ((v,1),(1-v,0),(1-v,1)):
+                self.assertEqual(_zone_ids(out,b,side,zone),[c['card_id']for c in gold['sides'][('a','b')[side]][('hand','deck')[zone]]])
+            self.assertEqual(int(out['rng'][b]),gold['rng']);self.assertEqual(int(out['next_entity'][b]),gold['next_entity']);self.assertEqual(int(out['next_instance'][b]),gold['next_instance'])
+            foe=1-v;refs=[int(fields['zone_card_index'][b,foe,0,j])for j in (0,2)]
+            for k in fields:
+                if k.startswith('card_'):self.assertTrue(torch.equal(out[k][b,refs],fields[k][b,refs]),str((b,k)))
+
+    def test_revealed_count_order_and_whole_world_information(self):
+        from app.modules.card_game.rl.batched_duel.domain_soa_information_guard import DomainInformationGuard
+        from app.modules.card_game.rl.batched_duel.domain_soa_card_order import DomainCardOrder
+        from app.modules.card_game.rl.batched_duel.domain_soa_schema import DomainSoABatch
+        from app.modules.card_game.rl.batched_duel.domain_soa_codec import decode_domain_states
+        states=[s for s in self.fixtures()for _ in range(2)];viewers=[i%2 for i in range(len(states))];seeds=list(range(70,70+len(states)));L=DomainSoALayout(game_capacity=len(states));_,f=_torch_fields(states,L)
+        with cpu_oracle(L,guard=False)as sampler,DomainInformationGuard(L,device='cpu',allow_cpu_oracle=True,max_actions=64)as guard,DomainCardOrder(L,device='cpu',allow_cpu_oracle=True)as order:
+            vi=torch.tensor(viewers);ac=torch.ones(len(states),dtype=torch.bool);out=sampler.determinize(f,vi,torch.tensor(seeds),ac.int());self.verify(states,viewers,seeds,f,out)
+            checked=guard.launch(guard.prepare(f,out,vi,ac));self.assertTrue(checked['accepted'].all())
+            ordered=order.launch(order.prepare(out,ac));self.assertFalse(ordered['errors'].any())
+            worlds=decode_domain_states(DomainSoABatch(layout=L,**{k:v.numpy()for k,v in ordered['fields'].items()}))
+            for b,w in enumerate(worlds):
+                gold=oracle_determinize(states[b],('a','b')[viewers[b]],seeds[b]);gold.pop('events',None);self.assertEqual(w,gold)
+
+    def test_invalid_revealed_template_refuses_before_catalog_access(self):
+        states=self.fixtures()[:2];L=DomainSoALayout(game_capacity=2);_,f=_torch_fields(states,L)
+        slot=int(f['zone_card_index'][0,1,0,0]);f['card_template'][0,slot]=32767
+        with cpu_oracle(L,guard=False)as sampler:
+            out=sampler.determinize(f,torch.zeros(2,dtype=torch.int64),torch.tensor([7,9]),torch.ones(2,dtype=torch.int32))
+            self.assertEqual(out['row_error'].tolist(),[INVALID_INPUT,0])
+            for k in f:
+                if k!='row_error':self.assertTrue(torch.equal(out[k][0],f[k][0]),k)
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_400_revealed_sampling_guard_and_new_seed_replay(self):
+        from app.modules.card_game.rl.batched_duel.domain_soa_information_guard import DomainInformationGuard
+        states=[self.fixtures()[i%7]for i in range(400)];L=DomainSoALayout(game_capacity=400);_,f=_torch_fields(states,L,'cuda')
+        vi=torch.arange(400,device='cuda')%2;seed=torch.arange(400,device='cuda')+70;ac=torch.ones(400,dtype=torch.bool,device='cuda')
+        with DomainSoASampler(L,device='cuda',guard=False)as sampler,DomainInformationGuard(L,device='cuda',max_actions=64)as guard:
+            p=sampler.prepare(f,vi,seed,ac.int());sampler.launch(p);check=guard.prepare(f,p.outputs,vi,ac);guard.launch(check);torch.cuda.synchronize();g=torch.cuda.CUDAGraph()
+            with torch.cuda.graph(g):out=sampler.launch(p);checked=guard.launch(check)
+            g.replay();torch.cuda.synchronize();self.assertTrue(checked['accepted'].all());self.verify(states[:14],vi[:14].cpu().tolist(),seed[:14].cpu().tolist(),f,out)
+            seed.add_(1000);vi.copy_(1-vi);g.replay();torch.cuda.synchronize();self.assertTrue(checked['accepted'].all());self.verify(states[:14],vi[:14].cpu().tolist(),seed[:14].cpu().tolist(),f,out)
+            foe=1-int(vi[0]);ref=int(f['zone_card_index'][0,foe,0,0]);f['card_template'][0,ref]=32767
+            g.replay();torch.cuda.synchronize();self.assertEqual(int(out['row_error'][0]),INVALID_INPUT);self.assertFalse(checked['accepted'][0]);self.assertTrue(checked['accepted'][1:].all())

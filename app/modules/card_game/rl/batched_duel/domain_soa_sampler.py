@@ -89,14 +89,15 @@ REQUIRED = (
     'player_entity_slot','player_character_count','player_int_presence',
     'player_int_value','character_valid','character_template',
     'character_entity_slot','character_hp','character_bool_presence',
-    'character_bool_value','zone_count',
+    'character_bool_value','zone_count','player_revealed_count',
+    'player_revealed_side','player_revealed_instance',
 )
 MISSING_STAGES = (
-    'revealed hand and visible-deck constraints are preserved by schema but active such roots are refused',
+    'visible-deck constraints are preserved by schema but active such roots are refused',
     'seeds are nonnegative int64; arbitrary Python ints are not represented',
     'Random._randbelow is bounded by max_draws instead of an unbounded host loop',
     'card-table holes are not compacted into codec registration order',
-    'full 3479 observation/candidate guard unavailable; guarded active samples return error 17',
+    'independent full information guard is not connected to this default sampler; guarded active samples return error 17',
 )
 _TORCH_DTYPES = {
     'bool': 'bool', 'int8': 'int8', 'int16': 'int16', 'int32': 'int32',
@@ -116,7 +117,8 @@ def coverage():
             'kit reconstruction, mandatory generated-hand placement, heiyu/lingke exception',
             'A03 public ephemeral assignment, xiaozhi jingu, own-deck JSON sort+shuffle',
             'entity/instance reissue, formal CPython MT19937 seed/shuffle/choice/randrange',
-            'full information-guard capability fails closed until implemented',
+            'revealed enemy hand preserves original identity, order and metadata',
+            'full information-guard capability fails closed until integrated',
         ),
         'missing_stages': MISSING_STAGES,
         'schema_fields_rejected': (
@@ -359,7 +361,8 @@ SOA_FN void soa_sample_row(
  const unsigned char* card_derived,const int* card_owner,const int* cid_len,const unsigned char* cid_bytes,
  const int* hid_len,const unsigned char* hid_bytes,const int* char_seat,const int* kit_n,const int* kit,
  const unsigned char* cat_int_p,const int* cat_int_v,const unsigned char* cat_bool_p,const unsigned char* cat_bool_v,
- const unsigned char* cat_str_p,const unsigned char* cat_src,const unsigned char* cat_play,const int* operation_card){
+ const unsigned char* cat_str_p,const unsigned char* cat_src,const unsigned char* cat_play,const int* operation_card,
+ const unsigned char* revealed_count,const unsigned char* revealed_side,const int* revealed_instance){
  if(errors[row]!=0||!active[row])return;
  int viewer=(int)viewers[row],foe,phase_v=i16(phase,row),choosing,kind=-1,err=0,i,s,z,pos,slot,P=2*Z;
  int nf01=sp[0],a03=sp[1],af01=sp[2],ff01=sp[3],q05=sp[4],c02=sp[5],a04=sp[6],pf01=sp[7];
@@ -393,13 +396,15 @@ SOA_FN void soa_sample_row(
  if(!u8(pvalid,row*2+foe)||!u8(pvalid,row*2+viewer)){errors[row]=1;return;}
  hand_n=i16(zcount,(row*2+foe)*4+0);deck_n=i16(zcount,(row*2+foe)*4+1);
  if(hand_n<0||deck_n<0||hand_n>Z||deck_n>Z){errors[row]=1;return;}
- if(choosing&&kind==2){
-  int cn=i16(choice_n,row);if(cn<0||cn>CH){errors[row]=1;return;}
+ {
+  int rn=i16(revealed_count,row*2+foe),cn=choosing&&kind==2?i16(choice_n,row):0;
+  if(rn<0||rn>K||cn<0||cn>CH){errors[row]=1;return;}
   for(pos=0;pos<hand_n;pos++){
    slot=zindex[((row*2+foe)*4+0)*Z+pos];if(slot<0||slot>=K||!u8(kvalid,row*K+slot)){errors[row]=1;return;}
    int inst=kinst[row*K+slot],hit=0;
+   for(i=0;i<rn;i++)if(i8(revealed_side,(row*2+foe)*K+i)==foe&&revealed_instance[(row*2+foe)*K+i]==inst)hit=1;
    for(i=0;i<cn;i++){int ci=choice_idx[row*CH+i];if(ci>=0&&ci<K&&kinst[row*K+ci]==inst)hit=1;}
-   if(hit)keep[keep_n++]=slot;
+   if(hit){int known=i16(ktmpl,row*K+slot);if(known<1||known>=vc){errors[row]=1;return;}keep[keep_n++]=slot;}
   }
  }
  hidden_family=0;family=opt_int(pint_p,pint_v,row*2+foe,8,n_pint);
@@ -644,12 +649,13 @@ extern "C" void domain_soa_sample(
  const unsigned char* card_derived,const int* card_owner,const int* cid_len,const unsigned char* cid_bytes,
  const int* hid_len,const unsigned char* hid_bytes,const int* char_seat,const int* kit_n,const int* kit,
  const unsigned char* cat_int_p,const int* cat_int_v,const unsigned char* cat_bool_p,const unsigned char* cat_bool_v,
- const unsigned char* cat_str_p,const unsigned char* cat_src,const unsigned char* cat_play,const int* operation_card){
+ const unsigned char* cat_str_p,const unsigned char* cat_src,const unsigned char* cat_play,const int* operation_card,
+ const unsigned char* revealed_count,const unsigned char* revealed_side,const int* revealed_instance){
 #if defined(__CUDACC__) || defined(__CUDACC_RTC__)
  int row=(int)(blockIdx.x*blockDim.x+threadIdx.x);if(row>=rows)return;
- soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card);
+ soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance);
 #else
- int row;for(row=0;row<rows;row++)soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card);
+ int row;for(row=0;row<rows;row++)soa_sample_row(row,C,K,Z,CH,n_pint,n_cbool,n_kint,n_kbool,n_kstr,max_draws,max_slots,max_bytes,SW,vc,sp,scratch,seeds,viewers,active,errors,phase,turn,active_side,first_side,escalation,pending,choice_kind,choice_side,choice_n,choice_idx,operation,pvalid,pent,porder,pint_p,pint_v,cvalid,ctmpl,cent,chp,cbool_p,cbool_v,zcount,zindex,kvalid,kentity,kinst,ktmpl,kside,kint_p,kint_v,kbool_p,kbool_v,kstr_p,kstr_s,ksrc,kplay,kj_p,kj_d,kj_s,next_inst,next_ent,rng_out,str_count,str_used,str_off,str_len,str_bytes,card_derived,card_owner,cid_len,cid_bytes,hid_len,hid_bytes,char_seat,kit_n,kit,cat_int_p,cat_int_v,cat_bool_p,cat_bool_v,cat_str_p,cat_src,cat_play,operation_card,revealed_count,revealed_side,revealed_instance);
 #endif
 }
 '''
@@ -666,7 +672,7 @@ _PTR_TYPES = (
     'int32*', 'int32*', 'int64*', 'int32*', 'int32*', 'int32*', 'int32*', 'uint8*',
     'uint8*', 'int32*', 'int32*', 'uint8*', 'int32*', 'uint8*', 'int32*', 'int32*',
     'int32*', 'uint8*', 'int32*', 'uint8*', 'uint8*', 'uint8*', 'uint8*', 'uint8*',
-)+('int32*',)
+)+('int32*','uint8*','uint8*','int32*')
 _SCALAR_N = 15
 
 
@@ -853,6 +859,7 @@ class DomainSoASampler:
             cat['char_id_len'], cat['char_id_bytes'], cat['char_seat'], cat['kit_n'], cat['kit'],
             cat['cat_int_p'], cat['cat_int_v'], cat['cat_bool_p'], cat['cat_bool_v'],
             cat['cat_str_p'], cat['cat_src'], cat['cat_play'], packed['op_card_index'],
+            self._bytes(packed['player_revealed_count']),self._bytes(packed['player_revealed_side']),packed['player_revealed_instance'],
         )
         if len(pointers) != len(_PTR_TYPES):
             raise RuntimeError('Sampler pointer arity drifted')
@@ -879,7 +886,7 @@ class DomainSoASampler:
         source_error.copy_(t.where(unsupported_view & (source_error == 0), UNSUPPORTED_ROOT, source_error))
         # Visibility constraints are preserved by the codec, but this numeric
         # sampler has not implemented their public-consistency proof yet.
-        visibility=batch.sources['player_revealed_count'].any(1)
+        visibility=t.zeros(rows,dtype=t.bool,device=self.device)
         vi=PLAYER_INT_FIELDS.index('deck_visible_turn')
         visibility=visibility|((batch.sources['player_int_presence'][:,:,vi]==2)&
                               (batch.sources['player_int_value'][:,:,vi]==batch.sources['turn'][:,None])).any(1)

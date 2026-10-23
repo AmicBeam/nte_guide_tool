@@ -83,3 +83,32 @@ class InformationGuardTest(unittest.TestCase):
             g.replay();torch.cuda.synchronize();self.assertEqual(out['errors'][:4].cpu().tolist(),[INFORMATION_CHANGED,64,1,INFORMATION_CHANGED]);self.assertFalse(out['accepted'][:4].any());self.assertTrue(out['accepted'][4:].all())
             for k in after:after[k].copy_(before[k])
             vi.fill_(1);g.replay();torch.cuda.synchronize();self.assertTrue(out['accepted'].all())
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_400_numeric_sampler_then_guard_in_same_graph(self):
+        from app.modules.card_game.rl.batched_duel.domain_soa_sampler import DomainSoASampler
+        from app.modules.card_game.rl.seven_sampler import determinize as formal_sample
+        from app.modules.card_game.rl.batched_duel.domain_soa_schema import CARD_VOCAB
+        base=self.fixtures();states=[base[i%7]for i in range(400)]
+        layout,before=pack(states,device='cuda');vi=torch.arange(400,device='cuda',dtype=torch.int64)%2
+        seeds=torch.arange(400,device='cuda',dtype=torch.int64)+91;active=torch.ones(400,dtype=torch.bool,device='cuda')
+        with DomainSoASampler(layout,device='cuda',guard=False)as sampler,backend(layout,'cuda',max_actions=64)as guard:
+            sample=sampler.prepare(before,vi,seeds,active.int());sampler.launch(sample)
+            check=guard.prepare(before,sample.outputs,vi,active);guard.launch(check);torch.cuda.synchronize();g=torch.cuda.CUDAGraph()
+            with torch.cuda.graph(g):
+                sampled=sampler.launch(sample);out=guard.launch(check)
+            g.replay();torch.cuda.synchronize()
+            self.assertFalse(sampled['row_error'].any());self.assertTrue(out['accepted'].all());self.assertFalse(out['sampler_qualified'])
+            inverse={v:k for k,v in CARD_VOCAB.items()}
+            def verify():
+                for b in range(14):
+                    v=int(vi[b]);gold=formal_sample(states[b],('a','b')[v],int(seeds[b]))
+                    self.assertEqual(int(sampled['rng'][b]),gold['rng'])
+                    self.assertEqual(int(sampled['next_entity'][b]),gold['next_entity'])
+                    self.assertEqual(int(sampled['next_instance'][b]),gold['next_instance'])
+                    for side,zone in ((v,1),(1-v,0),(1-v,1)):
+                        n=int(sampled['zone_count'][b,side,zone]);refs=sampled['zone_card_index'][b,side,zone,:n].long()
+                        ids=[inverse[int(k)]for k in sampled['card_template'][b,refs].cpu()]
+                        self.assertEqual(ids,[c['card_id']for c in gold['sides'][('a','b')[side]][('hand','deck')[zone]]])
+            verify();seeds.add_(1000);vi.copy_(1-vi);g.replay();torch.cuda.synchronize()
+            self.assertTrue(out['accepted'].all());self.assertFalse(sampled['row_error'].any());verify()

@@ -2,7 +2,7 @@
 
 This is a storage normalization stage, not a complete codec validator. It does
 not intern/compact strings, change identities, or execute game rules. Effective
-physical-card views are refused until their recursive registration is supported.
+views retain their single physical pointer; nested or invalid views are refused.
 """
 from dataclasses import dataclass
 from .domain_soa_observation import DomainSoAObservation
@@ -60,6 +60,21 @@ class DomainCardOrder:
         bad|=(live&((refs<0)|(refs>=K))).any(-1)
         safe=refs.clamp(0,K-1);valid=f['card_valid'];bad|=(live&~valid.gather(1,safe)).any(-1)
         bad|=~f['row_valid']|(f['catalog_digest']!=self.validator.partial._catalog_digest[None,:]).any(-1)
+        raw_safe=safe
+        views=f['card_is_view'];physical=f['card_physical_index'].long();phys_safe=physical.clamp(0,K-1)
+        invalid_view=(physical<0)|(physical>=K)|(physical==t.arange(K,device=self.device)[None,:])
+        invalid_view|=~valid.gather(1,phys_safe)|views.gather(1,phys_safe)
+        for name in ('card_entity_slot','card_instance_slot','card_side'):
+            invalid_view|=f[name]!=f[name].gather(1,phys_safe)
+        invalid_view=(views&valid&invalid_view).any(-1)
+        invalid_view|=(zm.flatten(1)&views.gather(1,f['zone_card_index'].flatten(1).long().clamp(0,K-1))).any(-1)
+        # register_card reserves a view row before registering its physical row.
+        # Interleave that recursive visit; first-occurrence reduction preserves
+        # aliases already registered by an earlier zone or choice reference.
+        view_ref=views.gather(1,raw_safe);physical_ref=physical.gather(1,raw_safe)
+        refs=t.stack((refs,physical_ref),-1).flatten(1)
+        live=t.stack((live,live&view_ref),-1).flatten(1)
+        safe=refs.clamp(0,K-1);L=refs.shape[1]
         first=t.full((B,K),L,dtype=t.int64,device=self.device)
         positions=t.arange(L,device=self.device)[None,:].expand(B,-1)
         first.scatter_reduce_(1,safe,t.where(live,positions,L),reduce='amin',include_self=True)
@@ -74,19 +89,19 @@ class DomainCardOrder:
             value=f[name];shape=(B,K)+(1,)*(value.ndim-2)
             indices=perm.reshape(shape).expand_as(value)
             out[name].copy_(t.where(present.reshape(shape),value.gather(1,indices),0))
-        # Views are refused below, so their physical-pointer column stays zero.
-        out['card_physical_index'].zero_()
+        remapped=p.old_to_new.gather(1,out['card_physical_index'].long().clamp(0,K-1))
+        out['card_physical_index'].copy_(t.where(out['card_is_view'],remapped,0).int())
         # Canonical codec stores catalog/absent/null payload slots as zero.
         # Numeric allocation may retain defaults in these ignored slots.
         for name,mask in (('card_int_value','card_int_presence'),('card_bool_value','card_bool_presence'),('card_str_slot','card_str_presence')):
             out[name].masked_fill_(out[mask]!=2,0)
-        mapped=p.old_to_new.gather(1,safe)
+        mapped=p.old_to_new.gather(1,raw_safe)
         offset=2*4*Z
         out['zone_card_index'].copy_(t.where(zm,mapped[:,:offset].reshape(B,2,4,Z),0).int())
         out['choice_card_index'].copy_(t.where(cm,mapped[:,offset:offset+CH],0).int());offset+=CH
         out['op_card_index'].copy_(t.where(f['operation_present'],t.where(one,mapped[:,offset],-1),0).int());offset+=1
         out['op_choice_card_index'].copy_(t.where(om,mapped[:,offset:],0).int())
-        errors=bad.int()*INVALID|f['card_is_view'].any(-1).int()*UNSUPPORTED_VIEW|missing.int()*UNREFERENCED_CARD|duplicate.int()*DUPLICATE_ZONE
+        errors=bad.int()*INVALID|invalid_view.int()*UNSUPPORTED_VIEW|missing.int()*UNREFERENCED_CARD|duplicate.int()*DUPLICATE_ZONE
         errors=t.where(f['row_error']!=0,f['row_error'],errors);p.errors.copy_(t.where(p.active,errors,0))
         rollback=~p.active|(p.errors!=0)
         for name,value in out.items():

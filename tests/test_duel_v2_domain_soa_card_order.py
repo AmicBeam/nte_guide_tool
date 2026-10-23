@@ -26,6 +26,7 @@ def permute(fields,perm):
     for k in ('zone_card_index','choice_card_index','op_card_index','op_choice_card_index'):
         v=fields[k];out[k]=inverse.gather(1,v.long().clamp(0,K-1).reshape(B,-1)).reshape_as(v).to(v.dtype)
         out[k]=torch.where(v>=0,out[k],v)
+    out['card_physical_index']=torch.where(out['card_is_view'],inverse.gather(1,out['card_physical_index'].long().clamp(0,K-1)).int(),0)
     return out
 
 
@@ -87,3 +88,46 @@ class CardOrderTest(unittest.TestCase):
             selected=list(range(14));batch=DomainSoABatch(layout=L,**{k:v[selected].cpu().numpy()for k,v in out['fields'].items()});worlds=decode_domain_states(batch)
             for i,world in enumerate(worlds):
                 gold=determinize(states[i],('a','b')[i%2],i+39);gold.pop('events',None);self.assertEqual(world,gold)
+
+
+class EffectiveViewOrderTest(unittest.TestCase):
+    def fixtures(self):
+        from app.modules.card_game.engine.duel_v2.state import effective_card
+        states=[]
+        for detached in (False,True):
+            st=state(8,a='zhenhong',b='starter');team=st['sides']['a'];team['characters']['zhenhong']['awakened']=True
+            raw=team['hand'][0];view=effective_card(st,'a',raw)
+            st['operation']={'side':'a','actor':'zhenhong','card':view,'participants':[],
+                'harmony':None,'first_bonus':0,'redeem_bonus':0,'record_candidate':False,'choice_cards':[view,raw]}
+            st['phase']='choice';st['pending_choice']={'kind':'kit','side':'a','prompt':'选择','cards':[view]}
+            if detached:team['hand'].remove(raw)
+            states.append(st)
+        return states
+
+    def check(self,states,L,fields,device):
+        B=len(states);K=L.max_cards;perm=torch.arange(K,device=device).flip(0)[None,:].repeat(B,1);shuffled=permute(fields,perm)
+        with backend(L,device)as order:
+            ac=torch.ones(B,dtype=torch.bool,device=device);p=order.prepare(shuffled,ac);out=order.launch(p)
+            if device=='cuda':
+                torch.cuda.synchronize();g=torch.cuda.CUDAGraph()
+                with torch.cuda.graph(g):out=order.launch(p)
+                g.replay();torch.cuda.synchronize()
+            self.assertFalse(out['errors'].any())
+            for k in fields:self.assertTrue(torch.equal(out['fields'][k],fields[k]),k)
+            chosen=list(range(min(B,2)));worlds=decode_domain_states(DomainSoABatch(layout=L,**{k:v[chosen].cpu().numpy()for k,v in out['fields'].items()}))
+            for world in worlds:
+                view=world['pending_choice']['cards'][0];self.assertIs(view,world['operation']['card']);self.assertIs(view,world['operation']['choice_cards'][0]);self.assertIs(view['_physical_card'],world['operation']['choice_cards'][1])
+            # Corrupt only the physical link; source columns are preserved on failure.
+            row=0;ref=int(shuffled['choice_card_index'][row,0]);shuffled['card_physical_index'][row,ref]=ref
+            if device=='cuda':g.replay();torch.cuda.synchronize()
+            else:out=order.launch(p)
+            self.assertTrue(int(out['errors'][row])&UNSUPPORTED_VIEW)
+            for k in shuffled:
+                if k!='row_error':self.assertTrue(torch.equal(out['fields'][k][row],shuffled[k][row]),k)
+
+    def test_views_register_before_detached_physical_and_preserve_shared_aliases(self):
+        states=self.fixtures();L,fields=pack(states);self.check(states,L,fields,'cpu')
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_400_recursive_physical_registration_graph(self):
+        base=self.fixtures();states=[base[i%2]for i in range(400)];L,fields=pack(states,device='cuda');self.check(states,L,fields,'cuda')

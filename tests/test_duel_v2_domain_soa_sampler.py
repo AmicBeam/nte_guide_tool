@@ -82,7 +82,8 @@ class DomainSoASamplerTest(unittest.TestCase):
         self.assertFalse(DomainSoASampler.supports_full_duel_rules)
         info = coverage()
         self.assertFalse(info['supports_full_duel_rules'])
-        self.assertFalse(info['full_information_set_guard'])
+        self.assertTrue(info['full_information_set_guard'])
+        self.assertFalse(info['full_sampling_qualified']);self.assertFalse(info['physical_rules_available']);self.assertFalse(info['h3_available'])
         self.assertEqual(info['oracle'], 'app.modules.card_game.rl.seven_sampler')
         self.assertTrue(info['missing_stages'])
         self.assertEqual(tuple(info['missing_stages']), MISSING_STAGES)
@@ -322,7 +323,7 @@ class DomainSoASamplerTest(unittest.TestCase):
             for z,name in ((0,'hand'),(1,'deck')):
                 self.assertEqual(_zone_ids(host,1,1,z),[c['card_id']for c in world['sides']['b'][name]])
 
-    def test_unavailable_public_guard_is_not_a_pair_of_zero_observations(self):
+    def test_default_public_guard_uses_complete_observations_and_original_candidates(self):
         layout=DomainSoALayout(game_capacity=1,max_cards=256,max_zone=128)
         _,fields=_torch_fields([_state(seed=17)],layout)
         with cpu_oracle(layout)as sampler:
@@ -332,11 +333,12 @@ class DomainSoASamplerTest(unittest.TestCase):
             for viewer in (0,1):
                 batch.viewers.fill_(viewer)
                 out=sampler.launch(batch)
-                self.assertEqual(int(out['row_error'][0]),PUBLIC_GUARD_UNAVAILABLE)
+                self.assertEqual(int(out['row_error'][0]),0)
                 self.assertEqual(out['row_error'].data_ptr(),pointer)
                 self.assertEqual(set(out),set(fields))
-                for name in fields:
-                    if name!='row_error':self.assertTrue(torch.equal(out[name],fields[name]),msg=name)
+                world=oracle_determinize(_state(seed=17),('a','b')[viewer],31)
+                self.assertEqual(int(out['rng'][0]),world['rng'])
+                self.assertEqual(_zone_ids(out,0,1-viewer,0),[c['card_id']for c in world['sides'][('a','b')[1-viewer]]['hand']])
             fields['row_error'][0]=9
             out=sampler.launch(batch)
             self.assertEqual(int(out['row_error'][0]),9)
@@ -451,13 +453,13 @@ class DomainSoASamplerTest(unittest.TestCase):
             self.assertEqual(int(fields['player_hp'][0,0]),17)
             del graph
             torch.cuda.synchronize()
-        # Default guard cannot qualify these roots while full public observation is missing.
+        # Default guard checks complete model inputs; it does not qualify full duel rules.
         with DomainSoASampler(layout=DomainSoALayout(game_capacity=1,max_cards=256,max_zone=128),device='cuda')as guarded:
             one={name:value[:1].contiguous()for name,value in fields.items()}
             sample=guarded.prepare(one,viewers[:1],seeds[:1],active[:1])
             pointer=sample.outputs['row_error'].data_ptr()
             guarded.launch(sample);torch.cuda.synchronize()
-            self.assertEqual(int(sample.outputs['row_error'][0]),PUBLIC_GUARD_UNAVAILABLE)
+            self.assertEqual(int(sample.outputs['row_error'][0]),0)
             self.assertEqual(sample.outputs['row_error'].data_ptr(),pointer)
 
     @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA choice-root sampling required')
@@ -657,3 +659,42 @@ class EffectiveViewSamplerTest(unittest.TestCase):
             g.replay();torch.cuda.synchronize();self.assertFalse(out['row_error'].any());self.assertTrue(checked['accepted'].all());self.check_worlds(states[:14],[0]*14,seeds[:14].cpu().tolist(),L,out,ac,'cuda')
             seeds.add_(1000);g.replay();torch.cuda.synchronize();self.assertTrue(checked['accepted'].all());self.check_worlds(states[:14],[0]*14,seeds[:14].cpu().tolist(),L,out,ac,'cuda')
             ref=int(f['choice_card_index'][0,0]);f['card_physical_index'][0,ref]=ref;g.replay();torch.cuda.synchronize();self.assertEqual(int(out['row_error'][0]),UNSUPPORTED_ROOT);self.assertFalse(checked['accepted'][0]);self.assertTrue(checked['accepted'][1:].all())
+
+
+class IntegratedGuardSamplerTest(unittest.TestCase):
+    def test_invariant_failure_rolls_back_every_state_column(self):
+        from app.modules.card_game.rl.batched_duel.domain_soa_information_guard import INFORMATION_CHANGED
+        from app.modules.card_game.rl.batched_duel.domain_soa_schema import CARD_INT_FIELDS
+        st=_state(110);st['active_side']='a';st['sides']['a']['ap']=100
+        from app.modules.card_game.engine.duel_v2.flow import legal_actions
+        plays=[a for a in legal_actions(st,'a')if a['type']=='play_card'];self.assertTrue(plays)
+        instance=int(plays[-1]['card_id'].split('-')[-1]);L=DomainSoALayout(game_capacity=2);_,f=_torch_fields([st,st],L)
+        with cpu_oracle(L)as sampler:
+            p=sampler.prepare(f,torch.zeros(2,dtype=torch.int64),torch.tensor([31,32]),torch.ones(2,dtype=torch.int32));native=sampler._kernel
+            def corrupt(*args):
+                native(*args)
+                ref=int(((p.outputs['card_instance_slot'][0]==instance)&(p.outputs['card_side'][0]==0)).nonzero()[0]);key=CARD_INT_FIELDS.index('additional_ap_cost')
+                p.outputs['card_int_presence'][0,ref,key]=2;p.outputs['card_int_value'][0,ref,key]=1
+            sampler._kernel=corrupt;out=sampler.launch(p)
+            self.assertEqual(out['row_error'].tolist(),[INFORMATION_CHANGED,0])
+            for k in f:
+                if k!='row_error':self.assertTrue(torch.equal(out[k][0],f[k][0]),k)
+            sampler._kernel=native;out=sampler.launch(p);self.assertFalse(out['row_error'].any())
+            self.assertFalse(sampler.supports_full_duel_rules);self.assertFalse(sampler.gpu_qualified)
+
+    @unittest.skipUnless(torch.cuda.is_available(),'Actual CUDA required')
+    def test_cuda_400_default_full_800_action_guard_capture(self):
+        states=RevealedSamplerTest().fixtures()+EffectiveViewSamplerTest().fixtures()+VisibleDeckSamplerTest().fixtures()[0]
+        states=[states[i%len(states)]for i in range(400)];L=DomainSoALayout(game_capacity=400);_,f=_torch_fields(states,L,'cuda');vi=torch.zeros(400,dtype=torch.int64,device='cuda');seed=torch.arange(400,device='cuda')+51;ac=torch.ones(400,dtype=torch.int32,device='cuda')
+        # Choice roots are owned by a; other roots accept both observers.
+        with DomainSoASampler(L,device='cuda')as sampler:
+            p=sampler.prepare(f,vi,seed,ac);sampler.launch(p);torch.cuda.synchronize();g=torch.cuda.CUDAGraph()
+            with torch.cuda.graph(g):out=sampler.launch(p)
+            g.replay();torch.cuda.synchronize();self.assertFalse(out['row_error'].any())
+            for b in range(14):
+                gold=oracle_determinize(states[b],'a',int(seed[b]));self.assertEqual(int(out['rng'][b]),gold['rng']);self.assertEqual(_zone_ids(out,b,1,0),[c['card_id']for c in gold['sides']['b']['hand']])
+            seed.add_(1000);g.replay();torch.cuda.synchronize();self.assertFalse(out['row_error'].any())
+            f['row_error'][0]=64;f['catalog_digest'][1,0]^=1;ac[2]=0
+            g.replay();torch.cuda.synchronize();self.assertEqual(out['row_error'][:3].cpu().tolist(),[64,INVALID_INPUT,0])
+            for k in f:
+                if k!='row_error':self.assertTrue(torch.equal(out[k][:3],f[k][:3]),k)

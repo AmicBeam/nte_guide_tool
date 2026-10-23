@@ -55,7 +55,7 @@ MISSING_FIELD = 13
 CAPACITY = 14
 PARTICLE_CHANGED = 15
 SCHEMA_INCOMPLETE = 16
-PUBLIC_GUARD_UNAVAILABLE = 17
+PUBLIC_GUARD_UNAVAILABLE = 17  # Reserved legacy code; the default now runs the complete checker.
 
 PHASE_PLAYING, PHASE_CHOICE = 1, 2
 ZONE_HAND, ZONE_DECK, ZONE_DISCARD = 0, 1, 2
@@ -97,7 +97,7 @@ MISSING_STAGES = (
     'seeds are nonnegative int64; arbitrary Python ints are not represented',
     'Random._randbelow is bounded by max_draws instead of an unbounded host loop',
     'card-table holes are not compacted into codec registration order',
-    'independent full information guard is not connected to this default sampler; guarded active samples return error 17',
+    'complete physical duel execution and H3 are not provided by guarded sampling',
 )
 _TORCH_DTYPES = {
     'bool': 'bool', 'int8': 'int8', 'int16': 'int16', 'int32': 'int32',
@@ -109,7 +109,10 @@ def coverage():
     return MappingProxyType({
         'supports_full_duel_rules': False,
         'oracle': 'app.modules.card_game.rl.seven_sampler',
-        'full_information_set_guard': False,
+        'full_information_set_guard': True,
+        'full_sampling_qualified': False,
+        'physical_rules_available': False,
+        'h3_available': False,
         'implemented': (
             'playing and schema-supported choice roots',
             'public-count originals/specials/surplus/hidden family',
@@ -120,7 +123,7 @@ def coverage():
             'revealed enemy hand preserves original identity, order and metadata',
             'visible own-deck order skips both canonical sort and shuffle RNG',
             'visible effective-card views retain their physical row and shared aliases',
-            'full information-guard capability fails closed until integrated',
+            'default full 3479 observation and all original 1576 candidate-feature checks; mismatch rollback',
         ),
         'missing_stages': MISSING_STAGES,
         'schema_fields_rejected': (
@@ -699,6 +702,8 @@ class PreparedSample:
     pointers: tuple
     sources: dict
     scratch: object
+    information: object = None
+    information_active: object = None
 
 
 def cpu_oracle(layout=None, **kwargs):
@@ -734,6 +739,7 @@ class DomainSoASampler:
         self._module = None
         self._library = None
         self.closed = False
+        self._information_guard = None
         if self.device.type == 'cuda':
             if not torch.cuda.is_available():
                 raise RuntimeError('Actual CUDA required; no CPU sampler fallback')
@@ -780,6 +786,14 @@ class DomainSoASampler:
              ('nf01', 'a03', 'af01', 'ff01', 'q05', 'c02', 'a04', 'pf01',
               'xiaozhi', 'canhong', 'anhunqu', 'heiyu', 'dafutier', 'lingke')],
             dtype=torch.int32, device=self.device)
+        if self.guard:
+            from .domain_soa_information_guard import DomainInformationGuard
+            try:
+                self._information_guard=DomainInformationGuard(layout,device=self.device,
+                    allow_cpu_oracle=allow_cpu_oracle,max_actions=800,window=16)
+            except BaseException:
+                self.close()
+                raise
 
     def _torch_dtype(self, np_dtype):
         import numpy as np
@@ -876,7 +890,9 @@ class DomainSoASampler:
         )
         if len(pointers) != len(_PTR_TYPES):
             raise RuntimeError('Sampler pointer arity drifted')
-        return PreparedSample(self, packed, outputs, viewers, seeds, active, pointers, sources, scratch)
+        info_active=t.zeros(rows,dtype=t.bool,device=self.device) if self.guard else None
+        info=(self._information_guard.prepare(sources,outputs,viewers,info_active) if self.guard else None)
+        return PreparedSample(self, packed, outputs, viewers, seeds, active, pointers, sources, scratch,info,info_active)
 
     def launch(self, batch):
         t = self.t
@@ -910,18 +926,17 @@ class DomainSoASampler:
             L.max_string_slots, L.max_string_bytes, self.scratch_width, VOCAB_CARDS + 1,
         )
         error=batch.outputs['row_error']
-        if self.guard:
-            # A partial public vector cannot certify information-set equality.
-            # Keep this gate closed for every actor until the full observation
-            # and candidate guard is supplied and independently qualified.
-            error.copy_(t.where((batch.active!=0)&(error==0),PUBLIC_GUARD_UNAVAILABLE,error))
-        elif self._module is not None:
+        if self._module is not None:
             self._module.launch(
                 'domain_soa_sample', list(scalars) + list(batch.pointers),
                 grid=((rows + 63) // 64,), block=(64,), capture_safe=True)
         else:
             args = list(scalars) + [ctypes.c_void_p(item.data_ptr()) for item in batch.pointers]
             self._kernel(*args)
+        if self.guard:
+            batch.information_active.copy_(batch.active!=0)
+            checked=self._information_guard.launch(batch.information)
+            error.copy_(t.where(batch.active!=0,checked['errors'],error))
         result = dict(batch.outputs)
         # A failed sample is never a partially committed world. Keep the error
         # code but restore every other column, including inactive/history rows.
@@ -938,6 +953,8 @@ class DomainSoASampler:
     def close(self):
         if self.closed:
             return
+        if self._information_guard is not None:
+            self._information_guard.close()
         if self._module is not None:
             self._module.close()
         if self._library is not None:

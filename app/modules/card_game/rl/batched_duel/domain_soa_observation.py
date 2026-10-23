@@ -178,7 +178,9 @@ class DomainSoAObservation:
         override=f['card_str_presence'][...,KS['character_id']]==2
         owner=t.where(override,owner_override,raw_owner)
         errors=errors|((f['card_valid']&override&(owner_bad|(owner<0))).any(1)).int()*INVALID
+        raw_owner=owner.clone()
         effective=raw_kind.clone()
+        transformed=t.zeros_like(effective)
         # Dispatch order is the formal registry's fixed public character order.
         used_active=t.arange(self.layout.max_used,device=self.device)[None,None,:]<f['player_used_count'][:,:,None]
         instant_match,instant_bad=self._eq(f,f['player_used_key_slot'],'instant')
@@ -196,10 +198,12 @@ class DomainSoAObservation:
             rf_card=rf.gather(1,card_side)
             effective=t.where(rf_card,t.full_like(effective,seven.CARD_INDEX['RF01']),effective)
             owner=t.where(rf_card,t.full_like(owner,seven.SEAT_INDEX['zhenhong']),owner)
+            transformed=t.where(rf_card,t.ones_like(transformed),transformed)
             lk=(role&(kit==CHARACTER_VOCAB['lingke'])&(shape==seven.CARD_INDEX['K03'])).any(2)&(f['player_ap']==0)&~instant
             lk_card=lk.gather(1,card_side)&(owner==actor_seat)
             effective=t.where(lk_card,t.full_like(effective,seven.CARD_INDEX['K03']),effective)
             owner=t.where(lk_card,t.full_like(owner,actor_seat),owner)
+            transformed=t.where(lk_card,t.full_like(transformed,2),transformed)
         # Public hand visibility is physical-identity based, before face changes.
         rev_valid=(t.arange(K,device=self.device)[None,None,:]<f['player_revealed_count'][:,:,None])&(f['player_revealed_presence'][:,:,None]==2)
         revealed=((f['player_revealed_instance'][:,:,:,None]==f['card_instance_slot'][:,None,None,:])&
@@ -345,7 +349,9 @@ class DomainSoAObservation:
         b.errors.copy_(errors)
         b.features.copy_(t.where((b.active&(errors==0))[:,None],features,t.zeros_like(features)))
         return {'features':b.features,'errors':b.errors,'feature_names':FEATURE_NAMES,
-                'full_duel_qualified':False,'action_features_available':False}
+                'full_duel_qualified':False,'action_features_available':False,
+                '_private_card_fields':{'raw_kind':raw_kind,'raw_owner':raw_owner,'kind':effective,'owner':owner,'transformed':transformed,
+                    'revealed':revealed,'queries':q,'selected_characters':selected}}
 
     def observe(self,fields,viewers,active):return self.launch(self.prepare(fields,viewers,active))
     def close(self):

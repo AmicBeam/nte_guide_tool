@@ -29,7 +29,7 @@ ATTRIBUTES = ('光','暗','灵','魂','相','咒')
 OUTPUT_NAMES = ('attack','base_attack','base_max_hp','energy_max','harmony_max',
                 'collapse_max','damage_immune','damage_limit','damage_limit_present',
                 'atk_buff','atk_debuff','form_attack','next_attack',
-                'timed_attack_1','timed_attack_2', *('resistance_'+a for a in ATTRIBUTES))
+                'timed_attack_1','timed_attack_2', *('resistance_'+a for a in ATTRIBUTES), 'card_instant_false', 'card_instant_true')
 
 # This is domain rule code: named field reads, bounded declarative effects and
 # static current auras. There are no instruction frames or bytecode dispatches.
@@ -102,7 +102,7 @@ QFN int conditions(const QRow*f,int e,int holder,int subject,int src,int*err){
   else if(id==COND_source_awakened)yes=src>=0&&cb(f,src,CB_awakened);
   else if(id==COND_source_shape){
    int p=f->effect_condition_arg_presence[ab+ARG_card_id];
-   yes=src>=0&&(p==0?shape_slot(f,src)<0:(p==2&&f->effect_condition_arg_kind[ab+ARG_card_id]==3&&qslots(f,shape_slot(f,src),f->effect_condition_arg_string[ab+ARG_card_id],err)));
+   yes=src>=0&&(p<=1?shape_slot(f,src)<0:(p==2&&f->effect_condition_arg_kind[ab+ARG_card_id]==3&&qslots(f,shape_slot(f,src),f->effect_condition_arg_string[ab+ARG_card_id],err)));
   }else if(id==COND_enemy_turn)yes=f->active_side[0]!=holder_side(holder);
   else if(id==COND_resource_at_least){
    int x=ab+ARG_resource;if(src<0)yes=0;
@@ -110,12 +110,12 @@ QFN int conditions(const QRow*f,int e,int holder,int subject,int src,int*err){
    else yes=resource(f,src,f->effect_condition_arg_string[x],err)>=argnum(f,ab+ARG_amount,err);
   }else if(id==COND_damage_attribute){
    // Observation queries have no damage attribute. None equals a missing argument.
-   yes=f->effect_condition_arg_presence[ab+ARG_attribute]==0;
+   yes=f->effect_condition_arg_presence[ab+ARG_attribute]<=1;
   }else if(id==COND_card_owner_other)yes=src>=0&&heid(f,src)!=heid(f,subject);
   else if(id==COND_attribute_is){
    int x=ab+ARG_value,c=holder_char(subject),si=(holder_side(subject)*C+c)*NS+CS_attribute;
-   int p=f->character_str_presence[si];
-   if(f->effect_condition_arg_presence[x]==0)yes=p==0||p==1;
+   int p=c<0?0:f->character_str_presence[si];
+   if(f->effect_condition_arg_presence[x]<=1)yes=p==0||p==1;
    else if(f->effect_condition_arg_presence[x]==2&&f->effect_condition_arg_kind[x]==3){
     int slot=f->effect_condition_arg_string[x];if(p==2)yes=qslots(f,f->character_str_slot[si],slot,err);
     else if(p==3){int a=attr(f,subject,err);ATTRIBUTE_ARGUMENT_CASES}
@@ -171,7 +171,7 @@ QFN double query(const QRow*f,int subject,int property,double base,int*present,i
    int e=h*E+j;if(!f->effect_valid[e]){*err=1;return 0;}
    int match=0,slot=f->effect_property_slot[e];
    if(property==0)match=qeq(f,slot,"attack.panel",err);else if(property==1)match=qeq(f,slot,"attack.override",err);
-   else if(property==2)match=qeq(f,slot,"rule.damage_immune",err);else match=qeq(f,slot,"damage.limit",err);
+   else if(property==2)match=qeq(f,slot,"rule.damage_immune",err);else if(property==3)match=qeq(f,slot,"damage.limit",err);else if(property==4)match=qeq(f,slot,"card.instant",err);else if(property==5)match=qeq(f,slot,"card.cost",err);else if(property==6)match=qeq(f,slot,"rule.normal_attack_instant",err);else match=qeq(f,slot,"marker.lingke_taunt",err);
    if(match&&applies(f,e,h,subject,err))push(a,&n,eval_value(f,e,err),f->effect_layer[e],f->effect_op[e],err);
   }
   if(heid(f,h)==heid(f,subject)){
@@ -257,6 +257,8 @@ QFN void character_query(const QRow*f,int side,int c,double*out,int*err){
  int rn=f->character_reductions_count[ch];if(rn<0||rn>2*C){*err=1;return;}
  for(int j=0;j<rn;j++)limit-=f->character_reductions_value[ch*(2*C)+j];if(limit>2147483647LL){*err=3;return;}out[OUT_collapse_max]=limit>1?limit:1;
  if(hhp(f,h)>0){present=1;out[OUT_damage_immune]=query(f,h,2,0,&present,err)!=0;present=0;out[OUT_damage_limit]=query(f,h,3,0,&present,err);out[OUT_damage_limit_present]=present;if(present){int n=(int)out[OUT_damage_limit];out[OUT_damage_limit]=n>0?n:0;}}
+ present=1;out[OUT_card_instant_false]=query(f,h,4,0,&present,err)!=0;
+ present=1;out[OUT_card_instant_true]=query(f,h,4,1,&present,err)!=0;
  compatibility(f,h,out,err);
 }
 '''
@@ -435,7 +437,7 @@ class DomainCharacterQueries:
         error=t.where(bad,INVALID,error)
         batch.errors.copy_(t.where(inherited!=0,inherited,error))
         batch.values.masked_fill_(((batch.errors!=0)|~batch.active_input)[:,None,None,None],0)
-        return {'values':batch.values[:,:,1:,:],'player_resistances':batch.values[:,:,0,15:],
+        return {'values':batch.values[:,:,1:,:],'player_resistances':batch.values[:,:,0,15:21],
                 'errors':batch.errors,'names':OUTPUT_NAMES,'attributes':ATTRIBUTES}
 
     def query(self, fields, active):return self.launch(self.prepare(fields,active))

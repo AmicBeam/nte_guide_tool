@@ -38,6 +38,8 @@ def expected(st, side, cid):
             flags.get('next_attack')or 0]
     values += [sum(e['amount']for e in flags.get('timed_attack')or[]if e['left']==left)for left in (1,2)]
     values += [resistance.get(a)or 0 for a in ATTRIBUTES]
+    from app.modules.card_game.engine.duel_v2.modifiers import evaluate
+    values += [bool(evaluate(st,side,h,'card.instant',base,query={'card':{}})['value'])for base in (False,True)]
     return torch.tensor(values,dtype=torch.float64)
 
 

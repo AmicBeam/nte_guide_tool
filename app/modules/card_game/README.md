@@ -1389,3 +1389,5 @@ GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超
 七队完整观察列由 `rl/batched_duel/domain_soa_observation.py` 组装，保留冻结编码接口、手牌牌面变换、可见性、复制异能与终局行为；源字段和观察者在设备图中重读。它不提供完整动作特征、物理推进或 H3 资格，采样保护仍保留。验证：`python -m unittest tests.test_duel_v2_domain_soa_observation -v`；数值列和完整对局资格分别验收。
 
 直接设备候选编码组件 `rl/batched_duel/domain_soa_candidates.py` 将公共数值牌表和显式动作描述拼成七队模型的完整 1576 维候选，支持有序牌库选择、组合牌袋及动态上下文；尚未生成完整合法动作或从原始状态投影公共牌表。验证：`python -m unittest tests.test_duel_v2_domain_soa_candidates -v`；组件通过不代表完整 GPU 对局或训练通过。
+
+公共候选牌表 `rl/batched_duel/domain_soa_public_cards.py` 在设备端筛选自己的手牌与可见待选牌，保留变换牌面、物理原牌和动态瞬发，供完整候选编码使用；完整动作生成与物理推进仍未接通。`rl/batched_duel/domain_soa_rule_queries.py` 提供固定具名属性的修正器归约，用于后续费用／出击瞬发等接线，不是完整支付或动作执行。验证：`python -m unittest tests.test_duel_v2_domain_soa_public_cards tests.test_duel_v2_domain_soa_rule_queries -v`。

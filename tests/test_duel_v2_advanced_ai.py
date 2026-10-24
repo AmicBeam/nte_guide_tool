@@ -258,13 +258,14 @@ class CpuEncoderTest(unittest.TestCase):
     def test_bundled_models_are_complete_and_loadable(self):
         from app.modules.card_game.engine.ai.advanced_model import load_model
         from app.modules.card_game.engine.ai.recovery_model import SCHEMAS, RELEASE
+        from app.modules.card_game.engine.ai.seven_model import SCHEMA as SEVEN_SCHEMA
         directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'/RELEASE
         keys=('starter','weave-rush','quick-rush','zhenhong','murk')
         self.assertEqual({p.name for p in directory.iterdir()},
                          {f'{key}.{ext}' for key in keys for ext in ('json','npz')} | {'serving.json', '.gitattributes'})
         for key in keys:
             model=load_model(key)
-            self.assertIn(model.schema,SCHEMAS)
+            self.assertIn(model.schema,(*SCHEMAS, SEVEN_SCHEMA))
             self.assertTrue(model.version)
             self.assertTrue(model.serving_authorized)
 

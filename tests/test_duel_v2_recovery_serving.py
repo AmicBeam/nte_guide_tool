@@ -15,6 +15,12 @@ KEYS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk')
 
 
 class RecoveryServingTest(unittest.TestCase):
+    def setUp(self):
+        # Exercise the retained legacy release independently of the new five.
+        adopted = patch('app.modules.card_game.engine.ai.seven_model.ADOPTED', frozenset())
+        adopted.start()
+        self.addCleanup(adopted.stop)
+
     def test_short_trained_zhenhong_keeps_user_selected_yi_build(self):
         from collections import Counter
         from app.modules.card_game.content.duel_v2 import STARTER_DECKS, validate_deck

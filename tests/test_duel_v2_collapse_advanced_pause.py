@@ -32,7 +32,7 @@ class CollapseAdvancedPauseTest(RoomFlowTestCase):
             self.assertIsNone(self.repo.current_room(self.player))
 
     def test_random_never_attempts_suspended_strategy(self):
-        with patch.object(self.model, 'load_model', side_effect=self.model.RuleValidationError('not ready')) as load:
+        with TemporaryDirectory() as directory, patch.object(self.model.config, 'DUEL_AI_MODEL_DIR', Path(directory)), patch.object(self.model, 'load_model', side_effect=self.model.RuleValidationError('not ready')) as load:
             response = self.client.post('/api/duel-v2/start', json={'mode': 'advanced', 'ai_deck': 'random'},
                                         headers={'Authorization': 'Bearer ' + self.token})
             self.assertEqual(response.status_code, 400)

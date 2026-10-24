@@ -10,6 +10,9 @@ SEARCH_SIMULATIONS = 32
 def _runtime(model):
     from .recovery_model import SCHEMAS
     schema = getattr(model, 'schema', None)
+    if schema == 'cross_seven_decoupled_residual_wdl_v1':
+        from app.modules.card_game.rl import seven_runtime
+        return seven_runtime
     if schema in SCHEMAS:
         from app.modules.card_game.rl import recovery_runtime
         return recovery_runtime
@@ -86,7 +89,7 @@ def choose(state, side, model, fallback):
             return fallback
         from .recovery_model import SCHEMAS
         options = dict(algorithm='gumbel')
-        if getattr(model, 'schema', None) in SCHEMAS:
+        if getattr(model, 'schema', None) in (*SCHEMAS, 'cross_seven_decoupled_residual_wdl_v1'):
             from app.modules.card_game.rl.recovery_search import search
             options = dict(q_scale='natural_wdl', teacher_mode='network')
         result = search(state, side, {side: model, 'a' if side == 'b' else 'b': model},

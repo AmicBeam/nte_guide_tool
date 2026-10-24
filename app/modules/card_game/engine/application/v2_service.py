@@ -669,10 +669,10 @@ def _start_locked(player, payload: dict) -> dict:
         ai_deck_id = requested_ai
         if ai_deck_id == 'random':
             from secrets import choice
-            from app.modules.card_game.engine.ai.advanced_model import RANDOM_PRESETS, UNTRAINED_STRATEGIES
+            from app.modules.card_game.engine.ai.advanced_model import RANDOM_PRESETS, strategy_suspended
             available = []
             for candidate in RANDOM_PRESETS:
-                if candidate in UNTRAINED_STRATEGIES:
+                if strategy_suspended(candidate):
                     continue
                 try:
                     available.append((candidate, load_model(candidate)))

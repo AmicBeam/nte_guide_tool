@@ -14,6 +14,14 @@ NumPy／PyTorch 的 Mctx 算法适配可显式选择 `q_scale=mctx_default`，�
 
 2026-09-15 起模块名称改为「异能对决」。Logo 使用青金色字标与 `ESPER DUEL` 副标，移除异象道具卡片及徽章；旧名称的构筑文本仍可导入。
 
+## 当前高级人机服务模型
+
+创生、小吱、真红、浊燃、倾陷使用 `engine/ai/models/seven-20261024/` 的冻结 NumPy 导出；覆纹继续使用 `recovery-20261007` 原权重，灵可仍待接入。新导出由 `seven_model.py` 校验独立的用户采用绑定、当前规则、原始清单、权重、配牌、张量与嵌入旧策略；研究模型的未批准标记不修改。用户指定采用不等同于统计强度验收通过。
+
+新模型沿用网站逐操作 3 秒／最多 32 次模拟、16 根候选、H3、natural-WDL 的公开信息集搜索。网站只使用 CPU NumPy 推理，不导入 Torch、不训练，也不声称采用离线训练的完整搜索预算。旧房间权重或构筑版本变化须重新开局。倾陷的旧暂停仅在存在新采用版本时解除；缺失、损坏或规则不匹配的采用文件拒绝开局，不回退旧权重。随机高级对手只从成功校验的模型中选择。
+
+`models/` 只维护实际服务使用的数值导出与绑定；训练检查点、优化器、诊断、对局和单轮报告继续保存在 `artifacts/rl-evals/`。回归：`.venv/bin/python -m unittest tests.test_duel_v2_seven_serving tests.test_duel_v2_recovery_serving tests.test_duel_v2_collapse_advanced_pause tests.test_duel_v2_serving_search tests.test_duel_v2_advanced_ai tests.test_duel_v2_ai_step`。下文旧日期的服务接入与暂停记录为历史状态，以本节及当前加载器为准。
+
 ## 文档入口
 
 | 文档 | 用途 |

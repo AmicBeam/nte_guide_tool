@@ -1,7 +1,7 @@
 {
   "kind": "explicit_user_candidate",
   "request": "把高级人机做一下替换吧，让目前的高级人机用上新的模型，并且包含搜索链路",
-  "runtime_rule_hash": "ba8946fedaef946c0920fceef61a078a62dfd69e3b53904152450d7924c742b3",
+  "runtime_rule_hash": "cacfd7e236a94266b60ea9299dbd36f73e7f6d5e45a47a84cb3f6cb76d115147",
   "source_rule_hash": "7c928f692ad643ba32bb6d2e70808a137744fde82e58e5ee451e4744d3d5de9e",
   "report": "artifacts/rl-evals/murk-hour-corrected-20261007/delivery-report.md",
   "selection": "zhenhong: guided-online-short-20261008 latest, explicitly user-selected; other four: previous selected-models",

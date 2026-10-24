@@ -36,6 +36,29 @@ python -m unittest tests.test_duel_v2_mctx_profiles tests.test_duel_v2_device_st
 
 `recovery_capacity` 和 `hybrid_capacity` 保留为新编码／网络或学习异常时显式调用的诊断工具。拟合副本与真实候选分别报告；诊断阈值与样本分区保留，诊断失败本身不代表真实候选退化，也不单独停止七队学习或批准候选。若诊断揭示非有限值、错误标签或规则不一致，仍按对应工程错误停止。选择拟合轮数或学习率须使用独立选择集，最终另用新确认集；不得反复调整已看过的留出使其通过。并发容量、显存与完整对局吞吐验证是另一类检查，继续保留。历史五队恢复流程不因本节自动修改。
 
+## 换牌／局内策略隔离的显式混合路径
+
+`policy_layout=phase_isolated_v1` 在显式授权的混合任务中启用独立的 opening（起手换牌）与 playing（正常回合及选择）策略参数；主终局 WDL 仍为单独的 value 分支，独立辅助价值及 Gumbel32／cap16／H3／depth10／逐模拟信息集采样保持原协议。它是新的模型与优化器契约，不原地改写旧 schema，不自动采用候选或启动训练。
+
+`phase_policy` 复制原策略的 state/candidate/score 参数作为 opening；局内策略和主价值各保留原参数，冻结旧教师可共同使用。迁移后两阶段输出应与原模型一致。推理按模型版本、公开观察中的阶段及 value-only 标志在主机分组，CUDA 微批次只执行所需策略分支，独立价值查询不执行策略；不把两套策略都前向后再挑结果。额外开销主要是第二套策略的参数和 Adam 状态，不增加规则模拟次数。
+
+同一批自然完整对局同时提供两阶段策略行及终局价值标签。`PhaseEpisodePool` 保留全新行覆盖、1／4／8通行与使用上限，按阶段分桶并均匀划分批次，避免把末尾几行单独作为与满批同规模的更新。每次更新只有当前策略与 value 的优化器步进，未激活策略的参数、梯度和 Adam 动量不变。每阶段分别核验 state/candidate/score 的有限正梯度，不能只检查汇总梯度。该隔离不增加新起手，不代表少量起手已经充分覆盖。
+
+数值准备入口默认只打印计划，显式 `--apply` 才向新目录迁移七队；不加载网站模型或执行训练：
+
+```bash
+python scripts/prepare_duel_v2_phase_policy.py --source VERIFIED_SEVEN_BANK --output NEW_PHASE_BANK
+python scripts/prepare_duel_v2_phase_policy.py --source VERIFIED_SEVEN_BANK --output NEW_PHASE_BANK --apply
+```
+
+新混合控制器继续使用 `TrainingRollout`、`models_for_jobs` 与 `hybrid_joint_update.run_joint_update`，配置中显式设置 `policy_layout=phase_isolated_v1`，输入必须是已迁移、冻结的全七队数值。原 `shared` 路径不变。完整自然终局、逐动作重放、主／辅助资格和七队更新门槛仍必须通过；测试用的受控 CPU 行不取得正式资格。默认 closed-device 完整训练入口未自动改用阶段隔离，不能把本路径作为 GPU 设备规则失败后的回退。
+
+独立主价值校准、纯策略与搜索评估通过 `policy_runtime` 根据模型 schema 路由；校准不得修改任一策略分支。完成阶段保存两个策略 Adam、value Adam、经验使用账本及 CPU／CUDA RNG，验证恢复后两个策略的下一步 Adam 与活模型一致。RUNNING／FAILED 不重做，COMPLETE 仅校验后返回；重新校准主价值时只重置 value 的 Adam，保留两个策略的动量与原截止。算法、源码或数据身份不匹配拒绝恢复。
+
+网站具备该 schema 的 CPU NumPy 加载能力，但仍要求独立、精确的用户采用绑定；迁移或训练不更新服务资产，不改变质量批准。Windows 离线只进行本地正确性与 CPU 性能对照；实际 CUDA 数值／优化／恢复、显存及混合完整对局吞吐须上线后重新预检，不能以 CPU 加速比承诺 GPU 或整轮提速。
+
+验证入口：`python -m unittest tests.test_duel_v2_phase_policy tests.test_duel_v2_phase_hybrid tests.test_duel_v2_hybrid_joint_update tests.test_duel_v2_batch_inference tests.test_duel_v2_seven_serving`。真实学习效果仍以独立对局择优和完整报告为准；本实现不额外固定增加四组验收场次。
+
 ## 显式授权的混合训练
 
 混合联合更新要求显式一致的 `q_scale`：配置、每个任务和完整策略行必须同为 `natural_wdl` 或 `mctx_default`，混用拒绝。真实终局、逐动作重放、合格主／辅助价值、七队全覆盖、数值及优化器恢复门槛保持；默认 closed-device 入口不因混合组件支持而放宽。验证为 `tests.test_duel_v2_hybrid_joint_update`。

@@ -4,7 +4,7 @@ import numpy as np
 
 def compute(games,policies,*,device='cuda'):
     import torch
-    from .seven_runtime import restore
+    from .policy_runtime import restore
     from scripts.check_duel_v2_value_calibration import probability_metrics
     if device!='cuda' or not torch.cuda.is_available():raise ValueError('CUDA metrics required; no CPU fallback')
     if torch.backends.cuda.matmul.allow_tf32:raise ValueError('TF32 must be disabled for numerical checks')

@@ -6,16 +6,19 @@ from pathlib import Path
 import numpy as np
 from app.modules.card_game.rl import seven_lineup, seven_policy
 from app.modules.card_game.rl.seven_runtime import SevenModel
+from app.modules.card_game.rl.phase_runtime import PhaseModel
+from app.modules.card_game.rl.phase_policy import SCHEMA as PHASE_SCHEMA
 
 RELEASE = 'seven-20261024'
 ADOPTED = frozenset(('starter', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke'))
 SCHEMA = seven_policy.SCHEMA
+SCHEMAS = (SCHEMA, PHASE_SCHEMA)
 
 
-class SevenServingModel(SevenModel):
+class _ServingAuthorization:
     experimental = True
 
-    def __init__(self, directory, key):
+    def _authorize(self, directory, key):
         root = Path(directory)
         binding = json.loads((root / 'serving.json').read_text(encoding='utf-8'))
         pin = binding.get('models', {}).get(key) or {}
@@ -30,12 +33,12 @@ class SevenServingModel(SevenModel):
                 or (manifest.get('validation') or {}).get('approved') is not False
                 or type(manifest.get('hidden')) is not int or not 1 <= manifest['hidden'] <= 256):
             raise ValueError('Seven serving authorization mismatch')
-        super().__init__(root, key)
+        self._numeric_init(root, key)
         if any(value.dtype != np.float32 for value in self.weights.values()):
             raise ValueError('Seven serving tensor dtype mismatch')
         from app.modules.card_game.content.duel_v2 import validate_deck
         self.serving_deck = validate_deck(self.serving_deck)
-        self.schema = SCHEMA
+        self.schema = manifest['schema']
         self.deck_id = key
         self.serving_build_sha256 = manifest['build_sha256']
         self.serving_authorized = True
@@ -53,3 +56,25 @@ class SevenServingModel(SevenModel):
         if deck_uses_test_characters(build):
             raise ValueError('高级人机仅支持公开角色构筑。')
         return self.capability
+
+
+class SevenServingModel(_ServingAuthorization, SevenModel):
+    def __init__(self, directory, key):
+        self._authorize(directory, key)
+
+    def _numeric_init(self, directory, key):
+        SevenModel.__init__(self, directory, key)
+
+
+class PhaseServingModel(_ServingAuthorization, PhaseModel):
+    def __init__(self, directory, key):
+        self._authorize(directory, key)
+
+    def _numeric_init(self, directory, key):
+        PhaseModel.__init__(self, directory, key)
+
+
+def load_serving_model(directory, key):
+    manifest = json.loads((Path(directory) / f'{key}.json').read_text(encoding='utf-8'))
+    cls = PhaseServingModel if manifest.get('schema') == PHASE_SCHEMA else SevenServingModel
+    return cls(directory, key)

@@ -35,6 +35,7 @@ def named_observation_contract(schema, manifest):
     cross_lineup widths. There is no old-width default padding in either direction.
     """
     from app.modules.card_game.rl import cross_grounded, cross_lineup, seven_grounded, seven_lineup, seven_policy
+    from app.modules.card_game.rl import phase_policy
     five = _five_team_schemas()
     features = manifest.get('features')
     candidates = manifest.get('candidates')
@@ -43,7 +44,7 @@ def named_observation_contract(schema, manifest):
         expected_candidates = cross_lineup.candidate_names()
         grounded = cross_grounded
         family = 'recovery'
-    elif schema == seven_policy.SCHEMA:
+    elif schema in (seven_policy.SCHEMA, phase_policy.SCHEMA):
         expected_features = seven_lineup.all_features()
         expected_candidates = seven_lineup.candidate_names()
         grounded = seven_grounded
@@ -145,7 +146,9 @@ class BatchedInference:
 
         from app.modules.card_game.rl import seven_policy
         valid_schemas = set(valid_schemas)
-        valid_schemas.add(seven_policy.SCHEMA)
+        from app.modules.card_game.rl import phase_policy
+        valid_schemas.update((seven_policy.SCHEMA, phase_policy.SCHEMA))
+        self._phase_models = set()
 
         total_weight_bytes = 0
 
@@ -194,7 +197,7 @@ class BatchedInference:
 
             if contract['family'] == 'seven':
                 from app.modules.card_game.rl import seven_policy
-                expected_shapes = dict(seven_policy.tensor_shapes(hidden))
+                expected_shapes = dict((phase_policy if schema == phase_policy.SCHEMA else seven_policy).tensor_shapes(hidden))
                 separated = False
                 teacher = getattr(model, 'teacher', None)
                 if teacher is not None:
@@ -238,9 +241,14 @@ class BatchedInference:
             # Build Torch network
             if contract['family'] == 'seven':
                 from app.modules.card_game.rl import seven_policy
-                net = seven_policy.network(hidden, self._torch_device)
-                if getattr(model, 'teacher', None) is not None:
-                    net = seven_policy.attach_legacy(net, manifest.get('deck') or key)
+                if schema == phase_policy.SCHEMA:
+                    net = phase_policy.create_network(hidden, self._torch_device, key=manifest.get('deck') or key,
+                                                      legacy=getattr(model, 'teacher', None) is not None)
+                    self._phase_models.add(key)
+                else:
+                    net = seven_policy.network(hidden, self._torch_device)
+                    if getattr(model, 'teacher', None) is not None:
+                        net = seven_policy.attach_legacy(net, manifest.get('deck') or key)
             elif schema in (preserved_policy.SCHEMA, preserved_policy.PARTIAL_SCHEMA, recovery_policy.PRESERVED_SCHEMA):
                 deck_name = manifest.get('deck') or key
                 net, _ = preserved_policy.create_network(
@@ -498,16 +506,20 @@ class BatchedInference:
                 raise ValueError('Finite monotonic inference deadline required')
 
         # Step 2: Group by actual model version: (model_key, model_version)
-        groups: Dict[Tuple[str, str, bool], List[Tuple[int, InferenceRequest]]] = {}
+        groups: Dict[Tuple[str, str, bool, Optional[str]], List[Tuple[int, InferenceRequest]]] = {}
         for item in validated_requests:
             req = item[1]
-            group_key = (req.model_key, req.model_version, req.value_only)
+            phase = None
+            if req.model_key in self._phase_models and not req.value_only:
+                from app.modules.card_game.rl.phase_policy import phase_of_observation
+                phase = phase_of_observation(req.x)
+            group_key = (req.model_key, req.model_version, req.value_only, phase)
             groups.setdefault(group_key, []).append(item)
 
         results: List[Optional[InferenceResult]] = [None] * len(requests)
 
         # Step 3: Execute microbatches per group
-        for (model_key, _, value_only), group_items in groups.items():
+        for (model_key, _, value_only, phase), group_items in groups.items():
             net = self._networks[model_key]
 
             contract = self._contracts[model_key]
@@ -551,6 +563,14 @@ class BatchedInference:
                     if value_only:
                         scores = x_t.new_empty((B, 0))
                         val_repr = getattr(net, 'value_net', net.state_net)(x_t)
+                    elif phase is not None:
+                        from app.modules.card_game.rl.phase_policy import host_policy_metadata
+                        aliases, supported = host_policy_metadata(
+                            [req.candidates for _, req in microbatch], getattr(net, 'source_identity', None))
+                        aliases = torch.as_tensor(aliases, device=self._torch_device)
+                        supported = torch.as_tensor(supported, device=self._torch_device) if supported is not None else None
+                        scores = net.policy_logits(x_t, c_t, mask_t, phase, aliases=aliases, legacy_rows=supported)
+                        val_repr = net.value_net(x_t)
                     else:
                         state = net.state_net(x_t)
                         cand_feats = net.candidate_features(x_t, c_t)

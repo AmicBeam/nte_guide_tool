@@ -96,7 +96,7 @@ def source_alias(spec):
 
 def models_for_jobs(jobs):
     """Bind exact frozen folders, including historical opponents with the same deck key."""
-    from app.modules.card_game.rl import seven_runtime
+    from app.modules.card_game.rl import policy_runtime
     models = {}
     for job in jobs:
         for spec in job['policies'].values():
@@ -104,7 +104,7 @@ def models_for_jobs(jobs):
                 raise ValueError('Production training requires exact exported folder/key sources')
             alias = source_alias(spec)
             if alias not in models:
-                models[alias] = seven_runtime.model(*spec)
+                models[alias] = policy_runtime.model(*spec)
     return models
 
 

@@ -334,10 +334,10 @@ def _historical_cooperative_run(args) -> int:
 
     keys = runtime_matrix_keys(args.runtime)
     if args.runtime == "seven":
-        from app.modules.card_game.rl import seven_runtime
+        from app.modules.card_game.rl import policy_runtime
         default_models = ROOT / "app/modules/card_game/engine/ai/models" / "seven"
         models_dir = args.models.resolve() if args.models else default_models
-        models = {key: seven_runtime.model(models_dir, key) for key in keys}
+        models = {key: policy_runtime.model(models_dir, key) for key in keys}
     else:
         from app.modules.card_game.engine.ai.recovery_model import RecoveryServingModel, RELEASE
         models_dir = args.models.resolve() if args.models else (ROOT / "app/modules/card_game/engine/ai/models" / RELEASE)

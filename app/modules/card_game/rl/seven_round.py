@@ -140,12 +140,12 @@ def collect_search_batch(pool, jobs, folder, config, **kwargs):
 
 
 def play(job):
-    from .seven_runtime import search_game
+    from .policy_runtime import search_game
     return search_game(job)
 
 
 def versions(folder):
-    from .seven_runtime import model
+    from .policy_runtime import model
     return {key: model(folder, key).version for key in ROSTER}
 
 
@@ -370,7 +370,7 @@ def _value_fit_new_json(path,data):
 
 def _value_fit_binding(models,nets,decks,origins,config,protocol,cycle,seed_offset,games):
     import numpy as np
-    from . import seven_runtime as rt
+    from . import policy_runtime as rt
     from .build_acceptance import SEED_PHASES,canonical_build
     from .seven_lineup import identity
     if (set(config['seeds'])!=set(SEED_PHASES)or any(type(v)is not int or v<0 for v in config['seeds'].values())
@@ -401,7 +401,7 @@ def _value_fit_binding(models,nets,decks,origins,config,protocol,cycle,seed_offs
 def _value_fit_read(folder,binding,nets,selection,full):
     import numpy as np
     import torch
-    from . import seven_runtime as rt
+    from . import policy_runtime as rt
     path=folder/'value-fit-checkpoint.json';start=folder/'value-fit-start.json'
     if not path.exists():
         if start.exists()or any((folder/name).exists()for name in('models','candidates','uncalibrated','value-precheck.json')):
@@ -554,7 +554,7 @@ class _ValueFitProcess:
             self.t.cuda.set_rng_state_all(self.state['cuda_rng'])
 
     def _restore_completed(self):
-        from . import seven_runtime as rt
+        from . import policy_runtime as rt
         for key in self.state['chosen']:
             model=rt.model(self.folder/'models',key)
             self._copy_heads(self.nets[key],model.weights)
@@ -619,13 +619,13 @@ class _ValueFitProcess:
             optimizer=_value_fit_cpu(self._opt.state_dict()),numpy_rng=deepcopy(self._rng.bit_generator.state))
 
     def _export(self,net,target,key,origin):
-        from . import seven_runtime as rt
+        from . import policy_runtime as rt
         paths=[target/(key+ext)for ext in('.json','.npz')]
         if any(p.exists()for p in paths):raise ValueError('Completed numerical value-fit artifact cannot be overwritten')
         rt.export(net,target,key,self.decks[key],origin);self._register(paths)
 
     def fit(self):
-        from . import seven_runtime as rt
+        from . import policy_runtime as rt
         try:
             while self.state['phase']=='fit':
                 s=self.state
@@ -708,7 +708,7 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
     entered=time.monotonic()
     import numpy as np
     import torch
-    from . import seven_runtime as rt
+    from . import policy_runtime as rt
     checkpoint_enabled=config.get('value_fit_checkpoint',False)
     if type(checkpoint_enabled)is not bool:raise TypeError('Explicit value-fit checkpoint boolean required')
     if seed_offset not in (0,6000):raise ValueError('Declared disjoint value seed slot required')
@@ -985,7 +985,7 @@ def gate_decision(pure, confirmed, health, *, no_gain, search=None, search_confi
 
 def select_models(candidate,reference,keys,folder):
     """Copy approved team arrays; do not average models or alter other teams."""
-    from . import seven_runtime as rt
+    from . import policy_runtime as rt
     import shutil
     if not keys or not set(keys)<=set(ROSTER) or len(set(keys))!=len(keys):
         raise ValueError('Distinct qualified team keys required')
@@ -1008,7 +1008,7 @@ def select_models(candidate,reference,keys,folder):
 def numeric_check(nets, folder, rows, device):
     import numpy as np
     import torch
-    from . import seven_runtime as rt
+    from . import policy_runtime as rt
     from .league_learning import tensors
     result = {}
     for key, net in nets.items():
@@ -1031,7 +1031,7 @@ def numeric_check(nets, folder, rows, device):
 
 
 def update_batch(nets, opts, pools, jobs, games, rng, config, deadline, out):
-    from . import seven_runtime as rt
+    from . import policy_runtime as rt
     from .episode_replay import dump_episode
     health = {}; rows_by_key = {}
     selected = learning_keys(config)
@@ -1097,7 +1097,7 @@ def merged_reports(*reports):
 
 def initialize(folder, hidden, device, seed, source=None, *, starting_decks=None):
     import torch
-    from . import seven_runtime as rt
+    from . import policy_runtime as rt
     from .next_training import plan
     torch.manual_seed(seed)
     decks = plan()['builds'] if starting_decks is None else deepcopy(starting_decks)
@@ -1214,7 +1214,7 @@ def validate_launch(config, *, resume=False, completed_batches=0):
     for h in receipt['health'].values():
         if not (h['finite'] and h['gradient'] and h['coverage']==1 and h['policy_rows']>0):
             raise ValueError('All-seven CUDA gradient and coverage evidence required')
-    from .seven_runtime import value_precheck_ok,model
+    from .policy_runtime import value_precheck_ok,model
     initial_check=json.loads((path.parent/'initial-value/value-precheck.json').read_text())
     if not value_precheck_ok(initial_check,{k:model(config['recovery_source'],k) for k in ROSTER}):
         raise ValueError('Readiness initial value arrays mismatch')
@@ -1403,7 +1403,7 @@ def run_device_value_calibration(out, config, *, collector, resume=False, cache_
     if resume:
         if initial_hashes()!=json.loads((out/'initial-bank-sha.json').read_text()):
             raise ValueError('Frozen initial calibration bank changed')
-        from . import seven_runtime as rt
+        from . import policy_runtime as rt
         restored={key:rt.restore(initial,key,config['device'])for key in ROSTER}
         nets={key:value[0]for key,value in restored.items()}
         decks={key:value[1]for key,value in restored.items()}
@@ -1497,7 +1497,7 @@ def _run_learning_core(out, config, *, resume=False, device_context=None):
     import torch
     from concurrent.futures import ProcessPoolExecutor
     from multiprocessing import get_context
-    from . import seven_runtime as rt
+    from . import policy_runtime as rt
     from .episode_replay import EpisodePool
     from .seven_checkpoint import save,restore
     from .offline_sources import snapshot

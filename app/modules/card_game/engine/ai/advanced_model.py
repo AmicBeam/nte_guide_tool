@@ -263,7 +263,7 @@ def load_model(deck_id):
     from .recovery_model import RELEASE, RecoveryServingModel
     configured = Path(config.DUEL_AI_MODEL_DIR).resolve()
     recovery = configured / RELEASE
-    from .seven_model import RELEASE as SEVEN_RELEASE, ADOPTED, SevenServingModel
+    from .seven_model import RELEASE as SEVEN_RELEASE, ADOPTED, load_serving_model
     seven = configured / SEVEN_RELEASE
     root = recovery if recovery.is_dir() else (ARCHIVE if deck_id in EXPERIMENTAL else configured)
     if deck_id in ADOPTED and seven.is_dir():
@@ -278,7 +278,8 @@ def load_model(deck_id):
                                          + ([root/'serving.json'] if root in (recovery, seven) else [])))
             if root == seven:
                 from app.modules.card_game.rl.seven_lineup import identity
-                signature += (identity(),)
+                from app.modules.card_game.rl.phase_policy import fingerprint as phase_fingerprint
+                signature += (identity(), phase_fingerprint())
             elif root == recovery:
                 from app.modules.card_game.rl.cross_lineup import identity
                 signature += (identity(),)
@@ -286,7 +287,7 @@ def load_model(deck_id):
                 manifest = json.loads((root / f'{deck_id}.json').read_text(encoding='utf-8'))
                 from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
                 if root == seven:
-                    candidate = SevenServingModel(root, deck_id)
+                    candidate = load_serving_model(root, deck_id)
                 elif root == recovery:
                     candidate = RecoveryServingModel(root, deck_id)
                 elif deck_id in EXPERIMENTAL:
@@ -322,13 +323,13 @@ def choose_action(state, side='b'):
         raise RuleValidationError('高级人机没有可执行动作。')
     from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA
     from .recovery_model import SCHEMAS as RECOVERY_SCHEMAS
-    from .seven_model import SCHEMA as SEVEN_SCHEMA
-    if state['phase'] == 'mulligan' and getattr(model,'schema',None) not in (OPENING_SCHEMA, 'official_public_v5', 'fixed_ten_v1', *RECOVERY_SCHEMAS, SEVEN_SCHEMA):
+    from .seven_model import SCHEMAS as SEVEN_SCHEMAS
+    if state['phase'] == 'mulligan' and getattr(model,'schema',None) not in (OPENING_SCHEMA, 'official_public_v5', 'fixed_ten_v1', *RECOVERY_SCHEMAS, *SEVEN_SCHEMAS):
         # The model was trained with the initial hand retained.
         return next(a for a in actions if not a.get('card_ids'))
     from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS, SEVEN_SCHEMA):
+    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS, *SEVEN_SCHEMAS):
         from app.modules.card_game.engine.duel_v2 import observe
         fallback = actions[model.select_public_action(observe(state, side, include_previews=False), actions)]
         from .advanced_search import choose
@@ -343,5 +344,5 @@ def choose_action(state, side='b'):
 def model_build_hash(model, build):
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA, build_hash
     from .recovery_model import SCHEMAS as RECOVERY_SCHEMAS
-    from .seven_model import SCHEMA as SEVEN_SCHEMA
-    return build_hash(build) if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS, SEVEN_SCHEMA) else serving_deck_hash(build)
+    from .seven_model import SCHEMAS as SEVEN_SCHEMAS
+    return build_hash(build) if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS, *SEVEN_SCHEMAS) else serving_deck_hash(build)

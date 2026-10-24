@@ -304,7 +304,8 @@ def evaluate_job(j):
         from .recovery_runtime import model,decision
     if j.get('runtime')=='seven':
         from . import seven_runtime as runtime
-        from .seven_runtime import model,decision
+        from .seven_runtime import decision
+        from .policy_runtime import model
     j={**j,'decks':{k:canonical_build(v) for k,v in j['decks'].items()}}
     search_sides=j.get('search_sides',[])
     if not set(search_sides)<= {'a','b'}:raise ValueError('Invalid search evaluation sides')

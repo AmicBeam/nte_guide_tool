@@ -41,6 +41,10 @@ def collection_contract(jobs, models, value_models, **profile):
             ('seven_covered_value.py',code_dir.parent/'seven_covered_value.py'),
             ('process_backend.py',code_dir.parent/'batched_duel/process_backend.py')):
         code[name]=hashlib.sha256(path.read_bytes()).hexdigest()
+    from ..phase_policy import SCHEMA as PHASE_SCHEMA
+    if any(getattr(m, 'manifest', {}).get('schema') == PHASE_SCHEMA for m in models.values()):
+        for name in ('phase_policy.py', 'phase_runtime.py', 'policy_runtime.py'):
+            code[name] = hashlib.sha256((code_dir.parent / name).read_bytes()).hexdigest()
     def model_identity(bank):
         return {key: dict(version=str(model.version), weights=_contract_value(getattr(model, 'weights', {})))
                 for key, model in sorted((bank or {}).items())}

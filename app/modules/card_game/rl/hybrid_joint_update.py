@@ -55,6 +55,9 @@ def load_joint_state(output, *, device='cpu'):
     from .episode_replay import EpisodePool
     output = Path(output)
     receipt = _completed(output)
+    if receipt['config'].get('policy_layout') == 'phase_isolated_v1':
+        from .phase_hybrid import load_joint_state as load
+        return load(output, device=device)
     pointer = _read(output/'recovery/pointer.json')
     if (not Path(pointer['folder']).resolve().is_relative_to(output.resolve())
             or Path(pointer['models']).resolve() != Path(receipt['models']).resolve()
@@ -102,7 +105,7 @@ def _validate_policy_row(row, step, trace, job):
         raise ValueError('Complete per-decision Gumbel label contract required')
 
 
-def _validate(source, jobs, games, config):
+def _validate(source, jobs, games, config, *, model_loader=None):
     if set(rr.learning_keys(config)) != set(ROSTER):
         raise ValueError('Joint update requires all seven learners')
     if config.get('policy_passes') not in (1,4,8):
@@ -125,7 +128,7 @@ def _validate(source, jobs, games, config):
                 or job.get('teacher_mode') != 'covered_value' or job.get('q_scale') != q_scale
                 or job.get('zhenhong_passive_reward') not in (None,0) or job.get('setup_rewards')):
             raise ValueError('Complete Gumbel32/cap16/H3/depth10 terminal-WDL jobs required')
-        policies = {s: rt.model(*spec) for s,spec in job['policies'].items()}
+        policies = {s: (model_loader or rt.model)(*spec) for s,spec in job['policies'].items()}
         if not rt.value_precheck_ok(job.get('value_precheck'), policies):
             raise ValueError('Frozen main-model WDL precheck required')
         scope = job.get('covered_value_source')
@@ -324,6 +327,13 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
 def run_joint_update(source_bank, jobs, games, output, config, *, deadline, prior_stage=None,
                      main_value_report=None):
     """Apply a verified batch once, or validate and return its COMPLETE receipt."""
+    layout = config.get('policy_layout', 'shared')
+    if layout == 'phase_isolated_v1':
+        from .phase_hybrid import run_joint_update as run
+        return run(source_bank, jobs, games, output, config, deadline=deadline,
+                   prior_stage=prior_stage, main_value_report=main_value_report)
+    if layout != 'shared':
+        raise ValueError('Unknown policy layout')
     from .seven_checkpoint import algorithm_identity
     source_bank, output = Path(source_bank), Path(output)
     source = {k:rt.model(source_bank,k) for k in ROSTER}
@@ -337,7 +347,7 @@ def run_joint_update(source_bank, jobs, games, output, config, *, deadline, prio
 
 
 def _run_once(source_bank,jobs,games,output,config,*,deadline,contract,prior_stage=None,
-              main_value_report=None):
+              main_value_report=None, executor=None):
     """Once-only transaction boundary after independent admission validation."""
     output = Path(output)
     marker = output/'joint-status.json'
@@ -363,7 +373,7 @@ def _run_once(source_bank,jobs,games,output,config,*,deadline,contract,prior_sta
         stream.flush()
         os.fsync(stream.fileno())
     try:
-        result = _execute_update(source_bank,jobs,games,output,config,deadline=deadline,
+        result = (executor or _execute_update)(source_bank,jobs,games,output,config,deadline=deadline,
                                 prior_stage=prior_stage,main_value_report=main_value_report)
         receipt = dict(running,**result,status='COMPLETE',files=_files(output))
         rr.write(marker,receipt)

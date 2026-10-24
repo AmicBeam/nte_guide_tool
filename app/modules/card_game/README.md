@@ -14,6 +14,12 @@ NumPy／PyTorch 的 Mctx 算法适配可显式选择 `q_scale=mctx_default`，�
 
 2026-09-15 起模块名称改为「异能对决」。Logo 使用青金色字标与 `ESPER DUEL` 副标，移除异象道具卡片及徽章；旧名称的构筑文本仍可导入。
 
+## 换牌与局内策略的隔离学习
+
+显式混合训练可用 `policy_layout=phase_isolated_v1`：同一批完整对局按换牌／局内分组，分别更新互不共享可训练参数的策略，终局WDL与独立辅助价值保持原职责。批量推理按阶段分组，仅执行激活分支；数值迁移、三个Adam状态、回放与RNG恢复均独立于旧schema。`scripts/prepare_duel_v2_phase_policy.py` 默认只计划，`--apply` 才写入新数值目录，不启动训练或更新网站模型。详见[训练手册](../../../docs/duel-v2-public-training.md#换牌局内策略隔离的显式混合路径)。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_phase_policy tests.test_duel_v2_phase_hybrid`。本地CPU通过不表示实际CUDA吞吐、显存或模型强度通过；Windows上线后须同源实测。
+
 ## 当前高级人机服务模型
 
 创生、小吱、真红、浊燃、倾陷使用 `engine/ai/models/seven-20261024/` 的冻结 NumPy 导出；覆纹继续使用 `recovery-20261007` 原权重；灵可也已接入 `seven-20261024`，使用确认集退步前保留的 initial 模型与固定32张配牌。新导出由 `seven_model.py` 校验独立的用户采用绑定、当前规则、原始清单、权重、配牌、张量与嵌入旧策略；研究模型的未批准标记不修改。用户指定采用不等同于统计强度验收通过。

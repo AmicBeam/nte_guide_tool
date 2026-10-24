@@ -14,7 +14,7 @@ import numpy as np
 from tests.test_solo_room_flow import RoomFlowTestCase
 
 ROOT = Path(__file__).resolve().parents[1] / 'app/modules/card_game/engine/ai/models/seven-20261024'
-KEYS = ('starter', 'quick-rush', 'zhenhong', 'murk', 'collapse')
+KEYS = ('starter', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke')
 
 
 class SevenServingTest(unittest.TestCase):
@@ -94,15 +94,27 @@ class SevenServingTest(unittest.TestCase):
                 ai.load_model('murk')
         self.assertIs(ai.load_model('murk'), original)
 
-    def test_preserved_weave_and_pending_lingke(self):
+    def test_preserved_weave_and_initial_lingke(self):
         from app.modules.card_game.engine.ai import advanced_model as ai
         self.assertEqual(ai.load_model('weave-rush').version,
                          '29a25b318f0319bd96bb3eaa27e21df669cacbb43c1bf0f9e07e1e7e783833d1')
         options = {o['id']: o for o in ai.pending_strategy_options()}
         self.assertFalse(options['collapse']['pending'])
-        self.assertTrue(options['lingke']['pending'])
-        with self.assertRaises(ai.RuleValidationError):
-            ai.load_model('lingke')
+        self.assertFalse(options['lingke']['pending'])
+        self.assertEqual(ai.load_model('lingke').version,
+                         '61c013ae08e981ff300deb307613bea23ad55fa40857f2d03ff7f093d6649015')
+
+    def test_missing_lingke_export_stays_unavailable(self):
+        from app.modules.card_game.engine.ai import advanced_model as ai
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / ROOT.name
+            root.mkdir()
+            shutil.copyfile(ROOT / 'serving.json', root / 'serving.json')
+            with patch.object(ai.config, 'DUEL_AI_MODEL_DIR', tmp):
+                options = {o['id']: o for o in ai.pending_strategy_options()}
+                self.assertTrue(options['lingke']['pending'])
+                with self.assertRaises(ai.RuleValidationError):
+                    ai.load_model('lingke')
 
     def test_fresh_process_cpu_only(self):
         subprocess.run([sys.executable, '-c',
@@ -112,7 +124,7 @@ class SevenServingTest(unittest.TestCase):
 
 
 class SevenServingRoomTest(RoomFlowTestCase):
-    def test_all_five_adoptions_bind_actual_weights_and_build(self):
+    def test_all_adoptions_bind_actual_weights_and_build(self):
         import importlib
         ai = importlib.import_module('app.modules.card_game.engine.ai.advanced_model')
         repo = importlib.import_module('app.modules.card_game.engine.application.v2_repository')

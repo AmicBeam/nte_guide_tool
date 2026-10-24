@@ -1,6 +1,6 @@
 {
   "kind": "explicit_user_candidate",
-  "request": "定位一下覆纹和灵可为什么更差了，其他队伍更新模型吧",
+  "request": "定位一下覆纹和灵可为什么更差了，其他队伍更新模型吧；灵可启用并接入吧（保留旧模型）",
   "quality_approved": false,
   "runtime_rule_hash": "418f08493f0756af0d4e79c0d5b737849c05649731088059fedb5a7cae644ae3",
   "models": {
@@ -28,6 +28,11 @@
       "manifest_sha256": "6c3d8f6201ad49b00443f738a6d9f41573f69c5bf3794b2ce958a463aaf25af9",
       "model_sha256": "86af75b36452978ff35040e9c0b1a9daa608c6c8ec0c990639fa3369c001f684",
       "build_sha256": "3e3d30dfc0e04641379d6eeec014a1258f38929aeb1668fb92c4d5ce2a5d8e08"
+    },
+    "lingke": {
+      "manifest_sha256": "9c3ac686bccaaa16d3858b2b1cc7861cd6c64af0f62911a69c4771a8b3dd1013",
+      "model_sha256": "61c013ae08e981ff300deb307613bea23ad55fa40857f2d03ff7f093d6649015",
+      "build_sha256": "3d1b92d3b19c61c6c528298e4fafb48daa577bb20e0818491efeacf85fff1d88"
     }
   }
 }

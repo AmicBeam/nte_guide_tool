@@ -8,7 +8,7 @@ from app.modules.card_game.rl import seven_lineup, seven_policy
 from app.modules.card_game.rl.seven_runtime import SevenModel
 
 RELEASE = 'seven-20261024'
-ADOPTED = frozenset(('starter', 'quick-rush', 'zhenhong', 'murk', 'collapse'))
+ADOPTED = frozenset(('starter', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke'))
 SCHEMA = seven_policy.SCHEMA
 
 

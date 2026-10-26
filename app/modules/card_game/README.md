@@ -227,8 +227,6 @@ NumPy／PyTorch 的 Mctx 算法适配可显式选择 `q_scale=mctx_default`，�
 
 ## 训练
 
-当前七队入口为 `scripts/train_duel_v2_current_round.py`（默认 `seven`）；正式执行条件、设备资格及显式混合路径以[训练手册](../../../docs/duel-v2-public-training.md)为准。下列双预组、PPO、SB3 与旧五队命令仅保留历史复现或诊断用途，不作为当前完整训练入口。性能验证使用相应后端的有界入口：混合采集为 `scripts/benchmark_duel_v2_gpu_collection.py`，SoA 设备闭环为 `scripts/benchmark_duel_v2_soa_device.py`；两者的验收资格分别判断。已移除无人引用的旧双预组 PPO 吞吐脚本与旧十人固定种子计时脚本。
-
 完整链路短测：`scripts/smoke_duel_v2_full.py`；报告打包：`scripts/package_duel_v2_report.py`。两套预组均支持固定角色候选配牌继续训练，并输出训练内先后手计数及冻结评估报告；运行和 Mac 交付约定见 [公开卡池训练](../../../docs/duel-v2-public-training.md#7-双预组全链路短测与报告交付)。
 
 Windows 已完成一次有界 CUDA 出牌/配牌短训练，启动所需 MSVC 环境与可选快速编译档见 [短训练记录](../../../artifacts/rl-evals/reports/duel-v2-windows-short-training-20260915.md)。默认编译配置保持不变。
@@ -239,7 +237,7 @@ Windows 已完成一次有界 CUDA 出牌/配牌短训练，启动所需 MSVC �
 
 固定角色配牌学习入口为 `scripts/train_duel_v2_cards.py`：用户指定四名公开角色，模型只调整每人 8 张配牌（同名最多 2 张）。冻结出牌策略执行终局评估，独立配牌网络学习；不自动更换角色或网站预组。先用 `--check --team starter` 检查配置，CUDA 训练与候选分析命令见公开卡池训练文档。
 
-网站运行时只加载冻结数值导出，不加载训练 checkpoint，也不在导入 `rl/` 时自动训练。历史双预组公开卡池入口为 `scripts/train_duel_v2_public.py`，对应分析与录像走 `scripts/analyze_duel_v2_policy.py`。旧镜像、SB3 和 `train_duel_v2_session.py` 只保留给既有实验。训练状态页用 `python3 scripts/rl_monitor.py` 单独开在 5002，大厅无入口。小样本结果不是平衡证据。命令、配置和日志字段见强化学习说明与公开卡池训练文档。
+网站运行时不加载训练权重，也不在导入 `rl/` 时自动训练。现行完整公开卡池入口是 `scripts/train_duel_v2_public.py`，分析与录像走 `scripts/analyze_duel_v2_policy.py`。旧镜像、SB3 和 `train_duel_v2_session.py` 只保留给既有实验。训练状态页用 `python3 scripts/rl_monitor.py` 单独开在 5002，大厅无入口。小样本结果不是平衡证据。命令、配置和日志字段见强化学习说明与公开卡池训练文档。
 
 ## 验证
 

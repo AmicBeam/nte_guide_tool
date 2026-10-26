@@ -1,0 +1,23 @@
+{% extends 'guide/layout.html' %}
+{% block title %}角色工具 · 攻略数据库{% endblock %}
+{% block head %}{{ super() }}{% if selected_tool %}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='catalog_cards.css', v=catalog_asset_version) }}">{% endif %}{% endblock %}
+{% block content %}
+{% include 'guide/tabs.html' %}
+<div class="guide-section-heading"><h2>角色工具</h2></div>
+{% if selected_tool %}<nav class="guide-links" aria-label="选择角色工具">
+{% for key, tool in tools.items() %}<a href="/guide/tools?tool={{ key }}"{% if selected_tool == key %} aria-current="page"{% endif %}>{{ tool[0] }}</a>{% endfor %}
+</nav>{% endif %}
+{% if selected_tool %}
+<div class="guide-section-heading"><h2>{{ tools[selected_tool][0] }} · 选择角色</h2></div>
+<p class="guide-muted">{{ tools[selected_tool][1] }}。{% if selected_tool == 'infographic' %}制作需登录，模板保存在当前浏览器。{% endif %}</p>
+<div class="guide-grid" aria-label="选择工具角色">
+{% for character in characters %}<a class="guide-card" data-filter-card href="{{ character.tool_url }}" aria-label="{{ character.name }} · {{ tools[selected_tool][0] }}">
+<div class="guide-card-identity"><div class="guide-card-media"><img class="guide-card-image" src="{{ character.assets.avatar }}" alt="{{ character.name }}头像" width="72" height="72" loading="lazy" decoding="async"><span class="guide-card-meta"><img src="{{ character.element_icon }}" alt="{{ character.element_name }}属性" width="24" height="24"><img src="{{ character.rarity_icon }}" alt="{{ character.rarity }}星角色" width="32" height="24"></span></div><h3>{{ character.name }}</h3></div>
+</a>{% endfor %}
+</div>
+{% else %}
+<div class="guide-grid">
+{% for key, tool in tools.items() %}<a class="guide-card guide-text-card" href="/guide/tools?tool={{ key }}"><h3>{{ tool[0] }}</h3><p>{{ tool[1] }}</p><small>选择角色 ↗</small></a>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

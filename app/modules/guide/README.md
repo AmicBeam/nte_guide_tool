@@ -476,3 +476,10 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 
 
 攻略分类 `/guide?kind=beginner` 的搜索栏旁同时提供“我要撰写”和“制作一图流”。一图流入口进入 `/guide/infographic`，以本地完整角色头像列表选择角色，再跳转到对应 `/guide/characters/<id>/infographic`；预告角色不列入制作选项。角色选择页只展示公共角色身份，具体制作沿用登录校验与浏览器模板保存。手机端两个创作入口在搜索栏下方并排展示。验证覆盖攻略入口、角色选择链接与预告排除，以及桌面和窄屏按钮布局。
+
+
+## 角色工具目录
+
+分类栏在“攻略”后提供“角色工具”，进入 `/guide/tools`，集中展示养成计算器、排轴与配装、空幕计算、制作角色一图流攻略。选择工具后在同页通过 `tool=cultivation|builds|kongmu|infographic` 选择角色，沿用角色页实际工具地址；空幕携带已有角色与推荐卡带参数，仅列有明确绑定的角色。预告角色不进入工具选择，一图流仍须登录后制作。资料分类及机器读取接口保持原有分类。
+
+验证：`.venv/bin/python -m unittest tests.test_guide tests.test_guide_builds tests.test_guide_infographic tests.test_guide_previews tests.test_module_routes -q`；浏览器检查标签顺序、四种工具的角色选择与跳转。

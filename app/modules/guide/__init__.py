@@ -255,3 +255,6 @@ register_article_routes(blueprint)
 
 from .infographic import register as register_infographic_routes
 register_infographic_routes(blueprint)
+
+from .tool_routes import register as register_tool_routes
+register_tool_routes(blueprint)

@@ -92,7 +92,11 @@ assert.throws(()=>engine.match([data.characters[0],data.characters[0]]),/不同/
 let total=0;
 for (let i=0;i<data.characters.length;i++) for(let j=i+1;j<data.characters.length;j++) {
     const result=engine.match([data.characters[i],data.characters[j]]);
-    assert(result.plans.length>0);
+    if ([data.characters[i],data.characters[j]].some(character=>!engine.availableRows(character).length)) {
+        assert.equal(result.plans.length,0);
+    } else {
+        assert(result.plans.length>0);
+    }
     result.plans.forEach(plan=>{
         check(plan);assert(plan.rows.every(r=>!r.requires_three_characters));
         plan.rows.forEach((r,role)=>assert.equal(plan.recoveryDelays[role],engine.recoveryDelay([data.characters[i],data.characters[j]][plan.roles[role]],r)));

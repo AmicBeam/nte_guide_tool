@@ -85,15 +85,15 @@ def build_graph(actions, rule):
     for edge in rule.get('transitions', []):
         if edge.get('from') not in by_name or edge.get('to') not in by_name:
             raise ValueError(f'衔接引用不存在的动作：{edge}')
-        if not edge.get('source'):
-            raise ValueError('衔接必须记录source')
         if 'after_seconds' in edge:
             number(edge['after_seconds'])
         prefix = edge.get('requires_prefix', [])
         if prefix and (prefix[-1] != edge['from'] or any(n not in by_name for n in prefix)):
             raise ValueError(f'衔接前置路径无效：{prefix}')
         edges[edge['from']] = [e for e in edges[edge['from']] if e['to'] != edge['to']]
-        edges[edge['from']].append(dict(edge))
+        recorded_edge = dict(edge)
+        recorded_edge.setdefault('source', '')
+        edges[edge['from']].append(recorded_edge)
     forbidden = rule.get('preinput_forbidden_actions', {})
     if set(forbidden) - set(by_name) or any(not source for source in forbidden.values()):
         raise ValueError('禁止预输入的动作须存在并记录source')
@@ -233,7 +233,7 @@ def calculate_row(names, links, by_name, points, final_point=None, preinput=Fals
         'personal_resources': {k: round_value(v) for k, v in resources.items()},
         'status': '可计算' if known and foreground is not None else '时长待补',
         'notes': constraint_notes,
-        'sources': list(dict.fromkeys([e['source'] for e in links] + ([final_point['source']] if final_point else []) +
+        'sources': list(dict.fromkeys([e['source'] for e in links if e.get('source')] + ([final_point['source']] if final_point else []) +
                                      (['用户2026-10-12：动作开始后0.4秒预输入即可切人，完成当前和下一动作。'] if preinput else []) +
                                      (['用户2026-10-12：0.7秒闪替代超过0.7秒的中间动作，跳过动作全部收益归零。'] if dodge_indices else []))),
     }

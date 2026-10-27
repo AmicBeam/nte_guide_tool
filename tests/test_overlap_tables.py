@@ -76,9 +76,27 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertEqual(rows[0]['window_1']['duration_seconds'], 1.2)
 
     def test_scope_and_no_melee_requiem(self):
-        self.assertEqual([c['name'] for c in self.payload['characters']], ['安魂曲','残虹','黑羽','明音凛'])
-        self.assertEqual({c['name'] for c in self.payload['characters']}, {'安魂曲', '残虹', '黑羽', '明音凛'})
+        self.assertEqual([c['name'] for c in self.payload['characters']], ['安魂曲','残虹','黑羽','明音凛','曳尔沐'])
+        self.assertEqual({c['name'] for c in self.payload['characters']}, {'安魂曲', '残虹', '黑羽', '明音凛', '曳尔沐'})
         self.assertEqual({a['name'] for a in self.character('安魂曲')['actions']}, {*(f'a{i}远' for i in range(1, 6)), 'e'})
+
+    def test_elyms_a2_preinput_a3_starts_from_a1_and_preserves_whole_chain(self):
+        character=self.character('曳尔沐')
+        self.assertEqual(character['start_actions'],['强a1'])
+        self.assertEqual([a['duration_seconds'] for a in character['actions']],[.6,.8,.6])
+        row=next(r for r in character['rows'] if r['switch_method']=='preinput')
+        self.assertEqual(row['actions'],['强a1','强a2','强a3'])
+        self.assertEqual(row['operation'],'强a2预强a3')
+        self.assertEqual(row['foreground_seconds'],1)
+        self.assertEqual(row['release_end_seconds'],2)
+        self.assertEqual(row['background_seconds'],1)
+        self.assertEqual(row['timeline'][2]['input_seconds'],1)
+        self.assertEqual(row['timeline'][2]['start_seconds'],1.4)
+        self.assertEqual(row['preinput_action_indices'],[1])
+        self.assertAlmostEqual(row['multipliers']['atk'],.259+2.236+.788)
+        self.assertTrue(all(r['original_actions'][0]=='强a1' for r in character['rows']))
+        self.assertFalse(any(r['has_dodge'] or r.get('overlap_windows') for r in character['rows']))
+        self.assertEqual(len([r for r in character['rows'] if r['ends_with_switch']]),1)
 
     def test_normal_switch_preserves_full_requiem_benefits(self):
         row = next(r for r in self.character('安魂曲')['rows'] if r['original_actions'] == ['a1远', 'a2远', 'a3远', 'a4远'] and r['switch_method'] == 'normal')
@@ -261,9 +279,13 @@ class OverlapTablesTest(unittest.TestCase):
                     self.assertEqual(following['start_seconds'], step['end_seconds'])
                     self.assertFalse(following['preinput'])
 
-    def test_all_scoped_actions_allow_normal_switch(self):
+    def test_only_configured_actions_allow_normal_switch(self):
         for character in self.payload['characters']:
+            configured=set(self.rules['characters'][character['name']].get('normal_switch_actions',[]))
             for action in character['actions']:
+                if action['name'] not in configured:
+                    self.assertFalse(any(p['id']=='normal' for p in action['switch_points']))
+                    continue
                 normal = next(p for p in action['switch_points'] if p['id']=='normal')
                 self.assertEqual(normal['after_seconds'],0.2)
                 self.assertFalse(action['locks_foreground_switch'])
@@ -552,7 +574,7 @@ class OverlapTablesTest(unittest.TestCase):
             self.assertIn('pair-no-foreground-idle', pair.get_data(as_text=True))
             response = client.get('/static/overlap/data/tables.json')
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(len(response.get_json()['characters']), 4)
+            self.assertEqual(len(response.get_json()['characters']), 5)
             response.close()
 
 

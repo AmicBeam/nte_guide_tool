@@ -10734,9 +10734,9 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.259,
       "hp": 0,
@@ -10756,12 +10756,13 @@
     "display_order": 5,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
+    "validation_note": "逐动作回能、环合与倾陷待补。",
     "required_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
     ],
-    "required_buff_name": "中等信号或强信号"
+    "required_buff_name": "中等信号或强信号",
+    "duration_implemented": true
   },
   {
     "id": "action_elyms_meleeb2",
@@ -10771,9 +10772,9 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "duration_pending": false,
     "multipliers": {
       "atk": 2.236,
       "hp": 0,
@@ -10793,12 +10794,13 @@
     "display_order": 6,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
+    "validation_note": "逐动作回能、环合与倾陷待补。",
     "required_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
     ],
-    "required_buff_name": "中等信号或强信号"
+    "required_buff_name": "中等信号或强信号",
+    "duration_implemented": true
   },
   {
     "id": "action_elyms_meleeb3",
@@ -10808,9 +10810,9 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.788,
       "hp": 0,
@@ -10830,12 +10832,13 @@
     "display_order": 7,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
+    "validation_note": "逐动作回能、环合与倾陷待补。",
     "required_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
     ],
-    "required_buff_name": "中等信号或强信号"
+    "required_buff_name": "中等信号或强信号",
+    "duration_implemented": true
   },
   {
     "id": "action_elyms_branch1",

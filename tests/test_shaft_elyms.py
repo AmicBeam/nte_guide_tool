@@ -50,6 +50,13 @@ class ElymsCatalogTest(unittest.TestCase):
                 self.assertTrue(a['duration_implemented'])
                 self.assertTrue(a['is_time_stop_zero'])
                 self.assertTrue(a['locks_foreground_switch'])
+            elif name in ('强a1','强a2','强a3'):
+                self.assertFalse(a['duration_pending'])
+                self.assertTrue(a['duration_implemented'])
+                self.assertEqual(a['duration_ticks'],{'强a1':6,'强a2':8,'强a3':6}[name])
+                self.assertFalse(a.get('is_time_stop_zero'))
+                self.assertEqual(a['hit_profile']['cumulative'][-1]['hit_count'],hits)
+                self.assertAlmostEqual(a['hit_profile']['cumulative'][-1]['damage'],mult)
             elif not name.startswith('追忆'):
                 self.assertTrue(a['duration_pending'])
                 self.assertFalse(a.get('is_time_stop_zero'))
@@ -198,8 +205,8 @@ class ElymsActivationTest(unittest.TestCase):
 
     def test_strong_finisher_activates_e3_once_for_six_seconds(self):
         prefix=[('skill1',0),('skill2',10),('meleeb3',20)]
-        self.assertEqual(self.check(prefix+[('goodbye',84)]),[])
-        self.assertTrue(self.check(prefix+[('goodbye',85)]))
+        self.assertEqual(self.check(prefix+[('goodbye',85)]),[])
+        self.assertTrue(self.check(prefix+[('goodbye',86)]))
         self.assertTrue(self.check([('skill1',0),('skill2',10),('meleeb2',20),('goodbye',30)]))
         self.assertTrue(self.check(prefix+[('goodbye',30),('goodbye',40)]))
         # An attack in the wrong signal form cannot grant the other form's activation.
@@ -212,8 +219,10 @@ class ElymsActivationTest(unittest.TestCase):
         result['details'][0].update(hit_count=0,original_hit_count=1)
         self.assertTrue(self.check(names,result=result))
         names=[('skill1',0),('skill2',10),('meleeb3',20),('goodbye',30)]
-        result=self.own(names)
-        result['details'][2].update(hit_count=3,original_hit_count=4)
+        axis=self.axis([(0,'action_elyms_'+name,tick) for name,tick in names])
+        axis['steps'][2].update(interrupted=True,interrupt_duration_ticks=3,interrupt_hit_count=3)
+        result=simulate_shaft_axis(axis)['result']
+        self.assertEqual(result['details'][2]['hit_count'],3)
         self.assertTrue(self.check(names,result=result))
 
     def test_resonance_and_current_signal_are_only_validation(self):

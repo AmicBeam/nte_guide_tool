@@ -278,6 +278,34 @@
         "a4"
       ],
       "basic_chain_restart_source": "用户2026-10-12确认：普攻末段默认可在完整释放后接回本形态a1；不新增预输入合轴点。"
+    },
+    "曳尔沐": {
+      "action_names": [
+        "强a1",
+        "强a2",
+        "强a3"
+      ],
+      "start_actions": [
+        "强a1"
+      ],
+      "dodge_preserves_combo": false,
+      "transitions": [
+        {
+          "from": "强a1",
+          "to": "强a2",
+          "can_preinput": false
+        },
+        {
+          "from": "强a2",
+          "to": "强a3",
+          "can_preinput": true,
+          "input_delay_seconds": 0.4
+        }
+      ],
+      "notes": [
+        "中等或强信号下的强化普攻；从强a1起手，只开放强a2预强a3切人。",
+        "完整释放2秒，前台合计1秒，切人后后台1秒；逐动作资源待补。"
+      ]
     }
   },
   "default_input_delay_seconds": 0.4,
@@ -290,7 +318,8 @@
     "安魂曲",
     "残虹",
     "黑羽",
-    "明音凛"
+    "明音凛",
+    "曳尔沐"
   ],
   "normal_switch_seconds": 0.2,
   "min_route_actions": 2

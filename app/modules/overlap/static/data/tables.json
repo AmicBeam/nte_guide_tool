@@ -217759,13 +217759,607 @@
         "switch_points": 4,
         "missing_duration": 0
       }
+    },
+    {
+      "id": "char_elyms",
+      "name": "曳尔沐",
+      "element": "光",
+      "avatar": "/static/guide/character-previews/elyms-avatar.webp",
+      "actions": [
+        {
+          "name": "强a1",
+          "action_id": "action_elyms_meleeb1",
+          "type": "普攻",
+          "duration_seconds": 0.6,
+          "switch_points": [],
+          "recovery_seconds": 0.0,
+          "preinput_seconds": 0.4,
+          "successors": [
+            {
+              "from": "强a1",
+              "to": "强a2",
+              "can_preinput": false,
+              "source": ""
+            }
+          ],
+          "gaps": [],
+          "can_background_override": false,
+          "locks_foreground_switch": false,
+          "can_start": true,
+          "preinput_forbidden": false,
+          "source": "仓库当前动作数据",
+          "conditions": {
+            "cooldown_ticks": 0,
+            "energy_cost": 0,
+            "personal_resource_cost": {},
+            "required_buff_any_keys": [
+              "character_elyms_medium",
+              "character_elyms_strong"
+            ],
+            "required_buff_name": "中等信号或强信号"
+          }
+        },
+        {
+          "name": "强a2",
+          "action_id": "action_elyms_meleeb2",
+          "type": "普攻",
+          "duration_seconds": 0.8,
+          "switch_points": [],
+          "recovery_seconds": 0.0,
+          "preinput_seconds": 0.4,
+          "successors": [
+            {
+              "from": "强a2",
+              "to": "强a3",
+              "can_preinput": true,
+              "input_delay_seconds": 0.4,
+              "source": ""
+            }
+          ],
+          "gaps": [],
+          "can_background_override": true,
+          "locks_foreground_switch": false,
+          "can_start": false,
+          "preinput_forbidden": false,
+          "source": "仓库当前动作数据",
+          "conditions": {
+            "cooldown_ticks": 0,
+            "energy_cost": 0,
+            "personal_resource_cost": {},
+            "required_buff_any_keys": [
+              "character_elyms_medium",
+              "character_elyms_strong"
+            ],
+            "required_buff_name": "中等信号或强信号"
+          }
+        },
+        {
+          "name": "强a3",
+          "action_id": "action_elyms_meleeb3",
+          "type": "普攻",
+          "duration_seconds": 0.6,
+          "switch_points": [],
+          "recovery_seconds": 0.0,
+          "preinput_seconds": null,
+          "successors": [],
+          "gaps": [],
+          "can_background_override": true,
+          "locks_foreground_switch": false,
+          "can_start": false,
+          "preinput_forbidden": false,
+          "source": "仓库当前动作数据",
+          "conditions": {
+            "cooldown_ticks": 0,
+            "energy_cost": 0,
+            "personal_resource_cost": {},
+            "required_buff_any_keys": [
+              "character_elyms_medium",
+              "character_elyms_strong"
+            ],
+            "required_buff_name": "中等信号或强信号"
+          }
+        }
+      ],
+      "rows": [
+        {
+          "id": "4c6d4121dd98fee3",
+          "actions": [
+            "强a1",
+            "强a2"
+          ],
+          "original_actions": [
+            "强a1",
+            "强a2"
+          ],
+          "kind": "连招",
+          "switch_method": "full",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "强a1 → 强a2",
+          "switch_label": "完整释放",
+          "foreground_seconds": 1.4,
+          "switch_seconds": 1.4,
+          "foreground_intervals": [
+            [
+              0,
+              1.4
+            ]
+          ],
+          "release_end_seconds": 1.4,
+          "background_seconds": 0,
+          "timeline": [
+            {
+              "action": "强a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "强a2",
+              "input_seconds": 0.6,
+              "start_seconds": 0.6,
+              "end_seconds": 1.4,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 2.495,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.782143,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 0.0,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 0.0,
+          "energy_gain": 0.0,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 0.0,
+          "energy_rate": 0.0,
+          "stagger": 0.0,
+          "stagger_rate": 0.0,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.4,
+              "duration_seconds": 1.4
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "4d910019c7be734c",
+          "actions": [
+            "强a1",
+            "强a2",
+            "强a3"
+          ],
+          "original_actions": [
+            "强a1",
+            "强a2",
+            "强a3"
+          ],
+          "kind": "连招",
+          "switch_method": "full",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "强a1 → 强a2 → 强a3",
+          "switch_label": "完整释放",
+          "foreground_seconds": 2.0,
+          "switch_seconds": 2.0,
+          "foreground_intervals": [
+            [
+              0,
+              2.0
+            ]
+          ],
+          "release_end_seconds": 2.0,
+          "background_seconds": 0,
+          "timeline": [
+            {
+              "action": "强a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "强a2",
+              "input_seconds": 0.6,
+              "start_seconds": 0.6,
+              "end_seconds": 1.4,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "强a3",
+              "input_seconds": 1.0,
+              "start_seconds": 1.4,
+              "end_seconds": 2.0,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 3.283,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.6415,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 0.0,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 0.0,
+          "energy_gain": 0.0,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 0.0,
+          "energy_rate": 0.0,
+          "stagger": 0.0,
+          "stagger_rate": 0.0,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.0,
+              "duration_seconds": 2.0
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "4d910019c7be734c-hold",
+          "actions": [
+            "强a1",
+            "强a2",
+            "强a3"
+          ],
+          "original_actions": [
+            "强a1",
+            "强a2",
+            "强a3"
+          ],
+          "kind": "打满",
+          "switch_method": "hold",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "强a3打满",
+          "switch_label": "末段打满",
+          "foreground_seconds": 2.0,
+          "switch_seconds": null,
+          "foreground_intervals": [
+            [
+              0,
+              2.0
+            ]
+          ],
+          "release_end_seconds": 2.0,
+          "background_seconds": 0,
+          "timeline": [
+            {
+              "action": "强a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "强a2",
+              "input_seconds": 0.6,
+              "start_seconds": 0.6,
+              "end_seconds": 1.4,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "强a3",
+              "input_seconds": 1.0,
+              "start_seconds": 1.4,
+              "end_seconds": 2.0,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 3.283,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.6415,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 0.0,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 0.0,
+          "energy_gain": 0.0,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 0.0,
+          "energy_rate": 0.0,
+          "stagger": 0.0,
+          "stagger_rate": 0.0,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.0,
+              "duration_seconds": 2.0
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": [],
+          "hold_reason": "no_successor"
+        },
+        {
+          "id": "72e9fa9798b7133f",
+          "actions": [
+            "强a1",
+            "强a2",
+            "强a3"
+          ],
+          "original_actions": [
+            "强a1",
+            "强a2",
+            "强a3"
+          ],
+          "kind": "合轴",
+          "switch_method": "preinput",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            1
+          ],
+          "operation": "强a2预强a3",
+          "switch_label": "预输入合轴",
+          "foreground_seconds": 1.0,
+          "switch_seconds": 1.0,
+          "foreground_intervals": [
+            [
+              0,
+              1.0
+            ]
+          ],
+          "release_end_seconds": 2.0,
+          "background_seconds": 1.0,
+          "timeline": [
+            {
+              "action": "强a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "强a2",
+              "input_seconds": 0.6,
+              "start_seconds": 0.6,
+              "end_seconds": 1.4,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "强a3",
+              "input_seconds": 1.0,
+              "start_seconds": 1.4,
+              "end_seconds": 2.0,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 3.283,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 3.283,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 0.0,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 0.0,
+          "energy_gain": 0.0,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 0.0,
+          "energy_rate": 0.0,
+          "stagger": 0.0,
+          "stagger_rate": 0.0,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [
+            "用户2026-10-12：动作开始后0.4秒预输入即可切人，完成当前和下一动作。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.0,
+              "duration_seconds": 1.0
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        }
+      ],
+      "dodge_preserves_combo": false,
+      "start_actions": [
+        "强a1"
+      ],
+      "notes": [
+        "中等或强信号下的强化普攻；从强a1起手，只开放强a2预强a3切人。",
+        "完整释放2秒，前台合计1秒，切人后后台1秒；逐动作资源待补。"
+      ],
+      "coverage": {
+        "actions": 3,
+        "rows": 4,
+        "switch_points": 0,
+        "missing_duration": 0
+      }
     }
   ],
   "input_sha256": {
     "characters.json": "63ed0dac744f4d531ecb6c9e7a10cb67d403a696f8cc8e252651880779edea75",
-    "actions.json": "14335608c43f592d924ff8b388fcbb34b50bf22abd4909683c4834d4384fa5cc",
-    "rules.json": "3ce0d518bf7060c8f7a774347a388a7b31ddf7ef869a35842aeebc0a89cfe410",
-    "generator.py": "538a8689e5456cf926f9cc900f802d958d1dead98d5742853f811935c8fd572b"
+    "actions.json": "3a0ecca9154a8c28f4b691b58ee55e75c666e0b7369fcf2d27b7515841877704",
+    "rules.json": "1089d950962377295c03dfd082823ca297b6ea049d75847478b86aed2bba5c2b",
+    "generator.py": "1bfa06a2d8bad4986c4db83f0f55bf463b042c3c4a23084915426da2c364d5a7"
   },
   "basis": "1级裸动作收益；按前排占轴归一。未含配装、Buff、资源上限与队友分享；经验耗时用于试算。",
   "sources": [

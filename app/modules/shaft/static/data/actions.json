@@ -10877,38 +10877,6 @@
     ]
   },
   {
-    "id": "action_elyms_aim",
-    "character_id": "char_elyms",
-    "character_name": "曳尔沐",
-    "name": "瞄准",
-    "action_type": "普攻",
-    "damage_type": "普攻",
-    "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
-    "multipliers": {
-      "atk": 0.12,
-      "hp": 0,
-      "def": 0,
-      "flat": 0
-    },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
-    "energy_return": 0,
-    "self_modifiers": {},
-    "cooldown_ticks": 0,
-    "energy_cost": 0,
-    "personal_resource_cost": {},
-    "personal_resource_gain": {},
-    "hit_count": 1,
-    "display_order": 9,
-    "can_background_override": false,
-    "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。"
-  },
-  {
     "id": "action_elyms_airattack",
     "character_id": "char_elyms",
     "character_name": "曳尔沐",

@@ -35,10 +35,11 @@ class ElymsCatalogTest(unittest.TestCase):
         self.assertEqual(character['adaptation'], '固态')
         self.assertEqual(character['base_stats'], {'atk':660,'hp':15392,'def':909})
         actions = {a['name']:a for a in c['actions_by_character'][CID]}
-        self.assertEqual(len(actions),22)
+        self.assertEqual(len(actions),21)
+        self.assertNotIn('瞄准',actions)
         expected = {'a1':(.224,2),'a2':(.314,2),'a3':(.834,3),'a4':(.698,5),'a5':(.915,1),
                     '强a1':(.259,2),'强a2':(2.236,24),'强a3':(.788,4),'重击':(.449,4),
-                    '瞄准':(.12,1),'下落':(.296,1),'闪反':(1,1),'e1':(1.999,6),'e2':(.998,6),
+                    '下落':(.296,1),'闪反':(1,1),'e1':(1.999,6),'e2':(.998,6),
                     'e3':(1.502,6),'q群':(5.683,2),'q单':(4.01,5),'追忆群':(1.576,4),'追忆单':(1.752,4)}
         for name,(mult,hits) in expected.items():
             a=actions[name]

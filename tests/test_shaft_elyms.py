@@ -45,7 +45,12 @@ class ElymsCatalogTest(unittest.TestCase):
             self.assertAlmostEqual(a['multipliers']['atk'],mult)
             self.assertEqual(a['hit_count'],hits)
             self.assertEqual((a['energy_gain'],a['harmony'],a['stagger']),(0,0,0))
-            if not name.startswith('追忆'):
+            if name in ('e2','e3'):
+                self.assertFalse(a['duration_pending'])
+                self.assertTrue(a['duration_implemented'])
+                self.assertTrue(a['is_time_stop_zero'])
+                self.assertTrue(a['locks_foreground_switch'])
+            elif not name.startswith('追忆'):
                 self.assertTrue(a['duration_pending'])
                 self.assertFalse(a.get('is_time_stop_zero'))
         self.assertEqual(actions['e1']['harmony_on_start'],100)
@@ -230,3 +235,34 @@ class ElymsActivationTest(unittest.TestCase):
         ]}
         self.assertTrue(self.check(names,result=result))
         self.assertEqual(self.check(names,result=result,loop=True),[])
+
+
+class ElymsSpecialEZeroTimeTest(unittest.TestCase):
+    axis = ElymsCatalogTest.axis
+    sim = ElymsCatalogTest.sim
+
+    def test_special_es_use_public_zero_time_mask_and_foreground_lock(self):
+        teammate=dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id='')
+        for name in ('skill2','goodbye'):
+            with self.subTest(skill=name):
+                r=self.sim([(0,'action_elyms_'+name,0),(1,'action_982c67944f',2)],others=[teammate],switch_loss_ticks=0)
+                special,intruder=r['details']
+                self.assertEqual(special['duration_ticks'],0)
+                self.assertEqual(special['start_tick'],special['end_tick'])
+                self.assertEqual(special['action_type'],'E')
+                self.assertEqual(intruder['visual_start_tick'],special['visual_end_tick'])
+                self.assertEqual(intruder['foreground_lock_ticks'],3)
+                self.assertEqual(r['summary']['frozen_ticks'],5)
+                r=self.sim([(1,'action_982c67944f',0),(0,'action_elyms_'+name,2)],others=[teammate],switch_loss_ticks=0)
+                covered,mask=r['details']
+                self.assertEqual(covered['end_tick'],mask['start_tick'])
+                self.assertEqual(covered['duration_ticks'],2)
+                self.assertEqual(mask['duration_ticks'],0)
+                self.assertEqual(r['summary']['frozen_ticks'],13)
+
+    def test_special_es_no_longer_report_unimplemented_time(self):
+        catalog=load_shaft_catalog()
+        actions=[a for a in catalog['actions_by_character'][CID] if a['name'] in ('e2','e3')]
+        script="const s=require(process.argv[1]);const a=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(JSON.stringify(a.map(x=>s.hasUnimplementedForegroundDuration({},x))));"
+        result=subprocess.run(['node','-e',script,str(ROOT/'app/modules/shaft/static/js/shaft_self_check.js')],input=json.dumps(actions),text=True,capture_output=True,check=True)
+        self.assertEqual(json.loads(result.stdout),[False,False])

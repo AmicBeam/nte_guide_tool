@@ -11012,7 +11012,7 @@
     "is_background_damage": false,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.998,
       "hp": 0,
@@ -11032,7 +11032,10 @@
     "display_order": 13,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。激活窗口12秒，仅自检。"
+    "validation_note": "逐动作回能、环合与倾陷待补。",
+    "duration_implemented": true,
+    "is_time_stop_zero": true,
+    "locks_foreground_switch": true
   },
   {
     "id": "action_elyms_goodbye",
@@ -11044,7 +11047,7 @@
     "is_background_damage": false,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_pending": false,
     "multipliers": {
       "atk": 1.502,
       "hp": 0,
@@ -11064,7 +11067,10 @@
     "display_order": 14,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。激活窗口6秒，仅自检。"
+    "validation_note": "逐动作回能、环合与倾陷待补。",
+    "duration_implemented": true,
+    "is_time_stop_zero": true,
+    "locks_foreground_switch": true
   },
   {
     "id": "action_elyms_ultraskilla1",

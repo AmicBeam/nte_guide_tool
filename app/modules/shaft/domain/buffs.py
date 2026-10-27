@@ -13,6 +13,7 @@ SUPPORTED_TRIGGER_EVENTS = {
     'reaction_trigger',
     'periodic_damage',
     'full_stack',
+    'energy_gain',
 }
 
 PERMANENT_BUFF_END_TICK = 1_000_000_000
@@ -354,6 +355,10 @@ def _conditions_match(conditions: Any, context: dict[str, Any]) -> bool:
             reaction = context.get('reaction') if isinstance(context.get('reaction'), dict) else {}
             owner_slot = _int(context.get('owner_slot'), -1)
             if owner_slot not in {_int(reaction.get('previous_slot'), -2), _int(reaction.get('support_slot'), -2)}:
+                return False
+            continue
+        if condition_type == 'reaction_not_echo':
+            if (context.get('reaction') or {}).get('is_echo') is True:
                 return False
             continue
         if condition_type == 'reaction_type':

@@ -50,6 +50,20 @@
     "source_note": "2026-08-04用户提供的腾讯文档；Nanoka当前未收录。基础24%暴击率与1精16%被动暴击率合并为40%面板。"
   },
   {
+    "id": "arc_elyms_waiting_ringtone",
+    "name": "静候彩铃",
+    "level": 80,
+    "rarity": "S",
+    "adaptation": "固态",
+    "base_atk": 570,
+    "detail": "环合强度提升72/144。释放极轨终结后累计造成3次追击伤害，全队无视防御12%/24%，装备者额外10%/20%，持续20秒。释放变轨技能后全队光属性抗性穿透8%/20%，持续20秒；两项全队效果各自队伍唯一。",
+    "modifiers": {
+      "crit_rate": 0.24,
+      "harmony_strength": 72
+    },
+    "element_dmg": {}
+  },
+  {
     "id": "arc_7d0ca08e3d",
     "name": "行进于时间之外",
     "level": 80,

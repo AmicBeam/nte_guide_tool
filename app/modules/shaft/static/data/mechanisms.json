@@ -222,5 +222,26 @@
       "character_akane_talent2"
     ],
     "source_note": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。"
+  },
+  {
+    "id": "character_elyms_talent1",
+    "character_id": "char_elyms",
+    "talent": 1,
+    "name": "中继节点",
+    "description": "前台角色实际获得终结能量后，全队光属性伤害提高3.75%，持续3秒，最多8层；全队施加延滞7.5秒后追加一次延滞，7秒触发间隔，回响不递归。",
+    "replaces_rule_ids": [
+      "character_elyms_energy_light",
+      "character_elyms_delay_echo"
+    ]
+  },
+  {
+    "id": "character_elyms_talent2",
+    "character_id": "char_elyms",
+    "talent": 2,
+    "name": "保底机制",
+    "description": "自身暴击伤害提高10%。",
+    "replaces_rule_ids": [
+      "character_elyms_talent2"
+    ]
   }
 ]

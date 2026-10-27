@@ -187,6 +187,7 @@
     }
   },
   "default_build_options": {
+    "char_elyms": {"curtain_bonus": {"value": 8, "stat": "暴击", "passive_type": "type3", "fixed": true}},
     "char_dd034941ef": {
       "cartridge_main_stat": "精通",
       "curtain_bonus": {

@@ -937,3 +937,17 @@ Everness当天核实「未迟到的正义」：基础800%攻击力相属性伤�
 角色相关轴弹窗用同源嵌入的 `/shaft/rotation?preview=<轴ID>&embedded=1` 复用原生预览轨道、时钟映射、缩放和贡献汇总。嵌入初始化与编辑器初始化互斥：仅加载目录和经既有权限校验的轴，只绑定预览事件，不恢复或写回本地工作区，不启用保存或广场加载；关闭消息由父页验证同源和源窗口。
 
 指定轴配装比较只接受实际弧盘与卡带候选，原轴基准可保留原先未装备的状态。结果按卡带分表、弧盘为行、主词条为列，以 `baseline_percent = 候选全队总伤 / 原轴重算全队总伤 × 100` 显示；零基准为null并展示“—”。单元格点击进入只读详情弹窗，CSV沿用相同基线口径；原有 `increase_percent` 差值字段保留用于兼容，不用于表格显示。
+
+### 配置化能量事件、状态层快照与延滞回响
+
+`energy_gain`由实际动作回能流入触发，溢出无实际增加时不派发；上下文的来源为能量接收者，`source_foreground_at_hit`读取结算时前台。能量与延迟回响产生的Buff摘要附回来源步骤，正常展示生效窗口。
+
+`activation.stack_gain_from_key`在清除前读取拥有者指定状态当前总层数，用于把实际消费保存在本次快照或跨动作累计中；`effects_from_stack.max_count`可限制快照增益的计数，但不限制实际状态层数或消耗量。`triggered_damage.atk_per_stack`按同次`effects_from_stack`的计数构造独立伤害倍率，依然使用正常技能等级和结算时面板。`activation.full_stack_buff_ids`在跨过阈值时同时激活多个目标规则，兼容旧单一ID；满层重复不重触发。
+
+`delayed_reaction`配置反应类型和延迟tick，队列在该时刻施加正常环合实例并标记`is_echo`；`reaction_not_echo`用于避免自己再次调度自己。回响不伪造主动援护双方，因此不获得要求`reaction_owner_involved`的资源。`forbidden_buff_any_keys`支持多个互斥形态的动作自检；`requires_off_field`检查协同拥有者实际前后台，而不是仅凭动作画在后台推断。
+
+曳尔沐使用这些通用字段实现信号、错视幻觉、追忆快照、觉醒增益、延滞回响和弧盘阈值；数值、待补窗口与验收范围见排轴README，当前未知时长与资源仍不作为完整DPS证据。
+
+`initial_harmony_non_loop_by_awakening_node`按独立A–F节点配置非循环入战环合，与原常驻入战值取较大者；循环轴只读取玩家配置，不重复授予。曳尔沐E觉通过该字段提供100环合，不用常驻Buff冒充一次性入战资源。
+
+`stacking.mode=replace`会截断上一窗口的时间线摘要，并同时替换规则数值与持续时间；新快照为0时也覆盖旧非零值。普通refresh保持既有规则；曳尔沐的信号快照和A/F重新结算显式使用replace。

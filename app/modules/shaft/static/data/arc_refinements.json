@@ -4,6 +4,66 @@
   "supplemental_versions": ["1.3.9"],
   "generated_from": "https://static.nanoka.cc/nte/1.2/zh/weapon/{id}.json",
   "arcs": {
+    "arc_elyms_waiting_ringtone": {
+      "name": "静候彩铃",
+      "default_level": 1,
+      "available_levels": [
+        1,
+        5
+      ],
+      "effect_name": "静候彩铃",
+      "effect_description": "环合强度提升72/144。释放极轨终结后累计造成3次追击伤害，全队无视防御12%/24%，装备者额外10%/20%，持续20秒。释放变轨技能后全队光属性抗性穿透8%/20%，持续20秒；两项全队效果各自队伍唯一。",
+      "levels": {
+        "1": {
+          "effect_values": [
+            "72",
+            "12%",
+            "10%",
+            "8%"
+          ],
+          "panel_modifiers": {
+            "crit_rate": 0.24,
+            "harmony_strength": 72
+          },
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_elyms_team_def": {
+              "def_ignore": 0.12
+            },
+            "arc_elyms_self_def": {
+              "def_ignore": 0.1
+            },
+            "arc_elyms_light_pen": {
+              "res_down_光": 0.08
+            }
+          }
+        },
+        "5": {
+          "effect_values": [
+            "144",
+            "24%",
+            "20%",
+            "20%"
+          ],
+          "panel_modifiers": {
+            "crit_rate": 0.24,
+            "harmony_strength": 144
+          },
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_elyms_team_def": {
+              "def_ignore": 0.24
+            },
+            "arc_elyms_self_def": {
+              "def_ignore": 0.2
+            },
+            "arc_elyms_light_pen": {
+              "res_down_光": 0.2
+            }
+          }
+        }
+      }
+    },
     "arc_7d0ca08e3d": {
       "nanoka_id": "fork_Time",
       "name": "行进于时间之外",

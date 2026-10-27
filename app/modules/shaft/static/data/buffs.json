@@ -4734,5 +4734,1768 @@
     },
     "source_url": "https://static.nanoka.cc/nte/1.4.6/zh/weapon/fork_PaperPlane.json",
     "note": "2026-10-13按Nanoka 1.4.6核验：只作用装备者变轨技能和极轨终结造成的灵属性伤害，精炼1–5为20/23.75/27.5/31.25/35%。"
+  },
+  {
+    "id": "character_elyms_talent2",
+    "name": "保底机制",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_talent2",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "crit_dmg": 0.1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_d",
+    "name": "302 祈愿重新定向",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 4
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_d",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "crit_dmg": 0.2
+    }
+  },
+  {
+    "id": "character_elyms_e",
+    "name": "304 今日一如往昔",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_skill1"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_e",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_three",
+    "name": "拜启，我的旧友",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_ultraskilla1",
+        "action_elyms_ultraskillb1"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_three",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0.3
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_six",
+    "name": "再会，我的新知",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_xietongskilla1",
+        "action_elyms_xietongskillb1"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_six",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0.5
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_q_atk",
+    "name": "一如昨日光景·全队攻击",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_q_atk",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "effects_from_owner_base": {
+        "stat": "atk",
+        "effect_key": "flat_atk",
+        "factor": 0.2
+      }
+    }
+  },
+  {
+    "id": "character_elyms_illusion_normal",
+    "name": "错视幻觉",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 10,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_max",
+          "max": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_illusion",
+      "mode": "add_stack",
+      "max_stacks": 2147483647
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_illusion_b",
+    "name": "错视幻觉",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 10,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_illusion",
+      "mode": "add_stack",
+      "max_stacks": 2147483647
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_illusion_bc",
+    "name": "504 强信号错视幻觉",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 11,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_min",
+          "min": 2
+        },
+        {
+          "type": "awakening_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_illusion",
+      "mode": "add_stack",
+      "max_stacks": 2147483647
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_signal_medium",
+    "name": "中等信号",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_max",
+          "max": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_medium",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_signal_b",
+    "name": "强信号",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_strong",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_illusion_c",
+    "name": "504 强信号错视幻觉",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 10,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_medium"
+        },
+        {
+          "type": "awakening_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_illusion",
+      "mode": "add_stack",
+      "max_stacks": 2147483647
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_signal_strong",
+    "name": "强信号",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_medium"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_strong",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_medium"
+      ]
+    }
+  },
+  {
+    "id": "character_elyms_illusion_reaction",
+    "name": "504 主动环合错视幻觉",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "reaction_trigger",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 3
+        },
+        {
+          "type": "reaction_type",
+          "reactions": [
+            "创生",
+            "延滞"
+          ]
+        },
+        {
+          "type": "reaction_owner_involved"
+        },
+        {
+          "type": "reaction_not_echo"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_illusion",
+      "mode": "add_stack",
+      "max_stacks": 2147483647
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_last_clear",
+    "name": "更新本次错视幻觉消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 1,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_last_clear",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_last_consumed"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_accumulate",
+    "name": "累计错视幻觉消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 2,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_consumed",
+      "mode": "add_stack",
+      "max_stacks": 4
+    },
+    "effects": {},
+    "activation": {
+      "stack_gain_from_key": "character_elyms_illusion"
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_last",
+    "name": "本次错视幻觉消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 3,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_last_consumed",
+      "mode": "refresh",
+      "max_stacks": 2147483647
+    },
+    "effects": {},
+    "activation": {
+      "stack_gain_from_key": "character_elyms_illusion"
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_consume",
+    "name": "对你说再见·错视幻觉倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 4,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_goodbye"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_consume",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "per_layer": 2.5
+    },
+    "activation": {
+      "clear_keys": [
+        "character_elyms_illusion"
+      ],
+      "effects_from_stack": {
+        "key": "character_elyms_illusion",
+        "per_stack_from_effect": {
+          "base_multiplier_pct": {
+            "factor": 1,
+            "source": "per_layer"
+          }
+        }
+      }
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_a",
+    "name": "404 遥望一座孤岛",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 30,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_a",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "per_layer": 0.1
+    },
+    "activation": {
+      "effects_from_stack": {
+        "key": "character_elyms_consumed",
+        "max_count": 4,
+        "per_stack_from_effect": {
+          "crit_dmg": {
+            "factor": 1,
+            "source": "per_layer"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "character_elyms_f",
+    "name": "11 您访问的地址已被永久转移",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 30,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_f",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "per_layer": 0.25
+    },
+    "activation": {
+      "effects_from_stack": {
+        "key": "character_elyms_consumed",
+        "max_count": 4,
+        "per_stack_from_effect": {
+          "follow_dmg": {
+            "factor": 1,
+            "source": "per_layer"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "character_elyms_reset_consumed",
+    "name": "终结清空错视幻觉累计消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 90,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_reset_consumed",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_consumed"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_q_signal_weak",
+    "name": "终结·弱信号倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_ultraskilla1",
+        "action_elyms_ultraskillb1"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_q_signal_weak",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_follow_snapshot_weak",
+    "name": "追忆·信号快照",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_xietongskilla1",
+        "action_elyms_xietongskillb1"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_follow_snapshot",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0
+    }
+  },
+  {
+    "id": "character_elyms_q_signal_medium",
+    "name": "终结·中等信号倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_ultraskilla1",
+        "action_elyms_ultraskillb1"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_medium"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_q_signal_medium",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0.5
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_follow_snapshot_medium",
+    "name": "追忆·信号快照",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_medium"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_xietongskilla1",
+        "action_elyms_xietongskillb1"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_follow_snapshot",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0.5
+    }
+  },
+  {
+    "id": "character_elyms_q_signal_strong",
+    "name": "终结·强信号倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_ultraskilla1",
+        "action_elyms_ultraskillb1"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_strong"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_q_signal_strong",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_follow_snapshot_strong",
+    "name": "追忆·信号快照",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_strong"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_xietongskilla1",
+        "action_elyms_xietongskillb1"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_follow_snapshot",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    }
+  },
+  {
+    "id": "character_elyms_backend",
+    "name": "后台连线",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 40,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_backend",
+      "mode": "refresh",
+      "max_stacks": 6,
+      "stack_gain": 6
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_reset_signal",
+    "name": "终结重置信号",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 99,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_reset_signal",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_medium",
+        "character_elyms_strong"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_six_extra",
+    "name": "再会，我的新知·末段追加",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        },
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_last_consumed"
+        }
+      ],
+      "timing": "end"
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_six_extra",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "effects_from_stack": {
+        "key": "character_elyms_last_consumed"
+      }
+    },
+    "triggered_damage": {
+      "action": {
+        "id": "action_elyms_six_extra",
+        "name": "再会，我的新知·追加",
+        "action_type": "E",
+        "damage_type": "E",
+        "damage_element": "光",
+        "skill_level_category": "skill",
+        "resonance_skill_level_bonus": true,
+        "hit_count": 1,
+        "multipliers": {
+          "atk": 0
+        }
+      },
+      "atk_per_stack": 3
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_energy_light",
+    "name": "中继节点·盈蓄强化",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "energy_gain",
+      "source": {
+        "scope": "team"
+      },
+      "conditions": [
+        {
+          "type": "source_foreground_at_hit"
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 30,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_energy_light",
+      "mode": "add_stack",
+      "max_stacks": 8
+    },
+    "effects": {
+      "element_dmg_光": 0.0375
+    }
+  },
+  {
+    "id": "character_elyms_delay_echo",
+    "name": "中继节点·延滞回响",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "reaction_trigger",
+      "source": {
+        "scope": "team"
+      },
+      "conditions": [
+        {
+          "type": "reaction_type",
+          "reactions": [
+            "延滞"
+          ]
+        },
+        {
+          "type": "reaction_not_echo"
+        }
+      ],
+      "cooldown_ticks": 70
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_delay_echo",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "delayed_reaction": {
+      "reaction": "延滞",
+      "delay_ticks": 75
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "arc_elyms_counter",
+    "name": "静候彩铃·追击计数",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "tags": [
+          "追击"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "arc_elyms_q_window"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_counter",
+      "mode": "add_stack",
+      "max_stacks": 3,
+      "stack_gain_from": "hit_count"
+    },
+    "effects": {},
+    "activation": {
+      "full_stack_threshold": 3,
+      "full_stack_buff_ids": [
+        "arc_elyms_team_def",
+        "arc_elyms_self_def"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "arc_elyms_q_window",
+    "name": "静候彩铃·终结后追击",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "Q"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_q_window",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "arc_elyms_counter"
+      ]
+    }
+  },
+  {
+    "id": "arc_elyms_team_def",
+    "name": "静候彩铃·全队无视防御",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "full_stack",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_team_def",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "def_ignore": 0.12
+    },
+    "calculation": {
+      "team_unique_key": "elyms_team_def"
+    }
+  },
+  {
+    "id": "arc_elyms_self_def",
+    "name": "静候彩铃·装备者额外无视防御",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "full_stack"
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_self_def",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "def_ignore": 0.1
+    }
+  },
+  {
+    "id": "arc_elyms_light_pen",
+    "name": "静候彩铃·全队光抗穿透",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "E"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_light_pen",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "res_down_光": 0.08
+    },
+    "calculation": {
+      "team_unique_key": "elyms_light_pen"
+    }
+  },
+  {
+    "id": "character_elyms_follow_group",
+    "name": "追忆·对群",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_follow_single"
+      ]
+    }
+  },
+  {
+    "id": "character_elyms_follow_single",
+    "name": "追忆·对单",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskillb1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_follow_group"
+      ]
+    }
   }
 ]

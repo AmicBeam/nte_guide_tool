@@ -14,50 +14,131 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ElymsCatalogTest(unittest.TestCase):
-    def test_framework_keeps_missing_data_and_individual_damage_entries(self):
-        catalog = load_shaft_catalog()
-        characters = catalog['characters']
-        character = next(c for c in characters if c['id'] == CID)
-        self.assertEqual((character['element'], character['rarity'], character['adaptation']), ('光', 'S', ''))
-        self.assertEqual(character['base_stats'], {'atk':None, 'hp':None, 'def':None})
-        self.assertEqual([c['element'] for c in characters], sorted(
-            [c['element'] for c in characters], key=('光', '灵', '咒', '暗', '魂', '相').index))
-        self.assertTrue((ROOT / 'app/modules/guide/static/character-previews/elyms-avatar.webp').is_file())
-        actions = [a for a in catalog['actions_by_character'][CID] if a['name'] not in ('无', '闪')]
-        self.assertEqual(len(actions), 28)
-        self.assertEqual(len({a['id'] for a in actions}), 28)
-        for action in actions:
-            self.assertTrue(action['duration_pending'])
-            self.assertEqual(action['duration_ticks'], 0)
-            self.assertFalse(action.get('is_time_stop_zero'))
-            self.assertFalse(action['resonance_skill_level_bonus'])
-            self.assertEqual(action['hit_count'], 1)
-            self.assertEqual((action['multipliers']['atk'], action['energy_gain'], action['harmony'], action['stagger']),
-                             (.433, 2.707, 4.511, .536))
-            self.assertIn('占位', action['validation_note'])
-        self.assertEqual(len(catalog['awakenings']['曳尔沐']), 8)
-        self.assertTrue(all(a['implemented'] is False for a in catalog['awakenings']['曳尔沐']))
-        self.assertFalse(any(p.get('id') == CID for b in catalog['buffs'] for p in b.get('providers', [])))
+    def axis(self, steps, nodes=(), arc='', others=(), **options):
+        return {'team': [dict(slot=0, character_id=CID, arc_id=arc, cartridge_id='',
+                             awakening_nodes=list(nodes), skill_levels=dict(basic=1, skill=1, ultimate=1, support=1)), *others],
+                'steps': [dict(id=str(i), slot=slot, action_id=action, start_tick=tick)
+                          for i, (slot, action, tick) in enumerate(steps)], 'options': options}
 
-    def test_save_normalization_and_engine_do_not_invent_awakening_effects(self):
-        axis = {'team': [dict(slot=0, character_id=CID, arc_id='', cartridge_id='',
-                             skill_levels=dict(basic=1, skill=1, ultimate=1, support=1))],
-                'steps': [dict(id='a', slot=0, action_id='action_elyms_melee1', start_tick=0)]}
-        self.assertEqual(normalize_axis_payload(axis)['team'][0]['character_id'], CID)
-        details = []
-        for nodes in ([], [1, 2, 3, 4, 5, 6]):
-            axis['team'][0]['awakening_nodes'] = nodes
-            detail = simulate_shaft_axis(axis)['result']['details'][0]
-            self.assertTrue(any('占位' in w for w in detail['warnings']))
-            details.append(detail)
-        self.assertEqual(details[0]['direct_damage'], details[1]['direct_damage'])
-        catalog = load_shaft_catalog()
-        script = "const s=require(process.argv[1]);const p=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(JSON.stringify(s.inspectAxis(p.axis,p.catalog)));"
-        result = subprocess.run(['node', '-e', script, str(ROOT/'app/modules/shaft/static/js/shaft_self_check.js')],
-                                input=json.dumps(dict(axis=axis, catalog=catalog)), text=True, capture_output=True, check=True)
-        warnings = json.loads(result.stdout)
-        self.assertTrue(any('基础框架' in w for w in warnings))
-        self.assertTrue(any('时长未实装' in w for w in warnings))
+    def sim(self, steps, **kwargs):
+        return simulate_shaft_axis(self.axis(steps, **kwargs))['result']
+
+    def own(self, names, nodes=(), **kwargs):
+        return self.sim([(0, 'action_elyms_'+name, tick) for name, tick in names], nodes=nodes, **kwargs)
+
+    def effects(self, detail):
+        return {b['rule_id']: b.get('effects', {}) for b in detail['applied_buffs']}
+
+    def test_confirmed_catalog_and_missing_fields(self):
+        c = load_shaft_catalog()
+        character = next(x for x in c['characters'] if x['id'] == CID)
+        self.assertEqual(character['adaptation'], '固态')
+        self.assertEqual(character['base_stats'], {'atk':660,'hp':15392,'def':909})
+        actions = {a['name']:a for a in c['actions_by_character'][CID]}
+        self.assertEqual(len(actions),22)
+        expected = {'a1':(.224,2),'a2':(.314,2),'a3':(.834,3),'a4':(.698,5),'a5':(.915,1),
+                    '强a1':(.259,2),'强a2':(2.236,24),'强a3':(.788,4),'重击':(.449,4),
+                    '瞄准':(.12,1),'下落':(.296,1),'闪反':(1,1),'e1':(1.999,6),'e2':(.998,6),
+                    'e3':(1.502,6),'q群':(5.683,2),'q单':(4.01,5),'追忆群':(1.576,4),'追忆单':(1.752,4)}
+        for name,(mult,hits) in expected.items():
+            a=actions[name]
+            self.assertAlmostEqual(a['multipliers']['atk'],mult)
+            self.assertEqual(a['hit_count'],hits)
+            self.assertEqual((a['energy_gain'],a['harmony'],a['stagger']),(0,0,0))
+            if not name.startswith('追忆'):
+                self.assertTrue(a['duration_pending'])
+                self.assertFalse(a.get('is_time_stop_zero'))
+        self.assertEqual(actions['e1']['harmony_on_start'],100)
+        self.assertEqual(actions['e1']['cooldown_ticks'],160)
+        self.assertEqual(actions['q群']['cooldown_ticks'],200)
+        self.assertEqual(actions['援护']['multipliers']['atk'],0)
+        self.assertEqual(c['formula_constants']['default_build_options'][CID]['curtain_bonus'],
+                         {'value':8,'stat':'暴击','passive_type':'type3','fixed':True})
+        self.assertEqual(next(a['id'] for a in c['arcs'] if a['adaptation']=='固态'),'arc_elyms_waiting_ringtone')
+        ref=c['arc_refinements']['arcs']['arc_elyms_waiting_ringtone']
+        self.assertEqual(ref['available_levels'],[1,5])
+        self.assertEqual(set(ref['levels']),{'1','5'})
+
+    def test_signal_multiplier_snapshot_reset_and_weak_action_checks(self):
+        r=self.own([('skill2',0),('goodbye',10),('melee1',20),('ultraskilla1',30),('melee1',40),('xietongskilla1',50)])
+        details=r['details']
+        self.assertAlmostEqual(details[1]['formula_parts']['base_multiplier_factor'],3.5)
+        self.assertAlmostEqual(details[3]['formula_parts']['base_multiplier_factor'],2)
+        self.assertAlmostEqual(details[5]['formula_parts']['base_multiplier_factor'],2)
+        repeated=self.own([('skill2',0),('goodbye',10),('ultraskilla1',20),('ultraskilla1',30),('xietongskilla1',40)])
+        self.assertEqual(repeated['details'][-1]['formula_parts']['base_multiplier_factor'],1)
+        self.assertTrue(any('当前形态' in w for w in details[2]['warnings']))
+        self.assertFalse(any('当前形态' in w for w in details[4]['warnings']))
+        self.assertTrue(any('后台' in w for w in details[5]['warnings']))
+        expired=self.own([('skill2',0),('goodbye',170)])['details'][1]
+        self.assertAlmostEqual(expired['formula_parts']['base_multiplier_factor'],1)
+
+    def test_awakening_consumption_replacement_and_six_extra(self):
+        r=self.own([('skill2',0),('goodbye',10),('ultraskilla1',20),('melee1',30),('ultraskilla1',40),('melee1',50)],nodes=range(1,7))
+        d=r['details']
+        self.assertAlmostEqual(d[1]['formula_parts']['base_multiplier_factor'],6)
+        fx=self.effects(d[3]);self.assertAlmostEqual(fx['character_elyms_a']['crit_dmg'],.2)
+        self.assertAlmostEqual(fx['character_elyms_d']['crit_dmg'],.2)
+        # F remains active for all follow damage, even when this probe has no follow tag.
+        fx=self.effects(d[5]);self.assertEqual(fx['character_elyms_a'],{})
+        extras=[e for e in r['periodic_damage_events'] if e.get('action_id')=='action_elyms_six_extra']
+        self.assertEqual(len(extras),1)
+        self.assertEqual(extras[0]['atk_multiplier'],6)
+        self.assertGreater(extras[0]['damage'],0)
+        no_consume=self.own([('goodbye',0)],nodes=range(1,7))
+        self.assertFalse(any(e.get('action_id')=='action_elyms_six_extra' for e in no_consume['periodic_damage_events']))
+
+    def test_passive_defense_window_team_attack_and_initial_harmony(self):
+        r=self.own([('skill1',0),('ultraskilla1',10),('melee1',20),('melee1',230)],nodes=[4,5],arc='arc_elyms_waiting_ringtone')
+        self.assertAlmostEqual(r['details'][0]['formula_parts']['base_multiplier_factor'],2)
+        self.assertEqual(self.own([('melee1',0)],nodes=[5])['resources_by_slot'][0]['initial_harmony'],100)
+        self.assertEqual(self.own([('melee1',0)],nodes=[5],loop_enabled=True)['resources_by_slot'][0]['initial_harmony'],0)
+        self.assertEqual(self.own([('melee1',0)])['resources_by_slot'][0]['initial_harmony'],0)
+        fx=self.effects(r['details'][2])
+        self.assertAlmostEqual(fx['character_elyms_q_atk']['flat_atk'],246)
+        self.assertAlmostEqual(fx['character_elyms_talent2']['crit_dmg'],.1)
+        self.assertNotIn('character_elyms_q_atk',self.effects(r['details'][3]))
+
+    def test_follow_shape_shared_cooldown_quota_and_weapon_threshold(self):
+        teammate=dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id='')
+        steps=[(0,'action_elyms_ultraskilla1',0),(1,'action_none_dd034941ef',10),
+               (0,'action_elyms_xietongskilla1',20),(0,'action_elyms_xietongskillb1',25),
+               (0,'action_elyms_xietongskilla1',60),
+               *[(0,'action_elyms_xietongskilla1',90+i*30) for i in range(5)]]
+        r=self.sim(steps,others=[teammate],arc='arc_elyms_waiting_ringtone');d=r['details']
+        self.assertTrue(any('额外激活' in w for w in d[3]['warnings']))
+        self.assertTrue(any('CD' in w for w in d[3]['warnings']))
+        self.assertFalse(any('后台' in w for w in d[2]['warnings']))
+        self.assertTrue({'arc_elyms_team_def','arc_elyms_self_def'} <= {b['rule_id'] for b in d[2]['triggered_buffs']})
+        self.assertAlmostEqual(self.effects(d[4])['arc_elyms_team_def']['def_ignore'],.12)
+        self.assertTrue(any('最多使用6次' in w for w in d[-1]['warnings']))
+
+    def test_energy_gain_talent_and_echo_do_not_recurse(self):
+        catalog=load_shaft_catalog()
+        chaos=next(a['id'] for a in catalog['actions_by_character']['char_d38b672525'] if a['name']=='援护')
+        others=[dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''),
+                dict(slot=2,character_id='char_d38b672525',arc_id='',cartridge_id='')]
+        axis=self.axis([(1,'action_982c67944f',0),(2,chaos,30),(1,'action_none_dd034941ef',200)],others=others)
+        axis['initial_energy']=0
+        r=simulate_shaft_axis(axis)['result']
+        light=[b for d in r['details'] for b in d['applied_buffs'] if b['rule_id']=='character_elyms_energy_light']
+        self.assertTrue(light)
+        self.assertTrue(any(b['rule_id']=='character_elyms_energy_light' for d in r['details'] for b in d['triggered_buffs']))
+        axis['initial_energy']=1000
+        capped=simulate_shaft_axis(axis)['result']
+        self.assertFalse(any(b['rule_id']=='character_elyms_energy_light' for d in capped['details'] for b in d['applied_buffs']))
+        echoes=[e for e in r['reaction_effects'] if e.get('is_echo')]
+        self.assertEqual(len(echoes),1)
+        original=next(e for e in r['reaction_effects'] if e['reaction']=='延滞' and not e.get('is_echo'))
+        self.assertEqual(echoes[0]['start_tick']-original['start_tick'],75)
+
+    def test_old_partial_entries_are_removed_and_self_check_keeps_missing_duration(self):
+        axis=self.axis([(0,'action_elyms_melee3_1',0),(0,'action_elyms_melee1',10)])
+        self.assertEqual([s['action_id'] for s in normalize_axis_payload(axis)['steps']],['action_elyms_melee1'])
+        catalog=load_shaft_catalog()
+        script="const s=require(process.argv[1]);const p=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(JSON.stringify(s.inspectAxis(p.axis,p.catalog)));"
+        result=subprocess.run(['node','-e',script,str(ROOT/'app/modules/shaft/static/js/shaft_self_check.js')],input=json.dumps(dict(axis=axis,catalog=catalog)),text=True,capture_output=True,check=True)
+        self.assertTrue(any('时长未实装' in w for w in json.loads(result.stdout)))
 
 
 class ElymsAccessTest(RoomFlowTestCase):

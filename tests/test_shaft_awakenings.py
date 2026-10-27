@@ -31,8 +31,8 @@ class ShaftAwakeningDataTestCase(unittest.TestCase):
         ]
 
         self.assertEqual(len(entries), 200)
-        self.assertEqual(len(pending), 8)
-        self.assertEqual(pending, awakenings['曳尔沐'])
+        self.assertEqual(len(pending), 0)
+        self.assertTrue(all(entry['implemented'] for entry in awakenings['曳尔沐']))
         self.assertTrue(all(entry.get('implemented') is True for entry in awakenings['黑羽']))
         self.assertEqual(len(out_of_scope), 23)
         self.assertTrue(all(entry.get('implemented') is True for entry in awakenings['灵可']))

@@ -229,17 +229,18 @@
   },
   {
     "id": "char_elyms",
+    "initial_harmony_non_loop_by_awakening_node": {"5": 100},
     "name": "曳尔沐",
     "element": "光",
-    "adaptation": "",
+    "adaptation": "固态",
     "rarity": "S",
     "level": 80,
     "avatar": "/static/guide/character-previews/elyms-avatar.webp",
     "portrait": "",
     "base_stats": {
-      "atk": null,
-      "hp": null,
-      "def": null
+      "atk": 660,
+      "hp": 15392,
+      "def": 909
     },
     "modifiers": {
       "crit_rate": 0.05,
@@ -249,7 +250,7 @@
       "label": "待资料",
       "modifiers": {}
     },
-    "data_note": "基础框架：面板、适应类型、动作耗时、冷却、耗能、天赋与觉醒待补；伤害条目为占位值，当前结果不代表完整角色伤害。"
+    "data_note": "动作耗时、逐动作回能/环合/倾陷与终结耗能待补；信号与变轨激活窗口的部分条件待确认，当前仅供机制试算。"
   },
   {
     "id": "char_0846d632e0",

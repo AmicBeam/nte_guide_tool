@@ -86,7 +86,7 @@
     flat_def: 'flat_def',
   };
   const CURTAIN_PASSIVE_TYPES = ['type2', 'type3', 'type4'];
-  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'reaction_end', 'periodic_damage', 'dot_layer_applied', 'full_stack']);
+  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'reaction_end', 'periodic_damage', 'dot_layer_applied', 'full_stack', 'energy_gain']);
   const PERMANENT_BUFF_END_TICK = 1000000000;
   const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
   const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
@@ -1621,6 +1621,7 @@
       if (type === 'expected_critical_hit') return num(context.expected_critical_hits) > 0;
       if (type === 'hit_count_positive') return num(context.hit_count) > 0;
       if (type === 'source_foreground_at_hit') return int(context.foreground_slot_at_hit, -1) === int(context.source_slot, -2);
+      if (type === 'reaction_not_echo') return context.reaction?.is_echo !== true;
       if (type === 'enemy_debuff_active') {
         const active = Object.entries(context.enemy_debuffs || {}).filter(([, value]) => num(value) > num(context.tick)).map(([key]) => key);
         return Array.from(strSet(condition.debuffs)).some((name) => active.includes(name));
@@ -1939,7 +1940,7 @@
         return instance;
       }
       const previousActivationRuleId = String(instance._last_activation_rule_id || existingRule.id || '');
-      if (previousActivationRuleId !== String(rule.id || '')) {
+      if (previousActivationRuleId !== String(rule.id || '') || mode === 'replace') {
         truncateBuffTimelineAt(
           instance,
           startTick,
@@ -1947,6 +1948,10 @@
             ? int(context.visual_trigger_tick, startTick)
             : startTick,
         );
+      }
+      if (mode === 'replace') {
+        instance.rule = rule;
+        instance.name = rule.name || instance.name || '';
       }
       instance.start_tick = startTick;
       instance.end_tick = endTick;
@@ -2496,6 +2501,7 @@
       throw new Error('缺少排轴数据目录。');
     }
     const actionsById = recordMap(catalog.actions);
+    const eventBuffSummaries = [];
     const teamPayload = asList(axisPayload?.team).length ? asList(axisPayload.team) : asList(catalog.starter_axis?.team);
     const steps = migrateLingkeJointSteps(Array.isArray(axisPayload?.steps) ? axisPayload.steps : asList(catalog.starter_axis?.steps), teamPayload, catalog);
     validateSteps(steps, actionsById);
@@ -2571,9 +2577,14 @@
     }
     const initialHarmonyBySlot = new Map(Array.from(snapshots.entries()).map(([slot, snapshot]) => {
       const characterResources = loopInitialResources[String(snapshot.character?.id || '')];
-      const harmony = options.loop_enabled
+      let harmony = options.loop_enabled
         ? (characterResources && typeof characterResources === 'object' ? num(characterResources.harmony) : 0)
         : num(snapshot.character?.initial_harmony_non_loop);
+      if (!options.loop_enabled) {
+        Object.entries(snapshot.character?.initial_harmony_non_loop_by_awakening_node || {}).forEach(([node, value]) => {
+          if (hasAwakeningNode(snapshot, int(node))) harmony = Math.max(harmony, num(value));
+        });
+      }
       return [slot, Math.max(0, Math.min(HARMONY_CAPACITY, harmony))];
     }));
     const harmonyBySlot = new Map(initialHarmonyBySlot);
@@ -3190,6 +3201,13 @@
           source_step_id: String(source.step_id || ''),
           source_action_id: String(source.action_id || ''),
         });
+        if (buffRules.some((rule) => rule.trigger?.event === 'energy_gain')) {
+          const recipient = snapshots.get(slot);
+          const gains = triggerBuffsForEvent('energy_gain', tick, {id: source.step_id || '', slot},
+            {id: source.action_id || '', action_type: '无', damage_type: '无', hit_count: 0}, recipient,
+            runtimeFrontSlot !== slot, {foreground_slot_at_hit: runtimeFrontSlot, energy_amount: appliedAmount});
+          eventBuffSummaries.push(...gains.map((summary) => ({step_id: source.step_id, summary})));
+        }
       }
       return appliedAmount;
     }
@@ -3671,6 +3689,17 @@
           || int(event.tick) < int(effect.start_tick)
           || int(event.tick) > int(effect.end_tick)
         ) return 0;
+      }
+      if (event.kind === 'reaction_echo') {
+        const effect = seedLoopInitialReaction(event.reaction, snapshot, int(event.tick));
+        if (effect) {
+          effect.loop_initial = false;
+          effect.is_echo = true;
+          const gains = triggerBuffsForEvent('reaction_trigger', int(event.tick), {id: 'reaction-echo', slot: snapshot.slot},
+            {id: 'reaction-echo', action_type: '被动', damage_type: '被动', hit_count: 0}, snapshot, true, {reaction: effect});
+          eventBuffSummaries.push(...gains.map((summary) => ({step_id: event.source_step_id, summary})));
+        }
+        return 0;
       }
       if (event.kind === 'reaction_pulse') {
         const instance = event._buff_instance;
@@ -4431,6 +4460,12 @@
         if (cooldownTicks > 0 && triggerTick < cooldownUntilTick) return;
         const activation = rule.activation && typeof rule.activation === 'object' ? rule.activation : {};
         const runtimeRule = clone(rule);
+        if (activation.stack_gain_from_key) {
+          runtimeRule.stacking = Object.assign({}, runtimeRule.stacking, {
+            stack_gain: ownerBuffs.filter((instance) => String(instance.definition_id) === String(activation.stack_gain_from_key))
+              .reduce((sum, instance) => sum + Math.max(0, num(instance.stack_count)), 0),
+          });
+        }
         if (runtimeRule.duration?.pause_off_field === true) {
           runtimeRule.duration.ticks = onFieldDurationTicks(ownerSlot, triggerTick, durationTicksForRule(rule));
         }
@@ -4452,7 +4487,7 @@
         const stackSourceKey = String(activation.effects_from_stack?.key || '');
         const stackSource = ownerBuffs.find((instance) => String(instance.definition_id || '') === stackSourceKey);
         if (stackSourceKey) {
-          const sourceStacks = Math.max(0, num(stackSource?.stack_count));
+          const sourceStacks = Math.min(num(activation.effects_from_stack.max_count, Infinity), Math.max(0, num(stackSource?.stack_count)));
           const sourceEffects = runtimeRule.effects && typeof runtimeRule.effects === 'object' ? runtimeRule.effects : {};
           const fullEffectKeys = new Set(asList(activation.effects_from_stack?.full_effect_keys).map(String));
           const perStackEntries = Object.entries(activation.effects_from_stack?.per_stack_from_effect || {});
@@ -4472,6 +4507,11 @@
           }
           runtimeRule.effects = resolvedEffects;
           runtimeRule.consumed_stacks = sourceStacks;
+          if (runtimeRule.triggered_damage?.action && runtimeRule.triggered_damage.atk_per_stack != null) {
+            runtimeRule.triggered_damage.action.multipliers = Object.assign({}, runtimeRule.triggered_damage.action.multipliers, {
+              atk: num(runtimeRule.triggered_damage.action.multipliers?.atk) + sourceStacks * num(runtimeRule.triggered_damage.atk_per_stack),
+            });
+          }
         }
         const ownerBase = activation.effects_from_owner_base && typeof activation.effects_from_owner_base === 'object'
           ? activation.effects_from_owner_base
@@ -4628,6 +4668,11 @@
           enqueueTriggeredDamage(snapshots.get(ownerSlot), runtimeRule.triggered_damage.action,
             triggerTick + Math.max(0, int(runtimeRule.triggered_damage.delay_ticks)));
         }
+        if (runtimeRule.delayed_reaction?.reaction) {
+          reactionDamageEvents.push({kind: 'reaction_echo', reaction: runtimeRule.delayed_reaction.reaction,
+            tick: triggerTick + Math.max(0, int(runtimeRule.delayed_reaction.delay_ticks)), sequence: 0,
+            contributor_slot: ownerSlot, source_step_id: step.id, damage: null});
+        }
         if (runtimeRule.reaction_pulse) {
           instance._pulse_generation = num(instance._pulse_generation) + 1;
           const interval = Math.max(1, int(runtimeRule.reaction_pulse.interval_ticks));
@@ -4676,7 +4721,8 @@
             decorateTriggeredSummary(buffSummary(addedBuff), addedBuff.rule),
           ));
         });
-        const fullStackBuffId = String(activation.full_stack_buff_id || '');
+        const fullStackBuffIds = (Array.isArray(activation.full_stack_buff_ids)
+          ? activation.full_stack_buff_ids : [activation.full_stack_buff_id]).map((id) => String(id || '')).filter(Boolean);
         const fullStackThreshold = Math.max(1, num(
           activation.full_stack_threshold,
           maxStacksForRule(runtimeRule),
@@ -4689,24 +4735,26 @@
             ))
             .reduce((sum, candidate) => sum + Math.max(0, num(candidate.stack_count, 1)), 0)
           : Math.max(0, num(instance.stack_count, 1));
-        if (fullStackBuffId && previousStackCount < fullStackThreshold && currentStackCount >= fullStackThreshold) {
-          const fullStackRule = buffRules.find((candidate) => (
-            int(candidate.owner_slot) === ownerSlot
-            && String(candidate.id || '') === fullStackBuffId
-          ));
-          if (fullStackRule) {
-            const fullStackInstance = activateBuff(activeBuffs, fullStackRule, triggerTick, 1, context);
-            if (fullStackInstance) {
-              triggered.push(trackBuffTimelineSummary(
-                fullStackInstance,
-                decorateTriggeredSummary(
-                  buffSummary(fullStackInstance),
-                  fullStackRule,
-                  'full_stack',
-                ),
-              ));
+        if (fullStackBuffIds.length && previousStackCount < fullStackThreshold && currentStackCount >= fullStackThreshold) {
+          fullStackBuffIds.forEach((fullStackBuffId) => {
+            const fullStackRule = buffRules.find((candidate) => (
+              int(candidate.owner_slot) === ownerSlot
+              && String(candidate.id || '') === fullStackBuffId
+            ));
+            if (fullStackRule) {
+              const fullStackInstance = activateBuff(activeBuffs, fullStackRule, triggerTick, 1, context);
+              if (fullStackInstance) {
+                triggered.push(trackBuffTimelineSummary(
+                  fullStackInstance,
+                  decorateTriggeredSummary(
+                    buffSummary(fullStackInstance),
+                    fullStackRule,
+                    'full_stack',
+                  ),
+                ));
+              }
             }
-          }
+          });
         }
       });
       if (event !== 'dot_layer_applied') {
@@ -5054,6 +5102,7 @@
       const isInstantForegroundQ = isZeroForegroundQStep(step, action);
       const warnings = [];
       if (action.validation_note) warnings.push(String(action.validation_note));
+      if (action.requires_off_field && runtimeFrontSlot === slot) warnings.push('该协同攻击要求角色处于后台。');
       settleActionEnergy(isInstantForegroundQ ? startTick - 1 : startTick);
       settleActionHarmony(isInstantForegroundQ ? startTick - 1 : startTick);
       const instantHarmony = num(action.harmony_on_start) * actionMultiplier;
@@ -5119,7 +5168,8 @@
         ));
       }
       // Check the entry condition before this action creates its own form buff.
-      if (action.forbidden_buff_key && activeBuffs.some((buff) => String(buff.definition_id) === action.forbidden_buff_key
+      const forbiddenBuffKeys = new Set([...asList(action.forbidden_buff_any_keys), action.forbidden_buff_key].map((key) => String(key || '')).filter(Boolean));
+      if (forbiddenBuffKeys.size && activeBuffs.some((buff) => forbiddenBuffKeys.has(String(buff.definition_id))
         && int(buff.owner_slot) === slot && buffTick >= int(buff.start_tick) && buffTick < int(buff.end_tick))) {
         warnings.push('当前形态不能使用该动作。');
       }
@@ -6010,6 +6060,11 @@
         ...item,
         percent: totalDamage > 0 ? item.damage / totalDamage * 100 : 0,
       }));
+    eventBuffSummaries.forEach(({step_id, summary}) => {
+      if (num(summary.trigger_tick) < 0) return;
+      const detail = details.find((item) => String(item.step_id) === String(step_id));
+      if (detail) detail.triggered_buffs.push(summary);
+    });
     return {
       ok: true,
       summary: {

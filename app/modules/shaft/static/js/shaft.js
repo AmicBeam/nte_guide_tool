@@ -2554,6 +2554,7 @@
             ${mechanismTooltip}
           </section>
           <section class="shaft-member-editor">
+            ${character.data_note ? `<p role="note">${escapeHtml(character.data_note)}</p>` : ''}
             <div class="shaft-loadout-grid">
               <div class="shaft-character-select shaft-build-character-picker" data-build-character-picker>
                 <span>角色</span>

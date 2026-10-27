@@ -892,5 +892,47 @@
       "implemented": true,
       "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
     }
+  ],
+  "曳尔沐": [
+    {
+      "title": "觉醒A待补",
+      "description": "效果与数值待补，当前不参与计算。",
+      "implemented": false
+    },
+    {
+      "title": "觉醒B待补",
+      "description": "效果与数值待补，当前不参与计算。",
+      "implemented": false
+    },
+    {
+      "title": "觉醒C待补",
+      "description": "效果与数值待补，当前不参与计算。",
+      "implemented": false
+    },
+    {
+      "title": "觉醒D待补",
+      "description": "效果与数值待补，当前不参与计算。",
+      "implemented": false
+    },
+    {
+      "title": "觉醒E待补",
+      "description": "效果与数值待补，当前不参与计算。",
+      "implemented": false
+    },
+    {
+      "title": "觉醒F待补",
+      "description": "效果与数值待补，当前不参与计算。",
+      "implemented": false
+    },
+    {
+      "title": "三觉共鸣待补",
+      "description": "效果与数值待补，当前不参与计算。",
+      "implemented": false
+    },
+    {
+      "title": "六觉共鸣待补",
+      "description": "效果与数值待补，当前不参与计算。",
+      "implemented": false
+    }
   ]
 }

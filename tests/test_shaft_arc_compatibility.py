@@ -34,6 +34,7 @@ EXPECTED_CHARACTER_ADAPTATIONS = {
     '卡厄斯': '聚合',
     '哈索尔': '等离子',
     '翳': '气态',
+    '曳尔沐': '',  # 基础框架尚未确认适应类型，不允许装备弧盘。
 }
 
 
@@ -43,7 +44,12 @@ class ShaftArcCompatibilityTestCase(unittest.TestCase):
 
         self.assertTrue(catalog['characters'])
         self.assertTrue(catalog['arcs'])
-        self.assertTrue(all(character.get('adaptation') in ADAPTATIONS for character in catalog['characters']))
+        for character in catalog['characters']:
+            if character['id'] == 'char_elyms':
+                self.assertEqual(character['adaptation'], '')
+                self.assertTrue(character['data_note'])
+            else:
+                self.assertIn(character.get('adaptation'), ADAPTATIONS)
         self.assertTrue(all(arc.get('adaptation') in ADAPTATIONS for arc in catalog['arcs']))
         self.assertEqual(
             {character['name']: character['adaptation'] for character in catalog['characters']},

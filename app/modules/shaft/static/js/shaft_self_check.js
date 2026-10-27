@@ -201,6 +201,13 @@
     const abnormalCharacters = new Set();
     const missingDurationActions = new Set();
 
+    const teamCharacterIds = new Set((axis?.team || []).map((member) => String(member.character_id || '')));
+    (catalog?.characters || []).forEach((character) => {
+      if (teamCharacterIds.has(String(character.id || '')) && character.data_note) {
+        warnings.push(`${character.name}：${character.data_note}`);
+      }
+    });
+
     warnings.push(...foregroundReturnWarnings(orderedSteps));
     warnings.push(...loopInitialReactionWarnings(axis, catalog, Array.isArray(simulationResult) ? {} : simulationResult));
 

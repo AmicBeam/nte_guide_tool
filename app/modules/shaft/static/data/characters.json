@@ -228,6 +228,30 @@
     "source_row": 7
   },
   {
+    "id": "char_elyms",
+    "name": "曳尔沐",
+    "element": "光",
+    "adaptation": "",
+    "rarity": "S",
+    "level": 80,
+    "avatar": "/static/guide/character-previews/elyms-avatar.webp",
+    "portrait": "",
+    "base_stats": {
+      "atk": null,
+      "hp": null,
+      "def": null
+    },
+    "modifiers": {
+      "crit_rate": 0.05,
+      "crit_dmg": 0.5
+    },
+    "bond_bonus": {
+      "label": "待资料",
+      "modifiers": {}
+    },
+    "data_note": "基础框架：面板、适应类型、动作耗时、冷却、耗能、天赋与觉醒待补；伤害条目为占位值，当前结果不代表完整角色伤害。"
+  },
+  {
     "id": "char_0846d632e0",
     "name": "灵可",
     "element": "灵",

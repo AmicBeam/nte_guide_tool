@@ -7,6 +7,14 @@ from pathlib import Path
 
 
 class NTEAccountDatabaseTest(unittest.TestCase):
+    def test_elyms_defaults_to_test_only_in_independent_plugin(self) -> None:
+        self.module.ensure_nte_tables()
+        model = self.module.NTEShaftCharacterPublication
+        publication = model.get(model.character_id == 'char_elyms')
+        self.assertEqual(publication.character_name, '曳尔沐')
+        self.assertEqual(publication.access_level, 'test')
+        self.assertFalse(publication.is_published)
+
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.original_database_path = os.environ.get('NTE_DATABASE_PATH')

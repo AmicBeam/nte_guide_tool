@@ -229,7 +229,9 @@
   },
   {
     "id": "char_elyms",
-    "initial_harmony_non_loop_by_awakening_node": {"5": 100},
+    "initial_harmony_non_loop_by_awakening_node": {
+      "5": 100
+    },
     "name": "曳尔沐",
     "element": "光",
     "adaptation": "固态",
@@ -250,7 +252,73 @@
       "label": "待资料",
       "modifiers": {}
     },
-    "data_note": "动作耗时、逐动作回能/环合/倾陷与终结耗能待补；信号与变轨激活窗口的部分条件待确认，当前仅供机制试算。"
+    "data_note": "动作耗时、逐动作回能/环合/倾陷与终结耗能待补；信号自身到期规则待确认，当前仅供机制试算。",
+    "self_check_activations": [
+      {
+        "id": "elyms_e2",
+        "name": "不连续的存在",
+        "action_ids": [
+          "action_elyms_skill2"
+        ],
+        "duration_ticks": 120,
+        "grants": [
+          {
+            "action_ids": [
+              "action_elyms_melee5"
+            ],
+            "absent_buff_keys": [
+              "character_elyms_medium",
+              "character_elyms_strong"
+            ],
+            "last_hit_required": true
+          },
+          {
+            "action_ids": [
+              "action_elyms_skill1"
+            ],
+            "absent_buff_keys": [
+              "character_elyms_medium",
+              "character_elyms_strong"
+            ]
+          }
+        ],
+        "absent_buff_keys": [
+          "character_elyms_medium",
+          "character_elyms_strong"
+        ]
+      },
+      {
+        "id": "elyms_e3",
+        "name": "对你说再见",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ],
+        "duration_ticks": 60,
+        "grants": [
+          {
+            "action_ids": [
+              "action_elyms_meleeb3"
+            ],
+            "any_buff_keys": [
+              "character_elyms_medium",
+              "character_elyms_strong"
+            ],
+            "last_hit_required": true
+          },
+          {
+            "triggered_rule_ids": [
+              "character_elyms_signal_b",
+              "character_elyms_signal_strong"
+            ],
+            "awakening_resonance": 3
+          }
+        ],
+        "any_buff_keys": [
+          "character_elyms_medium",
+          "character_elyms_strong"
+        ]
+      }
+    ]
   },
   {
     "id": "char_0846d632e0",

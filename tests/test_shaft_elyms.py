@@ -167,3 +167,66 @@ class ElymsAccessTest(RoomFlowTestCase):
             self.assertEqual(public['id'] in ids, token == tester)
             response = self.client.get(f"/api/shaft/axes/{public['id']}", headers={'Authorization': f'Bearer {token}'} if token else {})
             self.assertEqual(response.status_code, 200 if token == tester else 400)
+
+
+class ElymsActivationTest(unittest.TestCase):
+    axis = ElymsCatalogTest.axis
+    sim = ElymsCatalogTest.sim
+    own = ElymsCatalogTest.own
+    def check(self, names, nodes=(), result=None, loop=False):
+        axis=self.axis([(0,'action_elyms_'+name,tick) for name,tick in names],nodes=nodes)
+        axis['options']['loop_enabled']=loop
+        result=result if result is not None else simulate_shaft_axis(axis)['result']
+        script="const s=require(process.argv[1]);const p=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(JSON.stringify(s.inspectAxis(p.axis,p.catalog,p.result)));"
+        response=subprocess.run(['node','-e',script,str(ROOT/'app/modules/shaft/static/js/shaft_self_check.js')],
+                                input=json.dumps(dict(axis=axis,catalog=load_shaft_catalog(),result=result)),text=True,capture_output=True,check=True)
+        return [w for w in json.loads(response.stdout) if '尚未激活或激活已过期' in w]
+
+    def test_weak_finisher_and_e1_activate_e2_for_twelve_seconds(self):
+        self.assertTrue(self.check([('skill2',0)]))
+        self.assertEqual(self.check([('melee5',0),('skill2',124)]),[])
+        self.assertTrue(self.check([('melee5',0),('skill2',125)]))
+        self.assertEqual(self.check([('skill1',0),('skill2',10)]),[])
+        self.assertTrue(self.check([('melee4',0),('skill2',10)]))
+        self.assertEqual(self.check([('melee5',0),('ultraskilla1',10),('skill2',20)]),[])
+        self.assertTrue(self.check([('melee5',0),('skill2',10),('skill2',20)]))
+
+    def test_strong_finisher_activates_e3_once_for_six_seconds(self):
+        prefix=[('skill1',0),('skill2',10),('meleeb3',20)]
+        self.assertEqual(self.check(prefix+[('goodbye',84)]),[])
+        self.assertTrue(self.check(prefix+[('goodbye',85)]))
+        self.assertTrue(self.check([('skill1',0),('skill2',10),('meleeb2',20),('goodbye',30)]))
+        self.assertTrue(self.check(prefix+[('goodbye',30),('goodbye',40)]))
+        # An attack in the wrong signal form cannot grant the other form's activation.
+        self.assertTrue(self.check([('meleeb3',0),('goodbye',10)]))
+        self.assertTrue(self.check([('skill1',0),('skill2',10),('melee5',20),('skill2',30)]))
+
+    def test_interruption_requires_actual_last_hit(self):
+        names=[('melee5',0),('skill2',10)]
+        result=self.own(names)
+        result['details'][0].update(hit_count=0,original_hit_count=1)
+        self.assertTrue(self.check(names,result=result))
+        names=[('skill1',0),('skill2',10),('meleeb3',20),('goodbye',30)]
+        result=self.own(names)
+        result['details'][2].update(hit_count=3,original_hit_count=4)
+        self.assertTrue(self.check(names,result=result))
+
+    def test_resonance_and_current_signal_are_only_validation(self):
+        names=[('skill1',0),('skill2',10),('goodbye',20),('goodbye',30)]
+        # Three active nodes enable the one immediate E3 when B jumps to strong signal.
+        self.assertEqual(len(self.check(names,nodes=[1,2,3])),1)
+        names=[('skill1',0),('skill2',10),('meleeb3',20),('ultraskilla1',30),('goodbye',40)]
+        self.assertTrue(self.check(names))
+        result=self.own([('skill2',0)])
+        self.assertGreater(result['details'][0]['direct_damage'],0)
+        self.assertFalse(any('elyms_e2' in b.get('definition_id','') or 'elyms_e3' in b.get('definition_id','')
+                             for detail in result['details'] for b in detail['triggered_buffs']+detail['applied_buffs']))
+
+    def test_loop_finisher_completion_carries_to_next_cycle(self):
+        names=[('skill2',0),('melee5',180)]
+        result={'summary':{'duration_ticks':200},'details':[
+            {'step_id':'0','start_tick':0,'end_tick':5,'hit_count':6,'applied_buffs':[]},
+            {'step_id':'1','start_tick':180,'end_tick':200,'hit_count':1,'original_hit_count':1,'applied_buffs':[]},
+        ]}
+        self.assertTrue(self.check(names,result=result))
+        self.assertEqual(self.check(names,result=result,loop=True),[])

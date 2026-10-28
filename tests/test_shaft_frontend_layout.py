@@ -549,7 +549,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('增益解释', source)
         self.assertNotIn('const appliedBuffs =', source)
         self.assertIn('<strong class="shaft-detail-line-list">${detailLines(appliedBuffExplanations)}</strong>', source)
-        self.assertIn('<div class="shaft-detail-kv"><span>通伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>', source)
+        self.assertIn('<div class="shaft-detail-kv"><span>通用增伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>', source)
         self.assertIn('<div class="shaft-detail-kv"><span>${escapeHtml(actionElement)}属性伤害</span><strong>${formatNumber(actionElementDamage * 100, 1)}%</strong></div>', source)
         self.assertIn('const finalDamageBonus = Number(panelStats.final_dmg || 0);', source)
         self.assertIn('...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : [])', source)

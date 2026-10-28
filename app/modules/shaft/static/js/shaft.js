@@ -1,6 +1,6 @@
 (function () {
   const ELEMENTS = ['光', '灵', '咒', '暗', '魂', '相'];
-  const ELEMENT_DAMAGE_KEYS = Object.fromEntries(ELEMENTS.map((element) => [element, `element_dmg_${element}`]));
+  const ELEMENT_DAMAGE_KEYS = {...Object.fromEntries(ELEMENTS.map((element) => [element, `element_dmg_${element}`])), 心灵: 'mind_dmg'};
   const RESISTANCE_ELEMENTS = [...ELEMENTS, '心灵'];
   const SLOT_COLORS = ['#58d8d2', '#ffbf57', '#ff5aa5', '#77e36f'];
   const ACTION_CONTRIBUTION_COLORS = ['#58d8d2', '#ffbf57', '#ff5aa5', '#77e36f', '#b28cff', '#62b7ff', '#ff7a63', '#d8e26a'];
@@ -5333,14 +5333,16 @@
 
   function renderActionDetail(step, detail, action, damageEvent = null) {
     const panelStats = detail?.panel || {};
-    const actionElement = String(detail?.damage_element || action?.damage_element || getCharacterMap().get(memberBySlot(step.slot)?.character_id || '')?.element || '');
+    const actionElement = String(detail?.damage_element || ((action?.extra_tag === '心灵' || action?.tags?.includes('心灵')) ? '心灵' : '') || action?.damage_element || getCharacterMap().get(memberBySlot(step.slot)?.character_id || '')?.element || '');
     const actionElementDamage = elementDamageValue(panelStats, actionElement);
     const finalDamageBonus = Number(panelStats.final_dmg || 0);
+    const actionDamageBonus = Number(panelStats.action_dmg || 0);
     const otherDamageBonus = Number(
       panelStats.other_dmg
       ?? (
         Number(detail?.formula_parts?.dmg_bonus || 0)
         - Number(panelStats.all_dmg || 0)
+        - actionDamageBonus
         - actionElementDamage
       )
     );
@@ -5369,10 +5371,12 @@
       realtimePanelRows.push(
         `<div class="shaft-detail-kv"><span>暴击</span><strong>${formatNumber((panelStats.crit_rate || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>暴伤</span><strong>${formatNumber((panelStats.crit_dmg || 0) * 100, 1)}%</strong></div>`,
-        `<div class="shaft-detail-kv"><span>通伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>`,
+        `<div class="shaft-detail-kv"><span>通用增伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>${escapeHtml(actionElement)}属性伤害</span><strong>${formatNumber(actionElementDamage * 100, 1)}%</strong></div>`,
+        `<div class="shaft-detail-kv"><span>动作增伤</span><strong>${formatNumber(actionDamageBonus * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>其他增伤</span><strong>${formatNumber(otherDamageBonus * 100, 1)}%</strong></div>`,
         ...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : []),
+        ...(Number(detail?.formula_parts?.ability_res_pen || 0) ? [`<div class="shaft-detail-kv"><span>异能抗性穿透</span><strong>${formatNumber(Number(detail.formula_parts.ability_res_pen) * 100, 1)}%</strong></div>`] : []),
         `<div class="shaft-detail-kv"><span>敌人结算属抗</span><strong>${formatNumber(Number(detail?.formula_parts?.settled_resistance || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>敌人结算防御</span><strong>${formatNumber(detail?.formula_parts?.settled_defense || 0, 1)}</strong></div>`,
       );
@@ -5390,13 +5394,13 @@
     const buffEffectLabels = {
       atk_pct: '攻击', flat_atk: '固定攻击', hp_pct: '生命', flat_hp: '固定生命',
       def_pct: '防御', flat_def: '固定防御', crit_rate: '暴击', crit_dmg: '暴伤',
-      def_ignore: '无视防御', res_down: '抗性降低', energy_recharge: '充能',
+      ability_res_pen: '异能抗性穿透', def_ignore: '无视防御', res_down: '抗性降低', energy_recharge: '充能',
       harmony_strength: '环合强度', stagger_strength: '倾陷强度', basic_dmg: '普攻增伤',
       stagger_damage_bonus: '倾陷伤害增伤',
       dodge_counter_dmg: '闪反增伤',
       skill_dmg: '变轨增伤', ultimate_dmg: '终结增伤', follow_dmg: '追击增伤',
       mind_dmg: '心灵增伤', attach_dmg: '附着增伤',
-      all_dmg: '全伤增伤', other_dmg: '其他增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升', base_atk_multiplier_add: '额外攻击倍率', interrupt_resistance: '抗打断',
+      all_dmg: '通用增伤', action_dmg: '动作增伤', other_dmg: '其他增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升', base_atk_multiplier_add: '额外攻击倍率', interrupt_resistance: '抗打断',
     };
     const flatBuffEffects = new Set(['flat_atk', 'flat_hp', 'flat_def', 'harmony_strength', 'stagger_strength']);
     const describeBuff = (buff) => {
@@ -5404,6 +5408,7 @@
       const effectText = effects.map(([key, value]) => {
         const label = buffEffectLabels[key]
           || (key.startsWith('element_dmg_') ? `${key.slice('element_dmg_'.length)}属性增伤` : '')
+          || (key.startsWith('ability_res_pen_') ? `${key.slice('ability_res_pen_'.length)}异能抗性穿透` : '')
           || (key.startsWith('res_down_') ? `${key.slice('res_down_'.length)}抗降低` : key);
         return `${label} ${Number(value) >= 0 ? '+' : ''}${flatBuffEffects.has(key) ? formatNumber(value, 1) : `${formatNumber(Number(value) * 100, 1)}%`}`;
       }).join('、');

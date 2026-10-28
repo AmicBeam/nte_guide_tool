@@ -24,7 +24,7 @@
     "providers": [{"kind": "character", "id": "char_dd034941ef"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 4}]},
     "target": {"scope": "registrar", "action_types": ["Q"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.25}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.25}, "display": {"line": false}
   },
   {
     "id": "character_protagonist_a5_support_atk", "name": "鉴定师5觉·援护攻击",
@@ -92,13 +92,13 @@
     "providers": [{"kind": "character", "id": "char_4f917797cb"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 6}]},
     "target": {"scope": "registrar", "action_names": ["转圈金谷", "金谷", "双倍金谷", "暴击金谷"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.15}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.15}, "display": {"line": false}
   },
   {
     "id": "character_edgar_a4_e_damage", "name": "埃德嘉4觉·变轨强化",
     "providers": [{"kind": "character", "id": "char_31c5130304"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 4}]}, "target": {"scope": "registrar", "action_types": ["E"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.5}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.5}, "display": {"line": false}
   },
   {
     "id": "character_edgar_a5_hp", "name": "埃德嘉5觉·生命",
@@ -312,7 +312,7 @@
         "action_2d0c051441", "action_634a6398e3"
       ]
     },
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 1.0}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 1.0}, "display": {"line": false}
   },
   {
     "id": "character_nanali_authority", "name": "娜娜莉·一代目的权柄",
@@ -345,7 +345,7 @@
     "id": "character_mint_a2_e_damage", "name": "薄荷2觉·变轨强化",
     "providers": [{"kind": "character", "id": "char_dda9fae1ef"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 2}]}, "target": {"scope": "registrar", "action_types": ["E"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.4}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.4}, "display": {"line": false}
   },
   {
     "id": "character_mint_a4_single_enemy_crit", "name": "薄荷4觉·单目标暴击",
@@ -469,7 +469,7 @@
     "id": "character_daphne_shift_damage", "name": "达芙蒂尔·幻影移行强化",
     "providers": [{"kind": "character", "id": "char_e8ad982185"}], "priority": 20,
     "trigger": {"event": "passive"}, "target": {"scope": "registrar", "action_names": ["移行", "移行附加"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.8}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.8}, "display": {"line": false}
   },
   {
     "id": "character_daphne_a6_def_ignore", "name": "达芙蒂尔6觉·无视防御",
@@ -544,7 +544,7 @@
     "providers": [{"kind": "character", "id": "char_7578b18979"}], "priority": 20,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_types": ["Q"]}},
     "target": {"scope": "registrar", "tags": ["附着"]}, "duration": {"type": "time", "ticks": 150},
-    "stacking": {"mode": "refresh", "max_stacks": 1}, "effects": {"all_dmg": 0.1}
+    "stacking": {"mode": "refresh", "max_stacks": 1}, "effects": {"action_dmg": 0.1}
   },
   {
     "id": "character_yi_a1_beast_damage", "name": "翳1觉·兽牙强化",
@@ -604,7 +604,7 @@
     },
     "duration": {"type": "time", "ticks": 1, "loop_carry": false},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"all_dmg": 0.3}
+    "effects": {"action_dmg": 0.3}
   },
   {
     "id": "character_zhenhong_a5_ascendant_def",
@@ -1378,7 +1378,7 @@
     "activation": {
       "effects_from_stack": {
         "key": "character_xun_record_stack",
-        "per_stack_from_effect": {"all_dmg": {"source": "record_damage", "factor": 1}}
+        "per_stack_from_effect": {"action_dmg": {"source": "record_damage", "factor": 1}}
       }
     },
     "effects": {"record_damage": 0.12}
@@ -1397,7 +1397,7 @@
     "target": {"scope": "registrar", "action_types": ["Q"]},
     "duration": {"type": "time", "ticks": 1, "loop_carry": false},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"all_dmg": 0.2}
+    "effects": {"action_dmg": 0.2}
   },
   {
     "id": "character_xun_q_def_ignore",
@@ -2248,7 +2248,7 @@
     "activation": {
       "effects_from_stack": {
         "key": "character_baizang_jin_word",
-        "per_stack_from_effect": {"all_dmg": {"source": "word_damage", "factor": 1}}
+        "per_stack_from_effect": {"action_dmg": {"source": "word_damage", "factor": 1}}
       }
     },
     "consume_on_apply": true,
@@ -2298,7 +2298,7 @@
     "dynamic_effects": {
       "negative_effect_count": {
         "damage_tags": ["DOT"],
-        "effect_key": "all_dmg",
+        "effect_key": "other_dmg",
         "per_count": 0.03,
         "max_count": 4
       }
@@ -2809,7 +2809,7 @@
     "duration": {"type": "permanent"},
     "dynamic_effects": {
       "active_dot_layer_count": {
-        "effect_key": "all_dmg",
+        "effect_key": "other_dmg",
         "per_count": 0.12,
         "max_count": 20,
         "action_last_hit_ratio": true
@@ -2857,7 +2857,7 @@
     "dynamic_effects": {
       "personal_resource_value": {
         "resource": "谐频",
-        "effect_key": "all_dmg",
+        "effect_key": "other_dmg",
         "base_value": 1.5,
         "per_point": 0.004,
         "max_amount": 100,
@@ -2881,7 +2881,7 @@
         "count_def_down": true,
         "count_res_down": true,
         "damage_tags": ["DOT"],
-        "effect_key": "all_dmg",
+        "effect_key": "other_dmg",
         "per_count": 0.04,
         "max_count": 5
       }
@@ -4205,7 +4205,7 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.6
+      "action_dmg": 0.6
     },
     "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%按用户10月9日调整公告更新。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
@@ -4251,7 +4251,7 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.3
+      "action_dmg": 0.3
     },
     "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%按用户10月9日调整公告更新。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
@@ -4727,7 +4727,7 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.35
+      "action_dmg": 0.35
     },
     "display": {
       "line": false
@@ -6424,7 +6424,7 @@
       "max_stacks": 1
     },
     "effects": {
-      "res_down_光": 0.08
+      "ability_res_pen_光": 0.08
     },
     "calculation": {
       "team_unique_key": "elyms_light_pen"

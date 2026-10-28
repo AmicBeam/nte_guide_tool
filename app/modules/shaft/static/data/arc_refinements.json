@@ -34,7 +34,7 @@
               "def_ignore": 0.1
             },
             "arc_elyms_light_pen": {
-              "res_down_光": 0.08
+              "ability_res_pen_光": 0.08
             }
           }
         },
@@ -58,7 +58,7 @@
               "def_ignore": 0.2
             },
             "arc_elyms_light_pen": {
-              "res_down_光": 0.2
+              "ability_res_pen_光": 0.2
             }
           }
         }
@@ -1987,7 +1987,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_paperplane_spirit_eq": {
-              "all_dmg": 0.2
+              "action_dmg": 0.2
             }
           }
         },
@@ -2001,7 +2001,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_paperplane_spirit_eq": {
-              "all_dmg": 0.2375
+              "action_dmg": 0.2375
             }
           }
         },
@@ -2015,7 +2015,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_paperplane_spirit_eq": {
-              "all_dmg": 0.275
+              "action_dmg": 0.275
             }
           }
         },
@@ -2029,7 +2029,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_paperplane_spirit_eq": {
-              "all_dmg": 0.3125
+              "action_dmg": 0.3125
             }
           }
         },
@@ -2043,7 +2043,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_paperplane_spirit_eq": {
-              "all_dmg": 0.35
+              "action_dmg": 0.35
             }
           }
         }

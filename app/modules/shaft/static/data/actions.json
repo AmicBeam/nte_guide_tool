@@ -6356,7 +6356,7 @@
     "self_modifiers": {
       "crit_rate": 0,
       "crit_dmg": 0,
-      "all_dmg": 0.5,
+      "action_dmg": 0.5,
       "flat_atk": 0,
       "atk_pct": 0,
       "hp_pct": 0,
@@ -6399,7 +6399,7 @@
     "self_modifiers": {
       "crit_rate": 0,
       "crit_dmg": 0,
-      "all_dmg": 1,
+      "action_dmg": 1,
       "flat_atk": 0,
       "atk_pct": 0,
       "hp_pct": 0,

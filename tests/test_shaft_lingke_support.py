@@ -98,7 +98,7 @@ class LingkeSupportTest(unittest.TestCase):
                     self.assertEqual(assist['formula_parts']['skill_level'], 3)
                     self.assertIn('character_lingke_harmonic_joint_damage',
                                   {buff['rule_id'] for buff in assist['applied_buffs']})
-                    self.assertAlmostEqual(assist['panel']['all_dmg'], 1.5)
+                    self.assertAlmostEqual(assist['panel']['other_dmg'], 1.5)
 
     def test_time_stop_selection_keeps_e_and_f_awakening_effects(self):
         axis = self.axis(nodes=[5, 6], tick=10)
@@ -108,7 +108,7 @@ class LingkeSupportTest(unittest.TestCase):
         assist = details['assist']
         self.assertEqual(assist['duration_ticks'], 0)
         self.assertEqual(assist['energy_gain'], 7.56)
-        self.assertAlmostEqual(assist['panel']['all_dmg'], 2.0)
+        self.assertAlmostEqual(assist['panel']['other_dmg'], 2.0)
         self.assertIn('character_lingke_awakening_f_joint_crit',
                       {buff['rule_id'] for buff in assist['applied_buffs']})
 
@@ -142,7 +142,7 @@ class LingkeSupportTest(unittest.TestCase):
         self.assertEqual(details['assist']['duration_ticks'], 0)
         self.assertEqual(details['assist']['lingke_joint_source_slot'], 2)
         self.assertIn(buff['rule_id'], {b['rule_id'] for b in details['assist']['applied_buffs']})
-        self.assertAlmostEqual(details['assist']['panel']['all_dmg'], 1.5)
+        self.assertAlmostEqual(details['assist']['panel']['other_dmg'], 1.5)
         # Without returning to the foreground at the hit, E must not create the Buff.
         axis['steps'] = [s for s in axis['steps'] if s['id'] != 'selection']
         axis['steps'][-1]['start_tick'] = 10

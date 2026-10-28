@@ -5026,8 +5026,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             for buff in details['xun_q']['triggered_buffs']
             if buff['rule_id'] == 'character_xun_q_def_ignore'
         )
-        self.assertEqual(record_buff['effects'], {'all_dmg': 0.24})
-        self.assertEqual(time_stop_buff['effects'], {'all_dmg': 0.2})
+        self.assertEqual(record_buff['effects'], {'action_dmg': 0.24})
+        self.assertEqual(time_stop_buff['effects'], {'action_dmg': 0.2})
         self.assertEqual(def_ignore_buff['effects'], {'def_ignore': 0.3})
 
     def test_zhenhong_yingxu_passive_stacks_solitary(self) -> None:
@@ -5448,7 +5448,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertAlmostEqual(resources[0]['energy'] - base_resources[0]['energy'], 5.9 * 0.6)
         self.assertAlmostEqual(resources[2]['energy'] - base_resources[2]['energy'], 5.9 * 0.6)
         self.assertAlmostEqual(detail['panel']['crit_rate'] - base_detail['panel']['crit_rate'], 0.25)
-        self.assertAlmostEqual(detail['panel']['all_dmg'] - base_detail['panel']['all_dmg'], 0.5)
+        self.assertAlmostEqual(detail['panel']['other_dmg'] - base_detail['panel']['other_dmg'], 0.5)
         self.assertGreater(detail['direct_damage'], base_detail['direct_damage'])
         applied_ids = {buff['rule_id'] for buff in detail['applied_buffs']}
         self.assertIn('character_lingke_awakening_e_joint_damage', applied_ids)
@@ -5720,15 +5720,15 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             if buff['rule_id'] == 'character_lingke_harmonic_joint_damage'
         )
 
-        self.assertEqual(base_buff['effects']['all_dmg'], 1.5)
-        self.assertEqual(full_buff['effects']['all_dmg'], 1.9)
+        self.assertEqual(base_buff['effects']['other_dmg'], 1.5)
+        self.assertEqual(full_buff['effects']['other_dmg'], 1.9)
         self.assertEqual(check_window['end_tick'] - check_window['start_tick'], 1)
         self.assertNotIn(
             'character_lingke_harmonic_joint_damage',
             {buff['rule_id'] for buff in expired_joint['applied_buffs']},
         )
         self.assertEqual(expired['resources_by_slot'][0]['personal_resources']['谐频'], 100)
-        self.assertAlmostEqual(full_joint['panel']['all_dmg'] - base_joint['panel']['all_dmg'], 0.4)
+        self.assertAlmostEqual(full_joint['panel']['other_dmg'] - base_joint['panel']['other_dmg'], 0.4)
         self.assertGreater(full_joint['direct_damage'], base_joint['direct_damage'])
         self.assertEqual(full['resources_by_slot'][0]['personal_resources']['谐频'], 0)
         self.assertAlmostEqual(full['resources_by_slot'][0]['harmony'], 59.099)
@@ -5754,7 +5754,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             buff for buff in q_details['q-burst']['applied_buffs']
             if buff['rule_id'] == 'character_lingke_q_burst_negative_damage'
         )
-        self.assertEqual(q_buff['effects']['all_dmg'], 0.12)
+        self.assertEqual(q_buff['effects']['other_dmg'], 0.12)
         self.assertEqual(q_details['q-open']['energy_after'], 0)
         self.assertEqual(q_details['q-burst']['energy_after'], 0)
 
@@ -7528,7 +7528,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             {buff['rule_id'] for buff in details['q1_trigger']['applied_buffs']},
         )
         self.assertFalse(q1_triggered_buffs['character_zhenhong_ascendant_red']['display_as_line'])
-        self.assertAlmostEqual(details['q1_trigger']['panel']['all_dmg'], 0.3)
+        self.assertAlmostEqual(details['q1_trigger']['panel']['action_dmg'], 0.3)
         self.assertAlmostEqual(details['q1_trigger']['panel']['element_dmg_咒'], 0.0)
         self.assertNotIn(
             'character_zhenhong_q1_self_all_dmg',
@@ -7685,7 +7685,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
 
         detail = result['details'][0]
         self.assertAlmostEqual(detail['formula_parts']['dmg_bonus'], 0.3)
-        self.assertAlmostEqual(detail['panel']['all_dmg'], 0.3)
+        self.assertAlmostEqual(detail['panel']['action_dmg'], 0.3)
         self.assertAlmostEqual(detail['formula_parts']['base_multiplier_factor'], 1.3)
         self.assertAlmostEqual(detail['panel']['element_dmg_咒'], 0.0)
 
@@ -8269,8 +8269,8 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         details = {detail['step_id']: detail for detail in result['details']}
         q_triggered = {buff['rule_id']: buff for buff in details['q']['triggered_buffs']}
         next_e = {buff['rule_id']: buff for buff in details['next_e']['applied_buffs']}
-        self.assertEqual(q_triggered['character_baizang_a1_next_skill']['effects'], {'all_dmg': 0.3})
-        self.assertEqual(next_e['character_baizang_a1_next_skill']['effects'], {'all_dmg': 0.3})
+        self.assertEqual(q_triggered['character_baizang_a1_next_skill']['effects'], {'action_dmg': 0.3})
+        self.assertEqual(next_e['character_baizang_a1_next_skill']['effects'], {'action_dmg': 0.3})
         self.assertEqual(next_e['character_baizang_a2_word_atk']['effects'], {})
 
     def test_sagiri_counts_only_registered_negative_states_and_converts_base_atk(self) -> None:
@@ -8302,7 +8302,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertEqual(dot_buffs['character_sagiri_dot_amplification']['effects'], {'final_dmg': 0.5})
         self.assertAlmostEqual(details['second_dot']['panel']['final_dmg'], 0.5)
         self.assertAlmostEqual(details['second_dot']['formula_parts']['final_multiplier'], 1.5)
-        self.assertEqual(sagiri_buffs['character_sagiri_a6_negative_damage']['effects'], {'all_dmg': 0.06})
+        self.assertEqual(sagiri_buffs['character_sagiri_a6_negative_damage']['effects'], {'other_dmg': 0.06})
         self.assertAlmostEqual(teammate_buffs['character_sagiri_q_base_team_flat_atk']['effects']['flat_atk'], 186)
         self.assertAlmostEqual(teammate_buffs['character_sagiri_q_team_flat_atk']['effects']['flat_atk'], 186)
         self.assertAlmostEqual(

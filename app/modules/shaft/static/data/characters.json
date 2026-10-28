@@ -252,7 +252,6 @@
       "label": "待资料",
       "modifiers": {}
     },
-    "data_note": "部分动作耗时为经验值；信号自身到期规则暂不模拟。",
     "self_check_activations": [
       {
         "id": "elyms_e2",

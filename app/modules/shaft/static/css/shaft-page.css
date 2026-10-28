@@ -184,8 +184,16 @@ body:has(.shaft-page) .shell {
     text-align: left;
 }
 
-.shaft-build-layout .shaft-member-identity small {
-    grid-column: 3;
+.shaft-build-layout .shaft-member-heading {
+    justify-content: flex-start;
+}
+
+.shaft-build-layout .shaft-member-heading > small {
+    position: absolute;
+    left: max(50%, 160px);
+    bottom: 6px;
+    transform: translateX(-50%);
+    white-space: nowrap;
 }
 
 .shaft-build-layout .shaft-loadout-grid {
@@ -310,6 +318,15 @@ body:has(.shaft-page) .shell {
     object-fit: cover;
     border: 2px solid color-mix(in srgb, var(--slot-color, var(--primary)) 70%, rgba(255,255,255,0.18));
     background: rgba(7, 12, 20, 0.76);
+}
+
+.shaft-member-heading {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 12px;
 }
 
 .shaft-member-identity strong {
@@ -4671,10 +4688,6 @@ body.shaft-dragging .shaft-action-bar {
         grid-template-columns: auto 58px minmax(0, 1fr);
         justify-items: start;
         align-items: center;
-    }
-
-    .shaft-member-identity small {
-        grid-column: 3;
     }
 
     .shaft-contribution-row {

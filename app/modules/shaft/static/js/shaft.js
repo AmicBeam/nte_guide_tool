@@ -2549,8 +2549,10 @@
           <section class="shaft-member-identity">
             <span class="shaft-member-slot">0${Number(member.slot) + 1}</span>
             <img class="shaft-member-avatar" src="${escapeHtml(character.avatar || member.character_avatar || '')}" alt="">
-            <strong>${escapeHtml(character.name || member.character_name || '未选择')}</strong>
-            <small>角色80 · 弧盘80 · 精炼${arcRefinement}</small>
+            <div class="shaft-member-heading">
+              <strong>${escapeHtml(character.name || member.character_name || '未选择')}</strong>
+              <small>角色80 · 弧盘80 · 精炼${arcRefinement}</small>
+            </div>
             ${mechanismTooltip}
           </section>
           <section class="shaft-member-editor">

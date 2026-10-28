@@ -4261,7 +4261,9 @@
       .map((buff) => {
         const startTick = Math.max(
           Number(detail?.display_start_tick ?? detail?.visual_start_tick ?? detail?.start_tick ?? 0),
-          Number(buff?.visual_start_tick ?? buff?.trigger_tick ?? buff?.start_tick ?? detail?.display_start_tick ?? 0),
+          Number(buff?.visual_start_tick ?? buff?.start_tick ?? detail?.display_start_tick ?? 0),
+          Number(buff?.visual_trigger_tick ?? (buff?.trigger_tick != null
+            ? visualTickFromCalculation(Number(buff.trigger_tick)) : 0)),
         );
         const endTick = Math.max(
           startTick + 1,

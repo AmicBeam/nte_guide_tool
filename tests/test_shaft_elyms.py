@@ -225,6 +225,10 @@ class ElymsCatalogTest(unittest.TestCase):
         for e in events:
             self.assertAlmostEqual(e['amount'],10)
             self.assertEqual(e['source_reaction'],'盈蓄')
+        summaries=[b for d in r['details'] for b in d['triggered_buffs']
+                   if b['rule_id']=='character_elyms_energy_light']
+        self.assertEqual(sorted((b['trigger_tick'], b['visual_trigger_tick'], b['stack_count'])
+                                for b in summaries), [(35,35,1),(55,55,2),(75,75,3),(115,115,1)])
         by_tick={d['start_tick']:d for d in r['details']}
         for tick,stacks in ((40,1),(55,2),(80,3),(120,1)):
             buff=next(b for b in by_tick[tick]['applied_buffs'] if b['rule_id']=='character_elyms_energy_light')

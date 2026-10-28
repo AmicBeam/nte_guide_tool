@@ -4440,6 +4440,7 @@
         summary.trigger_event = triggerEvent;
         summary.trigger_tick = triggerTick;
         const visualTriggerTick = int(extraContext.visual_trigger_tick, visualTickFromCalculationTick(triggerTick, qVirtualIntervals));
+        summary.visual_trigger_tick = visualTriggerTick;
         summary.visual_start_tick = int(summary.start_tick) === triggerTick
           ? visualTriggerTick
           : visualTickFromCalculationTick(int(summary.start_tick), qVirtualIntervals);

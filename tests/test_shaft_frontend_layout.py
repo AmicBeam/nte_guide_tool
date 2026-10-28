@@ -1857,6 +1857,44 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             source,
         )
 
+    def test_stack_tooltip_snapshots_begin_at_each_trigger_not_source_action(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        functions = source[source.index('  function wrappedTick('):source.index('  function mergedRenderedBuffSegments(')]
+        script = """
+          const calculationTickFromVisual = (v) => v;
+          const visualTickFromCalculation = (v) => v + 5;
+          const shouldDrawBuffLine = () => true;
+          const buffRuleDisplayName = (b) => b.name;
+          const formatNumber = String;
+          const ticksToSeconds = (v) => v / 10;
+          const BUFF_DURATION_LABEL_LIMIT_TICKS = 9000;
+        """ + functions + """
+          const snapshot = (tick, stacks, mode='add_stack') => ({
+            definition_id:'stack', name:'叠层', start_tick:0, visual_start_tick:0,
+            trigger_tick:tick, visual_trigger_tick:tick, end_tick:tick+30,
+            visual_end_tick:tick+30, duration_ticks:30, stacking_mode:mode,
+            stack_count:stacks, max_stacks:8,
+          });
+          const stacksAt = (buffs, ticks) => {
+            const segments = mergedBuffLineSegments([{start_tick:0, triggered_buffs:buffs}], 100);
+            return ticks.map(tick => segments.flatMap(s => s.tooltipItems)
+              .find(i => i.visualStartTick <= tick && tick < i.visualEndTick)?.stackCount ?? 0);
+          };
+          const shared = [snapshot(0,1),snapshot(10,2),snapshot(20,3),snapshot(60,1)];
+          const independent = [snapshot(0,1,'independent'),snapshot(10,1,'independent')];
+          const legacy = snapshot(10,2);
+          delete legacy.visual_trigger_tick;
+          console.log(JSON.stringify({
+            shared:stacksAt(shared,[0,9,10,19,20,49,50,60]),
+            independent:stacksAt(independent,[0,9,10,29,30,39,40]),
+            legacyStart:triggeredBuffLines({start_tick:0,triggered_buffs:[legacy]},100)[0].startTick,
+          }));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertEqual(result['shared'], [1,1,2,2,3,3,0,1])
+        self.assertEqual(result['independent'], [1,1,2,2,1,1,0])
+        self.assertEqual(result['legacyStart'], 15)
+
     def test_refresh_countdown_keeps_expiry_before_and_after_replacement(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')

@@ -303,5 +303,10 @@
     "name": "混沌染剂",
     "icon": "/static/images/materials/weaponupmaterial_lv3.webp",
     "quality": "purple"
+  },
+  "weeklycloneboss_a04_01": {
+    "name": "空心花籽",
+    "icon": "/static/images/materials/weeklycloneboss_a04_01.webp",
+    "quality": "orange"
   }
 }

@@ -34,7 +34,8 @@ class GuidePreviewTest(unittest.TestCase):
             path = '/guide/characters/' + identifier
             html = self.client.get(path).text
             self.assertIn('class="guide-preview-hero"', html)
-            self.assertEqual('所需升级材料' in html, identifier == 'preview-exe')
+            self.assertIn('所需升级材料', html)
+            self.assertIn('空心花籽', html)
             for text in ('属性数值', '角色定位', '养成计算器', 'guide-toc', 'type="range"'):
                 self.assertNotIn(text, html)
             self.assertEqual(self.client.get(path + '.md').status_code, 200)

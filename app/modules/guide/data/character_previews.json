@@ -11,7 +11,23 @@
       "avatar": "/static/guide/character-previews/elyms-avatar.webp"
     },
     "preview_image": "/static/guide/character-previews/elyms.webp",
-    "materials": {}
+    "materials": {
+      "skills": [
+        {
+          "name": "技能升级",
+          "levels": [
+            {
+              "items": [
+                {
+                  "id": "weeklycloneboss_a04_01",
+                  "name": "空心花籽"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "id": "preview-exe",
@@ -52,6 +68,10 @@
           "levels": [
             {
               "items": [
+                {
+                  "id": "weeklycloneboss_a04_01",
+                  "name": "空心花籽"
+                },
                 {
                   "id": "skillupmaterial_05_lv1",
                   "name": "水波的迟疑"

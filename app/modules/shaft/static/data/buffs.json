@@ -6281,6 +6281,10 @@
       "full_stack_buff_ids": [
         "arc_elyms_team_def",
         "arc_elyms_self_def"
+      ],
+      "full_stack_clear_keys": [
+        "arc_elyms_q_window",
+        "arc_elyms_counter"
       ]
     },
     "display": {

@@ -4790,6 +4790,14 @@
               }
             }
           });
+          const fullStackClearKeys = new Set(asList(activation.full_stack_clear_keys).map(String));
+          activeBuffs = activeBuffs.filter((candidate) => {
+            if (int(candidate.owner_slot) !== ownerSlot || !fullStackClearKeys.has(String(candidate.definition_id || ''))) return true;
+            truncateBuffTimelineAt(candidate, triggerTick,
+              int(extraContext.visual_trigger_tick, visualTickFromCalculationTick(triggerTick, qVirtualIntervals)));
+            return false;
+          });
+          fullStackClearKeys.forEach((key) => sharedPeriodicDamageStates.delete(`${ownerSlot}:${key}`));
         }
       });
       if (event !== 'dot_layer_applied') {

@@ -177,6 +177,30 @@ class ElymsCatalogTest(unittest.TestCase):
         self.assertAlmostEqual(self.effects(d[4])['arc_elyms_team_def']['def_ignore'],.12)
         self.assertTrue(any('最多使用6次' in w for w in d[-1]['warnings']))
 
+    def test_signature_window_clears_on_threshold_without_refreshing_defense(self):
+        teammate=dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id='')
+        result=self.sim([
+            (0,'action_elyms_ultraskilla1',0),(1,'action_none_dd034941ef',10),
+            (0,'action_elyms_xietongskilla1',20),(0,'action_elyms_xietongskilla1',60),
+            (1,'action_none_dd034941ef',230),(0,'action_elyms_ultraskilla1',260),
+            (1,'action_none_dd034941ef',270),(0,'action_elyms_xietongskilla1',280),
+        ],others=[teammate],arc='arc_elyms_waiting_ringtone')
+        details=result['details']
+        window=next(b for b in details[0]['triggered_buffs'] if b['rule_id']=='arc_elyms_q_window')
+        self.assertEqual(window['end_tick'],details[2]['start_tick'])
+        self.assertEqual(window['visual_end_tick'],details[2]['visual_start_tick'])
+        for key in ('arc_elyms_q_window','arc_elyms_counter'):
+            self.assertNotIn(key,self.effects(details[3]))
+        for key in ('arc_elyms_team_def','arc_elyms_self_def'):
+            buff=next(b for b in details[2]['triggered_buffs'] if b['rule_id']==key)
+            self.assertEqual(buff['end_tick'],details[2]['start_tick']+200)
+            self.assertIn(key,self.effects(details[3]))
+            self.assertFalse(any(b['rule_id']==key for b in details[3]['triggered_buffs']))
+            self.assertNotIn(key,self.effects(details[4]))
+            self.assertTrue(any(b['rule_id']==key for b in details[-1]['triggered_buffs']))
+        new_window=next(b for b in details[5]['triggered_buffs'] if b['rule_id']=='arc_elyms_q_window')
+        self.assertEqual(new_window['end_tick'],details[-1]['start_tick'])
+
     def test_energy_gain_talent_and_echo_do_not_recurse(self):
         catalog=load_shaft_catalog()
         chaos=next(a['id'] for a in catalog['actions_by_character']['char_d38b672525'] if a['name']=='援护')

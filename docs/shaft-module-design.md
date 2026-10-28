@@ -942,7 +942,7 @@ Everness当天核实「未迟到的正义」：基础800%攻击力相属性伤�
 
 `energy_gain`由实际动作回能流入触发，普通回能溢出无实际增加时不派发，盈蓄回能溢出仍派发；上下文的来源为能量接收者，`source_foreground_at_hit`读取结算时前台；`energy_source`条件可将订阅限制为指定反应回能，普通回能不携带反应来源。能量与延迟回响产生的Buff摘要附回来源步骤，正常展示生效窗口。
 
-`activation.stack_gain_from_key`在清除前读取拥有者指定状态当前总层数，用于把实际消费保存在本次快照或跨动作累计中；`effects_from_stack.max_count`可限制快照增益的计数，但不限制实际状态层数或消耗量。`triggered_damage.atk_per_stack`按同次`effects_from_stack`的计数构造独立伤害倍率，依然使用正常技能等级和结算时面板。`activation.full_stack_buff_ids`在跨过阈值时同时激活多个目标规则，兼容旧单一ID；满层重复不重触发。
+`activation.stack_gain_from_key`在清除前读取拥有者指定状态当前总层数，用于把实际消费保存在本次快照或跨动作累计中；`effects_from_stack.max_count`可限制快照增益的计数，但不限制实际状态层数或消耗量。`triggered_damage.atk_per_stack`按同次`effects_from_stack`的计数构造独立伤害倍率，依然使用正常技能等级和结算时面板。`activation.full_stack_buff_ids`在跨过阈值时同时激活多个目标规则，兼容旧单一ID；满层重复不重触发。`activation.full_stack_clear_keys`在阈值增益生成后清除同拥有者指定状态并截断时间线；静候彩铃用它结束终结后追击窗口和计数，已生成的20秒无视防御独立保留，下次Q重新开启。
 
 `delayed_reaction`配置反应类型和延迟tick，队列在该时刻施加正常环合实例并标记`is_echo`；`reaction_not_echo`用于避免自己再次调度自己。回响不伪造主动援护双方，因此不获得要求`reaction_owner_involved`的资源。`forbidden_buff_any_keys`支持多个互斥形态的动作自检；`requires_off_field`检查协同拥有者实际前后台，而不是仅凭动作画在后台推断。
 

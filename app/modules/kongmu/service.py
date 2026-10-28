@@ -75,6 +75,7 @@ FIXED_CHARACTER_AVATAR_SOURCE_ICONS = {
 }
 
 FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
+    'char_elyms': 'guide/character-previews/elyms-avatar.webp',
     '1046': 'images/characters/avatar/男主.webp',
     '1051': 'images/characters/avatar/男主.webp',
     '1036': 'images/characters/avatar/残虹.png',

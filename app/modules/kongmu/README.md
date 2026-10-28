@@ -55,3 +55,17 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 空幕目录、接口结果及本地角色文件使用正式数字ID，与攻略数据库统一。残虹为1036、黑羽为1042、明音凛为1057；旧 `char_076a1f4e53`、`char_heiyu`、`char_akane` 仍作为链接及计算请求别名接受，返回正式ID。男女主保留1046／1051，目录合并时通过 `merged_ids` 接受两者。`/kongmu?character=1042&cartridge=psyche` 可预选角色与卡带，目录加载完成后自动计算一次。只传入一个有效预选参数时，另一项使用默认选择；无参数、参数为空或全部无效时保持手动计算。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_kongmu_links tests.test_module_routes tests.test_lingke_modules tests.test_shaft_heiyu tests.test_shaft_publication -q`；浏览器核对角色页入口、正式ID与旧链接预选和推荐卡带。
+
+## 曳尔沐
+
+曳尔沐为光属性5星角色，空幕规划对全部用户开放，独立于排轴测试权限。角色编号暂沿用`char_elyms`，不推测正式数字ID；头像复用现有预告头像。Ⅲ型特化，每装配一个Ⅲ型驱动使暴击率增加8%。5×5画布、20个可用格，布局保持如下方向（1为可用格）：
+
+```text
+11110
+11110
+11011
+01111
+01111
+```
+
+支持`/kongmu?character=char_elyms`预选并生成方案。验证：`python3 -m unittest tests.test_kongmu_elyms tests.test_module_routes tests.test_lingke_modules tests.test_guide_kongmu_links`，并检查页面角色选择、布局和方案生成。

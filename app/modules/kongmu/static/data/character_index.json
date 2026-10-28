@@ -340,6 +340,18 @@
       "rarity": 5,
       "icon": "/Game/UI/UI_Icon/AvatarImage/256/player_mingyin_256",
       "source_note": "空幕拓扑与每个Ⅲ型驱动攻击力+10%来自Nanoka NTE 1.4.6角色1057；默认造型图片核对NTEData提交43dd106003160cbb7566f120d6579288091b9609。排轴其他数值仍以用户资料为准。"
+    },
+    {
+      "id": "char_elyms",
+      "name": "曳尔沐",
+      "names": {
+        "zh": "曳尔沐",
+        "en": "Elyms"
+      },
+      "element": "Cosmos",
+      "element_id": "COSMOS",
+      "rarity": 5,
+      "icon": ""
     }
   ]
 }

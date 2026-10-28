@@ -6219,7 +6219,7 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 1,
+      "ticks": 75,
       "loop_carry": true
     },
     "stacking": {
@@ -6233,7 +6233,7 @@
       "delay_ticks": 75
     },
     "display": {
-      "line": false
+      "line": true
     }
   },
   {

@@ -197,6 +197,40 @@ class ElymsCatalogTest(unittest.TestCase):
         original=next(e for e in r['reaction_effects'] if e['reaction']=='延滞' and not e.get('is_echo'))
         self.assertEqual(echoes[0]['start_tick']-original['start_tick'],75)
 
+    def test_delay_echo_waiting_line_lasts_seven_and_half_seconds_and_carries(self):
+        catalog=load_shaft_catalog()
+        support=next(a['id'] for a in catalog['actions_by_character']['char_d38b672525'] if a['name']=='援护')
+        others=[dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''),
+                dict(slot=2,character_id='char_d38b672525',arc_id='',cartridge_id='')]
+        steps=[(1,'action_982c67944f',0),(2,support,30),(1,'action_none_dd034941ef',100)]
+        for loop in (False,True):
+            with self.subTest(loop=loop):
+                axis=self.axis(steps,others=others,loop_enabled=loop)
+                result=simulate_shaft_axis(axis)['result']
+                detail=next(d for d in result['details'] if d['step_id']=='1')
+                waiting,=[b for b in detail['triggered_buffs'] if b['rule_id']=='character_elyms_delay_echo']
+                self.assertTrue(waiting['display_as_line'])
+                self.assertEqual(waiting['end_tick']-waiting['trigger_tick'],75)
+                self.assertEqual(waiting['owner_slot'],0)
+                echoes=[e for e in result['reaction_effects'] if e.get('is_echo')]
+                if loop:
+                    duration=result['summary']['duration_ticks']
+                    self.assertIn(waiting['end_tick']-duration,[e['start_tick'] for e in echoes])
+                    source=(ROOT/'app/modules/shaft/static/js/shaft.js').read_text()
+                    functions=source[source.index('  function wrappedTick('):source.index('  function mergedRenderedBuffSegments(')]
+                    script='''const calculationTickFromVisual=v=>v, visualTickFromCalculation=v=>v;
+                      const shouldDrawBuffLine=b=>b.display_as_line, buffRuleDisplayName=b=>b.name;
+                      const formatNumber=String, ticksToSeconds=v=>v/10, BUFF_DURATION_LABEL_LIMIT_TICKS=9000;'''+functions
+                    script+='const detail='+json.dumps(dict(detail,triggered_buffs=[waiting]))+';'
+                    script+=f'const lines=mergedBuffLineSegments([detail],{duration},true,0);'
+                    script+='console.log(JSON.stringify(lines));'
+                    lines=json.loads(subprocess.check_output(['node','-e',script],text=True))
+                    carry=next(line for line in lines if line['startTick']==0)
+                    self.assertEqual(carry['endTick'],waiting['end_tick']-duration)
+                else:
+                    self.assertIn(waiting['end_tick'],[e['start_tick'] for e in echoes])
+                    self.assertEqual(len(echoes),1)
+
     def test_regular_energy_without_yingxu_never_grants_light_stacks(self):
         axis=self.axis([(0,'action_elyms_melee1',0),(0,'action_elyms_melee2',10),
                         (0,'action_elyms_skill2',20),(0,'action_elyms_melee1',30)])

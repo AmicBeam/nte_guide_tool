@@ -7,7 +7,7 @@ from pathlib import Path
 
 from app.modules.shaft.domain.catalog import load_shaft_catalog
 from app.modules.shaft.domain.legacy_actions import migrate_lingke_joint_steps
-from app.modules.shaft.service import normalize_axis_payload, simulate_shaft_axis, DEFAULT_UNPUBLISHED_CHARACTERS
+from app.modules.shaft.service import normalize_axis_payload, simulate_shaft_axis, DEFAULT_UNPUBLISHED_CHARACTERS, RELEASED_CHARACTERS
 
 CID = 'char_akane'
 ARC = 'arc_akane_moon_antipode'
@@ -43,7 +43,8 @@ class AkaneTest(unittest.TestCase):
     def test_catalog_and_resources(self):
         c = load_shaft_catalog()
         actions = {a['name']: a for a in c['actions_by_character'][CID]}
-        self.assertEqual(DEFAULT_UNPUBLISHED_CHARACTERS[CID], '明音凛')
+        self.assertNotIn(CID, DEFAULT_UNPUBLISHED_CHARACTERS)
+        self.assertEqual(RELEASED_CHARACTERS[CID], '明音凛')
         self.assertEqual(next(a['id'] for a in c['arcs'] if a['adaptation'] == '液态'), ARC)
         self.assertEqual(actions['a1']['hit_count'], 2)
         self.assertAlmostEqual(actions['a1']['multipliers']['atk'], .298)

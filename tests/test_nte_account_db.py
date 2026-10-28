@@ -61,7 +61,7 @@ class NTEAccountDatabaseTest(unittest.TestCase):
     def test_released_characters_migrate_existing_test_records(self) -> None:
         self.module.ensure_nte_tables()
         model = self.module.NTEShaftCharacterPublication
-        for name in ('灵可', '黑羽'):
+        for name in ('灵可', '黑羽', '明音凛'):
             with self.subTest(character=name):
                 model.update(is_published=False, access_level='test').where(
                     model.character_name == name

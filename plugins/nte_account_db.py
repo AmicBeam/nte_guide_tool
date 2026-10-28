@@ -65,6 +65,7 @@ RELEASED_CHARACTERS = {
     '伊洛伊': 'char_a01c39f576',
     '残虹': 'char_076a1f4e53',
     '黑羽': 'char_heiyu',
+    '明音凛': 'char_akane',
 }
 
 

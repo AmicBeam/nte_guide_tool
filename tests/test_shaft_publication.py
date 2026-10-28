@@ -72,35 +72,37 @@ class ShaftPublicationTest(RoomFlowTestCase):
             self.assertEqual((step['id'], step['slot'], step['start_tick'], step['action_id']),
                              ('old-joint', 1, 15, 'action_222f577087'))
 
-    def test_heiyu_release_migrates_and_is_public_across_workflows(self):
+    def _assert_release_workflows(self, character_id, character_name, kongmu_id):
         models = importlib.import_module('app.models')
         service = importlib.import_module('app.modules.shaft.service')
         model = models.ShaftCharacterPublication
         model.update(is_published=False, access_level='test').where(
-            model.character_id == 'char_heiyu'
+            model.character_id == character_id
         ).execute()
         service.initialize_shaft_character_publications()
-        publication = model.get(model.character_id == 'char_heiyu')
+        publication = model.get(model.character_id == character_id)
         self.assertTrue(publication.is_published)
         self.assertEqual(publication.access_level, 'public')
-        regular = self._issue_login_and_get_token('heiyu-regular')
-        invited = self._issue_login_and_get_token('heiyu-invited')
-        tester = self._issue_login_and_get_token('heiyu-tester')
-        models.Player.update(shaft_invited=True).where(models.Player.player_uid == 'heiyu-invited').execute()
-        models.Player.update(shaft_test_whitelisted=True).where(models.Player.player_uid == 'heiyu-tester').execute()
+        regular = self._issue_login_and_get_token(f'{character_id}-regular')
+        invited = self._issue_login_and_get_token(f'{character_id}-invited')
+        tester = self._issue_login_and_get_token(f'{character_id}-tester')
+        models.Player.update(shaft_invited=True).where(models.Player.player_uid == f'{character_id}-invited').execute()
+        models.Player.update(shaft_test_whitelisted=True).where(models.Player.player_uid == f'{character_id}-tester').execute()
         for token in (None, regular, invited, tester):
             headers = {'Authorization': f'Bearer {token}'} if token else {}
             catalog = self.client.get('/api/shaft/catalog', headers=headers).get_json()
-            character = next(c for c in catalog['characters'] if c['id'] == 'char_heiyu')
+            character = next(c for c in catalog['characters'] if c['id'] == character_id)
             self.assertFalse(character['selection_disabled'])
             akane = next(c for c in catalog['characters'] if c['id'] == 'char_akane')
-            self.assertEqual(akane['selection_disabled'], token != tester)
+            self.assertFalse(akane['selection_disabled'])
+            elyms = next(c for c in catalog['characters'] if c['id'] == 'char_elyms')
+            self.assertEqual(elyms['selection_disabled'], token != tester)
             kongmu = self.client.get('/api/kongmu/catalog', headers=headers).get_json()
-            self.assertIn('1042', [c['id'] for c in kongmu['characters']])
-            plan = self.client.post('/api/kongmu/plan', json={'character_id': 'char_heiyu', 'cartridge_id': 'attack'}, headers=headers)
+            self.assertIn(kongmu_id, [c['id'] for c in kongmu['characters']])
+            plan = self.client.post('/api/kongmu/plan', json={'character_id': character_id, 'cartridge_id': 'attack'}, headers=headers)
             self.assertEqual(plan.status_code, 200)
-        axis = {'team': [{'slot': 0, 'character_id': 'char_heiyu', 'arc_id': '', 'cartridge_id': ''}], 'steps': []}
-        payload = {'title': '黑羽公开权限', 'axis': axis, 'result': self._shaft_client_result(axis)}
+        axis = {'team': [{'slot': 0, 'character_id': character_id, 'arc_id': '', 'cartridge_id': ''}], 'steps': []}
+        payload = {'title': f'{character_name}公开权限', 'axis': axis, 'result': self._shaft_client_result(axis)}
         for owner in (regular, invited, tester):
             saved = self._post('/api/shaft/axes', payload, token=owner)
             if owner == regular:
@@ -113,6 +115,12 @@ class ShaftPublicationTest(RoomFlowTestCase):
             self._post(f"/api/shaft/axes/{published['id']}/favorite", {}, token=collector)
             favorites = self._get('/api/shaft/me/favorites', token=collector)
             self.assertIn(published['id'], [a['id'] for a in favorites['items']])
+
+    def test_heiyu_release_migrates_and_is_public_across_workflows(self):
+        self._assert_release_workflows('char_heiyu', '黑羽', '1042')
+
+    def test_akane_release_migrates_and_is_public_across_workflows(self):
+        self._assert_release_workflows('char_akane', '明音凛', '1057')
 
     def test_akane_kongmu_is_public_with_source_backed_grid(self):
         models = importlib.import_module('app.models')

@@ -701,11 +701,29 @@ def get_drives_by_geometry() -> dict[str, dict[str, Any]]:
     return {drive['geometry']: compact_drive(drive) for drive in raw['drives']}
 
 
-@lru_cache(maxsize=1)
-def get_kongmu_catalog_payload() -> dict[str, Any]:
+def _player_access_level(player: Any = None) -> str:
+    if bool(getattr(player, 'shaft_test_whitelisted', False)):
+        return 'test'
+    if bool(getattr(player, 'shaft_invited', False)):
+        return 'invited'
+    return 'public'
+
+
+def _character_visible(record: dict[str, Any], access_level: str) -> bool:
+    ranks = {'public': 0, 'invited': 1, 'test': 2}
+    return ranks.get(str(record.get('access_level') or 'public'), 3) <= ranks[access_level]
+
+
+def get_kongmu_catalog_payload(player: Any = None) -> dict[str, Any]:
+    return _catalog_for_access(_player_access_level(player))
+
+
+@lru_cache(maxsize=3)
+def _catalog_for_access(access_level: str) -> dict[str, Any]:
     raw = get_kongmu_raw_data()
     characters = []
-    for item in dedupe_characters(sorted(raw['characters'], key=character_sort_key)):
+    visible = [item for item in raw['characters'] if _character_visible(item['record'], access_level)]
+    for item in dedupe_characters(sorted(visible, key=character_sort_key)):
         compacted = compact_character(item['record'], item['detail'])
         merged_ids = [item_id for item_id in item.get('merged_ids', []) if item_id]
         avatar_items = [item, *(item.get('avatar_choice_items') or [])]
@@ -734,11 +752,12 @@ def get_kongmu_catalog_payload() -> dict[str, Any]:
     }
 
 
-def get_character_detail(character_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+def get_character_detail(character_id: str, player: Any = None) -> tuple[dict[str, Any], dict[str, Any]]:
     character_id = LEGACY_CHARACTER_IDS.get(character_id, character_id)
     raw = get_kongmu_raw_data()
     record = resolve_record(
-        [item['record'] for item in raw['characters']],
+        [item['record'] for item in raw['characters']
+         if _character_visible(item['record'], _player_access_level(player))],
         character_id,
         ['name', 'names'],
     )
@@ -751,9 +770,9 @@ def get_cartridge_detail(cartridge_id: str) -> dict[str, Any]:
     return resolve_record(dedupe_cartridges(raw['cartridges']), cartridge_id, ['name', 'aliases'])
 
 
-def plan_kongmu_layout(character_id: str, cartridge_id: str) -> dict[str, Any]:
+def plan_kongmu_layout(character_id: str, cartridge_id: str, player: Any = None) -> dict[str, Any]:
     raw = get_kongmu_raw_data()
-    character_record, character = get_character_detail(character_id)
+    character_record, character = get_character_detail(character_id, player=player)
     cartridge = get_cartridge_detail(cartridge_id)
     equip_slots = character.get('equip_slots') or {}
     slots = equip_slots.get('slots') or []

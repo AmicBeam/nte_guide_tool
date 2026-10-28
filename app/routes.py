@@ -333,7 +333,7 @@ def api_balance_analytics():
 @main_bp.get('/api/kongmu/catalog')
 def api_kongmu_catalog():
     try:
-        return jsonify(get_kongmu_catalog_payload())
+        return jsonify(get_kongmu_catalog_payload(player=_optional_current_player()))
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400
     except Exception:
@@ -352,6 +352,7 @@ def api_kongmu_plan():
         return jsonify(plan_kongmu_layout(
             str(payload.get('character_id', '')),
             str(payload.get('cartridge_id', '')),
+            player=_optional_current_player(),
         ))
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400

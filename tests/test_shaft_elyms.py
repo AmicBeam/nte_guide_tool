@@ -225,11 +225,16 @@ class ElymsCatalogTest(unittest.TestCase):
         for tick in (105,145):
             self.assertNotIn('character_elyms_energy_light',self.effects(by_tick[tick]))
 
-    def test_creation_without_delay_and_full_energy_do_not_stack(self):
+    def test_full_energy_still_stacks_but_creation_without_delay_does_not(self):
         capped=simulate_shaft_axis(self.yingxu_axis(1000))['result']
-        self.assertFalse(any(e['kind']=='yingxu_gain' for e in capped['energy_events']))
-        for d in capped['details']:
-            self.assertNotIn('character_elyms_energy_light',self.effects(d))
+        events=[e for e in capped['energy_events'] if e['kind']=='yingxu_gain']
+        self.assertEqual([e['tick'] for e in events],[35,55,75,115])
+        self.assertTrue(all(e['amount']==0 for e in events))
+        for tick,stacks in ((40,1),(55,2),(80,3),(120,1)):
+            detail=next(d for d in capped['details'] if d['start_tick']==tick)
+            buff=next(b for b in detail['applied_buffs'] if b['rule_id']=='character_elyms_energy_light')
+            self.assertEqual(buff['stack_count'],stacks)
+        self.assertTrue(all(e['energy_after']<=100 for e in events))
         axis=self.yingxu_axis()
         axis['steps']=[s for s in axis['steps'] if s['action_id']!='action_17efab5dbd']
         r=simulate_shaft_axis(axis)['result']

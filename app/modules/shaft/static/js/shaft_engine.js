@@ -3199,7 +3199,7 @@
       const nextEnergy = capacity > 0 ? Math.min(capacity, currentEnergy + amount) : currentEnergy + amount;
       const appliedAmount = Math.max(0, nextEnergy - currentEnergy);
       energyBySlot.set(slot, nextEnergy);
-      if (appliedAmount > 0) {
+      if (appliedAmount > 0 || source.reaction === '盈蓄') {
         energyEvents.push({
           tick: int(tick),
           slot: int(slot),

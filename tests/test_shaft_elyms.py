@@ -178,8 +178,9 @@ class ElymsCatalogTest(unittest.TestCase):
         axis['initial_energy']=0
         r=simulate_shaft_axis(axis)['result']
         light=[b for d in r['details'] for b in d['applied_buffs'] if b['rule_id']=='character_elyms_energy_light']
-        self.assertTrue(light)
-        self.assertTrue(any(b['rule_id']=='character_elyms_energy_light' for d in r['details'] for b in d['triggered_buffs']))
+        # A delay without creation never produces 盈蓄, even when the front gains energy.
+        self.assertFalse(light)
+        self.assertFalse(any(b['rule_id']=='character_elyms_energy_light' for d in r['details'] for b in d['triggered_buffs']))
         axis['initial_energy']=1000
         capped=simulate_shaft_axis(axis)['result']
         self.assertFalse(any(b['rule_id']=='character_elyms_energy_light' for d in capped['details'] for b in d['applied_buffs']))
@@ -187,6 +188,73 @@ class ElymsCatalogTest(unittest.TestCase):
         self.assertEqual(len(echoes),1)
         original=next(e for e in r['reaction_effects'] if e['reaction']=='延滞' and not e.get('is_echo'))
         self.assertEqual(echoes[0]['start_tick']-original['start_tick'],75)
+
+    def test_regular_energy_without_yingxu_never_grants_light_stacks(self):
+        axis=self.axis([(0,'action_elyms_melee1',0),(0,'action_elyms_melee2',10),
+                        (0,'action_elyms_skill2',20),(0,'action_elyms_melee1',30)])
+        axis['initial_energy']=0
+        result=simulate_shaft_axis(axis)['result']
+        self.assertTrue(any(e['amount']>0 for e in result['energy_events']))
+        for detail in result['details']:
+            self.assertNotIn('character_elyms_energy_light',self.effects(detail))
+            self.assertFalse(any(b['rule_id']=='character_elyms_energy_light' for b in detail['triggered_buffs']))
+
+    def yingxu_axis(self, initial_energy=0):
+        others=[dict(slot=1,character_id='char_b2e3b2bf7a',arc_id='',cartridge_id=''),
+                dict(slot=2,character_id='char_d38b672525',arc_id='',cartridge_id='')]
+        axis=self.axis([(0,'action_none_elyms',0),(1,'action_8a8000d4a4',2),
+                        (0,'action_none_elyms',18),(2,'action_17efab5dbd',20),
+                        *[(0,'action_none_elyms',t) for t in (40,55,80,105,120,145)]],
+                       others=others,switch_loss_ticks=0)
+        axis['initial_energy']=initial_energy
+        return axis
+
+    def test_only_actual_yingxu_energy_stacks_and_refreshes(self):
+        r=simulate_shaft_axis(self.yingxu_axis())['result']
+        events=[e for e in r['energy_events'] if e['kind']=='yingxu_gain']
+        # Creation hits at 35/55/75 overlap delay; 95 misses, 115 hits the delayed echo.
+        self.assertEqual([(e['tick'],e['slot']) for e in events],[(35,2),(55,0),(75,0),(115,0)])
+        for e in events:
+            self.assertAlmostEqual(e['amount'],10)
+            self.assertEqual(e['source_reaction'],'盈蓄')
+        by_tick={d['start_tick']:d for d in r['details']}
+        for tick,stacks in ((40,1),(55,2),(80,3),(120,1)):
+            buff=next(b for b in by_tick[tick]['applied_buffs'] if b['rule_id']=='character_elyms_energy_light')
+            self.assertEqual(buff['stack_count'],stacks)
+            self.assertAlmostEqual(buff['effects']['element_dmg_光'],.0375*stacks)
+        for tick in (105,145):
+            self.assertNotIn('character_elyms_energy_light',self.effects(by_tick[tick]))
+
+    def test_creation_without_delay_and_full_energy_do_not_stack(self):
+        capped=simulate_shaft_axis(self.yingxu_axis(1000))['result']
+        self.assertFalse(any(e['kind']=='yingxu_gain' for e in capped['energy_events']))
+        for d in capped['details']:
+            self.assertNotIn('character_elyms_energy_light',self.effects(d))
+        axis=self.yingxu_axis()
+        axis['steps']=[s for s in axis['steps'] if s['action_id']!='action_17efab5dbd']
+        r=simulate_shaft_axis(axis)['result']
+        self.assertTrue(any(e['reaction']=='创生' for e in r['reaction_effects']))
+        self.assertFalse(any(e['kind']=='yingxu_gain' for e in r['energy_events']))
+        self.assertFalse(any('character_elyms_energy_light' in self.effects(d) for d in r['details']))
+
+    def test_yingxu_stacks_cap_at_eight_across_front_switches(self):
+        axis=self.yingxu_axis()
+        nanali=next(c['id'] for c in load_shaft_catalog()['characters'] if c['name']=='娜娜莉')
+        axis['team'].append(dict(slot=3,character_id=nanali,arc_id='',cartridge_id=''))
+        axis['steps']=[dict(id=str(i),slot=slot,action_id=action,start_tick=tick)
+                       for i,(slot,action,tick) in enumerate([
+                           (0,'action_none_elyms',0),(1,'action_8a8000d4a4',2),
+                           (0,'action_none_elyms',18),(1,'action_8a8000d4a4',20),
+                           (0,'action_none_elyms',36),(2,'action_17efab5dbd',38),
+                           (0,'action_none_elyms',58),(0,'action_none_elyms',100),
+                           (0,'action_none_elyms',130)])]
+        r=simulate_shaft_axis(axis)['result']
+        self.assertEqual(len([e for e in r['energy_events'] if e['kind']=='yingxu_gain']),10)
+        full=next(d for d in r['details'] if d['start_tick']==100)
+        buff=next(b for b in full['applied_buffs'] if b['rule_id']=='character_elyms_energy_light')
+        self.assertEqual(buff['stack_count'],8)
+        self.assertAlmostEqual(buff['effects']['element_dmg_光'],.3)
+        self.assertNotIn('character_elyms_energy_light',self.effects(r['details'][-1]))
 
     def test_old_partial_entries_are_removed_without_missing_duration_for_known_actions(self):
         axis=self.axis([(0,'action_elyms_melee3_1',0),(0,'action_elyms_melee1',10)])

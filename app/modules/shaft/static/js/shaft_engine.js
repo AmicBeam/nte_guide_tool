@@ -1627,6 +1627,7 @@
       if (type === 'expected_critical_hit') return num(context.expected_critical_hits) > 0;
       if (type === 'hit_count_positive') return num(context.hit_count) > 0;
       if (type === 'source_foreground_at_hit') return int(context.foreground_slot_at_hit, -1) === int(context.source_slot, -2);
+      if (type === 'energy_source') return String(context.energy_source || '') === String(condition.source || '');
       if (type === 'reaction_not_echo') return context.reaction?.is_echo !== true;
       if (type === 'enemy_debuff_active') {
         const active = Object.entries(context.enemy_debuffs || {}).filter(([, value]) => num(value) > num(context.tick)).map(([key]) => key);
@@ -1913,6 +1914,7 @@
     const definitionId = String(stacking.key || rule.id || '');
     const ownerSlot = int(rule.owner_slot);
     for (const instance of activeBuffs) {
+      if (triggerTick >= int(instance.end_tick)) continue;
       const existingRule = instance.rule && typeof instance.rule === 'object' ? instance.rule : {};
       const existingStacking = existingRule.stacking && typeof existingRule.stacking === 'object' ? existingRule.stacking : {};
       const existingDefinitionId = String(instance.definition_id || existingStacking.key || existingRule.id || '');
@@ -3203,7 +3205,8 @@
           slot: int(slot),
           amount: appliedAmount,
           energy_after: nextEnergy,
-          kind: 'action_gain',
+          kind: String(source.kind || 'action_gain'),
+          source_reaction: String(source.reaction || ''),
           source_step_id: String(source.step_id || ''),
           source_action_id: String(source.action_id || ''),
         });
@@ -3211,7 +3214,8 @@
           const recipient = snapshots.get(slot);
           const gains = triggerBuffsForEvent('energy_gain', tick, {id: source.step_id || '', slot},
             {id: source.action_id || '', action_type: '无', damage_type: '无', hit_count: 0}, recipient,
-            runtimeFrontSlot !== slot, {foreground_slot_at_hit: runtimeFrontSlot, energy_amount: appliedAmount});
+            runtimeFrontSlot !== slot, {foreground_slot_at_hit: runtimeFrontSlot, energy_amount: appliedAmount,
+              energy_source: String(source.reaction || '')});
           eventBuffSummaries.push(...gains.map((summary) => ({step_id: source.step_id, summary})));
         }
       }
@@ -3283,9 +3287,25 @@
       });
     }
 
+    function applyYingxuEnergy(event) {
+      // Each creation hit on a delayed target grants one instant 盈蓄 return to the current front.
+      if (!['创生', '创生复制体'].includes(String(event.reaction || ''))
+        || event.damage <= 0 || !event._counted_in_total) return;
+      const tick = int(event.tick);
+      if (!activeReactionEffectsAtTick('延滞', tick).length) return;
+      const recipient = snapshots.get(runtimeFrontSlot);
+      if (!recipient || recipient.character?.uses_energy === false || !canReceiveEnergy(recipient, runtimeFrontSlot)) return;
+      const effect = reactionEffects.find((candidate) => candidate.id === event.effect_id);
+      applyEnergyDelta(runtimeFrontSlot, 10, tick, {
+        kind: 'yingxu_gain', reaction: '盈蓄', step_id: effect?.source_step_id,
+        action_id: `reaction:${event.reaction}`,
+      });
+    }
+
     function settleActionEnergy(targetTick) {
       const settledThroughTick = Math.max(lastEnergySettlementTick, int(targetTick));
       for (let tick = lastEnergySettlementTick + 1; tick <= settledThroughTick; tick += 1) {
+        settleReactionDamage(tick);
         pendingActionEnergy.forEach((stream) => {
           if (tick <= stream.start_tick || tick > stream.end_tick) return;
           stream.planned_by_slot.forEach((totalAmount, recipientSlot) => {
@@ -3955,6 +3975,7 @@
         .forEach((event) => {
           event.damage = reactionDamageAtTick(event);
           event._counted_in_total = int(event.tick) <= countedUntilTick;
+          applyYingxuEnergy(event);
           if (event._counted_in_total) {
             if (event.kind === 'triggered_damage') totalStagger += num(event._action?.stagger);
             directDamage += event.damage;
@@ -5772,6 +5793,7 @@
       });
     });
 
+    settleActionEnergy(options.loop_enabled ? loopDurationTicks : scheduledLastTick);
     if (options.loop_enabled) {
       settleReactionDamage(loopDurationTicks);
     } else {

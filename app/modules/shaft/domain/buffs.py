@@ -357,6 +357,10 @@ def _conditions_match(conditions: Any, context: dict[str, Any]) -> bool:
             if owner_slot not in {_int(reaction.get('previous_slot'), -2), _int(reaction.get('support_slot'), -2)}:
                 return False
             continue
+        if condition_type == 'energy_source':
+            if str(context.get('energy_source') or '') != str(condition.get('source') or ''):
+                return False
+            continue
         if condition_type == 'reaction_not_echo':
             if (context.get('reaction') or {}).get('is_echo') is True:
                 return False
@@ -554,6 +558,8 @@ def activate_buff(
     definition_id = str(stacking.get('key') or rule.get('id') or '')
     owner_slot = _int(rule.get('owner_slot'))
     for instance in active_buffs:
+        if trigger_tick >= _int(instance.get('end_tick')):
+            continue
         existing_rule = instance.get('rule') if isinstance(instance.get('rule'), dict) else {}
         existing_stacking = existing_rule.get('stacking') if isinstance(existing_rule.get('stacking'), dict) else {}
         existing_definition_id = str(instance.get('definition_id') or existing_stacking.get('key') or existing_rule.get('id') or '')

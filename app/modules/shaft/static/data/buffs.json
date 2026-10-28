@@ -6161,6 +6161,10 @@
       },
       "conditions": [
         {
+          "type": "energy_source",
+          "source": "盈蓄"
+        },
+        {
           "type": "source_foreground_at_hit"
         }
       ]

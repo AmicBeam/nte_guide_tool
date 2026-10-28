@@ -93,7 +93,7 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertEqual(row['timeline'][2]['input_seconds'],1)
         self.assertEqual(row['timeline'][2]['start_seconds'],1.4)
         self.assertEqual(row['preinput_action_indices'],[1])
-        self.assertAlmostEqual(row['multipliers']['atk'],.259+2.236+.788)
+        self.assertAlmostEqual(row['multipliers']['atk'],.259+.376+.788)
         self.assertTrue(all(r['original_actions'][0]=='强a1' for r in character['rows']))
         self.assertFalse(any(r['has_dodge'] or r.get('overlap_windows') for r in character['rows']))
         self.assertEqual(len([r for r in character['rows'] if r['ends_with_switch']]),1)

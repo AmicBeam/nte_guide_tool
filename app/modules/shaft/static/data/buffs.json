@@ -5609,7 +5609,7 @@
   },
   {
     "id": "character_elyms_f",
-    "name": "11 您访问的地址已被永久转移",
+    "name": "301 您访问的地址已被永久转移",
     "providers": [
       {
         "kind": "character",
@@ -6496,6 +6496,66 @@
       "clear_keys": [
         "character_elyms_follow_group"
       ]
+    }
+  },
+  {
+    "id": "character_elyms_b_ignore",
+    "name": "200 节点彼此相连·消费穿防",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 5,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_goodbye"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_b_ignore",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "per_layer": 0.05
+    },
+    "activation": {
+      "effects_from_stack": {
+        "key": "character_elyms_last_consumed",
+        "max_count": 4,
+        "per_stack_from_effect": {
+          "def_ignore": {
+            "source": "per_layer",
+            "factor": 1
+          }
+        }
+      }
+    },
+    "display": {
+      "line": false
     }
   }
 ]

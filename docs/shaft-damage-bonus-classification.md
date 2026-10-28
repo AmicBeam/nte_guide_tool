@@ -69,7 +69,7 @@
 | arcs.json | 罪与罚 | `arc_heiyu_crime_punishment` | `element_dmg_魂` | 0.2 | 属性增伤 | 属性增伤 |
 | arcs.json | 银河暂留 | `arc_8fbb15cb26` | `element_dmg_魂` | 0.12 | 属性增伤 | 属性增伤 |
 | arcs.json | 鲸之歌 | `arc_d75aa15b91` | `all_dmg` | 0.04 | 通用增伤 | 通用增伤 |
-| buffs.json | 11 您访问的地址已被永久转移 | `character_elyms_f` | `follow_dmg` | {"factor": 1, "source": "per_layer"} | 其他增伤 | 动作增伤 |
+| buffs.json | 301 您访问的地址已被永久转移 | `character_elyms_f` | `follow_dmg` | {"factor": 1, "source": "per_layer"} | 其他增伤 | 动作增伤 |
 | buffs.json | 中继节点·盈蓄强化 | `character_elyms_energy_light` | `element_dmg_光` | 0.0375 | 属性增伤 | 属性增伤 |
 | buffs.json | 伊洛伊满觉·退行队友增伤 | `character_iloy_full_regressed_teammate_damage` | `all_dmg` | 0.45 | 通用增伤 | 通用增伤 |
 | buffs.json | 光波眩晕，迷走狂欢：援护后增伤 | `arc_dazzle_support_all_dmg` | `all_dmg` | 0.3 | 通用增伤 | 通用增伤 |

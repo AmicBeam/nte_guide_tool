@@ -10554,18 +10554,18 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.224,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 1.408,
+    "harmony": 2.34,
+    "stagger": 0.278,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10576,11 +10576,13 @@
     "display_order": 0,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
+    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
-    ]
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_melee2",
@@ -10590,18 +10592,18 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.314,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 1.964,
+    "harmony": 3.266,
+    "stagger": 0.388,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10612,11 +10614,13 @@
     "display_order": 1,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
+    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
-    ]
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_melee3",
@@ -10626,18 +10630,18 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.834,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 5.227,
+    "harmony": 8.692,
+    "stagger": 1.034,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10648,11 +10652,13 @@
     "display_order": 2,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
+    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
-    ]
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_melee4",
@@ -10662,18 +10668,18 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.698,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 4.371,
+    "harmony": 7.266,
+    "stagger": 0.865,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10684,11 +10690,13 @@
     "display_order": 3,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
+    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
-    ]
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_melee5",
@@ -10698,18 +10706,18 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.915,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 5.733,
+    "harmony": 9.534,
+    "stagger": 1.134,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10720,11 +10728,13 @@
     "display_order": 4,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
+    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
-    ]
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_meleeb1",
@@ -10743,9 +10753,9 @@
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 1.62,
+    "harmony": 2.695,
+    "stagger": 0.328,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10756,13 +10766,14 @@
     "display_order": 5,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "逐动作回能、环合与倾陷待补。",
+    "validation_note": "",
     "required_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
     ],
     "required_buff_name": "中等信号或强信号",
-    "duration_implemented": true
+    "duration_implemented": true,
+    "duration_estimated": false
   },
   {
     "id": "action_elyms_meleeb2",
@@ -10776,31 +10787,32 @@
     "duration_ticks": 8,
     "duration_pending": false,
     "multipliers": {
-      "atk": 2.236,
+      "atk": 0.376,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 2.352,
+    "harmony": 3.912,
+    "stagger": 0.476,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
-    "hit_count": 24,
+    "hit_count": 4,
     "display_order": 6,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "逐动作回能、环合与倾陷待补。",
+    "validation_note": "",
     "required_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
     ],
     "required_buff_name": "中等信号或强信号",
-    "duration_implemented": true
+    "duration_implemented": true,
+    "duration_estimated": false
   },
   {
     "id": "action_elyms_meleeb3",
@@ -10819,9 +10831,9 @@
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 4.928,
+    "harmony": 8.194,
+    "stagger": 0.996,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10832,13 +10844,14 @@
     "display_order": 7,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "逐动作回能、环合与倾陷待补。",
+    "validation_note": "",
     "required_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
     ],
     "required_buff_name": "中等信号或强信号",
-    "duration_implemented": true
+    "duration_implemented": true,
+    "duration_estimated": false
   },
   {
     "id": "action_elyms_branch1",
@@ -10848,18 +10861,18 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.449,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 2.801,
+    "harmony": 4.7,
+    "stagger": 0.6,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10870,11 +10883,13 @@
     "display_order": 8,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
+    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
-    ]
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_airattack",
@@ -10884,18 +10899,18 @@
     "action_type": "下落",
     "damage_type": "下落",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "duration_pending": false,
     "multipliers": {
       "atk": 0.296,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 1.9,
+    "harmony": 3.1,
+    "stagger": 0.4,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10906,7 +10921,9 @@
     "display_order": 10,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。"
+    "validation_note": "耗时为经验值，用于试算。",
+    "duration_implemented": true,
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_perfectevadeattack",
@@ -10916,18 +10933,18 @@
     "action_type": "闪反",
     "damage_type": "闪反",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "duration_pending": false,
     "multipliers": {
-      "atk": 1,
+      "atk": 1.0,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 2.5,
+    "harmony": 4.2,
+    "stagger": 2.5,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -10938,7 +10955,9 @@
     "display_order": 11,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。"
+    "validation_note": "耗时为经验值，用于试算。",
+    "duration_implemented": true,
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_skill1",
@@ -10948,18 +10967,18 @@
     "action_type": "E",
     "damage_type": "E",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 1.0,
+    "duration_ticks": 10,
+    "duration_pending": false,
     "multipliers": {
       "atk": 1.999,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 5.1,
+    "harmony": 8.399,
+    "stagger": 1.001,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 160,
@@ -10970,8 +10989,10 @@
     "display_order": 12,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。",
-    "harmony_on_start": 100
+    "validation_note": "耗时为经验值，用于试算。",
+    "harmony_on_start": 100,
+    "duration_implemented": true,
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_skill2",
@@ -10990,9 +11011,9 @@
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 8.3,
+    "harmony": 0.0,
+    "stagger": 0.0,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -11003,10 +11024,11 @@
     "display_order": 13,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "逐动作回能、环合与倾陷待补。",
+    "validation_note": "",
     "duration_implemented": true,
     "is_time_stop_zero": true,
-    "locks_foreground_switch": true
+    "locks_foreground_switch": true,
+    "duration_estimated": false
   },
   {
     "id": "action_elyms_goodbye",
@@ -11025,9 +11047,9 @@
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 8.3,
+    "harmony": 0.0,
+    "stagger": 0.0,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
@@ -11038,10 +11060,11 @@
     "display_order": 14,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "逐动作回能、环合与倾陷待补。",
+    "validation_note": "",
     "duration_implemented": true,
     "is_time_stop_zero": true,
-    "locks_foreground_switch": true
+    "locks_foreground_switch": true,
+    "duration_estimated": false
   },
   {
     "id": "action_elyms_ultraskilla1",
@@ -11053,29 +11076,33 @@
     "is_background_damage": false,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_pending": false,
     "multipliers": {
-      "atk": 5.683,
+      "atk": 6.749,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 1.501,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 200,
-    "energy_cost": 0,
+    "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
-    "hit_count": 2,
+    "hit_count": 4,
     "display_order": 15,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。终结耗能待补。",
+    "validation_note": "终结按0秒时停试算。",
     "cooldown_group": "elyms_q",
-    "starts_action_sequence": "elyms_follow"
+    "starts_action_sequence": "elyms_follow",
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "is_time_stop_zero": true,
+    "locks_foreground_switch": true
   },
   {
     "id": "action_elyms_ultraskillb1",
@@ -11087,42 +11114,46 @@
     "is_background_damage": false,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_pending": false,
     "multipliers": {
-      "atk": 4.01,
+      "atk": 7.502,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 1.502,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 200,
-    "energy_cost": 0,
+    "energy_cost": 100,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
-    "hit_count": 5,
+    "hit_count": 8,
     "display_order": 16,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。终结耗能待补。",
+    "validation_note": "终结按0秒时停试算。",
     "cooldown_group": "elyms_q",
     "starts_action_sequence": "elyms_follow",
     "required_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
     ],
-    "required_buff_name": "中等信号或强信号"
+    "required_buff_name": "中等信号或强信号",
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "is_time_stop_zero": true,
+    "locks_foreground_switch": true
   },
   {
     "id": "action_elyms_xietongskilla1",
     "character_id": "char_elyms",
     "character_name": "曳尔沐",
     "name": "追忆群",
-    "action_type": "普攻",
-    "damage_type": "普攻",
+    "action_type": "被动",
+    "damage_type": "Q",
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
@@ -11133,9 +11164,9 @@
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 1.7,
+    "harmony": 2.8,
+    "stagger": 0.3,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 30,
@@ -11145,8 +11176,8 @@
     "hit_count": 4,
     "display_order": 17,
     "can_background_override": false,
-    "resonance_skill_level_bonus": false,
-    "validation_note": "手工追加追忆；回能、环合与倾陷待补。",
+    "resonance_skill_level_bonus": true,
+    "validation_note": "",
     "duration_implemented": true,
     "extra_tag": "追击",
     "tags": [
@@ -11162,15 +11193,16 @@
     "max_uses_per_action_sequence": 6,
     "required_additional_buff_keys": [
       "character_elyms_follow_group"
-    ]
+    ],
+    "duration_estimated": false
   },
   {
     "id": "action_elyms_xietongskillb1",
     "character_id": "char_elyms",
     "character_name": "曳尔沐",
     "name": "追忆单",
-    "action_type": "普攻",
-    "damage_type": "普攻",
+    "action_type": "被动",
+    "damage_type": "Q",
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
@@ -11181,9 +11213,9 @@
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 1.7,
+    "harmony": 2.8,
+    "stagger": 0.3,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 30,
@@ -11193,8 +11225,8 @@
     "hit_count": 4,
     "display_order": 18,
     "can_background_override": false,
-    "resonance_skill_level_bonus": false,
-    "validation_note": "手工追加追忆；回能、环合与倾陷待补。",
+    "resonance_skill_level_bonus": true,
+    "validation_note": "",
     "duration_implemented": true,
     "extra_tag": "追击",
     "tags": [
@@ -11210,7 +11242,8 @@
     "max_uses_per_action_sequence": 6,
     "required_additional_buff_keys": [
       "character_elyms_follow_single"
-    ]
+    ],
+    "duration_estimated": false
   },
   {
     "id": "action_elyms_qte",
@@ -11220,28 +11253,30 @@
     "action_type": "援护",
     "damage_type": "援护",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
-    "duration_pending": true,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
+    "duration_pending": false,
     "multipliers": {
-      "atk": 0,
+      "atk": 2.0,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "energy_gain": 0,
-    "harmony": 0,
-    "stagger": 0,
+    "energy_gain": 5.2,
+    "harmony": 0.0,
+    "stagger": 2.5,
     "energy_return": 0,
     "self_modifiers": {},
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
     "personal_resource_gain": {},
-    "hit_count": 0,
+    "hit_count": 1,
     "display_order": 19,
     "can_background_override": false,
     "resonance_skill_level_bonus": false,
-    "validation_note": "动作耗时和逐动作资源待补，0值不代表真实零耗时或无回能。援护倍率与段数尚未给出。"
+    "validation_note": "耗时为经验值，用于试算。",
+    "duration_implemented": true,
+    "duration_estimated": true
   }
 ]

@@ -4996,16 +4996,16 @@
       {
         "hit_count": 1,
         "damage": 0.124,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "energy": 0.775,
+        "harmony": 1.289,
+        "stagger": 0.157
       },
       {
         "hit_count": 2,
         "damage": 0.259,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "energy": 1.62,
+        "harmony": 2.695,
+        "stagger": 0.328
       }
     ]
   },
@@ -5021,170 +5021,30 @@
       {
         "hit_count": 1,
         "damage": 0.093,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "energy": 0.58,
+        "harmony": 0.964,
+        "stagger": 0.117
       },
       {
         "hit_count": 2,
         "damage": 0.186,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "energy": 1.16,
+        "harmony": 1.928,
+        "stagger": 0.234
       },
       {
         "hit_count": 3,
-        "damage": 0.279,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.281,
+        "energy": 1.756,
+        "harmony": 2.92,
+        "stagger": 0.355
       },
       {
         "hit_count": 4,
-        "damage": 0.372,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 5,
-        "damage": 0.465,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 6,
-        "damage": 0.558,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 7,
-        "damage": 0.651,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 8,
-        "damage": 0.744,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 9,
-        "damage": 0.837,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 10,
-        "damage": 0.93,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 11,
-        "damage": 1.023,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 12,
-        "damage": 1.116,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 13,
-        "damage": 1.209,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 14,
-        "damage": 1.302,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 15,
-        "damage": 1.395,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 16,
-        "damage": 1.488,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 17,
-        "damage": 1.581,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 18,
-        "damage": 1.674,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 19,
-        "damage": 1.767,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 20,
-        "damage": 1.86,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 21,
-        "damage": 1.953,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 22,
-        "damage": 2.046,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 23,
-        "damage": 2.141,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
-      },
-      {
-        "hit_count": 24,
-        "damage": 2.236,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "damage": 0.376,
+        "energy": 2.352,
+        "harmony": 3.912,
+        "stagger": 0.476
       }
     ]
   },
@@ -5200,30 +5060,304 @@
       {
         "hit_count": 1,
         "damage": 0.106,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "energy": 0.664,
+        "harmony": 1.104,
+        "stagger": 0.134
       },
       {
         "hit_count": 2,
         "damage": 0.212,
-        "energy": 0,
-        "harmony": 0,
-        "stagger": 0
+        "energy": 1.328,
+        "harmony": 2.208,
+        "stagger": 0.268
       },
       {
         "hit_count": 3,
         "damage": 0.318,
+        "energy": 1.992,
+        "harmony": 3.312,
+        "stagger": 0.402
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.788,
+        "energy": 4.928,
+        "harmony": 8.194,
+        "stagger": 0.996
+      }
+    ]
+  },
+  "action_elyms_melee1": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
         "energy": 0,
         "harmony": 0,
         "stagger": 0
       },
       {
-        "hit_count": 4,
-        "damage": 0.788,
+        "hit_count": 1,
+        "damage": 0.112,
+        "energy": 0.704,
+        "harmony": 1.17,
+        "stagger": 0.139
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.224,
+        "energy": 1.408,
+        "harmony": 2.34,
+        "stagger": 0.278
+      }
+    ]
+  },
+  "action_elyms_melee2": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
         "energy": 0,
         "harmony": 0,
         "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.157,
+        "energy": 0.982,
+        "harmony": 1.633,
+        "stagger": 0.194
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.314,
+        "energy": 1.964,
+        "harmony": 3.266,
+        "stagger": 0.388
+      }
+    ]
+  },
+  "action_elyms_melee3": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.334,
+        "energy": 2.094,
+        "harmony": 3.482,
+        "stagger": 0.414
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.668,
+        "energy": 4.188,
+        "harmony": 6.964,
+        "stagger": 0.828
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.834,
+        "energy": 5.227,
+        "harmony": 8.692,
+        "stagger": 1.034
+      }
+    ]
+  },
+  "action_elyms_melee4": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.138,
+        "energy": 0.865,
+        "harmony": 1.438,
+        "stagger": 0.171
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.276,
+        "energy": 1.73,
+        "harmony": 2.876,
+        "stagger": 0.342
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.414,
+        "energy": 2.595,
+        "harmony": 4.314,
+        "stagger": 0.513
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.556,
+        "energy": 3.483,
+        "harmony": 5.79,
+        "stagger": 0.689
+      },
+      {
+        "hit_count": 5,
+        "damage": 0.698,
+        "energy": 4.371,
+        "harmony": 7.266,
+        "stagger": 0.865
+      }
+    ]
+  },
+  "action_elyms_melee5": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.915,
+        "energy": 5.733,
+        "harmony": 9.534,
+        "stagger": 1.134
+      }
+    ]
+  },
+  "action_elyms_branch1": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.107,
+        "energy": 0.667,
+        "harmony": 1.119,
+        "stagger": 0.143
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.214,
+        "energy": 1.334,
+        "harmony": 2.238,
+        "stagger": 0.286
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.321,
+        "energy": 2.001,
+        "harmony": 3.357,
+        "stagger": 0.429
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.449,
+        "energy": 2.801,
+        "harmony": 4.7,
+        "stagger": 0.6
+      }
+    ]
+  },
+  "action_elyms_airattack": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.296,
+        "energy": 1.9,
+        "harmony": 3.1,
+        "stagger": 0.4
+      }
+    ]
+  },
+  "action_elyms_perfectevadeattack": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.0,
+        "energy": 2.5,
+        "harmony": 4.2,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_elyms_skill1": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.317,
+        "energy": 0.808,
+        "harmony": 1.331,
+        "stagger": 0.158
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.594,
+        "energy": 1.515,
+        "harmony": 2.495,
+        "stagger": 0.297
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.871,
+        "energy": 2.222,
+        "harmony": 3.659,
+        "stagger": 0.436
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.148,
+        "energy": 2.929,
+        "harmony": 4.823,
+        "stagger": 0.575
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.425,
+        "energy": 3.636,
+        "harmony": 5.987,
+        "stagger": 0.714
+      },
+      {
+        "hit_count": 6,
+        "damage": 1.999,
+        "energy": 5.1,
+        "harmony": 8.399,
+        "stagger": 1.001
       }
     ]
   }

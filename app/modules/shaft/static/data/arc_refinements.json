@@ -9,6 +9,9 @@
       "default_level": 1,
       "available_levels": [
         1,
+        2,
+        3,
+        4,
         5
       ],
       "effect_name": "静候彩铃",
@@ -38,12 +41,84 @@
             }
           }
         },
+        "2": {
+          "effect_values": [
+            "72",
+            "12%",
+            "10%",
+            "8%"
+          ],
+          "panel_modifiers": {
+            "crit_rate": 0.24,
+            "harmony_strength": 90
+          },
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_elyms_team_def": {
+              "def_ignore": 0.15
+            },
+            "arc_elyms_self_def": {
+              "def_ignore": 0.125
+            },
+            "arc_elyms_light_pen": {
+              "res_down_光": 0.11
+            }
+          }
+        },
+        "3": {
+          "effect_values": [
+            "72",
+            "12%",
+            "10%",
+            "8%"
+          ],
+          "panel_modifiers": {
+            "crit_rate": 0.24,
+            "harmony_strength": 108
+          },
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_elyms_team_def": {
+              "def_ignore": 0.18
+            },
+            "arc_elyms_self_def": {
+              "def_ignore": 0.15
+            },
+            "arc_elyms_light_pen": {
+              "res_down_光": 0.14
+            }
+          }
+        },
+        "4": {
+          "effect_values": [
+            "72",
+            "12%",
+            "10%",
+            "8%"
+          ],
+          "panel_modifiers": {
+            "crit_rate": 0.24,
+            "harmony_strength": 126
+          },
+          "element_dmg": {},
+          "buff_effects": {
+            "arc_elyms_team_def": {
+              "def_ignore": 0.21
+            },
+            "arc_elyms_self_def": {
+              "def_ignore": 0.175
+            },
+            "arc_elyms_light_pen": {
+              "res_down_光": 0.17
+            }
+          }
+        },
         "5": {
           "effect_values": [
-            "144",
-            "24%",
-            "20%",
-            "20%"
+            "72",
+            "12%",
+            "10%",
+            "8%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,

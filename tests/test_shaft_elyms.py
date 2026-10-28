@@ -29,48 +29,90 @@ class ElymsCatalogTest(unittest.TestCase):
     def effects(self, detail):
         return {b['rule_id']: b.get('effects', {}) for b in detail['applied_buffs']}
 
-    def test_confirmed_catalog_and_missing_fields(self):
+    def test_confirmed_catalog_and_action_resources(self):
         c = load_shaft_catalog()
         character = next(x for x in c['characters'] if x['id'] == CID)
         self.assertEqual(character['adaptation'], '固态')
         self.assertEqual(character['base_stats'], {'atk':660,'hp':15392,'def':909})
+        self.assertEqual(character['energy_capacity'],100)
+        for key in ('avatar','portrait','fullbody'):
+            self.assertTrue((ROOT/'app'/character[key].lstrip('/')).is_file())
         actions = {a['name']:a for a in c['actions_by_character'][CID]}
         self.assertEqual(len(actions),21)
         self.assertNotIn('瞄准',actions)
-        expected = {'a1':(.224,2),'a2':(.314,2),'a3':(.834,3),'a4':(.698,5),'a5':(.915,1),
-                    '强a1':(.259,2),'强a2':(2.236,24),'强a3':(.788,4),'重击':(.449,4),
-                    '下落':(.296,1),'闪反':(1,1),'e1':(1.999,6),'e2':(.998,6),
-                    'e3':(1.502,6),'q群':(5.683,2),'q单':(4.01,5),'追忆群':(1.576,4),'追忆单':(1.752,4)}
-        for name,(mult,hits) in expected.items():
-            a=actions[name]
-            self.assertAlmostEqual(a['multipliers']['atk'],mult)
-            self.assertEqual(a['hit_count'],hits)
-            self.assertEqual((a['energy_gain'],a['harmony'],a['stagger']),(0,0,0))
-            if name in ('e2','e3'):
+        expected = {'a1': (0.224, 2, 1.408, 2.34, 0.278, 4),
+         'a2': (0.314, 2, 1.964, 3.266, 0.388, 6),
+         'a3': (0.834, 3, 5.227, 8.692, 1.034, 8),
+         'a4': (0.698, 5, 4.371, 7.266, 0.865, 8),
+         'a5': (0.915, 1, 5.733, 9.534, 1.134, 10),
+         '强a1': (0.259, 2, 1.62, 2.695, 0.328, 6),
+         '强a2': (0.376, 4, 2.352, 3.912, 0.476, 8),
+         '强a3': (0.788, 4, 4.928, 8.194, 0.996, 6),
+         '重击': (0.449, 4, 2.801, 4.7, 0.6, 10),
+         '下落': (0.296, 1, 1.9, 3.1, 0.4, 8),
+         '闪反': (1.0, 1, 2.5, 4.2, 2.5, 10),
+         'e1': (1.999, 6, 5.1, 8.399, 1.001, 10),
+         'e2': (0.998, 6, 8.3, 0.0, 0.0, 0),
+         'e3': (1.502, 6, 8.3, 0.0, 0.0, 0),
+         'q群': (6.749, 4, 0.0, 0.0, 1.501, 0),
+         'q单': (7.502, 8, 0.0, 0.0, 1.502, 0),
+         '追忆群': (1.576, 4, 1.7, 2.8, 0.3, 0),
+         '追忆单': (1.752, 4, 1.7, 2.8, 0.3, 0),
+         '援护': (2.0, 1, 5.2, 0.0, 2.5, 15)}
+        for name,(mult,hits,energy,harmony,stagger,ticks) in expected.items():
+            with self.subTest(action=name):
+                a=actions[name]
+                self.assertAlmostEqual(a['multipliers']['atk'],mult)
+                self.assertEqual(a['hit_count'],hits)
+                self.assertEqual((a['energy_gain'],a['harmony'],a['stagger']),(energy,harmony,stagger))
+                self.assertEqual(a['duration_ticks'],ticks)
                 self.assertFalse(a['duration_pending'])
                 self.assertTrue(a['duration_implemented'])
-                self.assertTrue(a['is_time_stop_zero'])
-                self.assertTrue(a['locks_foreground_switch'])
-            elif name in ('强a1','强a2','强a3'):
-                self.assertFalse(a['duration_pending'])
-                self.assertTrue(a['duration_implemented'])
-                self.assertEqual(a['duration_ticks'],{'强a1':6,'强a2':8,'强a3':6}[name])
-                self.assertFalse(a.get('is_time_stop_zero'))
-                self.assertEqual(a['hit_profile']['cumulative'][-1]['hit_count'],hits)
-                self.assertAlmostEqual(a['hit_profile']['cumulative'][-1]['damage'],mult)
-            elif not name.startswith('追忆'):
-                self.assertTrue(a['duration_pending'])
-                self.assertFalse(a.get('is_time_stop_zero'))
+                if ticks > 0 and a['action_type'] != '援护':
+                    tail=a['hit_profile']['cumulative'][-1]
+                    self.assertEqual(tail['hit_count'],hits)
+                    for key,value in [('damage',mult),('energy',energy),('harmony',harmony),('stagger',stagger)]:
+                        self.assertAlmostEqual(tail[key],value)
+                self.assertEqual(bool(a.get('is_time_stop_zero')),name in ('e2','e3','q群','q单'))
         self.assertEqual(actions['e1']['harmony_on_start'],100)
         self.assertEqual(actions['e1']['cooldown_ticks'],160)
-        self.assertEqual(actions['q群']['cooldown_ticks'],200)
-        self.assertEqual(actions['援护']['multipliers']['atk'],0)
+        for name in ('q群','q单'):
+            self.assertEqual(actions[name]['energy_cost'],100)
+            self.assertEqual(actions[name]['cooldown_ticks'],200)
+        for name in ('追忆群','追忆单'):
+            self.assertEqual(actions[name]['action_type'],'被动')
+            self.assertEqual(actions[name]['damage_type'],'Q')
+            self.assertEqual(actions[name]['skill_level_category'],'ultimate')
+            self.assertTrue(actions[name]['resonance_skill_level_bonus'])
         self.assertEqual(c['formula_constants']['default_build_options'][CID]['curtain_bonus'],
                          {'value':8,'stat':'暴击','passive_type':'type3','fixed':True})
         self.assertEqual(next(a['id'] for a in c['arcs'] if a['adaptation']=='固态'),'arc_elyms_waiting_ringtone')
         ref=c['arc_refinements']['arcs']['arc_elyms_waiting_ringtone']
-        self.assertEqual(ref['available_levels'],[1,5])
-        self.assertEqual(set(ref['levels']),{'1','5'})
+        self.assertEqual(ref['available_levels'],[1,2,3,4,5])
+        for level in range(1,6):
+            values=ref['levels'][str(level)]
+            self.assertEqual(values['panel_modifiers']['harmony_strength'],72+18*(level-1))
+            self.assertAlmostEqual(values['buff_effects']['arc_elyms_light_pen']['res_down_光'],.08+.03*(level-1))
+            self.assertAlmostEqual(values['buff_effects']['arc_elyms_team_def']['def_ignore'],.12+.03*(level-1))
+            self.assertAlmostEqual(values['buff_effects']['arc_elyms_self_def']['def_ignore'],.1+.025*(level-1))
+
+    def test_b_awakening_only_grants_consumption_defense_ignore_to_e3(self):
+        result=self.own([('skill2',0),('goodbye',10),('melee1',20)],nodes=[2,3])
+        self.assertAlmostEqual(self.effects(result['details'][1])['character_elyms_b_ignore']['def_ignore'],.1)
+        self.assertNotIn('character_elyms_b_ignore',self.effects(result['details'][2]))
+        empty=self.own([('goodbye',0)],nodes=[2])
+        self.assertEqual(self.effects(empty['details'][0]).get('character_elyms_b_ignore',{}),{})
+        no_b=self.own([('skill2',0),('goodbye',10)])
+        self.assertNotIn('character_elyms_b_ignore',self.effects(no_b['details'][1]))
+
+    def test_partial_hits_only_grant_their_actual_resources(self):
+        axis=self.axis([(0,'action_elyms_melee3',0)])
+        axis['steps'][0].update(interrupted=True,interrupt_duration_ticks=4,interrupt_hit_count=2)
+        d=simulate_shaft_axis(axis)['result']['details'][0]
+        self.assertEqual(d['hit_count'],2)
+        self.assertAlmostEqual(d['base_energy_gain'],4.188)
+        self.assertAlmostEqual(d['harmony'],6.964)
+        self.assertAlmostEqual(d['stagger_amount'],.828)
 
     def test_signal_multiplier_snapshot_reset_and_weak_action_checks(self):
         r=self.own([('skill2',0),('goodbye',10),('melee1',20),('ultraskilla1',30),('melee1',40),('xietongskilla1',50)])
@@ -145,13 +187,13 @@ class ElymsCatalogTest(unittest.TestCase):
         original=next(e for e in r['reaction_effects'] if e['reaction']=='延滞' and not e.get('is_echo'))
         self.assertEqual(echoes[0]['start_tick']-original['start_tick'],75)
 
-    def test_old_partial_entries_are_removed_and_self_check_keeps_missing_duration(self):
+    def test_old_partial_entries_are_removed_without_missing_duration_for_known_actions(self):
         axis=self.axis([(0,'action_elyms_melee3_1',0),(0,'action_elyms_melee1',10)])
         self.assertEqual([s['action_id'] for s in normalize_axis_payload(axis)['steps']],['action_elyms_melee1'])
         catalog=load_shaft_catalog()
         script="const s=require(process.argv[1]);const p=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(JSON.stringify(s.inspectAxis(p.axis,p.catalog)));"
         result=subprocess.run(['node','-e',script,str(ROOT/'app/modules/shaft/static/js/shaft_self_check.js')],input=json.dumps(dict(axis=axis,catalog=catalog)),text=True,capture_output=True,check=True)
-        self.assertTrue(any('时长未实装' in w for w in json.loads(result.stdout)))
+        self.assertFalse(any('a1」：该动作的时长未实装' in w for w in json.loads(result.stdout)))
 
 
 class ElymsAccessTest(RoomFlowTestCase):
@@ -197,8 +239,8 @@ class ElymsActivationTest(unittest.TestCase):
 
     def test_weak_finisher_and_e1_activate_e2_for_twelve_seconds(self):
         self.assertTrue(self.check([('skill2',0)]))
-        self.assertEqual(self.check([('melee5',0),('skill2',124)]),[])
-        self.assertTrue(self.check([('melee5',0),('skill2',125)]))
+        self.assertEqual(self.check([('melee5',0),('skill2',129)]),[])
+        self.assertTrue(self.check([('melee5',0),('skill2',130)]))
         self.assertEqual(self.check([('skill1',0),('skill2',10)]),[])
         self.assertTrue(self.check([('melee4',0),('skill2',10)]))
         self.assertEqual(self.check([('melee5',0),('ultraskilla1',10),('skill2',20)]),[])

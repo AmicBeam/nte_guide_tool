@@ -35,8 +35,9 @@ class ElymsCatalogTest(unittest.TestCase):
         self.assertEqual(character['adaptation'], '固态')
         self.assertEqual(character['base_stats'], {'atk':660,'hp':15392,'def':909})
         self.assertEqual(character['energy_capacity'],100)
-        for key in ('avatar','portrait','fullbody'):
-            self.assertTrue((ROOT/'app'/character[key].lstrip('/')).is_file())
+        self.assertEqual(character['avatar'],'/static/guide/character-previews/elyms-avatar.webp')
+        self.assertEqual(character['portrait'],'')
+        self.assertNotIn('fullbody',character)
         actions = {a['name']:a for a in c['actions_by_character'][CID]}
         self.assertEqual(len(actions),21)
         self.assertNotIn('瞄准',actions)

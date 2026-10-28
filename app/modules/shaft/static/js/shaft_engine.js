@@ -1820,6 +1820,8 @@
       if (int(tick) <= int(summary.start_tick)) {
         summary.cancelled = true;
       }
+      // Coverage ends at replacement; the earlier tooltip still counts down to expiry.
+      summary.countdown_end_tick ??= int(summary.end_tick);
       summary.end_tick = resetTick;
       summary.duration_ticks = Math.max(0, resetTick - int(summary.start_tick));
       summary.visual_end_tick = Math.min(int(summary.visual_end_tick, resetVisualTick), resetVisualTick);
@@ -3130,6 +3132,8 @@
           && event !== settlement
         ) reactionDamageEvents.splice(index, 1);
       }
+      // Preserve the expiry shown before a later instance replaces this one.
+      effect.countdown_end_tick ??= int(effect.end_tick);
       effect.end_tick = int(tick);
       effect.evicted_at_tick = int(tick);
       effect.duration_ticks = Math.max(0, int(tick) - int(effect.start_tick));

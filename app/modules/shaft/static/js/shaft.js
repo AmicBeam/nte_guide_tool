@@ -4278,7 +4278,7 @@
             buff?.start_tick ?? calculationTickFromVisual(startTick),
           ),
           calculationEndTick: Number(
-            buff?.end_tick ?? calculationTickFromVisual(endTick),
+            buff?.countdown_end_tick ?? buff?.end_tick ?? calculationTickFromVisual(endTick),
           ),
           loopDurationTicks: loopEnabled
             ? Math.max(1, calculationTickFromVisual(Number(axisEndTick || 0)))
@@ -5113,7 +5113,7 @@
                 name: effect.reaction,
                 endTick: segment.endTick,
                 calculationStartTick: Number(effect.start_tick || 0),
-                calculationEndTick: Number(effect.end_tick || 0),
+                calculationEndTick: Number(effect.countdown_end_tick ?? effect.end_tick ?? 0),
                 loopDurationTicks: loopEnabled
                   ? Math.max(1, calculationTickFromVisual(Number(buffAxisEndTick || 0)))
                   : 0,

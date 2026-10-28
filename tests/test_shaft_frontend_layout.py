@@ -1857,6 +1857,53 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             source,
         )
 
+    def test_refresh_countdown_keeps_expiry_before_and_after_replacement(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
+        functions = source[source.index('  function wrappedTick('):source.index('  function mergedRenderedBuffSegments(')]
+        truncate = engine[engine.index('  function truncateBuffTimelineAt('):engine.index('  function resetActiveBuffAt(')]
+        script = """
+          const int = (v, fallback = 0) => Number.isFinite(Number(v)) ? Math.trunc(Number(v)) : fallback;
+          const asList = (v) => Array.isArray(v) ? v : [];
+          const calculationTickFromVisual = (v) => v;
+          const shouldDrawBuffLine = () => true;
+          const buffRuleDisplayName = (b) => b.name;
+          const formatNumber = String;
+          const ticksToSeconds = (v) => v / 10;
+          const BUFF_DURATION_LABEL_LIMIT_TICKS = 9000;
+        """ + functions + truncate + """
+          const first = {definition_id:'buff', name:'测试', start_tick:0, end_tick:50,
+            visual_start_tick:0, visual_end_tick:50, duration_ticks:50};
+          truncateBuffTimelineAt({start_tick:0, end_tick:50, timeline_summaries:[first]}, 10);
+          const second = {...first, start_tick:10, end_tick:60, visual_start_tick:10,
+            visual_end_tick:60, duration_ticks:50};
+          delete second.countdown_end_tick;
+          const segments = mergedBuffLineSegments([
+            {start_tick:0, triggered_buffs:[first]},
+            {start_tick:10, triggered_buffs:[second]},
+          ], 30, false);
+          const remaining = (tick) => {
+            const item = segments.flatMap(s => s.tooltipItems)
+              .find(i => i.visualStartTick <= tick && tick < i.visualEndTick);
+            return buffRemainingTicksAtCalculationTick(item, tick);
+          };
+          const carried = {...first, start_tick:25, end_tick:35, countdown_end_tick:75,
+            visual_start_tick:25, visual_end_tick:35};
+          const loopSegments = mergedBuffLineSegments([
+            {start_tick:25, triggered_buffs:[carried]},
+          ], 30, true);
+          const wrappedItem = loopSegments.flatMap(s => s.tooltipItems)
+            .find(i => i.visualStartTick <= 2 && 2 < i.visualEndTick);
+          console.log(JSON.stringify({end:first.end_tick, expiry:first.countdown_end_tick,
+            remaining:[remaining(0), remaining(9), remaining(10), remaining(20)],
+            loopRemaining:buffRemainingTicksAtCalculationTick(wrappedItem, 2)}));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertEqual(result['end'], 10)
+        self.assertEqual(result['expiry'], 50)
+        self.assertEqual(result['remaining'], [50, 41, 50, 40])
+        self.assertEqual(result['loopRemaining'], 43)
+
     def test_buff_line_tooltip_follows_pointer_position(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         css = (ROOT / 'app' / 'modules' / 'shaft' / 'static' / 'css' / 'shaft-page.css').read_text(encoding='utf-8')
@@ -1870,7 +1917,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const cycles = Math.ceil((calculationStartTick - effectivePointerTick) / loopDurationTicks);', source)
         self.assertIn('buff?.end_tick ?? calculationTickFromVisual(endTick)', source)
         self.assertIn('calculationEndTick: buff.calculationEndTick,', source)
-        self.assertIn('calculationEndTick: Number(effect.end_tick || 0),', source)
+        self.assertIn('calculationEndTick: Number(effect.countdown_end_tick ?? effect.end_tick ?? 0),', source)
         self.assertIn('buffRemainingTicksAtCalculationTick(item, pointerCalculationTick)', source)
         self.assertNotIn(
             'calculationTickFromVisual(Number(item.endTick || 0)) - pointerCalculationTick',

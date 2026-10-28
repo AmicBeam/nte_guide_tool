@@ -318,7 +318,28 @@
         ]
       }
     ],
-    "energy_capacity": 100
+    "energy_capacity": 100,
+    "personal_resource_integer_resources": [
+      "信号等级"
+    ],
+    "personal_resource_states": {
+      "信号等级": [
+        {
+          "value": 0,
+          "label": "弱信号"
+        },
+        {
+          "value": 1,
+          "label": "中等信号",
+          "buff_rule_id": "character_elyms_signal_medium"
+        },
+        {
+          "value": 2,
+          "label": "强信号",
+          "buff_rule_id": "character_elyms_signal_strong"
+        }
+      ]
+    }
   },
   {
     "id": "char_0846d632e0",
@@ -984,7 +1005,9 @@
   {
     "id": "char_heiyu",
     "name": "黑羽",
-    "optional_personal_resource_costs": ["恶意"],
+    "optional_personal_resource_costs": [
+      "恶意"
+    ],
     "element": "魂",
     "adaptation": "气态",
     "rarity": "",

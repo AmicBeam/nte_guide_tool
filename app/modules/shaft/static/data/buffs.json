@@ -5181,7 +5181,10 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "effects": {}
+    "effects": {},
+    "display": {
+      "line": false
+    }
   },
   {
     "id": "character_elyms_signal_b",
@@ -5229,7 +5232,10 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "effects": {}
+    "effects": {},
+    "display": {
+      "line": false
+    }
   },
   {
     "id": "character_elyms_illusion_c",
@@ -5318,6 +5324,9 @@
       "clear_keys": [
         "character_elyms_medium"
       ]
+    },
+    "display": {
+      "line": false
     }
   },
   {

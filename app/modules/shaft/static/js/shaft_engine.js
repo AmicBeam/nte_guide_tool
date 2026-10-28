@@ -2686,9 +2686,45 @@
       Object.entries(resources).forEach(([name, value]) => {
         resources[name] = integerPersonalResourceValue(characterId, name, value);
       });
+      Object.keys(snapshot.character?.personal_resource_states || {}).forEach((name) => {
+        const cap = num(personalResourceCaps[characterId]?.[name], 0);
+        resources[name] = integerPersonalResourceValue(characterId, name, Math.min(cap, Math.max(0, num(resources[name]))));
+      });
       initialPersonalResourcesBySlot.set(slot, Object.assign({}, resources));
     });
     const buffRules = registeredBuffRules(teamPayload, catalog).concat(legacyBuffRules(axisPayload?.buff_rules));
+    const personalResourceStateEvents = [];
+    const resourceStateBindings = Array.from(snapshots.values()).flatMap((snapshot) =>
+      Object.entries(snapshot.character?.personal_resource_states || {}).map(([resource, states]) => ({
+        slot: snapshot.slot, resource, states: asList(states).map((state) => ({
+          ...state,
+          rule: buffRules.find((rule) => int(rule.owner_slot) === snapshot.slot && rule.id === state.buff_rule_id),
+        })),
+      })));
+
+    function initializePersonalResourceStates(tick) {
+      resourceStateBindings.forEach(({slot, resource, states}) => {
+        const keys = new Set(states.filter((state) => state.rule).map((state) => state.rule.stacking?.key || state.rule.id));
+        activeBuffs = activeBuffs.filter((buff) => int(buff.owner_slot) !== slot || !keys.has(buff.definition_id));
+        const value = num(initialPersonalResourcesBySlot.get(slot)?.[resource]);
+        const state = states.find((candidate) => num(candidate.value) === value);
+        if (state?.rule) activateBuff(activeBuffs, state.rule, tick);
+      });
+    }
+
+    function syncPersonalResourceStates(tick) {
+      resourceStateBindings.forEach(({slot, resource, states}) => {
+        const state = states.slice().reverse().find((candidate) => candidate.rule && activeBuffs.some((buff) => (
+          int(buff.owner_slot) === slot && buff.definition_id === (candidate.rule.stacking?.key || candidate.rule.id)
+          && tick >= int(buff.start_tick) && tick < int(buff.end_tick)
+        )));
+        const value = num(state?.value);
+        const resources = personalResources.get(slot);
+        if (num(resources[resource]) !== value) personalResourceStateEvents.push({tick, slot, resource, value});
+        resources[resource] = value;
+      });
+    }
+
     function syncBuffLayerResources(tick) {
       const bindings = new Map();
       buffRules.forEach((rule) => {
@@ -2711,6 +2747,7 @@
         if (stackCount > 0) resources[resource] = stackCount;
         else delete resources[resource];
       });
+      syncPersonalResourceStates(tick);
     }
     const resolvedActions = resolveLingkeSupportActions(steps, actionsById, switchLossTicks, catalog.buffs);
     const {scheduledSteps, qVirtualIntervals, loopOpeningFrontSlot} = compileActionSchedule(
@@ -4411,6 +4448,7 @@
       return multiplier;
     }
 
+    initializePersonalResourceStates(options.loop_enabled ? -loopDurationTicks : 0);
     buffRules.forEach((rule) => {
       if (String(rule.trigger?.event || '') !== 'passive') return;
       const snapshot = snapshots.get(int(rule.owner_slot));
@@ -4816,6 +4854,7 @@
           ));
         });
       }
+      syncPersonalResourceStates(triggerTick);
       return triggered;
     }
 
@@ -4981,6 +5020,8 @@
         Object.keys(resources).forEach((key) => delete resources[key]);
         Object.assign(resources, initialPersonalResourcesBySlot.get(slot) || {});
       });
+      initializePersonalResourceStates(0);
+      personalResourceStateEvents.length = 0;
       const expiredPrimedReactionIds = new Set(
         reactionEffects
           .filter((effect) => int(effect.end_tick) <= 0)
@@ -6166,6 +6207,8 @@
       harmony_contributions_by_slot: harmonyContributionsBySlot,
       other_contributions_by_slot: otherContributionsBySlot,
       stagger_contributions_by_slot: staggerContributionsBySlot,
+      personal_resource_state_events: personalResourceStateEvents.filter((event) => event.tick >= 0)
+        .sort((left, right) => left.tick - right.tick),
       resources_by_slot: sortedSlots.map((slot) => ({
         slot,
         character_id: snapshots.get(slot).character.id,

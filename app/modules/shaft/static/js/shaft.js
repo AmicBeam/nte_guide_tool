@@ -1187,14 +1187,33 @@
       : resource.initial_personal_resources && typeof resource.initial_personal_resources === 'object'
         ? resource.initial_personal_resources
       : {};
-    return { energy, harmony, personalResources };
+    const cursorPersonalResources = {...personalResources};
+    const character = getCharacterMap().get(memberBySlot(slotNumber)?.character_id) || {};
+    Object.keys(character.personal_resource_states || {}).forEach((name) => {
+      const configured = state.axis?.options?.loop_enabled
+        ? state.axis.options.loop_initial_resources?.[character.id]?.personal_resources?.[name] : 0;
+      const emptyAxis = Array.isArray(state.axis?.steps) && state.axis.steps.length === 0;
+      const initialValue = Number((emptyAxis ? configured : resource.initial_personal_resources?.[name]) ?? configured ?? 0);
+      if (!Array.isArray(result?.personal_resource_state_events)) {
+        if (!result || emptyAxis) cursorPersonalResources[name] = initialValue;
+        return;
+      }
+      cursorPersonalResources[name] = initialValue;
+      result.personal_resource_state_events.forEach((event) => {
+        if (Number(event.slot) === slotNumber && event.resource === name && Number(event.tick) <= calculationCursorTick) {
+          cursorPersonalResources[name] = Number(event.value);
+        }
+      });
+    });
+    return { energy, harmony, personalResources: cursorPersonalResources };
   }
 
   function timelinePersonalResourceEntries(character, personalResources) {
     const resources = personalResources && typeof personalResources === 'object'
       ? personalResources
       : {};
-    const fixedNames = TIMELINE_FIXED_PERSONAL_RESOURCES[String(character?.id || '')] || [];
+    const fixedNames = [...(TIMELINE_FIXED_PERSONAL_RESOURCES[String(character?.id || '')] || []),
+      ...Object.keys(character?.personal_resource_states || {})];
     const entries = fixedNames.map((name) => [name, Number(resources[name] || 0)]);
     const fixedNameSet = new Set(fixedNames);
     Object.entries(resources).forEach(([name, value]) => {
@@ -1776,7 +1795,8 @@
       ...TIMELINE_HIDDEN_PERSONAL_RESOURCES,
       ...(state.catalog?.formula_constants?.hidden_personal_resources || []).map(String),
     ]);
-    const names = new Set();
+    const character = getCharacterMap().get(characterId) || {};
+    const names = new Set(Object.keys(character.personal_resource_states || {}));
     (state.catalog?.actions || [])
       .filter((action) => String(action?.character_id || '') === characterId)
       .forEach((action) => {
@@ -1792,6 +1812,7 @@
     return Array.from(names).sort((left, right) => left.localeCompare(right, 'zh-CN')).map((name) => ({
       name,
       max: Number.isFinite(Number(caps[name])) ? Math.max(0, Number(caps[name])) : null,
+      states: character.personal_resource_states?.[name] || [],
     }));
   }
 
@@ -1814,6 +1835,12 @@
       const personalResourceFields = loopPersonalResourceDefinitions(member).map((definition) => {
         const maximum = definition.max == null ? '' : ` max="${definition.max}"`;
         const value = Math.max(0, Number(resources.personalResources?.[definition.name] || 0));
+        if (definition.states.length) return `<label>
+          <span>起始${escapeHtml(definition.name)}</span>
+          <select data-loop-initial-personal-resource="${escapeHtml(definition.name)}" max="${definition.max}">
+            ${definition.states.map((item) => `<option value="${item.value}"${Number(item.value) === value ? ' selected' : ''}>${escapeHtml(item.label)}</option>`).join('')}
+          </select>
+        </label>`;
         return `<label>
           <span>起始${escapeHtml(definition.name)}</span>
           <input data-loop-initial-personal-resource="${escapeHtml(definition.name)}" type="number" min="0"${maximum} step="1" value="${value}">
@@ -1898,7 +1925,9 @@
       const integerResources = new Set(character.personal_resource_integer_resources || []);
       row.querySelectorAll('[data-loop-initial-personal-resource]').forEach((input) => {
         const name = String(input.dataset.loopInitialPersonalResource || '');
-        const maximum = input.max === '' ? Number.POSITIVE_INFINITY : Math.max(0, Number(input.max));
+        const maximumAttribute = input.getAttribute('max');
+        const maximum = maximumAttribute == null || maximumAttribute === ''
+          ? Number.POSITIVE_INFINITY : Math.max(0, Number(maximumAttribute));
         if (name) {
           personalResources[name] = Math.max(0, Math.min(maximum, Number(input.value || 0)));
           if (integerResources.has(name)) personalResources[name] = Math.floor(personalResources[name]);
@@ -5044,7 +5073,7 @@
       const energyLabel = formatNumber(resources.energy || 0, 1);
       const harmonyLabel = formatNumber(resources.harmony || 0, 1);
       const personalResourceLabels = timelinePersonalResourceEntries(character, resources.personalResources)
-        .map(([name, value]) => `<small>${escapeHtml(name)} ${formatNumber(value, (character.personal_resource_integer_resources || []).includes(name) ? 0 : 1)}</small>`)
+        .map(([name, value]) => `<small>${escapeHtml(name)} ${escapeHtml(character.personal_resource_states?.[name]?.find((item) => Number(item.value) === value)?.label || formatNumber(value, (character.personal_resource_integer_resources || []).includes(name) ? 0 : 1))}</small>`)
         .join('');
       const slotDetails = details
         .filter((detail) => Number(detail.slot) === Number(member.slot))

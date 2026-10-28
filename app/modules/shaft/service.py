@@ -731,6 +731,8 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
             values = action.get(field)
             if isinstance(values, dict):
                 names.update(str(name) for name in values if str(name) not in hidden_personal_resources)
+    for character_id, character in characters.items():
+        personal_resource_names.setdefault(character_id, set()).update(character.get('personal_resource_states') or {})
     loop_initial_resources: dict[str, dict[str, Any]] = {}
     for member in team:
         character_id = str(member.get('character_id') or '')

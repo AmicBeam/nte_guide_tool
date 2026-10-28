@@ -142,7 +142,7 @@ CANHONG_CHARACTER_ID = 'char_076a1f4e53'
 LINGKE_CHARACTER_ID = 'char_0846d632e0'
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SHAFT_COMPUTE_SCRIPT = PROJECT_ROOT / 'scripts' / 'shaft_compute.js'
-SHAFT_SOURCE_VERSION = '异环云配队 1.4.1'
+SHAFT_SOURCE_VERSION = '异环云配队 1.5.0'
 
 
 class ShaftAxisNameConflictError(RuleValidationError):

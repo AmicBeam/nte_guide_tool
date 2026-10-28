@@ -154,11 +154,11 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertNotIn('id="shaft-run-btn"', template)
         self.assertNotIn("$('shaft-run-btn')", source)
 
-    def test_shaft_source_version_is_1_4_1(self) -> None:
+    def test_shaft_source_version_is_1_5_0(self) -> None:
         catalog = get_shaft_catalog_payload()
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
 
-        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.4.1')
+        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.5.0')
         self.assertEqual(SHAFT_SOURCE_VERSION, catalog['source_meta']['version_label'])
         self.assertIn('{% block title %}异环云配队——排轴计算{% endblock %}', template)
         self.assertIn('<h1>异环云配队——排轴计算</h1>', template)

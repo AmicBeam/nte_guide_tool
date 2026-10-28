@@ -29,12 +29,13 @@ class GuidePreviewTest(unittest.TestCase):
         self.assertEqual(html.count('class="guide-preview-badge"'), 2)
         self.assertEqual(len(service.catalog()['characters']), 25)
 
-    def test_detail_is_image_only_and_readable_in_public_formats(self):
+    def test_detail_is_preview_only_and_readable_in_public_formats(self):
         for identifier in ('1090', 'preview-exe'):
             path = '/guide/characters/' + identifier
             html = self.client.get(path).text
             self.assertIn('class="guide-preview-hero"', html)
-            for text in ('所需升级材料', '属性数值', '角色定位', '养成计算器', 'guide-toc', 'type="range"'):
+            self.assertEqual('所需升级材料' in html, identifier == 'preview-exe')
+            for text in ('属性数值', '角色定位', '养成计算器', 'guide-toc', 'type="range"'):
                 self.assertNotIn(text, html)
             self.assertEqual(self.client.get(path + '.md').status_code, 200)
             overview = self.client.get('/api/guide/characters/' + identifier + '?section=overview').json['data']

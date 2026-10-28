@@ -5073,7 +5073,11 @@
       const energyLabel = formatNumber(resources.energy || 0, 1);
       const harmonyLabel = formatNumber(resources.harmony || 0, 1);
       const personalResourceLabels = timelinePersonalResourceEntries(character, resources.personalResources)
-        .map(([name, value]) => `<small>${escapeHtml(name)} ${escapeHtml(character.personal_resource_states?.[name]?.find((item) => Number(item.value) === value)?.label || formatNumber(value, (character.personal_resource_integer_resources || []).includes(name) ? 0 : 1))}</small>`)
+        .map(([name, value]) => {
+          const stateLabel = character.personal_resource_states?.[name]?.find((item) => Number(item.value) === value)?.label;
+          const label = stateLabel || `${name} ${formatNumber(value, (character.personal_resource_integer_resources || []).includes(name) ? 0 : 1)}`;
+          return `<small>${escapeHtml(label)}</small>`;
+        })
         .join('');
       const slotDetails = details
         .filter((detail) => Number(detail.slot) === Number(member.slot))

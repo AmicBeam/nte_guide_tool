@@ -218356,7 +218356,7 @@
     }
   ],
   "input_sha256": {
-    "characters.json": "5bfbc13434449c375d45f2fdbba86ca0e9acdc1eefb7ded209682ee18fd4c7da",
+    "characters.json": "71942a507b176176d31f058779922cc954ce3fc640c16bd504e25820db572c6c",
     "actions.json": "73d3a09b85c8fd3d3cce3049ba334884709b29112001308b58919578364262b7",
     "rules.json": "1089d950962377295c03dfd082823ca297b6ea049d75847478b86aed2bba5c2b",
     "generator.py": "1bfa06a2d8bad4986c4db83f0f55bf463b042c3c4a23084915426da2c364d5a7"

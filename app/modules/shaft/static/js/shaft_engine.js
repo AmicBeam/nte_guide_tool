@@ -480,6 +480,7 @@
 
   function skillLevelCategory(action) {
     const explicitCategory = String(action?.skill_level_category || '');
+    if (explicitCategory === 'none') return '';
     if (['basic', 'skill', 'ultimate', 'support'].includes(explicitCategory)) {
       return explicitCategory;
     }

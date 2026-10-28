@@ -903,7 +903,7 @@ Everness当天核实「未迟到的正义」：基础800%攻击力相属性伤�
 
 `multipliers_add_by_awakening_node`和`multipliers_add_by_awakening_resonance`保留技能等级换算前的追加语义。新增`final_multipliers_add_by_awakening_node`和`final_multipliers_add_by_awakening_resonance`用于等级换算后的最终倍率加算；节点按A–F选择，共鸣读取独立3/6开关。等级换算后的追加不乘技能等级系数，仍进入基础倍率乘区及后续增伤、暴击、防御、抗性等结算。`formula_parts.post_skill_level_base`单独记录该追加的面板折算值，`raw_base`只记录换算前本体。按用户2026-10-10明确口径，明音C短E与三共鸣强化E/Q2各+1200%使用新字段；泛音列强化固定额外125%的`base_atk_multiplier_add`仍随本体等级换算。
 
-`reaction_reapplication.damage_type`与`skill_level_category`可配置重施伤害归属，缺失时沿用被动。明音绝对音准配置为E/skill，继承变轨增伤和等级；触发者仍为被动，不派发E释放，避免重复触发专武释放增益。最新文档参数不再作为X暂估，普攻环合则按用户确认保留24.899。新版A回血和抗打断、B相抗、D无视防御、F自身暴击/暴伤及共鸣均通过内容配置接入。
+`reaction_reapplication.damage_type`与`skill_level_category`可配置重施伤害归属，缺失时沿用被动。`skill_level_category=none`显式禁用技能等级换算，优先于伤害类型的默认推断。明音绝对音准配置为E/none，享受变轨增伤，不受E技能等级及共鸣等级加成影响；触发者仍为被动，不派发E释放，避免重复触发专武释放增益。最新文档参数不再作为X暂估，普攻环合则按用户确认保留24.899。新版A回血和抗打断、B相抗、D无视防御、F自身暴击/暴伤及共鸣均通过内容配置接入。
 
 打断时等级换算前、后的节点/共鸣额外倍率均按保留伤害比例缩减，Buff固定攻击倍率追加同样读取`interrupt_damage_scale`；0命中不得残留三共鸣或泛音列额外伤害，也不触发强化命中回血/返还。
 

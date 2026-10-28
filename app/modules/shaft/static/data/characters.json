@@ -1092,7 +1092,7 @@
       "cooldown_ticks": 10,
       "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。 基础150%，每剩余秒整体+20%，上限160%，同目标1秒间隔及变轨分类沿用现行口径。",
       "damage_type": "E",
-      "skill_level_category": "skill"
+      "skill_level_category": "none"
     },
     "personal_resource_integer_resources": [
       "弦能"

@@ -428,8 +428,37 @@ class AkaneTest(unittest.TestCase):
         events=simulate_shaft_axis(p)['result']['periodic_damage_events']
         hit=next(x for x in events if x['reaction']=='绝对音准')
         self.assertEqual(hit['damage_type'],'E')
-        self.assertEqual(hit['formula_parts']['skill_level_category'],'skill')
+        self.assertEqual(hit['formula_parts']['skill_level_category'],'')
+        self.assertEqual(hit['formula_parts']['skill_level_multiplier'],1)
         self.assertGreaterEqual(hit['formula_parts']['damage_bonus'],.28)
+
+    def test_absolute_pitch_ignores_skill_levels_and_resonance_level_bonus(self):
+        results=[]
+        for level,resonances in ((1,[]),(10,[]),(10,[3])):
+            axis=self.payload([('e',30),('a1',120)])
+            axis['team'][0]['skill_levels']={key:level for key in ('basic','skill','ultimate','support')}
+            axis['team'][0]['awakening_resonances']=resonances
+            axis['team'].append(dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''))
+            axis['steps'][:0]=[
+                dict(id='front',slot=1,action_id='action_none_dd034941ef',start_tick=0),
+                dict(id='support',slot=0,action_id='action_akane_support',start_tick=10)]
+            result=simulate_shaft_axis(axis)['result']
+            hits=[e for e in result['periodic_damage_events'] if e['reaction']=='绝对音准']
+            self.assertTrue(hits)
+            for hit in hits:
+                self.assertEqual(hit['damage_type'],'E')
+                self.assertEqual(hit['damage_element'],'相')
+                self.assertEqual(hit['formula_parts']['skill_level_multiplier'],1)
+                self.assertEqual(hit['formula_parts']['skill_level_category'],'')
+            results.append(result)
+        baseline=[e['damage'] for e in results[0]['periodic_damage_events'] if e['reaction']=='绝对音准']
+        for result in results[1:]:
+            damages=[e['damage'] for e in result['periodic_damage_events'] if e['reaction']=='绝对音准']
+            self.assertEqual(len(damages),len(baseline))
+            for actual,expected in zip(damages,baseline):
+                self.assertAlmostEqual(actual,expected)
+        # The regular E still scales with its own level.
+        self.assertGreater(results[1]['details'][2]['direct_damage'],results[0]['details'][2]['direct_damage'])
 
     def test_a_and_d_expire_at_fifteen_second_boundary_in_both_forms(self):
         # Oct 11 user values; the triggering hit remains at tick 20.

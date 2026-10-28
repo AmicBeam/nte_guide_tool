@@ -38,22 +38,22 @@ class ShaftDamageZonesTest(unittest.TestCase):
         self.assertTrue(result['ok'], result)
         return result['result']
 
-    def test_character_periodic_damage_uses_ability_penetration(self):
+    def test_character_periodic_damage_uses_general_resistance_reduction(self):
         base = self.simulate({}, periodic=True)
-        pen = self.simulate({'ability_res_pen_光': .2}, periodic=True)
+        pen = self.simulate({'res_down_光': .2}, periodic=True)
         self.assertTrue(base['periodic_damage_events'])
         self.assertEqual(len(base['periodic_damage_events']), len(pen['periodic_damage_events']))
         for old, new in zip(base['periodic_damage_events'], pen['periodic_damage_events']):
             self.assertGreater(new['damage'], old['damage'])
-            self.assertAlmostEqual(new['formula_parts']['ability_res_pen'], .2)
+            self.assertAlmostEqual(new['formula_parts']['res_down'], .2)
 
-    def test_arc_refinements_use_ability_penetration(self):
+    def test_arc_refinements_use_general_resistance_reduction(self):
         c = load_shaft_catalog()
         rule = next(b for b in c['buffs'] if b['id'] == 'arc_elyms_light_pen')
-        self.assertEqual(rule['effects'], {'ability_res_pen_光': .08})
+        self.assertEqual(rule['effects'], {'res_down_光': .08})
         levels = c['arc_refinements']['arcs']['arc_elyms_waiting_ringtone']['levels']
         for level, value in [('1', .08), ('5', .2)]:
-            self.assertEqual(levels[level]['buff_effects']['arc_elyms_light_pen'], {'ability_res_pen_光': value})
+            self.assertEqual(levels[level]['buff_effects']['arc_elyms_light_pen'], {'res_down_光': value})
 
     def test_three_groups_are_additive_and_mind_is_seventh_element(self):
         effects = {'all_dmg': .2, 'basic_dmg': .3, 'follow_dmg': .4, 'other_dmg': .5,
@@ -68,23 +68,23 @@ class ShaftDamageZonesTest(unittest.TestCase):
         self.assertAlmostEqual(mind['panel']['action_dmg'], .4)
         self.assertAlmostEqual(mind['formula_parts']['dmg_bonus'], 1.7)
 
-    def test_ability_penetration_excludes_reaction_fuwen_and_stagger(self):
+    def test_general_resistance_reduction_includes_reaction_fuwen_and_stagger(self):
         for reaction in ('浊燃', '覆纹'):
             with self.subTest(reaction=reaction):
                 base = self.simulate({}, reaction)
-                pen = self.simulate({'ability_res_pen': .2}, reaction)
+                pen = self.simulate({'res_down': .2}, reaction)
                 self.assertGreater(pen['details'][0]['direct_damage'], base['details'][0]['direct_damage'])
-                self.assertAlmostEqual(pen['summary']['stagger_damage'], base['summary']['stagger_damage'])
+                self.assertGreater(pen['summary']['stagger_damage'], base['summary']['stagger_damage'])
                 if reaction == '覆纹':
                     self.assertGreater(base['details'][0]['fuwen_damage'], 0)
-                    self.assertAlmostEqual(pen['details'][0]['fuwen_damage'], base['details'][0]['fuwen_damage'])
+                    self.assertGreater(pen['details'][0]['fuwen_damage'], base['details'][0]['fuwen_damage'])
                 else:
                     self.assertTrue(base['reaction_damage_events'])
-                    self.assertEqual([e['damage'] for e in pen['reaction_damage_events']],
-                                     [e['damage'] for e in base['reaction_damage_events']])
+                    for old, new in zip(base['reaction_damage_events'], pen['reaction_damage_events']):
+                        self.assertGreater(new['damage'], old['damage'])
         for kind in ('环合', '倾陷'):
-            self.assertEqual(self.simulate({}, kind=kind)['details'][0]['direct_damage'],
-                             self.simulate({'ability_res_pen_光': .2}, kind=kind)['details'][0]['direct_damage'])
+            self.assertGreater(self.simulate({'res_down_光': .2}, kind=kind)['details'][0]['direct_damage'],
+                               self.simulate({}, kind=kind)['details'][0]['direct_damage'])
         base = self.simulate({}, mind=True)['details'][0]
-        light = self.simulate({'ability_res_pen_光': .2}, mind=True)['details'][0]
+        light = self.simulate({'res_down_光': .2}, mind=True)['details'][0]
         self.assertEqual(base['direct_damage'], light['direct_damage'])

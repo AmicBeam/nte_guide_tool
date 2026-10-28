@@ -6424,7 +6424,7 @@
       "max_stacks": 1
     },
     "effects": {
-      "ability_res_pen_光": 0.08
+      "res_down_光": 0.08
     },
     "calculation": {
       "team_unique_key": "elyms_light_pen"

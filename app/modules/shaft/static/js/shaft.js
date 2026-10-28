@@ -5376,7 +5376,6 @@
         `<div class="shaft-detail-kv"><span>动作增伤</span><strong>${formatNumber(actionDamageBonus * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>其他增伤</span><strong>${formatNumber(otherDamageBonus * 100, 1)}%</strong></div>`,
         ...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : []),
-        ...(Number(detail?.formula_parts?.ability_res_pen || 0) ? [`<div class="shaft-detail-kv"><span>异能抗性穿透</span><strong>${formatNumber(Number(detail.formula_parts.ability_res_pen) * 100, 1)}%</strong></div>`] : []),
         `<div class="shaft-detail-kv"><span>敌人结算属抗</span><strong>${formatNumber(Number(detail?.formula_parts?.settled_resistance || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>敌人结算防御</span><strong>${formatNumber(detail?.formula_parts?.settled_defense || 0, 1)}</strong></div>`,
       );
@@ -5394,7 +5393,7 @@
     const buffEffectLabels = {
       atk_pct: '攻击', flat_atk: '固定攻击', hp_pct: '生命', flat_hp: '固定生命',
       def_pct: '防御', flat_def: '固定防御', crit_rate: '暴击', crit_dmg: '暴伤',
-      ability_res_pen: '异能抗性穿透', def_ignore: '无视防御', res_down: '抗性降低', energy_recharge: '充能',
+      def_ignore: '无视防御', res_down: '抗性降低', energy_recharge: '充能',
       harmony_strength: '环合强度', stagger_strength: '倾陷强度', basic_dmg: '普攻增伤',
       stagger_damage_bonus: '倾陷伤害增伤',
       dodge_counter_dmg: '闪反增伤',
@@ -5408,7 +5407,6 @@
       const effectText = effects.map(([key, value]) => {
         const label = buffEffectLabels[key]
           || (key.startsWith('element_dmg_') ? `${key.slice('element_dmg_'.length)}属性增伤` : '')
-          || (key.startsWith('ability_res_pen_') ? `${key.slice('ability_res_pen_'.length)}异能抗性穿透` : '')
           || (key.startsWith('res_down_') ? `${key.slice('res_down_'.length)}抗降低` : key);
         return `${label} ${Number(value) >= 0 ? '+' : ''}${flatBuffEffects.has(key) ? formatNumber(value, 1) : `${formatNumber(Number(value) * 100, 1)}%`}`;
       }).join('、');

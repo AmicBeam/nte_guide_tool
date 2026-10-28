@@ -276,14 +276,6 @@
       flat_def: 0,
       def_ignore: 0,
       def_down: 0,
-      ability_res_pen: 0,
-      ability_res_pen_光: 0,
-      ability_res_pen_灵: 0,
-      ability_res_pen_咒: 0,
-      ability_res_pen_暗: 0,
-      ability_res_pen_魂: 0,
-      ability_res_pen_相: 0,
-      ability_res_pen_心灵: 0,
       res_down: 0,
       res_down_光: 0,
       res_down_灵: 0,
@@ -547,12 +539,6 @@
     return panelMods.all_dmg + actionCategoryBonus(action, panelMods) + panelMods.other_dmg;
   }
 
-  function abilityResistancePenetration(action, panelMods, element) {
-    if (['环合', '倾陷'].includes(String(action?.action_type || ''))
-      || ['环合', '倾陷'].includes(String(action?.damage_type || ''))) return 0;
-    return num(panelMods.ability_res_pen) + num(panelMods[`ability_res_pen_${element || '心灵'}`]);
-  }
-
   function damageCharacterForAction(snapshot, action) {
     const element = actionTags(action).has('心灵') ? '心灵' : String(action?.damage_element || snapshot?.character?.element || '');
     return Object.assign({}, snapshot?.character || {}, {element});
@@ -695,19 +681,19 @@
     };
   }
 
-  function settledResistance(character, enemy, panelMods, abilityPen = 0) {
+  function settledResistance(character, enemy, panelMods) {
     const element = String(character?.element || '');
     const damageElement = element || '心灵';
     const baseRes = num(enemy.resistances?.[damageElement], 0.3);
     const weaknessDown = new Set(enemy.weakness_elements || []).has(element) ? 0.2 : 0;
     const elementResDown = num(panelMods[`res_down_${damageElement}`]);
-    return baseRes - weaknessDown - num(panelMods.res_down) - elementResDown - abilityPen;
+    return baseRes - weaknessDown - num(panelMods.res_down) - elementResDown;
   }
 
-  function resistanceMultiplier(character, enemy, panelMods, abilityPen = 0) {
+  function resistanceMultiplier(character, enemy, panelMods) {
     // User 2026-09-24: above 60% settled resistance, the zone softens to
     // 1 / (6.25 * resistance - 1.25). At exactly 60% this equals 1 - 0.6.
-    const resistance = settledResistance(character, enemy, panelMods, abilityPen);
+    const resistance = settledResistance(character, enemy, panelMods);
     if (resistance > 0.6) {
       return Math.max(0.05, 1 / (6.25 * resistance - 1.25));
     }
@@ -864,10 +850,9 @@
     const resistanceCharacter = actionTags(action).has('心灵')
       ? { element: '' }
       : damageCharacterForAction(snapshot, action);
-    const abilityPen = abilityResistancePenetration(action, panelMods, damageElement);
-    const effectiveResistance = settledResistance(resistanceCharacter, enemy, panelMods, abilityPen);
+    const effectiveResistance = settledResistance(resistanceCharacter, enemy, panelMods);
     const effectiveDefense = settledDefense(enemy, panelMods);
-    const resistance = resistanceMultiplier(resistanceCharacter, enemy, panelMods, abilityPen);
+    const resistance = resistanceMultiplier(resistanceCharacter, enemy, panelMods);
     const defense = defenseMultiplier(enemy, panelMods);
     const direct = Math.max(0, base * (1 + dmgBonus) * crit * resistance * defense * (1 + panelMods.final_dmg));
     return {
@@ -915,8 +900,6 @@
         def_ignore: Math.min(1, Math.max(0, num(panelMods.def_ignore))),
         res_down: num(panelMods.res_down) + num(panelMods[`res_down_${damageElement || '心灵'}`]),
         crit,
-        ability_res_pen: abilityPen,
-        resistance_without_ability_pen: resistanceMultiplier(resistanceCharacter, enemy, panelMods),
         settled_resistance: effectiveResistance,
         settled_defense: effectiveDefense,
         resistance,
@@ -3812,8 +3795,7 @@
         const critRate = 0.5;
         const critical = 1 + critRate * Math.max(0, num(panelMods.crit_dmg));
         const defense = defenseMultiplier(enemy, panelMods);
-        const abilityPen = abilityResistancePenetration(periodicAction, panelMods, damageElement);
-        const resistance = resistanceMultiplier(damageCharacterForAction(snapshot, periodicAction), enemy, panelMods, abilityPen);
+        const resistance = resistanceMultiplier(damageCharacterForAction(snapshot, periodicAction), enemy, panelMods);
         const finalMultiplier = 1 + panelMods.final_dmg;
         const resistanceElement = damageElement || '心灵';
         event.damage_element = damageElement;
@@ -3827,8 +3809,7 @@
         };
         event.formula_parts = {
           settled_defense: settledDefense(enemy, panelMods),
-          settled_resistance: settledResistance(damageCharacterForAction(snapshot, periodicAction), enemy, panelMods, abilityPen),
-          ability_res_pen: abilityPen,
+          settled_resistance: settledResistance(damageCharacterForAction(snapshot, periodicAction), enemy, panelMods),
           base,
           unscaled_base: unscaledBase,
           periodic_scale: periodicScale,
@@ -5527,9 +5508,7 @@
         : 0;
       const fuwenDamage = Math.max(
         0,
-        multipliedDirectDamage
-          * (calc.formula_parts.resistance_without_ability_pen / calc.formula_parts.resistance)
-          * fuwenDamageMultiplier,
+        multipliedDirectDamage * fuwenDamageMultiplier,
       );
       let multipliedStagger = calc.stagger_amount * actionMultiplier;
       let forcedStagger = false;

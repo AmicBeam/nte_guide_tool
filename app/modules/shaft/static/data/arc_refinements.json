@@ -34,7 +34,7 @@
               "def_ignore": 0.1
             },
             "arc_elyms_light_pen": {
-              "ability_res_pen_光": 0.08
+              "res_down_光": 0.08
             }
           }
         },
@@ -58,7 +58,7 @@
               "def_ignore": 0.2
             },
             "arc_elyms_light_pen": {
-              "ability_res_pen_光": 0.2
+              "res_down_光": 0.2
             }
           }
         }

@@ -10576,7 +10576,6 @@
     "display_order": 0,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
@@ -10614,7 +10613,6 @@
     "display_order": 1,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
@@ -10652,7 +10650,6 @@
     "display_order": 2,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
@@ -10690,7 +10687,6 @@
     "display_order": 3,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
@@ -10728,7 +10724,6 @@
     "display_order": 4,
     "can_background_override": true,
     "resonance_skill_level_bonus": true,
-    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
@@ -10883,7 +10878,6 @@
     "display_order": 8,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "耗时为经验值，用于试算。",
     "forbidden_buff_any_keys": [
       "character_elyms_medium",
       "character_elyms_strong"
@@ -10921,7 +10915,6 @@
     "display_order": 10,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "耗时为经验值，用于试算。",
     "duration_implemented": true,
     "duration_estimated": true
   },
@@ -10955,7 +10948,6 @@
     "display_order": 11,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "耗时为经验值，用于试算。",
     "duration_implemented": true,
     "duration_estimated": true
   },
@@ -10989,7 +10981,6 @@
     "display_order": 12,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "耗时为经验值，用于试算。",
     "harmony_on_start": 100,
     "duration_implemented": true,
     "duration_estimated": true
@@ -11096,7 +11087,6 @@
     "display_order": 15,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "终结按0秒时停试算。",
     "cooldown_group": "elyms_q",
     "starts_action_sequence": "elyms_follow",
     "duration_implemented": true,
@@ -11134,7 +11124,6 @@
     "display_order": 16,
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
-    "validation_note": "终结按0秒时停试算。",
     "cooldown_group": "elyms_q",
     "starts_action_sequence": "elyms_follow",
     "required_buff_any_keys": [
@@ -11275,7 +11264,6 @@
     "display_order": 19,
     "can_background_override": false,
     "resonance_skill_level_bonus": false,
-    "validation_note": "耗时为经验值，用于试算。",
     "duration_implemented": true,
     "duration_estimated": true
   }

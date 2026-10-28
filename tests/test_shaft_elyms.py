@@ -115,6 +115,14 @@ class ElymsCatalogTest(unittest.TestCase):
         self.assertAlmostEqual(d['harmony'],6.964)
         self.assertAlmostEqual(d['stagger_amount'],.828)
 
+    def test_estimated_durations_do_not_add_trial_warnings(self):
+        catalog=load_shaft_catalog()
+        own_actions=catalog['actions_by_character'][CID]
+        self.assertTrue(any(a.get('duration_estimated') for a in own_actions))
+        self.assertFalse(any('试算' in a.get('validation_note','') for a in own_actions))
+        result=self.own([('melee1',0),('ultraskilla1',10)])
+        self.assertFalse(any('试算' in warning for d in result['details'] for warning in d['warnings']))
+
     def test_signal_multiplier_snapshot_reset_and_weak_action_checks(self):
         r=self.own([('skill2',0),('goodbye',10),('melee1',20),('ultraskilla1',30),('melee1',40),('xietongskilla1',50)])
         details=r['details']

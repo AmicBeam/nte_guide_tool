@@ -134,6 +134,12 @@
       if (!effect || typeof effect !== 'object' || effect?.source_reaction) return;
       const reaction = String(effect?.reaction || '');
       if (!configuredByReaction.has(reaction)) return;
+      // A gated passive reapplies the same carrier's unlocked reaction; it does
+      // not represent another independently configured or active trigger.
+      if (effect.is_reapplication === true && configuredByReaction.get(reaction).some((carrier) => (
+        carrier.character_id === String(effect.contributor_character_id || '')
+      ))) return;
+      if (effect.is_echo === true) return;
       if (!axisEffectsByReaction.has(reaction)) axisEffectsByReaction.set(reaction, []);
       axisEffectsByReaction.get(reaction).push(effect);
     }

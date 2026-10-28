@@ -3737,6 +3737,7 @@
         const effect = seedLoopInitialReaction(pulse.reaction, snapshot, int(event.tick));
         if (effect) {
           effect.loop_initial = false;
+          effect.is_reapplication = pulse.requires_reaction_unlock === true;
           triggerBuffsForEvent('reaction_trigger', int(event.tick), {id: 'reaction-pulse', slot: snapshot.slot},
             {id: 'reaction-pulse', action_type: '被动', damage_type: '被动', hit_count: 0}, snapshot, true, {reaction: effect});
         }

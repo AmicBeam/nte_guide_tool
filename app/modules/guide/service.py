@@ -241,6 +241,8 @@ def markdown_value(value, depth=2):
     lines = []
     if isinstance(value, dict):
         for key, item in value.items():
+            if key == 'base_cooldown' and item is None:
+                continue
             if isinstance(item, (dict, list)):
                 lines += [f'{"#" * min(depth, 6)} {label(key)}', '', markdown_value(item, depth + 1)]
             else:

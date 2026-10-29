@@ -109,10 +109,10 @@ class GuideCooldownPresentationTest(unittest.TestCase):
         self.assertIn('基础冷却：16秒',page)
         self.assertIn('基础冷却：20秒',page)
         unknown=self.client.get('/guide/characters/1052').text
-        self.assertIn('基础冷却：未提供',unknown)
+        self.assertNotIn('基础冷却：未提供',unknown)
         url='/api/guide/characters/1003?section=abilities&ability_id=GA_Sagiri_Skill&skill_level=10&hit_details=0'
         payload=self.client.get(url).json['data']['abilities'][0]
         self.assertEqual(payload['base_cooldown'],16)
         markdown=self.client.get('/guide/characters/1003.md?section=abilities').text
         self.assertIn('基础冷却（秒）: 16',markdown)
-        self.assertIn('基础冷却（秒）: 未提供',self.client.get('/guide/characters/1052.md?section=abilities').text)
+        self.assertNotIn('基础冷却（秒）: 未提供',self.client.get('/guide/characters/1052.md?section=abilities').text)

@@ -13,7 +13,8 @@ from app.modules.guide import blueprint
 class GuidePreviewTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        app = Flask(__name__, template_folder=str(Path(__file__).resolve().parents[1] / 'app/templates'))
+        app = Flask(__name__, template_folder=str(Path(__file__).resolve().parents[1] / 'app/templates'),
+                    static_folder=str(Path(__file__).resolve().parents[1] / 'app/static'))
         app.register_blueprint(blueprint)
         cls.client = app.test_client()
 
@@ -46,6 +47,34 @@ class GuidePreviewTest(unittest.TestCase):
             for suffix in ('/cultivation', '/builds', '/axes/1/compare'):
                 self.assertEqual(self.client.get(path + suffix).status_code, 404)
             self.assertEqual(self.client.post('/api/guide/characters/' + identifier + '/cultivation', json={}).status_code, 404)
+
+    def test_elyms_includes_both_breakthrough_and_skill_material_series(self):
+        record = self.client.get('/api/guide/characters/1090?section=overview').json['data']
+        materials = record['materials']
+        breakthrough = materials['breakthrough'][0]['items']
+        skills = materials['skills'][0]['levels'][0]['items']
+        self.assertEqual([(i['id'],i['name']) for i in breakthrough], [
+            ('worldboss_material_07','海之泪'),
+            ('ordinarymonmaterial_02_lv1','褪色掠影'),
+            ('ordinarymonmaterial_02_lv2','失焦掠影'),
+            ('ordinarymonmaterial_02_lv3','晦暗掠影')])
+        self.assertEqual([(i['id'],i['name']) for i in skills], [
+            ('weeklycloneboss_a04_01','空心花籽'),
+            ('skillupmaterial_01_lv1','雏鸟的希冀'),
+            ('skillupmaterial_01_lv2','白鸽的振翅'),
+            ('skillupmaterial_01_lv3','「橄榄枝」')])
+        self.assertTrue(all('amount' not in i for i in breakthrough+skills))
+        html = self.client.get('/guide/characters/1090').text
+        markdown = self.client.get('/guide/characters/1090.md').text
+        for name in ('海之泪','晦暗掠影','「橄榄枝」','空心花籽'):
+            self.assertIn(name,html)
+        for item in breakthrough+skills:
+            self.assertIn(item['name'],markdown)
+        from app.modules.guide.presentation import material_display
+        for item in breakthrough+skills:
+            display = material_display(item)
+            self.assertTrue(display['icon'])
+            self.assertEqual(self.client.get(display['icon']).status_code,200)
 
     def test_optional_materials_and_other_fields_never_render(self):
         rows = deepcopy(previews.characters())

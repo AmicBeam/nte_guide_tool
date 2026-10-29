@@ -12,6 +12,28 @@
     },
     "preview_image": "/static/guide/character-previews/elyms.webp",
     "materials": {
+      "breakthrough": [
+        {
+          "items": [
+            {
+              "id": "worldboss_material_07",
+              "name": "海之泪"
+            },
+            {
+              "id": "ordinarymonmaterial_02_lv1",
+              "name": "褪色掠影"
+            },
+            {
+              "id": "ordinarymonmaterial_02_lv2",
+              "name": "失焦掠影"
+            },
+            {
+              "id": "ordinarymonmaterial_02_lv3",
+              "name": "晦暗掠影"
+            }
+          ]
+        }
+      ],
       "skills": [
         {
           "name": "技能升级",
@@ -21,6 +43,18 @@
                 {
                   "id": "weeklycloneboss_a04_01",
                   "name": "空心花籽"
+                },
+                {
+                  "id": "skillupmaterial_01_lv1",
+                  "name": "雏鸟的希冀"
+                },
+                {
+                  "id": "skillupmaterial_01_lv2",
+                  "name": "白鸽的振翅"
+                },
+                {
+                  "id": "skillupmaterial_01_lv3",
+                  "name": "「橄榄枝」"
                 }
               ]
             }

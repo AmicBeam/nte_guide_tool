@@ -29,6 +29,21 @@ class ElymsCatalogTest(unittest.TestCase):
     def effects(self, detail):
         return {b['rule_id']: b.get('effects', {}) for b in detail['applied_buffs']}
 
+    def test_bond_bonus_adds_four_percent_crit_rate_only_when_enabled(self):
+        character=next(c for c in load_shaft_catalog()['characters'] if c['id']==CID)
+        self.assertEqual(character['bond_bonus'],{'label':'4暴击','modifiers':{'crit_rate':.04}})
+        panels=[]
+        for enabled in (False,True):
+            axis=self.axis([(0,'action_elyms_melee1',0)])
+            axis['team'][0]['bond_full']=enabled
+            normalized=normalize_axis_payload(axis)
+            self.assertEqual(normalized['team'][0]['bond_full'],enabled)
+            self.assertEqual(normalized['character_builds'][CID]['bond_full'],enabled)
+            panels.append(simulate_shaft_axis(axis)['result']['details'][0]['panel'])
+        self.assertAlmostEqual(panels[1]['crit_rate']-panels[0]['crit_rate'],.04)
+        for key in ('atk','hp','def','crit_dmg'):
+            self.assertEqual(panels[1][key],panels[0][key])
+
     def test_confirmed_catalog_and_action_resources(self):
         c = load_shaft_catalog()
         character = next(x for x in c['characters'] if x['id'] == CID)

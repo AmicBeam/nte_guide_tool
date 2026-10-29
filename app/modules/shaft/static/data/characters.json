@@ -249,8 +249,10 @@
       "crit_dmg": 0.5
     },
     "bond_bonus": {
-      "label": "待资料",
-      "modifiers": {}
+      "label": "4暴击",
+      "modifiers": {
+        "crit_rate": 0.04
+      }
     },
     "self_check_activations": [
       {

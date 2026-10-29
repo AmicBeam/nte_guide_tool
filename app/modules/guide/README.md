@@ -483,3 +483,11 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 分类栏在“攻略”后提供“角色工具”，进入 `/guide/tools`，集中展示养成计算器、排轴与配装、空幕计算、制作角色一图流攻略。选择工具后在同页通过 `tool=cultivation|builds|kongmu|infographic` 选择角色，沿用角色页实际工具地址；空幕携带已有角色与推荐卡带参数，仅列有明确绑定的角色。预告角色不进入工具选择，一图流仍须登录后制作。资料分类及机器读取接口保持原有分类。
 
 验证：`.venv/bin/python -m unittest tests.test_guide tests.test_guide_builds tests.test_guide_infographic tests.test_guide_previews tests.test_module_routes -q`；浏览器检查标签顺序、四种工具的角色选择与跳转。
+
+## 技能基础冷却
+
+角色变轨技能和极轨终结的`base_cooldown`表示未计觉醒、触发机制或其他修正的基础冷却，单位秒；技能详情、完整JSON、Markdown和CLI共用该值，等级与精简命中参数读取也保留它。网页直接显示基础冷却，已有“冷却时间”参数则在原表内显示并同步校正；额外每段延长等机制参数独立保留。没有明确配置时为`null`并显示“未提供”，不按0秒处理。当前浔的终结未读到明确基础冷却配置，保持未知。
+
+`scripts/guide_skill_cooldowns.py`沿技能`CooldownDuration`及父类默认配置读取实际绑定的冷却曲线，不按相似技能名猜测别名，也不把`CancelCooldownDuration`当作技能冷却。常量曲线支持配置倍率；缺失引用、继承循环、截断的技能目录或尚无展示协议的变等级冷却曲线会中止同步，保留旧快照。请求与启动不联网。
+
+常规`refresh_guide_data.py`在写入前同时补录冷却；也可单独执行`python scripts/guide_skill_cooldowns.py`更新当前快照的冷却字段。`--ntedata-dir`支持完整NTEData导出目录，或包含技能Blueprint、父类及`CoolDwonCurveTable.json`的扁平目录；其余资料的离线刷新仍遵循各自原有输入约定。同步后重启服务清理缓存。验证：`.venv/bin/python -m unittest tests.test_guide_cooldowns tests.test_guide tests.test_module_routes -q`，覆盖真实配置的父类／曲线别名、未知／显式0、失效输入、重复同步、网页和机器读取一致性。

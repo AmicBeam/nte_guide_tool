@@ -60,6 +60,7 @@ LABELS = {
     'slots': '格位矩阵', 'value': '数值', 'b_show_percent': '百分比',
     'Melee': '普通攻击', 'Skill': '变轨技能', 'UltraSkill': '极轨终结',
     'QTE': '援护技', 'Passive': '被动', 'Peculiarity': '特性', 'City': '都市技能',
+    'base_cooldown': '基础冷却（秒）',
     'param_rows': '技能倍率与参数', 'label': '参数名称', 'key': '参数 ID',
     'type': '类型代码', 'type_id': '类型 ID', 'ability_type': '技能类型',
     'ability_index': '技能序号', 'element': '属性代码', 'element_id': '属性 ID',

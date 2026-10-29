@@ -14,6 +14,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from guide_skill_details import enrich_catalog, load_tables, table_rows
+from guide_skill_cooldowns import CooldownData, enrich_cooldowns
 from guide_cultivation_data import load_cultivation_data
 from guide_challenge_schedule import apply_challenge_schedule
 
@@ -159,6 +160,7 @@ def main():
     data = enrich_catalog(build(args.version, fetch_curl if args.transport == 'curl' else fetch), tables)
     data['character_experience'] = load_character_experience(args.ntedata_dir)
     data['cultivation'] = load_cultivation_data(args.ntedata_dir)
+    enrich_cooldowns(data, CooldownData(args.ntedata_dir))
     # Do not replace the working dataset until every detail has validated.
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix('.tmp')

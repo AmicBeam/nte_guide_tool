@@ -47,20 +47,31 @@ class ElymsAdjustmentsTest(unittest.TestCase):
         r=self.own([('xietongskilla1',0)],resonances=[6])
         self.assertAlmostEqual(self.effects(r['details'][0])['character_elyms_six']['base_multiplier_pct'],.3)
 
-    def test_entry_grants_all_arc_effects_for_twenty_seconds_and_e_is_wearer_only(self):
+    def test_entry_grants_all_arc_effects_for_twenty_seconds_and_e_buffs_team(self):
         teammate=dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id='')
-        for refine in [1,5]:
+        for refine in range(1,6):
             r=self.result([(0,'melee1',0),(1,'action_982c67944f',10),(0,'melee1',210),(0,'skill1',230),(1,'action_982c67944f',250),(0,'melee1',280)],arc=ARC,refine=refine,others=[teammate])
             initial=r['initial_buffs']
             self.assertEqual({b['rule_id'] for b in initial},{'arc_elyms_team_def','arc_elyms_self_def','arc_elyms_light_pen'})
             self.assertTrue(all(b['trigger_tick']==0 and b['end_tick']==200 for b in initial))
-            pen=.08 if refine==1 else .2
+            pen=.08+.03*(refine-1)
             self.assertAlmostEqual(self.effects(r['details'][0])['arc_elyms_light_pen']['res_down_光'],pen)
-            self.assertNotIn('arc_elyms_light_pen',self.effects(r['details'][1]))
+            self.assertAlmostEqual(self.effects(r['details'][1])['arc_elyms_light_pen']['res_down_光'],pen)
+            self.assertAlmostEqual(r['details'][1]['formula_parts']['res_down'],pen)
             self.assertIn('arc_elyms_team_def',self.effects(r['details'][1]))
             self.assertNotIn('arc_elyms_team_def',self.effects(r['details'][2]))
-            self.assertNotIn('arc_elyms_light_pen',self.effects(r['details'][4]))
+            self.assertAlmostEqual(self.effects(r['details'][4])['arc_elyms_light_pen']['res_down_光'],pen)
+            self.assertAlmostEqual(r['details'][4]['formula_parts']['res_down'],pen)
             self.assertAlmostEqual(self.effects(r['details'][5])['arc_elyms_light_pen']['res_down_光'],pen)
         r=self.own([('melee1',0),('melee1',250)],arc=ARC,loop=True)
         self.assertFalse(r['initial_buffs'])
         self.assertNotIn('arc_elyms_team_def',self.effects(r['details'][0]))
+
+    def test_team_light_resistance_ignore_is_unique_and_uses_highest_refinement(self):
+        teammate=dict(slot=1,character_id='char_dd034941ef',arc_id=ARC,arc_refinement=5,cartridge_id='')
+        result=self.result([(0,'melee1',0),(1,'action_982c67944f',10)],arc=ARC,refine=1,others=[teammate])
+        for detail in result['details']:
+            buffs=[b for b in detail['applied_buffs'] if b['rule_id']=='arc_elyms_light_pen']
+            self.assertEqual(len(buffs),1)
+            self.assertAlmostEqual(buffs[0]['effects']['res_down_光'],.2)
+            self.assertAlmostEqual(detail['formula_parts']['res_down'],.2)

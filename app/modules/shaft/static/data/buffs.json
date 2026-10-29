@@ -6358,7 +6358,7 @@
   },
   {
     "id": "arc_elyms_light_pen",
-    "name": "静候彩铃·装备者光抗无视",
+    "name": "静候彩铃·全队光抗无视",
     "providers": [
       {
         "kind": "arc",
@@ -6378,7 +6378,7 @@
       "on_battle_start": true
     },
     "target": {
-      "scope": "registrar"
+      "scope": "team"
     },
     "duration": {
       "type": "time",
@@ -6397,6 +6397,9 @@
       "effect_labels": {
         "res_down_光": "光属性抗性无视"
       }
+    },
+    "calculation": {
+      "team_unique_key": "elyms_light_pen"
     }
   },
   {

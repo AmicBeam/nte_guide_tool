@@ -86,7 +86,7 @@
     flat_def: 'flat_def',
   };
   const CURTAIN_PASSIVE_TYPES = ['type2', 'type3', 'type4'];
-  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'reaction_end', 'periodic_damage', 'dot_layer_applied', 'full_stack', 'energy_gain']);
+  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'battle_start', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'reaction_end', 'periodic_damage', 'dot_layer_applied', 'full_stack', 'energy_gain']);
   const PERMANENT_BUFF_END_TICK = 1000000000;
   const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
   const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
@@ -1766,10 +1766,12 @@
   function eventMatchesRule(rule, event, step, action, snapshot, isBackground, context = {}) {
     const trigger = rule.trigger && typeof rule.trigger === 'object' ? rule.trigger : {};
     const matchesPeriodicDamage = event === 'periodic_damage' && trigger.periodic_damage === true;
-    if ((String(trigger.event || '') !== event && !matchesPeriodicDamage) || !SUPPORTED_TRIGGER_EVENTS.has(event)) return false;
+    const matchesBattleStart = event === 'battle_start' && trigger.on_battle_start === true;
+    if ((String(trigger.event || '') !== event && !matchesPeriodicDamage && !matchesBattleStart) || !SUPPORTED_TRIGGER_EVENTS.has(event)) return false;
     if (event === 'action_hit' && String(trigger.timing || 'start') !== String(context.action_hit_timing || 'start')) return false;
     const source = trigger.source && typeof trigger.source === 'object' ? trigger.source : {};
-    if (!sourceMatches(source, rule, step, action, snapshot, isBackground)) return false;
+    if (matchesBattleStart ? int(step.slot) !== int(rule.owner_slot)
+      : !sourceMatches(source, rule, step, action, snapshot, isBackground)) return false;
     const eventContext = Object.assign({}, context, {
       snapshot,
       owner_awakening: rule.owner_awakening,
@@ -5162,6 +5164,14 @@
         });
     }
 
+    const battleStartBuffs = [];
+    if (!options.loop_enabled) snapshots.forEach((snapshot) => {
+      battleStartBuffs.push(...triggerBuffsForEvent(
+        'battle_start', 0, {id: 'battle-start', slot: snapshot.slot},
+        {id: 'battle-start', action_type: '无', hit_count: 0}, snapshot, true,
+      ));
+    });
+
     scheduledSteps.forEach((scheduled) => {
       const step = scheduled.step;
       const slot = int(scheduled.slot);
@@ -6207,6 +6217,7 @@
       harmony_contributions_by_slot: harmonyContributionsBySlot,
       other_contributions_by_slot: otherContributionsBySlot,
       stagger_contributions_by_slot: staggerContributionsBySlot,
+      initial_buffs: battleStartBuffs,
       personal_resource_state_events: personalResourceStateEvents.filter((event) => event.tick >= 0)
         .sort((left, right) => left.tick - right.tick),
       resources_by_slot: sortedSlots.map((slot) => ({

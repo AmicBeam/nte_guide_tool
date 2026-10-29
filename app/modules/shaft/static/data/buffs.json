@@ -4781,13 +4781,9 @@
     ],
     "priority": 50,
     "trigger": {
-      "event": "action_end",
+      "event": "passive",
       "source": {
-        "scope": "registrar",
-        "action_ids": [
-          "action_elyms_ultraskilla1",
-          "action_elyms_ultraskillb1"
-        ]
+        "scope": "registrar"
       },
       "conditions": [
         {
@@ -4800,9 +4796,7 @@
       "scope": "team"
     },
     "duration": {
-      "type": "time",
-      "ticks": 200,
-      "loop_carry": true
+      "type": "permanent"
     },
     "stacking": {
       "key": "character_elyms_d",
@@ -4811,6 +4805,9 @@
     },
     "effects": {
       "crit_dmg": 0.2
+    },
+    "display": {
+      "line": false
     }
   },
   {
@@ -4857,8 +4854,8 @@
     }
   },
   {
-    "id": "character_elyms_three",
-    "name": "拜启，我的旧友",
+    "id": "character_elyms_b_q",
+    "name": "200 节点彼此相连·终结倍率",
     "providers": [
       {
         "kind": "character",
@@ -4873,8 +4870,8 @@
       },
       "conditions": [
         {
-          "type": "awakening_count_min",
-          "min": 3
+          "type": "awakening_min",
+          "min": 2
         }
       ]
     },
@@ -4938,7 +4935,7 @@
       "max_stacks": 1
     },
     "effects": {
-      "base_multiplier_pct": 0.5
+      "base_multiplier_pct": 0.3
     },
     "display": {
       "line": false
@@ -5015,8 +5012,8 @@
           ]
         },
         {
-          "type": "awakening_max",
-          "max": 1
+          "type": "awakening_count_max",
+          "max": 2
         }
       ]
     },
@@ -5031,7 +5028,7 @@
     "stacking": {
       "key": "character_elyms_illusion",
       "mode": "add_stack",
-      "max_stacks": 2147483647
+      "max_stacks": 4
     },
     "effects": {}
   },
@@ -5063,8 +5060,8 @@
           ]
         },
         {
-          "type": "awakening_min",
-          "min": 2
+          "type": "awakening_count_min",
+          "min": 3
         }
       ]
     },
@@ -5079,7 +5076,7 @@
     "stacking": {
       "key": "character_elyms_illusion",
       "mode": "add_stack",
-      "max_stacks": 2147483647
+      "max_stacks": 4
     },
     "effects": {}
   },
@@ -5111,8 +5108,8 @@
           ]
         },
         {
-          "type": "awakening_min",
-          "min": 2
+          "type": "awakening_count_min",
+          "min": 3
         },
         {
           "type": "awakening_min",
@@ -5131,7 +5128,8 @@
     "stacking": {
       "key": "character_elyms_illusion",
       "mode": "add_stack",
-      "max_stacks": 2147483647
+      "max_stacks": 4,
+      "stack_gain": 3
     },
     "effects": {}
   },
@@ -5163,8 +5161,8 @@
           ]
         },
         {
-          "type": "awakening_max",
-          "max": 1
+          "type": "awakening_count_max",
+          "max": 2
         }
       ]
     },
@@ -5214,8 +5212,8 @@
           ]
         },
         {
-          "type": "awakening_min",
-          "min": 2
+          "type": "awakening_count_min",
+          "min": 3
         }
       ]
     },
@@ -5277,7 +5275,8 @@
     "stacking": {
       "key": "character_elyms_illusion",
       "mode": "add_stack",
-      "max_stacks": 2147483647
+      "max_stacks": 4,
+      "stack_gain": 3
     },
     "effects": {}
   },
@@ -5328,56 +5327,6 @@
     "display": {
       "line": false
     }
-  },
-  {
-    "id": "character_elyms_illusion_reaction",
-    "name": "504 主动环合错视幻觉",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_elyms"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "reaction_trigger",
-      "source": {
-        "scope": "registrar"
-      },
-      "conditions": [
-        {
-          "type": "awakening_min",
-          "min": 3
-        },
-        {
-          "type": "reaction_type",
-          "reactions": [
-            "创生",
-            "延滞"
-          ]
-        },
-        {
-          "type": "reaction_owner_involved"
-        },
-        {
-          "type": "reaction_not_echo"
-        }
-      ]
-    },
-    "target": {
-      "scope": "registrar"
-    },
-    "duration": {
-      "type": "time",
-      "ticks": 150,
-      "loop_carry": true
-    },
-    "stacking": {
-      "key": "character_elyms_illusion",
-      "mode": "add_stack",
-      "max_stacks": 2147483647
-    },
-    "effects": {}
   },
   {
     "id": "character_elyms_last_clear",
@@ -5453,7 +5402,7 @@
     "stacking": {
       "key": "character_elyms_consumed",
       "mode": "add_stack",
-      "max_stacks": 4
+      "max_stacks": 2147483647
     },
     "effects": {},
     "activation": {
@@ -5541,7 +5490,7 @@
       "max_stacks": 1
     },
     "effects": {
-      "per_layer": 2.5
+      "per_layer": 2
     },
     "activation": {
       "clear_keys": [
@@ -5606,7 +5555,6 @@
     "activation": {
       "effects_from_stack": {
         "key": "character_elyms_consumed",
-        "max_count": 4,
         "per_stack_from_effect": {
           "crit_dmg": {
             "factor": 1,
@@ -5661,7 +5609,6 @@
     "activation": {
       "effects_from_stack": {
         "key": "character_elyms_consumed",
-        "max_count": 4,
         "per_stack_from_effect": {
           "follow_dmg": {
             "factor": 1,
@@ -6355,7 +6302,8 @@
       "source": {
         "scope": "registrar"
       },
-      "conditions": []
+      "conditions": [],
+      "on_battle_start": true
     },
     "target": {
       "scope": "team"
@@ -6388,7 +6336,8 @@
     ],
     "priority": 50,
     "trigger": {
-      "event": "full_stack"
+      "event": "full_stack",
+      "on_battle_start": true
     },
     "target": {
       "scope": "registrar"
@@ -6409,7 +6358,7 @@
   },
   {
     "id": "arc_elyms_light_pen",
-    "name": "静候彩铃·全队光抗穿透",
+    "name": "静候彩铃·装备者光抗无视",
     "providers": [
       {
         "kind": "arc",
@@ -6425,10 +6374,11 @@
           "E"
         ]
       },
-      "conditions": []
+      "conditions": [],
+      "on_battle_start": true
     },
     "target": {
-      "scope": "team"
+      "scope": "registrar"
     },
     "duration": {
       "type": "time",
@@ -6443,8 +6393,10 @@
     "effects": {
       "res_down_光": 0.08
     },
-    "calculation": {
-      "team_unique_key": "elyms_light_pen"
+    "display": {
+      "effect_labels": {
+        "res_down_光": "光属性抗性无视"
+      }
     }
   },
   {
@@ -6562,7 +6514,6 @@
     "activation": {
       "effects_from_stack": {
         "key": "character_elyms_last_consumed",
-        "max_count": 4,
         "per_stack_from_effect": {
           "def_ignore": {
             "source": "per_layer",
@@ -6570,6 +6521,100 @@
           }
         }
       }
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_reset_consumed_a",
+    "name": "终结清空错视幻觉累计消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 90,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_reset_consumed_a",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_consumed"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_reset_q_bonuses",
+    "name": "释放终结移除上次增益",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 0,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_reset_q_bonuses",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_a",
+        "character_elyms_f"
+      ]
     },
     "display": {
       "line": false

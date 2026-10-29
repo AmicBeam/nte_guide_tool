@@ -36,7 +36,7 @@ class ShaftSignalTest(unittest.TestCase):
                                      for d in r['details'] for b in d['triggered_buffs']))
 
     def test_signal_transitions_and_b_upgrade_are_reflected_in_resources(self):
-        for nodes, expected in [((),[1,2,0]),((2,),[2,2,0])]:
+        for nodes, expected in [((),[1,2,0]),((2,),[1,2,0]),((1,2,3),[2,2,0])]:
             r = self.result(self.axis(0, [('skill2',0),('goodbye',10),('ultraskilla1',20)], loop=False, nodes=nodes))
             self.assertEqual([d['personal_resources_after'][RESOURCE] for d in r['details']], expected)
             self.assertEqual(r['resources_by_slot'][0]['personal_resources'][RESOURCE],0)

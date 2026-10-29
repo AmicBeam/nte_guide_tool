@@ -15,18 +15,18 @@
         5
       ],
       "effect_name": "静候彩铃",
-      "effect_description": "环合强度提升72/144。释放极轨终结后累计造成3次追击伤害，全队无视防御12%/24%，装备者额外10%/20%，持续20秒。释放变轨技能后全队光属性抗性穿透8%/20%，持续20秒；两项全队效果各自队伍唯一。",
+      "effect_description": "攻击力提升15%/30%。释放极轨终结后累计造成3次追击伤害，全队无视防御12%/24%，装备者额外10%/20%，持续20秒。释放变轨技能时，装备者无视敌人8%/20%光属性异能抗性，持续20秒。装备者进入战斗时直接触发以上全部效果；全队无视防御效果队伍唯一。",
       "levels": {
         "1": {
           "effect_values": [
-            "72",
+            "15%",
             "12%",
             "10%",
             "8%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
-            "harmony_strength": 72
+            "atk_pct": 0.15
           },
           "element_dmg": {},
           "buff_effects": {
@@ -43,14 +43,14 @@
         },
         "2": {
           "effect_values": [
-            "72",
-            "12%",
-            "10%",
-            "8%"
+            "18.75%",
+            "15%",
+            "12.5%",
+            "11%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
-            "harmony_strength": 90
+            "atk_pct": 0.1875
           },
           "element_dmg": {},
           "buff_effects": {
@@ -67,14 +67,14 @@
         },
         "3": {
           "effect_values": [
-            "72",
-            "12%",
-            "10%",
-            "8%"
+            "22.5%",
+            "18%",
+            "15%",
+            "14%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
-            "harmony_strength": 108
+            "atk_pct": 0.225
           },
           "element_dmg": {},
           "buff_effects": {
@@ -91,14 +91,14 @@
         },
         "4": {
           "effect_values": [
-            "72",
-            "12%",
-            "10%",
-            "8%"
+            "26.25%",
+            "21%",
+            "17.5%",
+            "17%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
-            "harmony_strength": 126
+            "atk_pct": 0.2625
           },
           "element_dmg": {},
           "buff_effects": {
@@ -115,14 +115,14 @@
         },
         "5": {
           "effect_values": [
-            "72",
-            "12%",
-            "10%",
-            "8%"
+            "30%",
+            "24%",
+            "20%",
+            "20%"
           ],
           "panel_modifiers": {
             "crit_rate": 0.24,
-            "harmony_strength": 144
+            "atk_pct": 0.3
           },
           "element_dmg": {},
           "buff_effects": {

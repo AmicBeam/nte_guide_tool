@@ -11069,7 +11069,7 @@
     "duration_ticks": 0,
     "duration_pending": false,
     "multipliers": {
-      "atk": 6.749,
+      "atk": 5.3992,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -11106,7 +11106,7 @@
     "duration_ticks": 0,
     "duration_pending": false,
     "multipliers": {
-      "atk": 7.502,
+      "atk": 6.0016,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -11148,7 +11148,7 @@
     "duration_ticks": 0,
     "duration_pending": false,
     "multipliers": {
-      "atk": 1.576,
+      "atk": 1.4634736,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -11197,7 +11197,7 @@
     "duration_ticks": 0,
     "duration_pending": false,
     "multipliers": {
-      "atk": 1.752,
+      "atk": 1.6269072,
       "hp": 0,
       "def": 0,
       "flat": 0

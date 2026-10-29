@@ -612,17 +612,17 @@
       .map(([key, value]) => {
         const amount = mechanismEffectValue(key, value);
         return stacking.mode === 'add_stack' || stacking.mode === 'independent'
-          ? `${mechanismEffectLabel(key)}每层${Number(value) >= 0 ? '+' : ''}${amount}`
-          : `${mechanismEffectLabel(key)}${Number(value) >= 0 ? '+' : ''}${amount}`;
+          ? `${rule?.display?.effect_labels?.[key] || mechanismEffectLabel(key)}每层${Number(value) >= 0 ? '+' : ''}${amount}`
+          : `${rule?.display?.effect_labels?.[key] || mechanismEffectLabel(key)}${Number(value) >= 0 ? '+' : ''}${amount}`;
       });
     const dynamicEffects = Object.values(rule?.dynamic_effects || {}).map((dynamic) => {
       const key = dynamic?.effect_key || '';
       const perValue = numberValue(dynamic?.per_count, dynamic?.per_interval);
       const maximum = numberValue(dynamic?.max_count);
       if (!mechanismEffectLabel(key) || !perValue) return '';
-      return `${mechanismEffectLabel(key)}每层${perValue >= 0 ? '+' : ''}${mechanismEffectValue(key, perValue)}${maximum > 1 ? `，最多${formatNumber(maximum, 0)}层` : ''}`;
+      return `${rule?.display?.effect_labels?.[key] || mechanismEffectLabel(key)}每层${perValue >= 0 ? '+' : ''}${mechanismEffectValue(key, perValue)}${maximum > 1 ? `，最多${formatNumber(maximum, 0)}层` : ''}`;
     }).filter(Boolean);
-    const parts = [mechanismTriggerText(rule), mechanismTargetText(rule), [...effects, ...dynamicEffects].join('、')].filter(Boolean);
+    const parts = [rule?.trigger?.on_battle_start ? '进入战斗时直接触发' : '', mechanismTriggerText(rule), mechanismTargetText(rule), [...effects, ...dynamicEffects].join('、')].filter(Boolean);
     if (maxStacks > 1 && effects.length) {
       parts.push(`最多${maxStacks}层`);
     }
@@ -4958,6 +4958,9 @@
         };
       });
     const buffTimelineDetails = [...details, ...damageTriggeredBuffDetails];
+    if (result?.initial_buffs?.length) buffTimelineDetails.unshift({
+      start_tick: 0, display_start_tick: 0, triggered_buffs: result.initial_buffs,
+    });
     const loopEnabled = Boolean(state.axis?.options?.loop_enabled);
     const actionAxisEndTick = foregroundAxisEndTick;
     const buffAxisEndTick = loopEnabled
@@ -5440,9 +5443,10 @@
     };
     const flatBuffEffects = new Set(['flat_atk', 'flat_hp', 'flat_def', 'harmony_strength', 'stagger_strength']);
     const describeBuff = (buff) => {
+      const effectLabels = (state.catalog?.buffs || []).find((rule) => rule.id === buff?.rule_id)?.display?.effect_labels || {};
       const effects = Object.entries(buff?.effects || {}).filter(([, value]) => Number(value));
       const effectText = effects.map(([key, value]) => {
-        const label = buffEffectLabels[key]
+        const label = effectLabels[key] || buffEffectLabels[key]
           || (key.startsWith('element_dmg_') ? `${key.slice('element_dmg_'.length)}属性增伤` : '')
           || (key.startsWith('res_down_') ? `${key.slice('res_down_'.length)}抗降低` : key);
         return `${label} ${Number(value) >= 0 ? '+' : ''}${flatBuffEffects.has(key) ? formatNumber(value, 1) : `${formatNumber(Number(value) * 100, 1)}%`}`;

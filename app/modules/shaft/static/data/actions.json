@@ -7766,8 +7766,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,

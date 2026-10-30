@@ -161,6 +161,17 @@ def _placement(is_background: bool) -> str:
     return 'background' if is_background else 'foreground'
 
 
+def _has_damage_type(action: dict[str, Any], damage_type: str) -> bool:
+    tags = _action_tags(action)
+    if damage_type == '追击':
+        return str(action.get('damage_type') or '') == '追击' or bool(tags & {'追击', '追加攻击'})
+    if damage_type == '附着':
+        return '附着' in tags
+    if damage_type in {'普攻', '闪反', 'E', 'Q', '援护'}:
+        return damage_type in {str(action.get('action_type') or ''), str(action.get('damage_type') or '')}
+    return str(action.get('damage_type') or '') == damage_type
+
+
 def _source_matches(
     source: dict[str, Any],
     rule: dict[str, Any],
@@ -178,7 +189,7 @@ def _source_matches(
     if action_types and str(action.get('action_type') or '') not in action_types:
         return False
     damage_types = _str_set(source.get('damage_types'))
-    if damage_types and str(action.get('damage_type') or '') not in damage_types:
+    if damage_types and not any(_has_damage_type(action, damage_type) for damage_type in damage_types):
         return False
     action_names = _str_set(source.get('action_names'))
     if action_names and str(action.get('name') or '') not in action_names:
@@ -448,7 +459,7 @@ def _target_matches(
     if action_ids and str(action.get('id') or '') not in action_ids:
         return False
     damage_types = _str_set(target.get('damage_types'))
-    if damage_types and str(action.get('damage_type') or '') not in damage_types:
+    if damage_types and not any(_has_damage_type(action, damage_type) for damage_type in damage_types):
         return False
     action_names = _str_set(target.get('action_names'))
     if action_names and str(action.get('name') or '') not in action_names:

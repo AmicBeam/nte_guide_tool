@@ -100,6 +100,10 @@
 
 ## 代码边界
 
+弧盘限定普攻、闪反、变轨、终结或援护的伤害加成，按 `damage_types` 与伤害公式共用的分类判定，不要求伤害本身是对应技能的释放动作。一笔伤害可以同时属于终结与追击；曳尔沐追忆、灵可4觉追加等沿用其既有伤害归属。行进于时间之外、远行者之声、预备备、欧拉欧拉和开始净空使用此规则；开始净空仍检查实际灵属性。欧拉与远行者之声按对应伤害命中叠层，释放E/Q、进入迷宫与消耗荒时等条件仍按动作事件判定，后续被动伤害不会重新释放技能或消费荒时。
+
+验证：`python3 -m unittest tests.test_shaft_arc_damage_types tests.test_shaft_paperplane`，以及完整排轴回归。专项覆盖追忆两种形态、行进五档精炼与0–3层、限时到期、被动伤害不重复触发释放、灵可既有终结/追击双分类及属性排除。
+
 - `app/modules/shaft/domain/`：数据加载、buff 注册和领域计算支持。
 - `app/modules/shaft/service.py`：页面 API 的应用服务与持久化协调。
 - `app/modules/shaft/templates/shaft/index.html`：页面模板。

@@ -522,17 +522,26 @@
     };
   }
 
-  function actionCategoryBonus(action, panelMods) {
+  function hasDamageType(action, type, tags = actionTags(action)) {
     const actionType = String(action?.action_type || '');
     const damageType = String(action?.damage_type || '');
+    if (type === '追击') return damageType === '追击' || tags.has('追击') || tags.has('追加攻击');
+    if (type === '附着') return tags.has('附着');
+    if (['普攻', '闪反', 'E', 'Q', '援护'].includes(type)) {
+      return actionType === type || damageType === type;
+    }
+    return damageType === type;
+  }
+
+  function actionCategoryBonus(action, panelMods) {
     const tags = actionTags(action);
     let total = num(panelMods.action_dmg);
-    if (actionType === '普攻' || damageType === '普攻') total += panelMods.basic_dmg;
-    if (actionType === '闪反' || damageType === '闪反') total += panelMods.dodge_counter_dmg;
-    if (actionType === 'E' || damageType === 'E') total += panelMods.skill_dmg;
-    if (actionType === 'Q' || damageType === 'Q') total += panelMods.ultimate_dmg;
-    if (damageType === '追击' || tags.has('追击') || tags.has('追加攻击')) total += panelMods.follow_dmg;
-    if (tags.has('附着')) total += panelMods.attach_dmg;
+    if (hasDamageType(action, '普攻', tags)) total += panelMods.basic_dmg;
+    if (hasDamageType(action, '闪反', tags)) total += panelMods.dodge_counter_dmg;
+    if (hasDamageType(action, 'E', tags)) total += panelMods.skill_dmg;
+    if (hasDamageType(action, 'Q', tags)) total += panelMods.ultimate_dmg;
+    if (hasDamageType(action, '追击', tags)) total += panelMods.follow_dmg;
+    if (hasDamageType(action, '附着', tags)) total += panelMods.attach_dmg;
     return total;
   }
 
@@ -1564,12 +1573,13 @@
     const scope = String(source?.scope || 'registrar');
     if (scope === 'registrar' && int(step.slot) !== int(rule.owner_slot)
       && !(action.lingke_joint_source_slot != null && int(action.lingke_joint_source_slot) === int(rule.owner_slot)
-        && (asList(source?.tags).includes('同频合击') || asList(source?.action_types).includes('援护')))) return false;
+        && (asList(source?.tags).includes('同频合击') || asList(source?.action_types).includes('援护')
+          || asList(source?.damage_types).includes('援护')))) return false;
     if (scope === 'non_registrar' && int(step.slot) === int(rule.owner_slot)) return false;
     const actionTypes = strSet(source?.action_types);
     if (actionTypes.size && !actionTypes.has(String(action.action_type || ''))) return false;
     const damageTypes = strSet(source?.damage_types);
-    if (damageTypes.size && !damageTypes.has(String(action.damage_type || ''))) return false;
+    if (damageTypes.size && !Array.from(damageTypes).some((type) => hasDamageType(action, type))) return false;
     const actionNames = strSet(source?.action_names);
     if (actionNames.size && !actionNames.has(String(action.name || ''))) return false;
     const actionIds = strSet(source?.action_ids);
@@ -1801,7 +1811,7 @@
     const actionIds = strSet(target?.action_ids);
     if (actionIds.size && !actionIds.has(String(action.id || ''))) return false;
     const damageTypes = strSet(target?.damage_types);
-    if (damageTypes.size && !damageTypes.has(String(action.damage_type || ''))) return false;
+    if (damageTypes.size && !Array.from(damageTypes).some((type) => hasDamageType(action, type))) return false;
     const actionNames = strSet(target?.action_names);
     if (actionNames.size && !actionNames.has(String(action.name || ''))) return false;
     const tags = strSet(target?.tags);

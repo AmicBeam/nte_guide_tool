@@ -675,7 +675,7 @@
       "source": {"scope": "registrar", "action_types": ["Q"]},
       "conditions": [{"type": "active_buff_key", "key": "arc_time_outside_maze"}]
     },
-    "target": {"scope": "registrar", "action_types": ["Q"]},
+    "target": {"scope": "registrar", "damage_types": ["Q"]},
     "duration": {"type": "time", "ticks": 700, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "activation": {
@@ -729,7 +729,7 @@
   },
   {
     "id": "arc_fearless_q_atk",
-    "name": "无畏之棉：Q 后攻击",
+    "name": "无畏之绵：Q 后攻击",
     "providers": [{"kind": "arc", "id": "arc_1a476075cd"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}},
@@ -740,7 +740,7 @@
   },
   {
     "id": "arc_fearless_full_q_atk",
-    "name": "无畏之棉·满精：Q 后攻击",
+    "name": "无畏之绵·满精：Q 后攻击",
     "providers": [{"kind": "arc", "id": "arc_57b6c49b66"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}},
@@ -834,7 +834,7 @@
   },
   {
     "id": "arc_speed_cotton_front_atk",
-    "name": "极速之棉：前台驻场攻击",
+    "name": "极速之绵：前台驻场攻击",
     "providers": [{"kind": "arc", "id": "arc_126824ee1b"}],
     "priority": 100,
     "trigger": {"event": "front_time"},
@@ -845,7 +845,7 @@
   },
   {
     "id": "arc_speed_cotton_full_front_atk",
-    "name": "极速之棉·满精：前台驻场攻击",
+    "name": "极速之绵·满精：前台驻场攻击",
     "providers": [{"kind": "arc", "id": "arc_b3c0b59d01"}],
     "priority": 100,
     "trigger": {"event": "front_time"},
@@ -1003,7 +1003,7 @@
     "providers": [{"kind": "arc", "id": "arc_ce53905d70"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["E", "Q"]}},
-    "target": {"scope": "registrar", "action_types": ["普攻", "闪反"]},
+    "target": {"scope": "registrar", "damage_types": ["普攻", "闪反"]},
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"mode": "add_stack", "max_stacks": 2},
     "activation": {"full_stack_buff_id": "arc_ready_tally_boss_damage"},
@@ -1036,8 +1036,8 @@
     "name": "欧拉欧拉！：普伤叠层",
     "providers": [{"kind": "arc", "id": "arc_4d19ef5194"}],
     "priority": 100,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_types": ["普攻"]}},
-    "target": {"scope": "registrar", "action_types": ["普攻"]},
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "damage_types": ["普攻"]}},
+    "target": {"scope": "registrar", "damage_types": ["普攻"]},
     "duration": {"type": "time", "ticks": 100, "loop_carry": true},
     "stacking": {"mode": "independent", "max_stacks": 10},
     "effects": {"basic_dmg": 0.036}
@@ -1077,7 +1077,7 @@
   },
   {
     "id": "arc_fierce_cotton_crit",
-    "name": "凶猛之棉：暴击后暴伤",
+    "name": "凶猛之绵：暴击后暴伤",
     "providers": [{"kind": "arc", "id": "arc_1ddecc32f3"}],
     "priority": 100,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar"}, "conditions": [{"type": "expected_critical_hit"}]},
@@ -1088,7 +1088,7 @@
   },
   {
     "id": "arc_fierce_cotton_full_crit",
-    "name": "凶猛之棉·满精：暴击后暴伤",
+    "name": "凶猛之绵·满精：暴击后暴伤",
     "providers": [{"kind": "arc", "id": "arc_92353a7626"}],
     "priority": 100,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar"}, "conditions": [{"type": "expected_critical_hit"}]},
@@ -3020,7 +3020,7 @@
     "providers": [{"kind": "arc", "id": "arc_614aec6ed1"}],
     "priority": 100,
     "trigger": {"event": "passive"},
-    "target": {"scope": "registrar", "action_types": ["援护"]},
+    "target": {"scope": "registrar", "damage_types": ["援护"]},
     "duration": {"type": "permanent"},
     "effects": {"crit_dmg": 0.66},
     "display": {"line": false}
@@ -3030,8 +3030,8 @@
     "name": "远行者之声·援护后终结暴伤",
     "providers": [{"kind": "arc", "id": "arc_614aec6ed1"}],
     "priority": 101,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_types": ["援护"]}},
-    "target": {"scope": "registrar", "action_types": ["Q"]},
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "damage_types": ["援护"]}},
+    "target": {"scope": "registrar", "damage_types": ["Q"]},
     "duration": {"type": "time", "ticks": 30, "loop_carry": true},
     "stacking": {"key": "arc_gold_record_q_crit_damage", "mode": "add_stack", "max_stacks": 3},
     "effects": {"crit_dmg": 0.22}
@@ -4715,7 +4715,7 @@
     },
     "target": {
       "scope": "registrar",
-      "action_types": [
+      "damage_types": [
         "E",
         "Q"
       ],

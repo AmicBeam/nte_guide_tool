@@ -1255,11 +1255,6 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("additionalTags.has(damageType)", source)
         self.assertIn("? (actionType || '其他')", source)
         self.assertIn('damage_type: detail.damage_type', SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
-        self.assertIn(
-            "if (damageType === '追击' || tags.has('追击') || tags.has('追加攻击')) total += panelMods.follow_dmg;",
-            SHAFT_ENGINE_JS.read_text(encoding='utf-8'),
-        )
-        self.assertIn("if (tags.has('附着')) total += panelMods.attach_dmg;", SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
         self.assertIn('damage_by_action_by_slot: clone(result.damage_by_action_by_slot || [])', source)
         self.assertIn('function mergeActionAnalysisComparison(', source)
         self.assertIn("'被动': '#ff5aa5'", source)

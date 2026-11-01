@@ -1113,40 +1113,23 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
         css = SHAFT_CSS.read_text(encoding='utf-8')
 
-        self.assertIn('id="shaft-substat-contribution-btn"', template)
-        self.assertIn('id="shaft-substat-contribution-dialog"', template)
-        self.assertIn('id="shaft-substat-contribution-content"', template)
-        self.assertIn('>副词条贡献度</button>', template)
-        self.assertIn('>副词条贡献度</h2>', template)
-        self.assertNotIn('>计算词条贡献度</button>', template)
-        self.assertIn('以8类主要副词条各 ${formatNumber(analysis.base_count || 0)} 条', source)
-        self.assertIn('纯前端计算，不改配装或对比快照', source)
-        self.assertNotIn('基准临时将每位角色的通伤', source)
+        self.assertNotIn('id="shaft-substat-contribution-btn"', template)
+        self.assertNotIn('id="shaft-substat-contribution-dialog"', template)
+        self.assertIn('data-analysis-dimension="substats"', source)
+        self.assertIn('>副词条贡献度</button>', source)
+        self.assertIn('队友词条保持当前配装', source)
+        self.assertIn('当前角色最高收益为100%', source)
         self.assertIn('.shaft-substat-contribution-table', css)
-        self.assertIn('max-height: calc(100vh - 28px);', css)
-        self.assertIn('overflow-y: auto;', css)
-        self.assertIn('function analyzeSubstatContributions(', engine)
-        self.assertIn("{ key: 'all_dmg', label: '通伤' }", engine)
-        self.assertIn("{ key: 'def_pct', label: '防御%' }", engine)
-        self.assertIn("'flat_atk'", engine)
-        self.assertIn("'flat_hp'", engine)
-        self.assertIn("'flat_def'", engine)
-        self.assertIn('const BASELINE_SUBSTAT_FIELDS = SUBSTAT_CONTRIBUTION_FIELDS.slice(0, 8);', engine)
-        self.assertIn('num(candidateMember.substat_counts[field.key]) + incrementCount', engine)
         self.assertIn('row.increase_damage / maxIncreaseDamage * 100', engine)
-        self.assertIn('const contributionByCell = new Map', source)
-        self.assertIn('const topContributionRanksBySlot = new Map', source)
-        self.assertIn('.slice(0, 4);', source)
-        self.assertIn('contribution-rank-${rank}', source)
-        self.assertIn("contribution > 0 ? `${formatNumber(contribution, 1)}%` : '—'", source)
         for rank in range(1, 5):
             self.assertIn(f'td.contribution-rank-{rank}', css)
 
         open_analysis = source[
-            source.index('async function openSubstatContributionAnalysis'):
-            source.index('function closeSubstatContributionAnalysis')
+            source.index('async function calculateCharacterSubstats'):
+            source.index('function openShortcutHelp')
         ]
         self.assertIn('window.ShaftEngine.analyzeSubstatContributions(state.axis, state.catalog', open_analysis)
+        self.assertIn('slot,', open_analysis)
         self.assertNotIn('shaftRequest(', open_analysis)
         self.assertNotIn('state.compareSnapshot =', open_analysis)
 
@@ -1185,7 +1168,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
                 'operation': 'analyze_substats',
                 'axis': axis,
                 'catalog': catalog,
-                'options': {'base_count': 15, 'increment_count': 5},
+                'options': {'slot': 0, 'base_count': 15, 'increment_count': 5},
             }),
             capture_output=True,
             text=True,

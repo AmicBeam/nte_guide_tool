@@ -221,7 +221,6 @@
     previewTickPx: 0,
     axisPreviewPayload: null,
     axisPreviewSaving: false,
-    substatAnalysisInFlight: false,
   };
 
   function $(id) {
@@ -2963,7 +2962,7 @@
         <span>${escapeHtml(item.label)}</span>
         <div class="shaft-contribution-bar"><span style="width: ${Math.max(0, Math.min(100, Number(item.percent || 0)))}%; --contribution-color:${SLOT_COLORS[Number(item.slot) % SLOT_COLORS.length]}"></span></div>
         <span>${formatNumber(item.percent || 0, 1)}%</span>
-        <button class="secondary-btn shaft-action-contribution-btn" data-action-contribution-slot="${Number(item.slot)}" type="button" ${Number(item.damage || 0) > 0 ? '' : 'disabled'}>分析详情</button>
+        <button class="secondary-btn shaft-action-contribution-btn" data-action-contribution-slot="${Number(item.slot)}" type="button">分析详情</button>
       </div>
     `).join('');
     const independentRows = contributionShares.filter((item) => item.kind !== 'character').map((item) => `
@@ -3218,15 +3217,39 @@
     `;
   }
 
+  function actionAnalysisToolbar() {
+    return `
+      <div class="shaft-action-analysis-toolbar">
+        <div class="shaft-action-analysis-switch" role="tablist" aria-label="分析维度">
+          <button class="${actionAnalysisState.dimension === 'action' ? 'is-active' : ''}" data-analysis-dimension="action" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'action'}">动作明细</button>
+          <button class="${actionAnalysisState.dimension === 'type' ? 'is-active' : ''}" data-analysis-dimension="type" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'type'}">合并伤害类型</button>
+          <button class="${actionAnalysisState.dimension === 'substats' ? 'is-active' : ''}" data-analysis-dimension="substats" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'substats'}">副词条贡献度</button>
+        </div>
+        ${actionAnalysisState.dimension !== 'substats' ? `<div class="shaft-action-analysis-switch shaft-action-analysis-view-switch" aria-label="图表类型">
+          <button class="${actionAnalysisState.view === 'donut' ? 'is-active' : ''}" data-analysis-view="donut" type="button">环形占比</button>
+          <button class="${actionAnalysisState.view === 'bars' ? 'is-active' : ''}" data-analysis-view="bars" type="button">排行条形</button>
+        </div>` : ''}
+      </div>
+    `;
+  }
+
   function renderActionContributionAnalysis() {
     const content = $('shaft-action-contribution-content');
     const contribution = actionContributionForSlot(actionAnalysisState.slot);
     if (!content || !contribution) {
       return;
     }
+    const toolbar = actionAnalysisToolbar();
+    const requestId = (actionAnalysisState.requestId || 0) + 1;
+    actionAnalysisState.requestId = requestId;
+    if (actionAnalysisState.dimension === 'substats') {
+      content.innerHTML = `${toolbar}<div data-substat-analysis aria-live="polite"><div class="shaft-empty">正在计算11组副词条方案…</div></div>`;
+      calculateCharacterSubstats(actionAnalysisState.slot, requestId);
+      return;
+    }
     const currentGroups = actionContributionGroups(contribution, actionAnalysisState.dimension);
     if (!currentGroups.length) {
-      content.innerHTML = '<div class="shaft-empty">该角色当前没有造成动作伤害</div>';
+      content.innerHTML = `${toolbar}<div class="shaft-empty">该角色当前没有造成动作伤害</div>`;
       return;
     }
     const snapshotHasDetails = Array.isArray(state.compareSnapshot?.damage_by_action_by_slot);
@@ -3256,16 +3279,7 @@
       ? new Date(state.compareSnapshot.saved_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
       : '';
     content.innerHTML = `
-      <div class="shaft-action-analysis-toolbar">
-        <div class="shaft-action-analysis-switch" role="tablist" aria-label="分析维度">
-          <button class="${actionAnalysisState.dimension === 'action' ? 'is-active' : ''}" data-analysis-dimension="action" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'action'}">动作明细</button>
-          <button class="${actionAnalysisState.dimension === 'type' ? 'is-active' : ''}" data-analysis-dimension="type" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'type'}">合并伤害类型</button>
-        </div>
-        <div class="shaft-action-analysis-switch shaft-action-analysis-view-switch" aria-label="图表类型">
-          <button class="${actionAnalysisState.view === 'donut' ? 'is-active' : ''}" data-analysis-view="donut" type="button">环形占比</button>
-          <button class="${actionAnalysisState.view === 'bars' ? 'is-active' : ''}" data-analysis-view="bars" type="button">排行条形</button>
-        </div>
-      </div>
+      ${toolbar}
       ${hasComparison ? `
         <div class="shaft-action-analysis-snapshot">
           <div>
@@ -3331,7 +3345,7 @@
     if (!dialog || !contribution) {
       return;
     }
-    $('shaft-action-contribution-title').textContent = `${contribution.character_name || memberName(slot)} · 动作贡献`;
+    $('shaft-action-contribution-title').textContent = `${contribution.character_name || memberName(slot)} · 分析详情`;
     actionAnalysisState.slot = Number(slot);
     actionAnalysisState.dimension = 'action';
     actionAnalysisState.view = 'donut';
@@ -3495,8 +3509,7 @@
     }
   }
 
-  function renderSubstatContributionAnalysis(analysis) {
-    const content = $('shaft-substat-contribution-content');
+  function renderSubstatContributionAnalysis(analysis, content) {
     if (!content) return;
     const rows = analysis?.rows || [];
     const fields = (analysis?.fields || []).filter((field) => (
@@ -3524,7 +3537,7 @@
     }));
     content.innerHTML = `
       <div class="shaft-substat-contribution-note">
-        以8类主要副词条各 ${formatNumber(analysis.base_count || 0)} 条、小攻击/生命/防御为 0 作基准，逐角色测试11类副词条各 +${formatNumber(analysis.increment_count || 0)}。最高收益为100%，—表示无提升；纯前端计算，不改配装或对比快照。
+        仅将当前角色的8类主要副词条各设为 ${formatNumber(analysis.base_count || 0)} 条、小攻击/生命/防御设为 0，逐项增加 ${formatNumber(analysis.increment_count || 0)} 条并比较全队总伤；队友词条保持当前配装。当前角色最高收益为100%，—表示无提升。
       </div>
       ${characters.length && fields.length ? `
         <div class="shaft-substat-contribution-table-wrap">
@@ -3548,50 +3561,24 @@
     `;
   }
 
-  async function openSubstatContributionAnalysis(trigger = null) {
-    if (state.substatAnalysisInFlight) return;
-    if (!Array.isArray(state.axis?.steps) || !state.axis.steps.length) {
-      showToast('请先在动作轴中添加动作', 'warning');
-      return;
-    }
-    if (!window.ShaftEngine || typeof window.ShaftEngine.analyzeSubstatContributions !== 'function') {
-      showToast('副词条贡献度计算引擎未加载', 'warning');
-      return;
-    }
-    const button = $('shaft-substat-contribution-btn');
-    const originalText = button?.textContent || '副词条贡献度';
-    state.substatAnalysisInFlight = true;
-    if (button) {
-      button.disabled = true;
-      button.textContent = `正在计算 ${Math.max(0, (state.axis.team || []).length * 11)} 组方案…`;
-    }
+  async function calculateCharacterSubstats(slot, requestId) {
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    const isCurrent = () => actionAnalysisState.requestId === requestId
+      && actionAnalysisState.slot === slot
+      && actionAnalysisState.dimension === 'substats'
+      && $('shaft-action-contribution-dialog')?.open;
+    if (!isCurrent()) return;
+    const content = $('shaft-action-contribution-content').querySelector('[data-substat-analysis]');
     try {
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
       const analysis = window.ShaftEngine.analyzeSubstatContributions(state.axis, state.catalog, {
+        slot,
         base_count: 15,
         increment_count: 5,
       });
-      renderSubstatContributionAnalysis(analysis);
-      const dialog = $('shaft-substat-contribution-dialog');
-      dialog._returnFocus = trigger || button;
-      dialog.showModal();
+      if (isCurrent()) renderSubstatContributionAnalysis(analysis, content);
     } catch (error) {
-      showToast(error.message || '副词条贡献度计算失败', 'warning');
-    } finally {
-      state.substatAnalysisInFlight = false;
-      if (button) {
-        button.disabled = false;
-        button.textContent = originalText;
-      }
+      if (isCurrent()) content.innerHTML = `<div class="shaft-empty">${escapeHtml(error.message || '副词条贡献度计算失败')}</div>`;
     }
-  }
-
-  function closeSubstatContributionAnalysis() {
-    const dialog = $('shaft-substat-contribution-dialog');
-    if (!dialog?.open) return;
-    const returnFocus = dialog._returnFocus;
-    dialog.close();
-    if (returnFocus?.isConnected) returnFocus.focus();
   }
 
   function openShortcutHelp() {
@@ -9256,14 +9243,6 @@
     $('shaft-compare-controls').addEventListener('click', handleCompareControls);
     $('shaft-compare-controls').addEventListener('change', handleCompareControlChange);
     $('shaft-contribution-list').addEventListener('click', handleContributionClick);
-    $('shaft-substat-contribution-btn').addEventListener('click', (event) => {
-      openSubstatContributionAnalysis(event.currentTarget);
-    });
-    $('shaft-substat-contribution-dialog').addEventListener('click', (event) => {
-      if (event.target === event.currentTarget || event.target.closest('[data-close-substat-contribution]')) {
-        closeSubstatContributionAnalysis();
-      }
-    });
     $('shaft-stagger-analysis-dialog').addEventListener('click', (event) => {
       if (event.target === event.currentTarget || event.target.closest('[data-close-stagger-analysis]')) {
         closeStaggerAnalysis();
@@ -9285,7 +9264,8 @@
       }
       const dimensionButton = event.target.closest('[data-analysis-dimension]');
       if (dimensionButton) {
-        actionAnalysisState.dimension = dimensionButton.dataset.analysisDimension === 'type' ? 'type' : 'action';
+        actionAnalysisState.dimension = ['type', 'substats'].includes(dimensionButton.dataset.analysisDimension)
+          ? dimensionButton.dataset.analysisDimension : 'action';
         renderActionContributionAnalysis();
         return;
       }

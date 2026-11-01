@@ -6293,16 +6293,15 @@
 
   const BASELINE_SUBSTAT_FIELDS = SUBSTAT_CONTRIBUTION_FIELDS.slice(0, 8);
 
-  function axisWithContributionSubstats(axisPayload, baseCount = 15) {
+  function axisWithContributionSubstats(axisPayload, slot, baseCount = 15) {
     const axis = JSON.parse(JSON.stringify(axisPayload || {}));
     const baseSubstats = Object.fromEntries(SUBSTAT_CONTRIBUTION_FIELDS.map((field) => [field.key, 0]));
     BASELINE_SUBSTAT_FIELDS.forEach((field) => {
       baseSubstats[field.key] = baseCount;
     });
-    axis.team = asList(axis.team).map((member) => ({
-      ...member,
-      substat_counts: { ...baseSubstats },
-    }));
+    const member = asList(axis.team).find((item) => int(item.slot) === slot);
+    if (!member) throw new Error('请选择队伍中的角色分析副词条。');
+    member.substat_counts = baseSubstats;
     return axis;
   }
 
@@ -6312,33 +6311,36 @@
     }
     const baseCount = Math.max(0, int(options.base_count, 15));
     const incrementCount = Math.max(1, int(options.increment_count, 5));
-    const baselineAxis = axisWithContributionSubstats(axisPayload, baseCount);
+    const slot = Number(options.slot);
+    if (options.slot == null || !Number.isInteger(slot)) {
+      throw new Error('请选择队伍中的角色分析副词条。');
+    }
+    const baselineAxis = axisWithContributionSubstats(axisPayload, slot, baseCount);
+    const member = baselineAxis.team.find((item) => int(item.slot) === slot);
     const baselineResult = simulateAxis(baselineAxis, catalog);
     const baselineTotalDamage = num(baselineResult?.summary?.total_damage);
     const rows = [];
 
-    asList(baselineAxis.team).forEach((member) => {
-      SUBSTAT_CONTRIBUTION_FIELDS.forEach((field) => {
-        const candidateAxis = JSON.parse(JSON.stringify(baselineAxis));
-        const candidateMember = asList(candidateAxis.team)
-          .find((item) => int(item.slot) === int(member.slot));
-        if (!candidateMember) return;
-        candidateMember.substat_counts[field.key] = num(candidateMember.substat_counts[field.key]) + incrementCount;
-        const candidateResult = simulateAxis(candidateAxis, catalog);
-        const candidateTotalDamage = num(candidateResult?.summary?.total_damage);
-        const increaseDamage = candidateTotalDamage - baselineTotalDamage;
-        const epsilon = Math.max(1e-8, Math.abs(baselineTotalDamage) * 1e-12);
-        if (increaseDamage <= epsilon) return;
-        rows.push({
-          slot: int(member.slot),
-          character_id: String(member.character_id || ''),
-          character_name: String(member.character_name || ''),
-          stat_key: field.key,
-          stat_label: field.label,
-          boosted_total_damage: candidateTotalDamage,
-          increase_damage: increaseDamage,
-          increase_percent: baselineTotalDamage > 0 ? increaseDamage / baselineTotalDamage * 100 : 0,
-        });
+    SUBSTAT_CONTRIBUTION_FIELDS.forEach((field) => {
+      const candidateAxis = JSON.parse(JSON.stringify(baselineAxis));
+      const candidateMember = asList(candidateAxis.team)
+        .find((item) => int(item.slot) === int(member.slot));
+      if (!candidateMember) return;
+      candidateMember.substat_counts[field.key] = num(candidateMember.substat_counts[field.key]) + incrementCount;
+      const candidateResult = simulateAxis(candidateAxis, catalog);
+      const candidateTotalDamage = num(candidateResult?.summary?.total_damage);
+      const increaseDamage = candidateTotalDamage - baselineTotalDamage;
+      const epsilon = Math.max(1e-8, Math.abs(baselineTotalDamage) * 1e-12);
+      if (increaseDamage <= epsilon) return;
+      rows.push({
+        slot: int(member.slot),
+        character_id: String(member.character_id || ''),
+        character_name: String(member.character_name || ''),
+        stat_key: field.key,
+        stat_label: field.label,
+        boosted_total_damage: candidateTotalDamage,
+        increase_damage: increaseDamage,
+        increase_percent: baselineTotalDamage > 0 ? increaseDamage / baselineTotalDamage * 100 : 0,
       });
     });
 
@@ -6357,6 +6359,9 @@
     ));
 
     return {
+      slot,
+      character_id: String(member.character_id || ''),
+      character_name: String(member.character_name || ''),
       base_count: baseCount,
       increment_count: incrementCount,
       baseline_total_damage: baselineTotalDamage,

@@ -2521,6 +2521,10 @@
   }
 
   function simulateAxis(axisPayload, catalog, analysisOptions = {}) {
+    return simulateAxisPass(axisPayload, catalog, analysisOptions, false, 2);
+  }
+
+  function simulateAxisPass(axisPayload, catalog, analysisOptions, captureLoopStackSources, stackHistoryPasses) {
     if (!catalog || typeof catalog !== 'object') {
       throw new Error('缺少排轴数据目录。');
     }
@@ -4998,6 +5002,24 @@
     }
 
     if (options.loop_enabled && loopDurationTicks > 0) {
+      const loopStackSourceKeys = new Set(buffRules
+        .filter((rule) => rule.duration?.loop_carry === true && rule.activation?.stack_gain_from_key)
+        .flatMap((rule) => [rule.activation.stack_gain_from_key, rule.stacking?.key || rule.id]
+          .map((key) => `${int(rule.owner_slot)}:${key}`)));
+      if (stackHistoryPasses > 0 && loopStackSourceKeys.size) {
+        // A consumed stack source can itself come from the cycle before the
+        // usual priming cycle. Two source-history passes also prepare the
+        // consumed counter used by a buff still active at the measured opening.
+        // Seed only those stacks; never replay their
+        // damage, resources, reactions or queued events into the measured axis.
+        const sources = simulateAxisPass(axisPayload, catalog, analysisOptions, true, stackHistoryPasses - 1);
+        sources.forEach((instance) => {
+          instance.start_tick = int(instance.start_tick) - loopDurationTicks;
+          instance.end_tick = int(instance.end_tick) - loopDurationTicks;
+          activeBuffs.push(instance);
+        });
+        initializePersonalResourceStates(-loopDurationTicks);
+      }
       const configuredLoopInitialReactions = [];
       const configuredLoopInitialDots = [];
       originalTeam.forEach((member) => {
@@ -5201,6 +5223,12 @@
         if (carriedLayers.length > 0) return;
         seedLoopInitialDot(dotConfig, dotConfig.snapshot, dotConfig.layers, 0);
       });
+      if (captureLoopStackSources) {
+        return activeBuffs.filter((instance) => (
+          instance.rule?.duration?.loop_carry === true
+          && loopStackSourceKeys.has(`${int(instance.owner_slot)}:${instance.definition_id}`)
+        )).map((instance) => clone(instance));
+      }
     }
 
     retainedApplications.filter((entry) => int(entry.tick) >= 0 && entry.kind !== 'status').forEach((application) => {

@@ -3580,9 +3580,11 @@
       const increase = result.increase_percent == null ? '—' : `${result.increase_percent > 0 ? '+' : ''}${formatNumber(result.increase_percent, 1)}%`;
       content.innerHTML = `
         <div class="shaft-substat-contribution-note">保证原轴不变，对比同属性白板，计算该角色带来的队伍 DPS 增幅。</div>
-        <div class="shaft-action-analysis-kpis">
+        <div class="shaft-action-analysis-kpis shaft-character-effectiveness-kpis">
           <div><span>角色 RDPS</span><strong>${formatNumber(result.rdps)}</strong><small>相对白板增加的队伍 DPS</small></div>
           <div><span>角色效能 · DPS 涨幅</span><strong>${increase}</strong><small>以白板队 DPS 为基准</small></div>
+          <div><span>伤害贡献 · DPS</span><strong>${formatNumber(result.direct_contribution_dps)}</strong><small>自身伤害收益 ${formatNumber(result.direct_contribution_damage)}</small></div>
+          <div><span>拐力 · DPS</span><strong>${formatNumber(result.support_dps)}</strong><small>队友伤害收益 ${formatNumber(result.support_damage)}</small></div>
           <div><span>原队 DPS</span><strong>${formatNumber(result.full_dps)}</strong></div>
           <div><span>白板队 DPS</span><strong>${formatNumber(result.without_dps)}</strong></div>
         </div>

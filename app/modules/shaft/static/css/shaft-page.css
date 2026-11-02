@@ -1889,6 +1889,10 @@ body:has(.shaft-page) .shell {
     margin: 14px 0 18px;
 }
 
+.shaft-character-effectiveness-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .shaft-action-analysis-kpis > div {
     display: grid;
     gap: 4px;

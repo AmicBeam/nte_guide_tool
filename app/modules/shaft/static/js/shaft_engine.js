@@ -6367,9 +6367,27 @@
     const fullDps = num(full.summary.total_damage) / divisor;
     const withoutDps = num(without.summary.total_damage) / divisor;
     const rdps = fullDps - withoutDps;
+    // Split by damage ownership. Include the proxy's retained harmony in the
+    // baseline, rather than charging that unchanged damage to this character.
+    const selfDamage = (result) => (
+      num(asList(result.damage_by_slot).find((row) => int(row.slot) === slot)?.damage)
+      + ['harmony_contributions_by_slot', 'stagger_contributions_by_slot', 'other_contributions_by_slot']
+        .reduce((sum, key) => sum + num(asList(result[key]).find((row) => int(row.slot) === slot)?.damage), 0)
+    );
+    const fullSelfDamage = selfDamage(full);
+    const blankSelfDamage = selfDamage(without);
+    const directContributionDamage = fullSelfDamage - blankSelfDamage;
+    const supportDamage = num(full.summary.total_damage) - num(without.summary.total_damage)
+      - directContributionDamage;
+    const directContributionDps = directContributionDamage / divisor;
     return {
       slot, duration_seconds: duration,
       full_dps: fullDps, without_dps: withoutDps, rdps,
+      direct_contribution_damage: directContributionDamage,
+      direct_contribution_dps: directContributionDps,
+      support_damage: supportDamage,
+      support_dps: rdps - directContributionDps,
+      full_self_damage: fullSelfDamage, blank_self_damage: blankSelfDamage,
       increase_percent: withoutDps > 0 ? rdps / withoutDps * 100 : null,
       full_total_damage: num(full.summary.total_damage),
       without_total_damage: num(without.summary.total_damage),

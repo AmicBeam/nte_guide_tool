@@ -37,6 +37,12 @@ class ShaftEffectivenessTest(unittest.TestCase):
             for key in ('start_tick', 'end_tick', 'duration_ticks'):
                 self.assertEqual(original[key], detail[key])
         self.assertAlmostEqual(analysis['rdps'], full['summary']['dps'] - without['summary']['dps'])
+        self.assertAlmostEqual(analysis['direct_contribution_dps'] + analysis['support_dps'], analysis['rdps'])
+        self.assertAlmostEqual(analysis['direct_contribution_damage'] + analysis['support_damage'],
+                               full['summary']['total_damage'] - without['summary']['total_damage'])
+        self.assertAlmostEqual(analysis['direct_contribution_damage'],
+                               analysis['full_self_damage'] - analysis['blank_self_damage'])
+
 
     def test_removed_mask_and_tail_keep_damage_timing_and_loop_period(self):
         catalog = deepcopy(load_shaft_catalog())
@@ -144,6 +150,7 @@ class ShaftEffectivenessTest(unittest.TestCase):
             self.assertAlmostEqual(costs[0]['amount'], -100)
             self.assertNotIn('b', [d['step_id'] for d in without['details']])
             self.assertGreater(without['summary']['harmony_damage'], 0)
+            self.assertGreater(result['analysis']['blank_self_damage'], 0)
             self.assertGreater(result['full']['summary']['harmony_damage'], without['summary']['harmony_damage'])
             stronger_teammate = deepcopy(axis)
             stronger_teammate['team'][0]['substat_counts'] = {'harmony_strength': 20}
@@ -187,6 +194,37 @@ class ShaftEffectivenessTest(unittest.TestCase):
         self.assert_fixed_clock(result)
         self.assertLess(result['analysis']['rdps'], 0)
         self.assertLess(result['analysis']['increase_percent'], 0)
+
+    def test_direct_and_support_split_own_damage_and_teammate_buff(self):
+        catalog = deepcopy(load_shaft_catalog())
+        template = catalog['characters'][0]
+        catalog['characters'] = [{**template, 'id': 'self', 'name': 'self'},
+                                 {**template, 'id': 'peer', 'name': 'peer'}]
+        catalog['actions'] = [dict(id=name, character_id=name, name=name, action_type='普攻',
+                                   damage_type='普攻', duration_ticks=10, hit_count=1,
+                                   multipliers={'atk': 1}) for name in ('self', 'peer')]
+        axis = dict(team=[dict(slot=0, character_id='self', arc_id='', cartridge_id=''),
+                          dict(slot=1, character_id='peer', arc_id='', cartridge_id='')],
+                    steps=[dict(id='self', slot=0, action_id='self', start_tick=0),
+                           dict(id='peer', slot=1, action_id='peer', start_tick=20)])
+        for modifier in (0, 1, -0.5):
+            catalog['buffs'] = [dict(id='team_bonus', name='team bonus',
+                                    providers=[dict(kind='character', id='self')],
+                                    trigger=dict(event='passive'), target=dict(scope='team'),
+                                    duration=dict(type='permanent'), effects=dict(final_dmg=modifier))]
+            for acts in (True, False):
+                candidate = deepcopy(axis)
+                if not acts:
+                    candidate['steps'] = candidate['steps'][1:]
+                result = self.evaluate(candidate, 0, catalog)
+                self.assert_fixed_clock(result)
+                analysis = result['analysis']
+                own = next((d['direct_damage'] for d in result['full']['details'] if d['slot'] == 0), 0)
+                peer_baseline = result['without']['details'][0]['direct_damage']
+                self.assertAlmostEqual(analysis['direct_contribution_damage'], own)
+                self.assertAlmostEqual(analysis['support_damage'], peer_baseline * modifier)
+                self.assertAlmostEqual(analysis['support_dps'], peer_baseline * modifier /
+                                       result['full']['summary']['duration_seconds'])
 
     def test_unknown_slot_and_empty_axis_rejected(self):
         script = """

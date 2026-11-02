@@ -30,9 +30,9 @@ class ElymsAdjustmentsTest(unittest.TestCase):
         r=self.own([('skill2',0),('goodbye',10),('goodbye',20)],nodes=[3],resonances=[])
         c=next(b for b in r['details'][1]['triggered_buffs'] if b['rule_id']=='character_elyms_illusion_c')
         self.assertEqual(c['stack_count'],3)
-        self.assertEqual(r['details'][2]['formula_parts']['base_multiplier_factor'],7)
+        self.assertEqual(r['details'][2]['formula_parts']['base_multiplier_factor'],4)
         r=self.own([('skill2',0),('goodbye',10)],nodes=[3],resonances=[3])
-        self.assertEqual(r['details'][1]['formula_parts']['base_multiplier_factor'],9)
+        self.assertEqual(r['details'][1]['formula_parts']['base_multiplier_factor'],5)
         rules=load_shaft_catalog()['buffs']
         self.assertFalse(any(b['id']=='character_elyms_illusion_reaction' for b in rules))
         self.assertTrue(all(b['stacking']['max_stacks']==4 for b in rules if b.get('stacking',{}).get('key')=='character_elyms_illusion'))

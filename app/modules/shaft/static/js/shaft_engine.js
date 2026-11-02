@@ -515,10 +515,11 @@
       ? 0
       : int(snapshot.skill_level_bonus);
     const effectiveLevel = Math.max(1, baseLevel + resonanceBonus);
+    const referenceLevel = Math.max(1, int(action?.multiplier_level, 1));
     return {
       category,
       level: effectiveLevel,
-      multiplier: Math.pow(1.08, effectiveLevel - 1),
+      multiplier: Math.pow(1.08, effectiveLevel - referenceLevel),
     };
   }
 

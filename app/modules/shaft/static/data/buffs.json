@@ -5491,7 +5491,7 @@
       "max_stacks": 1
     },
     "effects": {
-      "per_layer": 2
+      "per_layer": 1
     },
     "activation": {
       "clear_keys": [
@@ -6093,9 +6093,10 @@
         "hit_count": 1,
         "multipliers": {
           "atk": 0
-        }
+        },
+        "multiplier_level": 10
       },
-      "atk_per_stack": 3
+      "atk_per_stack": 3.358
     },
     "display": {
       "line": false

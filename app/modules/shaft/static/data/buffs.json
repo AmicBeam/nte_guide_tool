@@ -4920,11 +4920,7 @@
       ]
     },
     "target": {
-      "scope": "registrar",
-      "action_ids": [
-        "action_elyms_xietongskilla1",
-        "action_elyms_xietongskillb1"
-      ]
+      "scope": "team"
     },
     "duration": {
       "type": "permanent"
@@ -4935,15 +4931,18 @@
       "max_stacks": 1
     },
     "effects": {
-      "base_multiplier_pct": 0.3
+      "res_down": 0.12
     },
     "display": {
-      "line": false
+      "line": false,
+      "effect_labels": {
+        "res_down": "全属性抗性无视"
+      }
     }
   },
   {
     "id": "character_elyms_q_atk",
-    "name": "一如昨日光景·全队攻击",
+    "name": "一如昨日光景·全队攻击与追加攻击",
     "providers": [
       {
         "kind": "character",
@@ -4975,7 +4974,9 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "effects": {},
+    "effects": {
+      "follow_dmg": 0.1
+    },
     "activation": {
       "effects_from_owner_base": {
         "stat": "atk",

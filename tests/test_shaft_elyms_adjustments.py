@@ -1,5 +1,9 @@
 """Current Elyms and signature-arc mechanics, including independent resonance toggles."""
 import unittest
+import copy
+import json
+import subprocess
+from pathlib import Path
 from app.modules.shaft.domain.catalog import load_shaft_catalog
 from app.modules.shaft.service import simulate_shaft_axis
 
@@ -40,12 +44,13 @@ class ElymsAdjustmentsTest(unittest.TestCase):
             self.assertNotIn(rule,self.effects(r['details'][4]))
             self.assertEqual(self.effects(r['details'][5])[rule],{})
 
-    def test_d_is_permanent_before_q_and_six_follow_bonus_is_thirty_percent(self):
+    def test_d_and_six_resonance_are_permanent_before_q(self):
         base=self.own([('melee1',0),('melee1',250)],resonances=[])
         d=self.own([('melee1',0),('melee1',250)],nodes=[4],resonances=[])
         for a,b in zip(base['details'],d['details']):self.assertAlmostEqual(b['panel']['crit_dmg']-a['panel']['crit_dmg'],.2)
         r=self.own([('xietongskilla1',0)],resonances=[6])
-        self.assertAlmostEqual(self.effects(r['details'][0])['character_elyms_six']['base_multiplier_pct'],.3)
+        self.assertEqual(self.effects(r['details'][0])['character_elyms_six'], {'res_down': .12})
+        self.assertEqual(r['details'][0]['formula_parts']['base_multiplier_factor'], 1)
 
     def test_entry_grants_all_arc_effects_for_twenty_seconds_and_e_buffs_team(self):
         teammate=dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id='')
@@ -75,3 +80,96 @@ class ElymsAdjustmentsTest(unittest.TestCase):
             self.assertEqual(len(buffs),1)
             self.assertAlmostEqual(buffs[0]['effects']['res_down_光'],.2)
             self.assertAlmostEqual(detail['formula_parts']['res_down'],.2)
+
+
+class ElymsTeamDamageBuffsTest(unittest.TestCase):
+    def simulate(self, axis, catalog):
+        root = Path(__file__).resolve().parents[1]
+        output = subprocess.check_output(
+            ['node', str(root / 'scripts/shaft_compute.js')],
+            input=json.dumps({'axis': axis, 'catalog': catalog}), text=True, timeout=15)
+        return json.loads(output)['result']
+
+    def catalog_with_probes(self):
+        catalog = copy.deepcopy(load_shaft_catalog())
+        for element in ['光', '灵', '咒', '暗', '魂', '相', '心灵']:
+            catalog['actions'].append(dict(
+                id='probe_' + element, character_id='char_dd034941ef', name='属性伤害',
+                action_type='普攻', damage_type='普攻', damage_element=element,
+                multipliers={'atk': 1}, hit_count=1, duration_ticks=0,
+                is_background_damage=True, skill_level_category='basic'))
+        catalog['actions'].append(dict(
+            id='probe_follow', character_id='char_dd034941ef', name='追加攻击',
+            action_type='被动', damage_type='被动', tags=['追加攻击'],
+            multipliers={'atk': 1}, hit_count=1, duration_ticks=0,
+            is_background_damage=True, skill_level_category='none'))
+        return catalog
+
+    def axis(self, steps, resonances=(), loop=False):
+        return dict(team=[dict(slot=0, character_id=CID, arc_id='', cartridge_id='',
+                               awakening_nodes=[], awakening_resonances=list(resonances)),
+                          dict(slot=1, character_id='char_dd034941ef', arc_id='', cartridge_id='')],
+                    steps=[dict(id=str(i), slot=slot, action_id=aid, start_tick=tick)
+                           for i, (slot, aid, tick) in enumerate(steps)],
+                    options={'loop_enabled': loop})
+
+    def test_six_resonance_all_attributes_on_teammate_without_q(self):
+        catalog = self.catalog_with_probes()
+        steps = [(1, 'probe_' + element, i*10)
+                 for i, element in enumerate(['光', '灵', '咒', '暗', '魂', '相', '心灵'])]
+        steps += [(1, 'action_none_dd034941ef', 100)]
+        base = self.simulate(self.axis(steps), catalog)
+        for loop in [False, True]:
+            with self.subTest(loop=loop):
+                result = self.simulate(self.axis(steps, [6], loop), catalog)
+                for before, after in zip(base['details'][:7], result['details'][:7]):
+                    self.assertAlmostEqual(after['formula_parts']['res_down'] - before['formula_parts']['res_down'], .12)
+                    self.assertGreater(after['direct_damage'], before['direct_damage'])
+                    buff = next(b for b in after['applied_buffs'] if b['rule_id']=='character_elyms_six')
+                    self.assertFalse(buff['display_as_line'])
+                    self.assertEqual(buff['effects'], {'res_down': .12})
+
+    def test_both_q_forms_grant_timed_team_follow_bonus_and_preserve_attack(self):
+        catalog = self.catalog_with_probes()
+        control = copy.deepcopy(catalog)
+        next(b for b in control['buffs'] if b['id']=='character_elyms_q_atk')['effects'] = {}
+        for form, follow in [('ultraskilla1', 'xietongskilla1'), ('ultraskillb1', 'xietongskillb1')]:
+            with self.subTest(form=form):
+                steps = [(0, 'action_elyms_' + form, 0), (1, 'probe_光', 10),
+                         (1, 'probe_follow', 20), (0, 'action_elyms_' + follow, 30),
+                         (1, 'probe_follow', 204), (1, 'probe_follow', 205),
+                         (1, 'action_none_dd034941ef', 230)]
+                axis = self.axis(steps)
+                before = self.simulate(axis, control)
+                result = self.simulate(axis, catalog)
+                buff = next(b for b in result['details'][0]['triggered_buffs'] if b['rule_id']=='character_elyms_q_atk')
+                self.assertEqual(buff['end_tick'] - buff['trigger_tick'], 200)
+                self.assertAlmostEqual(buff['effects']['flat_atk'], 132)
+                self.assertAlmostEqual(buff['effects']['follow_dmg'], .1)
+                for i in [2, 3, 4]:
+                    a, b = before['details'][i], result['details'][i]
+                    self.assertAlmostEqual(b['formula_parts']['dmg_bonus'] - a['formula_parts']['dmg_bonus'], .1)
+                    self.assertAlmostEqual(b['panel']['atk'], a['panel']['atk'])
+                    self.assertGreater(b['direct_damage'], a['direct_damage'])
+                for i in [0, 1, 5]:
+                    self.assertAlmostEqual(result['details'][i]['direct_damage'], before['details'][i]['direct_damage'])
+                self.assertEqual(result['details'][5]['start_tick'], buff['end_tick'])
+
+    def test_q_follow_window_refreshes_without_stacking_and_carries_in_loop(self):
+        catalog = self.catalog_with_probes()
+        axis = self.axis([(0, 'action_elyms_ultraskilla1', 0),
+                          (0, 'action_elyms_ultraskilla1', 100),
+                          (1, 'probe_follow', 110), (1, 'probe_follow', 305),
+                          (1, 'action_none_dd034941ef', 320)])
+        result = self.simulate(axis, catalog)
+        renewed = next(b for b in result['details'][1]['triggered_buffs'] if b['rule_id']=='character_elyms_q_atk')
+        buffs = [b for b in result['details'][2]['applied_buffs'] if b['rule_id']=='character_elyms_q_atk']
+        self.assertEqual(len(buffs), 1)
+        self.assertEqual(buffs[0]['effects']['follow_dmg'], .1)
+        self.assertEqual(renewed['end_tick'] - renewed['trigger_tick'], 200)
+        self.assertFalse(any(b['rule_id']=='character_elyms_q_atk' for b in result['details'][3]['applied_buffs']))
+        loop = self.axis([(1, 'probe_follow', 0), (0, 'action_elyms_ultraskilla1', 50),
+                          (1, 'action_none_dd034941ef', 100)], loop=True)
+        first = self.simulate(loop, catalog)['details'][0]
+        buff = next(b for b in first['applied_buffs'] if b['rule_id']=='character_elyms_q_atk')
+        self.assertEqual(buff['effects']['follow_dmg'], .1)

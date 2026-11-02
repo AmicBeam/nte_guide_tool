@@ -3579,14 +3579,14 @@
       if (!isCurrent()) return;
       const increase = result.increase_percent == null ? '—' : `${result.increase_percent > 0 ? '+' : ''}${formatNumber(result.increase_percent, 1)}%`;
       content.innerHTML = `
-        <div class="shaft-substat-contribution-note">保持原轴时间、时停区间和总时长不变，移除该角色的动作、被动及装备效果，重新计算队伍伤害；空出的时间不补动作；移除灵可时同时移除她转换出的同频援护，仍保留遮罩。包含其对队友、环合、倾陷和其他伤害的影响。</div>
+        <div class="shaft-substat-contribution-note">保证原轴不变，对比同属性白板，计算该角色带来的队伍 DPS 增幅。</div>
         <div class="shaft-action-analysis-kpis">
-          <div><span>角色 RDPS</span><strong>${formatNumber(result.rdps)}</strong><small>引入该角色增加的队伍 DPS</small></div>
-          <div><span>角色效能 · DPS 涨幅</span><strong>${increase}</strong><small>以移除后的 DPS 为基准</small></div>
+          <div><span>角色 RDPS</span><strong>${formatNumber(result.rdps)}</strong><small>相对白板增加的队伍 DPS</small></div>
+          <div><span>角色效能 · DPS 涨幅</span><strong>${increase}</strong><small>以白板队 DPS 为基准</small></div>
           <div><span>原队 DPS</span><strong>${formatNumber(result.full_dps)}</strong></div>
-          <div><span>移除后 DPS</span><strong>${formatNumber(result.without_dps)}</strong></div>
+          <div><span>白板队 DPS</span><strong>${formatNumber(result.without_dps)}</strong></div>
         </div>
-        <div class="shaft-substat-contribution-note">RDPS = 原队 DPS − 移除后 DPS；涨幅 = RDPS ÷ 移除后 DPS。${result.increase_percent == null ? '移除后 DPS 为 0，涨幅无可用分母，显示 —。' : ''}轴长 ${formatNumber(result.duration_seconds, 1)} 秒。按当前配装试算，不调整队友动作或补足缺失资源；角色间存在协同，各角色 RDPS 不可直接相加。</div>`;
+        <div class="shaft-substat-contribution-note">白板为80级、0环合强度；轴长 ${formatNumber(result.duration_seconds, 1)} 秒。${result.increase_percent == null ? '白板队 DPS 为0，涨幅显示 —。' : ''}</div>`;
     } catch (error) {
       if (isCurrent()) content.innerHTML = `<div class="shaft-empty">${escapeHtml(error.message || '角色效能计算失败')}</div>`;
     }

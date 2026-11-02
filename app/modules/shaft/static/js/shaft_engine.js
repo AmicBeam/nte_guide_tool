@@ -2537,6 +2537,17 @@
       const snapshot = buildSnapshot(member, catalog, teamPanelBonus);
       return [snapshot.slot, snapshot];
     }));
+    // Absent characters only participate in harmony as their original element at
+    // level 80, with zero harmony strength and no build or character effects.
+    const removedMember = originalTeam.find((member) => int(member.slot) === excludedSlot);
+    const removedCharacter = removedMember && recordMap(catalog.characters).get(removedMember.character_id);
+    const reactionGhost = removedCharacter ? {
+      slot: excludedSlot, character: {...removedCharacter, level: 80},
+      mods: {...mods(), crit_dmg: 0.5}, base_stats: {atk: 0, hp: 0, def: 0},
+      awakening_nodes: [], awakening_resonances: [], analysis_reaction_only: true,
+    } : null;
+    const reactionSnapshot = (slot) => snapshots.get(int(slot))
+      || (int(slot) === excludedSlot ? reactionGhost : null);
     const enemy = normalizeEnemy(axisPayload?.enemy);
     let enemyDebuffs = Object.assign({}, enemy.debuffs || {});
     const options = axisPayload?.options && typeof axisPayload.options === 'object' ? axisPayload.options : {};
@@ -2776,7 +2787,12 @@
           // Lingke joint supports disappear together with their panel provider.
           // The original foreground windows and time masks remain as empty space.
           scheduled.analysis_removed = true;
-          scheduled.action = {id: 'removed-character', action_type: '无', hit_count: 0,
+          scheduled.analysis_keep_reaction = int(scheduled.slot) === excludedSlot
+            && isSupportAction(scheduled.action) && scheduled.action.lingke_joint_source_slot == null;
+          scheduled.action = {id: scheduled.action.id,
+            action_type: scheduled.analysis_keep_reaction ? '援护' : '无', hit_count: 0,
+            disable_reaction: scheduled.action.disable_reaction,
+            preserve_harmony: scheduled.action.preserve_harmony,
             is_background_damage: scheduled.is_background,
             is_time_stop_zero: scheduled.action.is_time_stop_zero,
             is_timeline_mask: scheduled.action.is_timeline_mask,
@@ -2865,12 +2881,12 @@
       if (lingkeJointAwakeningEnabled(scheduled, 5)) {
         return lingkeJointTriggerSnapshot(scheduled);
       }
-      return snapshots.get(int(scheduled?.slot));
+      return reactionSnapshot(scheduled?.slot);
     }
 
     function lingkeJointReactionContext(scheduled) {
       const triggerSnapshot = lingkeJointTriggerSnapshot(scheduled);
-      const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
+      const previousSnapshot = reactionSnapshot(reactionPreviousSlot(scheduled));
       const reaction = triggerSnapshot && previousSnapshot && triggerSnapshot.slot !== previousSnapshot.slot
         ? reactionForElements(previousSnapshot.character?.element, triggerSnapshot.character?.element)
         : '';
@@ -2921,7 +2937,7 @@
       };
       scheduledSteps.forEach((scheduled) => {
         const slot = int(scheduled.slot);
-        if (!snapshots.has(slot) || scheduled.analysis_removed) return;
+        if ((!snapshots.has(slot) || scheduled.analysis_removed) && !scheduled.analysis_keep_reaction) return;
         const start = int(scheduled.start_tick);
         const duration = Math.max(0, int(scheduled.duration_ticks));
         const action = scheduled.action;
@@ -2941,7 +2957,7 @@
         if (!isSupportAction(scheduled.action)) return;
         const isLingkeAwakeningJoint = lingkeJointAwakeningEnabled(scheduled, 5);
         if (scheduled.action?.disable_reaction === true && !isLingkeAwakeningJoint) return;
-        const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
+        const previousSnapshot = reactionSnapshot(reactionPreviousSlot(scheduled));
         const supportSnapshot = reactionSupportSnapshot(scheduled);
         if (!previousSnapshot || !supportSnapshot || previousSnapshot.slot === supportSnapshot.slot) return;
         if (!reactionForElements(previousSnapshot.character?.element, supportSnapshot.character?.element)) return;
@@ -3076,6 +3092,7 @@
       if (damageEvent) damageEvent.applied_buffs = contributions.map(({buff, effects}) => ({
         ...buffSummary(buff, context), effects: {...effects},
       }));
+      if (snapshot.analysis_reaction_only) panelMods.harmony_strength = 0;
       return panelMods;
     }
 
@@ -3495,7 +3512,7 @@
       const isLingkeAwakeningJoint = lingkeJointAwakeningEnabled(scheduled, 5);
       if (scheduled.action?.disable_reaction === true && !isLingkeAwakeningJoint) return { effect: null, warning: '' };
       const supportSnapshot = reactionSupportSnapshot(scheduled);
-      const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
+      const previousSnapshot = reactionSnapshot(reactionPreviousSlot(scheduled));
       if (!supportSnapshot || !previousSnapshot) {
         return {
           effect: null,
@@ -3779,7 +3796,7 @@
     }
 
     function reactionDamageAtTick(event) {
-      const snapshot = snapshots.get(int(event.contributor_slot));
+      const snapshot = event.kind ? snapshots.get(int(event.contributor_slot)) : reactionSnapshot(event.contributor_slot);
       if (!snapshot) return 0;
       if (event.effect_id) {
         const effect = reactionEffects.find((candidate) => String(candidate.id || '') === String(event.effect_id));
@@ -4019,7 +4036,7 @@
         (candidate) => String(candidate.id || '') === String(event.effect_id || ''),
       );
       const contributorSlot = int(event.contributor_slot);
-      const snapshot = snapshots.get(contributorSlot);
+      const snapshot = reactionSnapshot(contributorSlot);
       if (!effect || !snapshot) return;
       const reactionAction = {
         id: `reaction-end:${reactionName}`,
@@ -4071,7 +4088,7 @@
             || ['浊燃', '创生', '创生复制体'].includes(reactionName);
           if (triggersPeriodicDamageBuffs && event.damage > 0) {
             const contributorSlot = int(event.contributor_slot);
-            const snapshot = snapshots.get(contributorSlot);
+            const snapshot = reactionSnapshot(contributorSlot);
             if (snapshot) {
               const isDotDamage = Boolean(event.kind) || reactionName === '浊燃';
               const periodicAction = {
@@ -4911,6 +4928,17 @@
       return addedInstances;
     }
 
+    function triggerRemovedSupportReaction(scheduled, primeLoop = false) {
+      if (!scheduled.analysis_keep_reaction) return;
+      const tick = calculationTickFromVisualIntervals(reactionTriggerTick(scheduled), qVirtualIntervals)
+        - (primeLoop ? loopDurationTicks : 0);
+      const result = triggerReaction(scheduled, tick, {primeLoop});
+      if (result.effect) triggerBuffsForEvent('reaction_trigger', tick, scheduled.step,
+        scheduled.action, reactionGhost, scheduled.is_background,
+        {reaction: result.effect, loop_prime_only: primeLoop,
+          visual_trigger_tick: reactionTriggerTick(scheduled) - (primeLoop ? loopDurationTicks : 0)});
+    }
+
     if (options.loop_enabled && loopDurationTicks > 0) {
       const configuredLoopInitialReactions = [];
       const configuredLoopInitialDots = [];
@@ -4942,7 +4970,10 @@
         const step = scheduled.step;
         const action = scheduled.action;
         const snapshot = snapshots.get(int(scheduled.slot));
-        if (!snapshot || scheduled.analysis_removed) return;
+        if (!snapshot || scheduled.analysis_removed) {
+          triggerRemovedSupportReaction(scheduled, true);
+          return;
+        }
         const startTick = int(scheduled.start_tick) - loopDurationTicks;
         const endTick = int(scheduled.end_tick) - loopDurationTicks;
         activeBuffs = activeBuffs.filter((instance) => startTick < int(instance.end_tick));
@@ -5228,6 +5259,7 @@
             {id: 'foreground_leave', action_type: '切人', tags: []}, previous, false,
             {visual_trigger_tick: int(scheduled.visual_start_tick)});
         }
+        triggerRemovedSupportReaction(scheduled);
         return;
       }
       const action = scheduled.action;
@@ -6136,6 +6168,7 @@
       }
       const isHarmonyDamage = !event.kind && HARMONY_DAMAGE_SOURCES.includes(String(event.reaction || ''));
       if (isHarmonyDamage) {
+        if (!harmonyDamageBySourceBySlot.has(slot)) harmonyDamageBySourceBySlot.set(slot, new Map());
         const sources = harmonyDamageBySourceBySlot.get(slot);
         sources.set(event.reaction, (sources.get(event.reaction) || 0) + num(event.damage));
         return;
@@ -6163,7 +6196,7 @@
           actionDamage.set(actionKey, current);
     });
     const sortedSlots = Array.from(snapshots.keys()).sort((a, b) => a - b);
-    const harmonyContributionsBySlot = sortedSlots.map((slot) => {
+    const harmonyContributionsBySlot = Array.from(harmonyDamageBySourceBySlot.keys()).sort((a, b) => a - b).map((slot) => {
       const rawSources = harmonyDamageBySourceBySlot.get(slot) || new Map();
       const sources = DAMAGE_SHARE_SOURCE_GROUPS.map((group) => ({
         source: group.source,
@@ -6174,8 +6207,8 @@
       const damage = sources.reduce((sum, item) => sum + item.damage, 0);
       return {
         slot,
-        character_id: snapshots.get(slot).character.id,
-        character_name: snapshots.get(slot).character.name,
+        character_id: reactionSnapshot(slot).character.id,
+        character_name: reactionSnapshot(slot).character.name,
         damage,
         percent: harmonyDamage > 0 ? damage / harmonyDamage * 100 : 0,
         sources: sources.map((item) => ({

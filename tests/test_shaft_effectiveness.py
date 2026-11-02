@@ -102,6 +102,74 @@ class ShaftEffectivenessTest(unittest.TestCase):
         self.assertEqual(result['analysis']['without_dps'], 0)
         self.assertIsNone(result['analysis']['increase_percent'])
 
+    def test_removed_support_retains_harmony_with_level80_zero_strength_proxy(self):
+        catalog = deepcopy(load_shaft_catalog())
+        template = catalog['characters'][0]
+        catalog['characters'] = [{**template, 'id': 'test_a', 'name': 'A', 'element': '光', 'level': 80},
+                                 {**template, 'id': 'test_b', 'name': 'B', 'element': '灵', 'level': 80}]
+        catalog['buffs'] = []
+        catalog['actions'] = [
+            dict(id='hit', character_id='test_a', name='hit', action_type='普攻',
+                 damage_type='普攻', duration_ticks=10, harmony=100, hit_count=1, multipliers={'atk': 1}),
+            dict(id='support', character_id='test_b', name='support', action_type='援护',
+                 damage_type='援护', duration_ticks=15, hit_count=1, multipliers={'atk': 2}),
+            dict(id='tail', character_id='test_a', name='tail', action_type='无',
+                 is_instant_switch=True, duration_ticks=0, hit_count=0),
+        ]
+        from tests.test_shaft_simulator import ShaftSimulatorValidationTestCase
+        bonus = deepcopy(ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS)
+        # A same-strength tie chooses the support, allowing the proxy's stats to be inspected.
+        axis = dict(team=[dict(slot=1, character_id='test_a', arc_id='', cartridge_id=''),
+                          dict(slot=3, character_id='test_b', arc_id='', cartridge_id='',
+                               substat_counts={'harmony_strength': 100})],
+                    team_panel_bonus=bonus,
+                    steps=[dict(id='a', slot=1, action_id='hit', start_tick=0),
+                           dict(id='b', slot=3, action_id='support', start_tick=20),
+                           dict(id='c', slot=1, action_id='tail', start_tick=200)])
+        for loop in (False, True):
+            axis['options'] = {'loop_enabled': loop}
+            result = self.evaluate(axis, 3, catalog)
+            self.assert_fixed_clock(result)
+            without = result['without']
+            effects = [e for e in without['reaction_effects'] if e['source_step_id'] == 'b']
+            self.assertTrue(effects)
+            self.assertEqual(effects[0]['reaction'], '创生')
+            self.assertEqual(effects[0]['contributor_slot'], 3)
+            events = [e for e in without['reaction_damage_events'] if e['damage'] > 0]
+            self.assertTrue(events)
+            self.assertTrue(all(e['formula_parts']['harmony_strength'] == 0 for e in events))
+            self.assertTrue(all(e['formula_parts']['base'] == 9000 for e in events))
+            costs = [e for e in without['harmony_events'] if e['kind'] == 'reaction_cost']
+            self.assertEqual(costs[0]['slot'], 1)
+            self.assertAlmostEqual(costs[0]['amount'], -100)
+            self.assertNotIn('b', [d['step_id'] for d in without['details']])
+            self.assertGreater(without['summary']['harmony_damage'], 0)
+            self.assertGreater(result['full']['summary']['harmony_damage'], without['summary']['harmony_damage'])
+            stronger_teammate = deepcopy(axis)
+            stronger_teammate['team'][0]['substat_counts'] = {'harmony_strength': 20}
+            shared = self.evaluate(stronger_teammate, 3, catalog)['without']
+            effect = next(e for e in shared['reaction_effects'] if e['source_step_id'] == 'b')
+            self.assertEqual(effect['contributor_slot'], 1)
+            event = next(e for e in shared['reaction_damage_events'] if e['damage'] > 0)
+            self.assertEqual(event['formula_parts']['harmony_strength'], 120)
+            for first, second, reaction in [('光', '相', '延滞'), ('灵', '咒', '覆纹'),
+                                            ('咒', '暗', '浊燃'), ('暗', '魂', '黯星'),
+                                            ('魂', '相', '浸染')]:
+                pair_catalog = deepcopy(catalog)
+                pair_catalog['characters'][0]['element'] = first
+                pair_catalog['characters'][1]['element'] = second
+                pair_result = self.evaluate(axis, 3, pair_catalog)
+                self.assert_fixed_clock(pair_result)
+                retained = next(e for e in pair_result['without']['reaction_effects']
+                                if e['source_step_id'] == 'b')
+                self.assertEqual(retained['reaction'], reaction)
+                if reaction in ('浊燃', '黯星'):
+                    event = next(e for e in pair_result['without']['reaction_damage_events']
+                                 if e['damage'] > 0)
+                    self.assertEqual(event['formula_parts']['harmony_strength'], 0)
+
+
+
     def test_negative_team_effect_is_not_clamped(self):
         catalog = deepcopy(load_shaft_catalog())
         axis = lingke_tests.LingkeSupportTest().axis()

@@ -2520,14 +2520,16 @@
     return {baseLimit, events, extraStagger, effectiveStagger, recoveryScale};
   }
 
-  function simulateAxis(axisPayload, catalog) {
+  function simulateAxis(axisPayload, catalog, analysisOptions = {}) {
     if (!catalog || typeof catalog !== 'object') {
       throw new Error('缺少排轴数据目录。');
     }
     const actionsById = recordMap(catalog.actions);
     const eventBuffSummaries = [];
-    const teamPayload = asList(axisPayload?.team).length ? asList(axisPayload.team) : asList(catalog.starter_axis?.team);
-    const steps = migrateLingkeJointSteps(Array.isArray(axisPayload?.steps) ? axisPayload.steps : asList(catalog.starter_axis?.steps), teamPayload, catalog);
+    const originalTeam = asList(axisPayload?.team).length ? asList(axisPayload.team) : asList(catalog.starter_axis?.team);
+    const excludedSlot = analysisOptions.excluded_slot;
+    const teamPayload = originalTeam.filter((member) => int(member.slot) !== excludedSlot);
+    const steps = migrateLingkeJointSteps(Array.isArray(axisPayload?.steps) ? axisPayload.steps : asList(catalog.starter_axis?.steps), originalTeam, catalog);
     validateSteps(steps, actionsById);
 
     const teamPanelBonus = normalizeTeamPanelBonus(axisPayload?.team_panel_bonus, catalog);
@@ -2764,8 +2766,24 @@
     }
     const resolvedActions = resolveLingkeSupportActions(steps, actionsById, switchLossTicks, catalog.buffs);
     const {scheduledSteps, qVirtualIntervals, loopOpeningFrontSlot} = compileActionSchedule(
-      steps.filter((step) => snapshots.has(int(step.slot))), actionsById, switchLossTicks, resolvedActions, options.loop_enabled,
+      steps.filter((step) => originalTeam.some((member) => int(member.slot) === int(step.slot))), actionsById, switchLossTicks, resolvedActions, options.loop_enabled,
     );
+    if (excludedSlot != null) {
+      // Compile the original clock once; removal must not reclaim time or masks.
+      scheduledSteps.forEach((scheduled) => {
+        if (int(scheduled.slot) === excludedSlot
+          || scheduled.action.lingke_joint_source_slot === excludedSlot) {
+          // Lingke joint supports disappear together with their panel provider.
+          // The original foreground windows and time masks remain as empty space.
+          scheduled.analysis_removed = true;
+          scheduled.action = {id: 'removed-character', action_type: '无', hit_count: 0,
+            is_background_damage: scheduled.is_background,
+            is_time_stop_zero: scheduled.action.is_time_stop_zero,
+            is_timeline_mask: scheduled.action.is_timeline_mask,
+            is_instant_switch: switchesForeground(scheduled.step, scheduled.action)};
+        }
+      });
+    }
     const scheduledLastTick = Math.max(
       0,
       ...scheduledSteps
@@ -2903,6 +2921,7 @@
       };
       scheduledSteps.forEach((scheduled) => {
         const slot = int(scheduled.slot);
+        if (!snapshots.has(slot) || scheduled.analysis_removed) return;
         const start = int(scheduled.start_tick);
         const duration = Math.max(0, int(scheduled.duration_ticks));
         const action = scheduled.action;
@@ -4923,7 +4942,7 @@
         const step = scheduled.step;
         const action = scheduled.action;
         const snapshot = snapshots.get(int(scheduled.slot));
-        if (!snapshot) return;
+        if (!snapshot || scheduled.analysis_removed) return;
         const startTick = int(scheduled.start_tick) - loopDurationTicks;
         const endTick = int(scheduled.end_tick) - loopDurationTicks;
         activeBuffs = activeBuffs.filter((instance) => startTick < int(instance.end_tick));
@@ -5187,7 +5206,30 @@
       const step = scheduled.step;
       const slot = int(scheduled.slot);
       const snapshot = snapshots.get(slot);
-      if (!snapshot) return;
+      if (!snapshot || scheduled.analysis_removed) {
+        if (excludedSlot != null && switchesForeground(step, scheduled.action)) {
+          const tick = int(scheduled.start_tick);
+          const previousSlot = runtimeFrontSlot;
+          const previous = snapshots.get(previousSlot);
+          settleActionEnergy(tick);
+          settleActionHarmony(tick);
+          runtimeFrontSlot = slot; // Vacant: no snapshot exists for this slot.
+          runtimeFrontSinceTick = tick;
+          settlePersonalResourceDrains(tick);
+          settlePeriodicHealing(tick);
+          settleReactionDamage(tick);
+          activeBuffs = activeBuffs.filter((buff) => tick < int(buff.end_tick)
+            && !activeBuffResetsOnActionStart(buff, step, scheduled.action, false, tick,
+              previousSlot, int(scheduled.visual_start_tick)));
+          syncBuffLayerResources(tick);
+          syncFrontTimeBuffs(tick);
+          if (previous) triggerBuffsForEvent('foreground_leave', tick,
+            {id: String(step.id || ''), slot: previousSlot},
+            {id: 'foreground_leave', action_type: '切人', tags: []}, previous, false,
+            {visual_trigger_tick: int(scheduled.visual_start_tick)});
+        }
+        return;
+      }
       const action = scheduled.action;
       periodicDamageWindows
         .filter((window) => String(window.step_id || '') === String(step.id || ''))
@@ -6278,6 +6320,29 @@
     };
   }
 
+  function analyzeCharacterEffectiveness(axisPayload, catalog, options = {}) {
+    const slot = Number(options.slot);
+    const member = asList(axisPayload?.team).find((item) => int(item.slot) === slot);
+    if (options.slot == null || !Number.isInteger(slot) || !member) {
+      throw new Error('请选择队伍中的角色分析效能。');
+    }
+    if (!asList(axisPayload?.steps).length) throw new Error('请先在动作轴中添加动作。');
+    const full = simulateAxis(axisPayload, catalog);
+    const without = simulateAxis(axisPayload, catalog, {excluded_slot: slot});
+    const duration = num(full.summary.duration_seconds);
+    const divisor = Math.max(duration, 0.1);
+    const fullDps = num(full.summary.total_damage) / divisor;
+    const withoutDps = num(without.summary.total_damage) / divisor;
+    const rdps = fullDps - withoutDps;
+    return {
+      slot, duration_seconds: duration,
+      full_dps: fullDps, without_dps: withoutDps, rdps,
+      increase_percent: withoutDps > 0 ? rdps / withoutDps * 100 : null,
+      full_total_damage: num(full.summary.total_damage),
+      without_total_damage: num(without.summary.total_damage),
+    };
+  }
+
   const SUBSTAT_CONTRIBUTION_FIELDS = [
     { key: 'all_dmg', label: '通伤' },
     { key: 'crit_rate', label: '暴击' },
@@ -6383,5 +6448,6 @@
     buildPanelProjection,
     simulateAxis,
     analyzeSubstatContributions,
+    analyzeCharacterEffectiveness,
   };
 }));

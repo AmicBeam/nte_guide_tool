@@ -3224,8 +3224,9 @@
           <button class="${actionAnalysisState.dimension === 'action' ? 'is-active' : ''}" data-analysis-dimension="action" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'action'}">动作明细</button>
           <button class="${actionAnalysisState.dimension === 'type' ? 'is-active' : ''}" data-analysis-dimension="type" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'type'}">合并伤害类型</button>
           <button class="${actionAnalysisState.dimension === 'substats' ? 'is-active' : ''}" data-analysis-dimension="substats" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'substats'}">副词条贡献度</button>
+          <button class="${actionAnalysisState.dimension === 'effectiveness' ? 'is-active' : ''}" data-analysis-dimension="effectiveness" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'effectiveness'}">角色效能</button>
         </div>
-        ${actionAnalysisState.dimension !== 'substats' ? `<div class="shaft-action-analysis-switch shaft-action-analysis-view-switch" aria-label="图表类型">
+        ${!['substats', 'effectiveness'].includes(actionAnalysisState.dimension) ? `<div class="shaft-action-analysis-switch shaft-action-analysis-view-switch" aria-label="图表类型">
           <button class="${actionAnalysisState.view === 'donut' ? 'is-active' : ''}" data-analysis-view="donut" type="button">环形占比</button>
           <button class="${actionAnalysisState.view === 'bars' ? 'is-active' : ''}" data-analysis-view="bars" type="button">排行条形</button>
         </div>` : ''}
@@ -3242,6 +3243,11 @@
     const toolbar = actionAnalysisToolbar();
     const requestId = (actionAnalysisState.requestId || 0) + 1;
     actionAnalysisState.requestId = requestId;
+    if (actionAnalysisState.dimension === 'effectiveness') {
+      content.innerHTML = `${toolbar}<div data-effectiveness-analysis aria-live="polite"><div class="shaft-empty">正在计算角色效能…</div></div>`;
+      calculateCharacterEffectiveness(actionAnalysisState.slot, requestId);
+      return;
+    }
     if (actionAnalysisState.dimension === 'substats') {
       content.innerHTML = `${toolbar}<div data-substat-analysis aria-live="polite"><div class="shaft-empty">正在计算11组副词条方案…</div></div>`;
       calculateCharacterSubstats(actionAnalysisState.slot, requestId);
@@ -3559,6 +3565,31 @@
         </div>
       ` : '<div class="shaft-empty">当前轴中没有可产生正向总伤提升的词条组合。</div>'}
     `;
+  }
+
+  async function calculateCharacterEffectiveness(slot, requestId) {
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    const isCurrent = () => actionAnalysisState.requestId === requestId
+      && actionAnalysisState.slot === slot && actionAnalysisState.dimension === 'effectiveness'
+      && $('shaft-action-contribution-dialog')?.open;
+    if (!isCurrent()) return;
+    const content = $('shaft-action-contribution-content').querySelector('[data-effectiveness-analysis]');
+    try {
+      const result = window.ShaftEngine.analyzeCharacterEffectiveness(state.axis, state.catalog, {slot});
+      if (!isCurrent()) return;
+      const increase = result.increase_percent == null ? '—' : `${result.increase_percent > 0 ? '+' : ''}${formatNumber(result.increase_percent, 1)}%`;
+      content.innerHTML = `
+        <div class="shaft-substat-contribution-note">保持原轴时间、时停区间和总时长不变，移除该角色的动作、被动及装备效果，重新计算队伍伤害；空出的时间不补动作；移除灵可时同时移除她转换出的同频援护，仍保留遮罩。包含其对队友、环合、倾陷和其他伤害的影响。</div>
+        <div class="shaft-action-analysis-kpis">
+          <div><span>角色 RDPS</span><strong>${formatNumber(result.rdps)}</strong><small>引入该角色增加的队伍 DPS</small></div>
+          <div><span>角色效能 · DPS 涨幅</span><strong>${increase}</strong><small>以移除后的 DPS 为基准</small></div>
+          <div><span>原队 DPS</span><strong>${formatNumber(result.full_dps)}</strong></div>
+          <div><span>移除后 DPS</span><strong>${formatNumber(result.without_dps)}</strong></div>
+        </div>
+        <div class="shaft-substat-contribution-note">RDPS = 原队 DPS − 移除后 DPS；涨幅 = RDPS ÷ 移除后 DPS。${result.increase_percent == null ? '移除后 DPS 为 0，涨幅无可用分母，显示 —。' : ''}轴长 ${formatNumber(result.duration_seconds, 1)} 秒。按当前配装试算，不调整队友动作或补足缺失资源；角色间存在协同，各角色 RDPS 不可直接相加。</div>`;
+    } catch (error) {
+      if (isCurrent()) content.innerHTML = `<div class="shaft-empty">${escapeHtml(error.message || '角色效能计算失败')}</div>`;
+    }
   }
 
   async function calculateCharacterSubstats(slot, requestId) {
@@ -9264,7 +9295,7 @@
       }
       const dimensionButton = event.target.closest('[data-analysis-dimension]');
       if (dimensionButton) {
-        actionAnalysisState.dimension = ['type', 'substats'].includes(dimensionButton.dataset.analysisDimension)
+        actionAnalysisState.dimension = ['type', 'substats', 'effectiveness'].includes(dimensionButton.dataset.analysisDimension)
           ? dimensionButton.dataset.analysisDimension : 'action';
         renderActionContributionAnalysis();
         return;

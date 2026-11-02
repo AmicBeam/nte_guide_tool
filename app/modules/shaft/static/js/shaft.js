@@ -3577,18 +3577,29 @@
     try {
       const result = window.ShaftEngine.analyzeCharacterEffectiveness(state.axis, state.catalog, {slot});
       if (!isCurrent()) return;
-      const increase = result.increase_percent == null ? '—' : `${result.increase_percent > 0 ? '+' : ''}${formatNumber(result.increase_percent, 1)}%`;
+      const percentText = (value) => value == null ? '—' : `${value > 0 ? '+' : ''}${formatNumber(value, 1)}%`;
+      const contributionCard = (title, percent, dps, damage) => `
+        <article class="shaft-effectiveness-contribution">
+          <h3>${title}</h3>
+          <strong class="${percent > 0 ? 'is-positive' : percent < 0 ? 'is-negative' : ''}">${percentText(percent)}</strong>
+          <span>占原队 DPS</span>
+          <dl><div><dt>DPS 收益</dt><dd>${formatNumber(dps)}</dd></div><div><dt>伤害收益</dt><dd>${formatNumber(damage)}</dd></div></dl>
+        </article>`;
       content.innerHTML = `
         <div class="shaft-substat-contribution-note">保证原轴不变，对比同属性白板，计算该角色带来的队伍 DPS 增幅。</div>
         <div class="shaft-action-analysis-kpis shaft-character-effectiveness-kpis">
-          <div><span>角色 RDPS</span><strong>${formatNumber(result.rdps)}</strong><small>相对白板增加的队伍 DPS</small></div>
-          <div><span>角色效能 · DPS 涨幅</span><strong>${increase}</strong><small>以白板队 DPS 为基准</small></div>
-          <div><span>伤害贡献 · DPS</span><strong>${formatNumber(result.direct_contribution_dps)}</strong><small>自身伤害收益 ${formatNumber(result.direct_contribution_damage)}</small></div>
-          <div><span>拐力 · DPS</span><strong>${formatNumber(result.support_dps)}</strong><small>队友伤害收益 ${formatNumber(result.support_damage)}</small></div>
-          <div><span>原队 DPS</span><strong>${formatNumber(result.full_dps)}</strong></div>
-          <div><span>白板队 DPS</span><strong>${formatNumber(result.without_dps)}</strong></div>
+          <div class="shaft-effectiveness-total"><span>角色 RDPS</span><strong>${formatNumber(result.rdps)}</strong><small>相对白板增加的队伍 DPS</small></div>
+          <div><span>角色效能 · DPS 涨幅</span><strong>${percentText(result.increase_percent)}</strong><small>以白板队 DPS 为基准</small></div>
         </div>
-        <div class="shaft-substat-contribution-note">白板为80级、0环合强度；轴长 ${formatNumber(result.duration_seconds, 1)} 秒。${result.increase_percent == null ? '白板队 DPS 为0，涨幅显示 —。' : ''}</div>`;
+        <section class="shaft-effectiveness-breakdown" aria-label="细分贡献">
+          ${contributionCard('伤害贡献', result.direct_contribution_percent, result.direct_contribution_dps, result.direct_contribution_damage)}
+          ${contributionCard('拐力', result.support_percent, result.support_dps, result.support_damage)}
+        </section>
+        <dl class="shaft-effectiveness-baseline">
+          <div><dt>原队 DPS</dt><dd>${formatNumber(result.full_dps)}</dd></div>
+          <div><dt>白板队 DPS</dt><dd>${formatNumber(result.without_dps)}</dd></div>
+        </dl>
+        <div class="shaft-substat-contribution-note">白板为80级、0环合强度；轴长 ${formatNumber(result.duration_seconds, 1)} 秒。${result.increase_percent == null ? '白板队 DPS 为0，涨幅显示 —。' : ''}${result.full_dps === 0 ? '原队 DPS 为0，细分比例显示 —。' : ''}</div>`;
     } catch (error) {
       if (isCurrent()) content.innerHTML = `<div class="shaft-empty">${escapeHtml(error.message || '角色效能计算失败')}</div>`;
     }

@@ -42,6 +42,15 @@ class ShaftEffectivenessTest(unittest.TestCase):
                                full['summary']['total_damage'] - without['summary']['total_damage'])
         self.assertAlmostEqual(analysis['direct_contribution_damage'],
                                analysis['full_self_damage'] - analysis['blank_self_damage'])
+        if analysis['full_dps'] > 0:
+            self.assertAlmostEqual(analysis['direct_contribution_percent'],
+                                   analysis['direct_contribution_dps'] / analysis['full_dps'] * 100)
+            self.assertAlmostEqual(analysis['support_percent'],
+                                   analysis['support_dps'] / analysis['full_dps'] * 100)
+        else:
+            self.assertIsNone(analysis['direct_contribution_percent'])
+            self.assertIsNone(analysis['support_percent'])
+
 
 
     def test_removed_mask_and_tail_keep_damage_timing_and_loop_period(self):
@@ -225,6 +234,15 @@ class ShaftEffectivenessTest(unittest.TestCase):
                 self.assertAlmostEqual(analysis['support_damage'], peer_baseline * modifier)
                 self.assertAlmostEqual(analysis['support_dps'], peer_baseline * modifier /
                                        result['full']['summary']['duration_seconds'])
+
+    def test_zero_original_dps_has_no_contribution_percentages(self):
+        axis = lingke_tests.LingkeSupportTest().axis()
+        axis['steps'] = [dict(id='selection', slot=0, action_id='action_lingke_time_stop_select', start_tick=0)]
+        result = self.evaluate(axis, 0)
+        self.assert_fixed_clock(result)
+        self.assertEqual(result['analysis']['full_dps'], 0)
+        self.assertIsNone(result['analysis']['direct_contribution_percent'])
+        self.assertIsNone(result['analysis']['support_percent'])
 
     def test_unknown_slot_and_empty_axis_rejected(self):
         script = """

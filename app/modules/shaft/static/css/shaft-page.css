@@ -1893,6 +1893,93 @@ body:has(.shaft-page) .shell {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.shaft-character-effectiveness-kpis > .shaft-effectiveness-total {
+    border-color: rgba(103, 213, 213, 0.3);
+    background: linear-gradient(135deg, rgba(103, 213, 213, 0.13), rgba(103, 213, 213, 0.025));
+}
+
+.shaft-effectiveness-breakdown {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.shaft-effectiveness-contribution {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.035);
+}
+
+.shaft-effectiveness-contribution h3 {
+    margin: 0 0 10px;
+    color: var(--text);
+    font-size: 13px;
+}
+
+.shaft-effectiveness-contribution > strong {
+    display: block;
+    font-size: clamp(22px, 4vw, 30px);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.shaft-effectiveness-contribution > span,
+.shaft-effectiveness-contribution dt,
+.shaft-effectiveness-baseline dt {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.shaft-effectiveness-contribution .is-positive { color: #72e6ad; }
+.shaft-effectiveness-contribution .is-negative { color: #ff8e92; }
+
+.shaft-effectiveness-contribution dl {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.shaft-effectiveness-contribution dl > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 8px;
+}
+
+.shaft-effectiveness-contribution dd,
+.shaft-effectiveness-baseline dd {
+    margin: 0;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.shaft-effectiveness-baseline {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0 0 12px;
+    padding: 12px 16px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.025);
+}
+
+.shaft-effectiveness-baseline > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 8px;
+    min-width: 0;
+}
+
 .shaft-action-analysis-kpis > div {
     display: grid;
     gap: 4px;

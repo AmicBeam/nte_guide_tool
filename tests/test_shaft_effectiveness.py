@@ -12,20 +12,29 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ShaftEffectivenessTest(unittest.TestCase):
-    def evaluate(self, axis, slot, catalog=None):
+    def evaluate(self, axis, slot, catalog=None, inspect_variants=False):
         script = """
           const e = require('./app/modules/shaft/static/js/shaft_engine.js');
-          const {axis, catalog, slot} = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+          const {axis, catalog, slot, inspect_variants} = JSON.parse(require('fs').readFileSync(0, 'utf8'));
           const before = JSON.stringify({axis, catalog});
           const full = e.simulateAxis(axis, catalog);
           const without = e.simulateAxis(axis, catalog, {excluded_slot: slot});
           const analysis = e.analyzeCharacterEffectiveness(axis, catalog, {slot});
-          console.log(JSON.stringify({full, without, analysis,
+          const captured = inspect_variants ? e.simulateAxis(axis, catalog, {capture_self_reactions: true}) : null;
+          const variant_results = inspect_variants ? analysis.reaction_variants.map(row => ({
+            retained: row.retained_reactions,
+            result: e.simulateAxis(axis, catalog, {excluded_slot: slot,
+              retained_self_reactions: row.retained_reactions,
+              self_reaction_applications: captured.self_reaction_applications.filter(item => item.slot === slot
+                && item.tick <= captured.summary.duration_ticks)}),
+          })) : [];
+          console.log(JSON.stringify({full, without, analysis, variant_results,
             unchanged: before === JSON.stringify({axis, catalog})}));
         """
         return json.loads(subprocess.check_output(
             ['node', '-e', script], cwd=ROOT, text=True, timeout=30,
-            input=json.dumps(dict(axis=axis, catalog=catalog or load_shaft_catalog(), slot=slot))))
+            input=json.dumps(dict(axis=axis, catalog=catalog or load_shaft_catalog(), slot=slot,
+                                 inspect_variants=inspect_variants))))
 
     def assert_fixed_clock(self, result):
         full, without, analysis = (result[k] for k in ('full', 'without', 'analysis'))
@@ -243,6 +252,112 @@ class ShaftEffectivenessTest(unittest.TestCase):
         self.assertEqual(result['analysis']['full_dps'], 0)
         self.assertIsNone(result['analysis']['direct_contribution_percent'])
         self.assertIsNone(result['analysis']['support_percent'])
+
+    def test_all_self_reaction_combinations_include_attack_and_passive_sources(self):
+        catalog = deepcopy(load_shaft_catalog())
+        template = catalog['characters'][0]
+        catalog['characters'] = [{**template, 'id': 'self', 'name': 'self', 'element': '光'},
+                                 {**template, 'id': 'peer', 'name': 'peer', 'element': '魂'}]
+        catalog['actions'] = [
+            dict(id='self', character_id='self', name='self attack', action_type='普攻',
+                 damage_type='普攻', duration_ticks=10, hit_count=1, tags=['延滞'], multipliers={'atk': 1}),
+            dict(id='peer', character_id='peer', name='peer attack', action_type='普攻',
+                 damage_type='普攻', duration_ticks=10, hit_count=1, multipliers={'atk': 1}),
+            dict(id='tail', character_id='peer', name='tail', action_type='无', duration_ticks=0,
+                 is_instant_switch=True, hit_count=0),
+        ]
+        catalog['buffs'] = [dict(
+            id='pulse_'+reaction, name='pulse '+reaction,
+            providers=[dict(kind='character', id='self')],
+            trigger=dict(event='action_start', source=dict(scope='registrar', action_types=['普攻'])),
+            target=dict(scope='self'), duration=dict(type='time', ticks=100, loop_carry=True),
+            effects={}, reaction_pulse=dict(reaction=reaction, interval_ticks=10))
+            for reaction in ('创生', '浸染')]
+        axis = dict(team=[dict(slot=0, character_id='self', arc_id='', cartridge_id='',
+                               substat_counts={'harmony_strength': 100}),
+                          dict(slot=1, character_id='peer', arc_id='', cartridge_id='')],
+                    steps=[dict(id='self', slot=0, action_id='self', start_tick=0),
+                           dict(id='peer', slot=1, action_id='peer', start_tick=30),
+                           dict(id='tail', slot=1, action_id='tail', start_tick=100)])
+        for loop in (False, True):
+            axis['options'] = {'loop_enabled': loop}
+            result = self.evaluate(axis, 0, catalog, inspect_variants=True)
+            self.assert_fixed_clock(result)
+            analysis = result['analysis']
+            self.assertEqual(set(analysis['self_reaction_types']), {'创生', '延滞', '浸染'})
+            self.assertEqual(len(analysis['reaction_variants']), 8)
+            combinations = [frozenset(row['retained_reactions']) for row in analysis['reaction_variants']]
+            self.assertEqual(len(set(combinations)), 8)
+            self.assertEqual(sum(len(g['combinations']) for g in analysis['reaction_variant_groups']), 8)
+            self.assertGreater(len(analysis['reaction_variant_groups']), 1)
+            self.assertLess(len(analysis['reaction_variant_groups']), 8)
+            by_combination = {frozenset(row['retained_reactions']): row for row in analysis['reaction_variants']}
+            self.assertGreater(by_combination[frozenset({'创生'})]['without_dps'], analysis['without_dps'])
+            self.assertGreater(by_combination[frozenset({'浸染'})]['without_dps'], analysis['without_dps'])
+            for variant in result['variant_results']:
+                candidate = variant['result']
+                self.assertEqual(candidate['time_axis'], result['full']['time_axis'])
+                self.assertFalse(any(d['slot'] == 0 for d in candidate['details']))
+                expected = by_combination[frozenset(variant['retained'])]
+                self.assertAlmostEqual(expected['without_dps'], candidate['summary']['dps'])
+                events = [e for e in candidate['reaction_damage_events'] if e['damage'] > 0]
+                self.assertTrue(all(e['panel']['harmony_strength'] == 0 for e in events))
+
+    def test_loop_initial_self_reaction_enumeration(self):
+        axis = lingke_tests.LingkeSupportTest().axis()
+        axis['steps'] = [dict(id='tail', slot=1,
+                              action_id=axis['steps'][1]['action_id'], start_tick=150)]
+        axis['options'] = dict(loop_enabled=True, loop_initial_resources={
+            axis['team'][0]['character_id']: {'reaction': '创生'}})
+        result = self.evaluate(axis, 0, inspect_variants=True)
+        self.assertEqual(result['analysis']['self_reaction_types'], ['创生'])
+        self.assertEqual(len(result['analysis']['reaction_variants']), 2)
+        self.assertGreater(result['analysis']['reaction_variants'][1]['without_dps'],
+                           result['analysis']['reaction_variants'][0]['without_dps'])
+        retained = result['variant_results'][1]['result']
+        self.assertEqual(retained['time_axis'], result['full']['time_axis'])
+        self.assertTrue(any(e['contributor_slot'] == 0 for e in retained['reaction_damage_events']))
+
+    def test_real_echo_pulse_and_creation_clone_providers_are_enumerated(self):
+        catalog = load_shaft_catalog()
+        def char(name):
+            return next(c['id'] for c in catalog['characters'] if c['name'] == name)
+        def action(name, move):
+            return next(a['id'] for a in catalog['actions'] if a['character_id'] == char(name) and a['name'] == move)
+        cartridge = next(c['id'] for c in catalog['cartridges'] if c['name'] == '街头拳王')
+        fixtures = [
+            (['曳尔沐', '哈索尔'], [('曳尔沐', 'e1', 0), ('哈索尔', '援护', 20), ('哈索尔', 'e', 200)], '延滞'),
+            (['明音凛', '主角'], [('明音凛', 'e', 0), ('主角', '援护', 20), ('主角', 'e', 300)], '延滞'),
+            (['伊洛伊', '主角', '薄荷'], [('主角', 'e', 0), ('薄荷', '援护', 20), ('主角', 'e', 200)], '创生'),
+            (['黑羽', '安魂曲', '海月'], [('安魂曲', 'e', 0), ('海月', '援护', 20), ('海月', 'e', 200)], '黯星'),
+        ]
+        for names, moves, reaction in fixtures:
+            axis = dict(team=[dict(slot=i, character_id=char(name), arc_id='',
+                                   cartridge_id=cartridge if i == 1 else '') for i, name in enumerate(names)],
+                        steps=[dict(id=str(i), slot=names.index(name), action_id=action(name, move), start_tick=tick)
+                               for i, (name, move, tick) in enumerate(moves)])
+            result = self.evaluate(axis, 0, inspect_variants=True)
+            self.assertIn(reaction, result['analysis']['self_reaction_types'])
+            retained = next(v for v in result['variant_results'] if v['retained'] == [reaction])['result']
+            self.assertEqual(retained['time_axis'], result['full']['time_axis'])
+            if reaction == '创生':
+                copies = [e for e in retained['reaction_effects'] if e['reaction'] == '创生复制体']
+                self.assertTrue(copies)
+                original = next(e for e in result['full']['reaction_effects'] if e['reaction'] == '创生复制体')
+                self.assertEqual(copies[0]['contributor_slot'], original['contributor_slot'])
+                full_copy_damage = sum(e['damage'] for e in result['full']['reaction_damage_events']
+                                       if e['reaction'] == '创生复制体')
+                kept_copy_damage = sum(e['damage'] for e in retained['reaction_damage_events']
+                                       if e['reaction'] == '创生复制体')
+                self.assertAlmostEqual(full_copy_damage, kept_copy_damage)
+            elif reaction == '黯星':
+                original = next(e for e in result['full']['reaction_effects'] if e.get('heiyu_extra'))
+                recreated = next(e for e in retained['reaction_effects']
+                                 if e['reaction'] == '黯星' and e['start_tick'] == original['start_tick'])
+                self.assertEqual(recreated['contributor_slot'], original['contributor_slot'])
+                self.assertGreater(sum(e['damage'] for e in retained['reaction_damage_events']), 0)
+            else:
+                self.assertTrue(any(e['contributor_slot'] == 0 for e in retained['reaction_effects']))
 
     def test_unknown_slot_and_empty_axis_rejected(self):
         script = """

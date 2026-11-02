@@ -2972,6 +2972,15 @@
     let activeBuffs = [];
     const buffTriggerCooldowns = new Map();
     const reactionEffects = [];
+    const selfReactionApplications = [];
+    const retainedSelfReactions = new Set(asList(analysisOptions.retained_self_reactions));
+    const retainedApplications = asList(analysisOptions.self_reaction_applications)
+      .filter((entry) => retainedSelfReactions.has(entry.reaction) && entry.kind !== 'initial');
+    function recordSelfReaction(reaction, snapshot, tick, kind, source = '', stepId = '', details = {}) {
+      if (analysisOptions.capture_self_reactions && snapshot && REACTION_DURATIONS[reaction]) {
+        selfReactionApplications.push({reaction, slot: snapshot.slot, tick: int(tick), kind, source, step_id: String(stepId || ''), ...details});
+      }
+    }
     const staggerReactionApplications = [];
     function recordStaggerReaction(effect) {
       if (['黯星', '浊燃'].includes(effect.reaction)) {
@@ -3664,6 +3673,7 @@
             loop_primed: primeLoop,
           };
           nextReactionEffectId += 1;
+          recordSelfReaction('创生', iloy, cloneEffect.start_tick, 'clone', '创生复制体', '', {contributor_slot: effect.contributor_slot});
           reactionEffects.push(cloneEffect);
           cloneDamageTicks.forEach((damageTick, index) => {
             reactionDamageEvents.push({
@@ -3689,9 +3699,10 @@
       return { effect, warning: underfundedWarning };
     }
 
-    function seedLoopInitialReaction(reaction, snapshot, startTick = 0) {
+    function seedLoopInitialReaction(reaction, snapshot, startTick = 0, origin = {}) {
       const durationTicks = Math.max(0, reaction === '延滞' ? enemyDebuffDurationTicks(reaction) : int(REACTION_DURATIONS[reaction]));
       if (!durationTicks || !snapshot) return null;
+      recordSelfReaction(reaction, snapshot, startTick, origin.kind || 'initial', origin.source || '循环起始');
       const instanceLimit = Math.max(1, int(REACTION_INSTANCE_LIMITS[reaction], 1));
       if (reaction === '黯星' && startTick >= 0) settleReactionDamage(startTick);
       const activeEffects = activeReactionEffectsAtTick(reaction, startTick)
@@ -3770,6 +3781,7 @@
           damage_ticks: cloneDamageTicks,
         };
         nextReactionEffectId += 1;
+        recordSelfReaction('创生', iloySnapshot(), cloneEffect.start_tick, 'clone', '创生复制体', '', {contributor_slot: effect.contributor_slot});
         reactionEffects.push(cloneEffect);
         cloneDamageTicks.forEach((damageTick, index) => {
           reactionDamageEvents.push({
@@ -3795,7 +3807,51 @@
       return effect;
     }
 
+    function applyRetainedSelfReaction(application) {
+      if (!reactionGhost) return;
+      const tick = int(application.tick);
+      if (application.kind === 'status') {
+        enemyDebuffs[application.reaction] = Math.max(int(enemyDebuffs[application.reaction]),
+          tick + enemyDebuffDurationTicks(application.reaction));
+        return;
+      }
+      // A provider can create a copy/recast whose original damage owner is a teammate.
+      const contributor = reactionSnapshot(application.contributor_slot ?? excludedSlot) || reactionGhost;
+      let effect;
+      if (application.kind === 'clone') {
+        const damageTicks = evenlySpacedDamageTicks(tick, 100, 20);
+        effect = {id: `reaction_${nextReactionEffectId++}`, reaction: '创生复制体', source_reaction: '创生',
+          source_step_id: '', support_slot: -1, previous_slot: -1,
+          contributor_slot: contributor.slot, contributor_character_id: contributor.character.id,
+          contributor_character_name: contributor.character.name, trigger_slot: contributor.slot,
+          start_tick: tick, end_tick: tick + 100, duration_ticks: 100,
+          damage_ticks: damageTicks, damage_scale: 0.375, frequency_multiplier: teamHasJiuyuan() ? 2 : 1};
+        reactionEffects.push(effect);
+        damageTicks.forEach((damageTick, index) => reactionDamageEvents.push({
+          effect_id: effect.id, reaction: effect.reaction, source_reaction: '创生', tick: damageTick,
+          sequence: index + 1, contributor_slot: contributor.slot,
+          contributor_character_id: contributor.character.id, contributor_character_name: contributor.character.name,
+          damage_scale: 0.375, frequency_multiplier: effect.frequency_multiplier, damage: null,
+        }));
+      } else {
+        effect = seedLoopInitialReaction(application.reaction, contributor, tick, {kind: 'retained'});
+        if (effect) {
+          effect.loop_initial = false;
+          effect.is_echo = application.kind === 'echo';
+        }
+      }
+      if (effect && !['clone', 'recast'].includes(application.kind)) triggerBuffsForEvent('reaction_trigger', tick,
+        {id: 'retained-self-reaction', slot: excludedSlot},
+        {id: 'retained-self-reaction', action_type: '被动', hit_count: 0}, reactionGhost, true,
+        {reaction: effect, loop_prime_only: tick < 0});
+    }
+
     function reactionDamageAtTick(event) {
+      if (event.kind === 'analysis_retained_reaction') {
+        event.damage = 0; // A dark-star application can settle the queue recursively.
+        applyRetainedSelfReaction(event.application);
+        return 0;
+      }
       const snapshot = event.kind ? snapshots.get(int(event.contributor_slot)) : reactionSnapshot(event.contributor_slot);
       if (!snapshot) return 0;
       if (event.effect_id) {
@@ -3808,7 +3864,7 @@
         ) return 0;
       }
       if (event.kind === 'reaction_echo') {
-        const effect = seedLoopInitialReaction(event.reaction, snapshot, int(event.tick));
+        const effect = seedLoopInitialReaction(event.reaction, snapshot, int(event.tick), {kind: 'echo', source: '延滞回响'});
         if (effect) {
           effect.loop_initial = false;
           effect.is_echo = true;
@@ -3825,7 +3881,7 @@
         const pulse = instance.rule.reaction_pulse;
         const unlocked = reactionUnlocks.get(`${snapshot.slot}:${pulse.reaction}`);
         if (pulse.requires_reaction_unlock && (unlocked == null || int(event.tick) < unlocked)) return 0;
-        const effect = seedLoopInitialReaction(pulse.reaction, snapshot, int(event.tick));
+        const effect = seedLoopInitialReaction(pulse.reaction, snapshot, int(event.tick), {kind: 'pulse', source: instance.name});
         if (effect) {
           effect.loop_initial = false;
           effect.is_reapplication = pulse.requires_reaction_unlock === true;
@@ -4013,6 +4069,8 @@
         const original = reactionEffects.find((effect) => effect.id === event.effect_id);
         if (original && !original.heiyu_extra) {
           const start = int(event.tick);
+          const provider = Array.from(snapshots.values()).find((item) => item.character?.id === HEIYU_CHARACTER_ID);
+          recordSelfReaction('黯星', provider, start, 'recast', '黯星续生', '', {contributor_slot: original.contributor_slot});
           const extra = {...original, id: `reaction_${nextReactionEffectId++}`, start_tick: start,
             end_tick: start + 50, duration_ticks: 50, damage_ticks: [start + 50], heiyu_extra: true,
             heiyu_parent_id: original.id, source_step_id: '', evicted_by_instance_limit: false,
@@ -4084,7 +4142,7 @@
             event.triggered_buffs = triggerBuffsForEvent('action_hit', int(event.tick),
               {id: event.action_id, slot: snapshot.slot}, event._action, snapshot, true);
           }
-          const triggersPeriodicDamageBuffs = (Boolean(event.kind) && !['passive_settlement', 'triggered_damage', 'reaction_pulse'].includes(event.kind))
+          const triggersPeriodicDamageBuffs = (Boolean(event.kind) && !['passive_settlement', 'triggered_damage', 'reaction_pulse', 'analysis_retained_reaction'].includes(event.kind))
             || ['浊燃', '创生', '创生复制体'].includes(reactionName);
           if (triggersPeriodicDamageBuffs && event.damage > 0) {
             const contributorSlot = int(event.contributor_slot);
@@ -4942,10 +5000,12 @@
     if (options.loop_enabled && loopDurationTicks > 0) {
       const configuredLoopInitialReactions = [];
       const configuredLoopInitialDots = [];
-      snapshots.forEach((snapshot) => {
+      originalTeam.forEach((member) => {
+        const snapshot = reactionSnapshot(member.slot);
+        if (!snapshot) return;
         const configured = loopInitialResources[String(snapshot.character?.id || '')];
         const reaction = configured && typeof configured === 'object' ? String(configured.reaction || '') : '';
-        if (reaction) {
+        if (reaction && (!snapshot.analysis_reaction_only || retainedSelfReactions.has(reaction))) {
           configuredLoopInitialReactions.push({reaction, snapshot});
           seedLoopInitialReaction(reaction, snapshot, -loopDurationTicks);
         }
@@ -5062,6 +5122,8 @@
             instance.looped = true;
           });
       });
+      retainedApplications.filter((entry) => int(entry.tick) < 0)
+        .sort((a, b) => int(a.tick) - int(b.tick)).forEach(applyRetainedSelfReaction);
       reactionDamageEvents
         .filter((event) => int(event.tick) < 0)
         .sort((left, right) => int(left.tick) - int(right.tick) || int(left.sequence) - int(right.sequence))
@@ -5140,6 +5202,11 @@
         seedLoopInitialDot(dotConfig, dotConfig.snapshot, dotConfig.layers, 0);
       });
     }
+
+    retainedApplications.filter((entry) => int(entry.tick) >= 0 && entry.kind !== 'status').forEach((application) => {
+      reactionDamageEvents.push({kind: 'analysis_retained_reaction', reaction: application.reaction,
+        tick: int(application.tick), sequence: -1, application, damage: null});
+    });
 
     let runtimeFrontSlot = options.loop_enabled ? loopOpeningFrontSlot : null;
     let runtimeFrontSinceTick = 0;
@@ -5259,6 +5326,8 @@
             {id: 'foreground_leave', action_type: '切人', tags: []}, previous, false,
             {visual_trigger_tick: int(scheduled.visual_start_tick)});
         }
+        retainedApplications.filter((entry) => entry.kind === 'status'
+          && entry.step_id === String(step.id || '')).forEach(applyRetainedSelfReaction);
         triggerRemovedSupportReaction(scheduled);
         return;
       }
@@ -5637,6 +5706,7 @@
       const criticalHits = criticalHitsPerAction * actionMultiplier;
       const hasResolvedHit = action.interrupted_hit_count !== 0;
       const appliedEnemyDebuffs = hasResolvedHit ? applyEnemyDebuffs(enemyDebuffs, action, buffTick, enemyDebuffDurationTicks) : [];
+      appliedEnemyDebuffs.forEach((reaction) => recordSelfReaction(reaction, snapshot, buffTick, 'status', action.name, step.id));
       if (!action.periodic_damage && hasResolvedHit) {
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
           triggeredBuffs.push(...triggerBuffsForEvent('action_hit', startTick, step, action, snapshot, isBackground, {
@@ -6340,6 +6410,7 @@
       },
       details,
       reaction_effects: reactionEffects,
+      ...(analysisOptions.capture_self_reactions ? {self_reaction_applications: selfReactionApplications} : {}),
       dissonance_events: dissonanceStagger.events,
       reaction_damage_events: reactionDamageEvents
         .filter((event) => event.damage != null && !event.kind)
@@ -6360,8 +6431,34 @@
       throw new Error('请选择队伍中的角色分析效能。');
     }
     if (!asList(axisPayload?.steps).length) throw new Error('请先在动作轴中添加动作。');
-    const full = simulateAxis(axisPayload, catalog);
+    const full = simulateAxis(axisPayload, catalog, {capture_self_reactions: true});
     const without = simulateAxis(axisPayload, catalog, {excluded_slot: slot});
+    const baseline = characterEffectivenessMetrics(full, without, slot);
+    const applications = asList(full.self_reaction_applications).filter((entry) => (
+      int(entry.slot) === slot && int(entry.tick) <= int(full.summary.duration_ticks)
+    ));
+    const reactionTypes = Object.keys(REACTION_DURATIONS)
+      .filter((reaction) => applications.some((entry) => entry.reaction === reaction));
+    const variants = Array.from({length: 2 ** reactionTypes.length}, (_, mask) => {
+      const retained = reactionTypes.filter((_, index) => mask & (1 << index));
+      const candidate = mask === 0 ? without : simulateAxis(axisPayload, catalog, {
+        excluded_slot: slot, retained_self_reactions: retained, self_reaction_applications: applications,
+      });
+      return {retained_reactions: retained, ...characterEffectivenessMetrics(full, candidate, slot)};
+    });
+    const epsilon = Math.max(1e-8, baseline.full_dps * 1e-10);
+    const groups = [];
+    variants.forEach((variant) => {
+      const existing = groups.find((group) => ['without_dps', 'direct_contribution_dps', 'support_dps']
+        .every((key) => Math.abs(group.result[key] - variant[key]) <= epsilon));
+      if (existing) existing.combinations.push(variant.retained_reactions);
+      else groups.push({combinations: [variant.retained_reactions], result: variant});
+    });
+    return {...baseline, self_reaction_types: reactionTypes, reaction_variants: variants,
+      reaction_variant_groups: groups};
+  }
+
+  function characterEffectivenessMetrics(full, without, slot) {
     const duration = num(full.summary.duration_seconds);
     const divisor = Math.max(duration, 0.1);
     const fullDps = num(full.summary.total_damage) / divisor;

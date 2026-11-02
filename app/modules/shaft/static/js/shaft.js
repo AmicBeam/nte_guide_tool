@@ -3585,6 +3585,27 @@
           <span>占原队 DPS</span>
           <dl><div><dt>DPS 收益</dt><dd>${formatNumber(dps)}</dd></div><div><dt>伤害收益</dt><dd>${formatNumber(damage)}</dd></div></dl>
         </article>`;
+      const groups = result.reaction_variant_groups || [];
+      const combinationText = (retained) => retained.length ? retained.join('＋') : '全部移除';
+      const reactionVariants = groups.length > 1 ? `
+        <section class="shaft-effectiveness-variants" aria-label="自带环合组合对照">
+          <h3>自带环合组合对照</h3>
+          <p>已试算 ${result.reaction_variants.length} 组白板自带环合组合；普通援护环合照常保留。结果相同的组合合并。</p>
+          <div class="shaft-effectiveness-variants-scroll" role="region" aria-label="环合组合结果，可横向滚动" tabindex="0">
+            <table>
+              <thead><tr><th>白板保留</th><th>白板 DPS</th><th>角色 RDPS</th><th>效能涨幅</th><th>伤害贡献</th><th>拐力</th></tr></thead>
+              <tbody>${groups.map(({combinations, result: row}) => `
+                <tr>
+                  <th scope="row">${combinations.map((retained) => escapeHtml(combinationText(retained))).join('<br>')}</th>
+                  <td>${formatNumber(row.without_dps)}</td><td>${formatNumber(row.rdps)}</td><td>${percentText(row.increase_percent)}</td>
+                  <td>${percentText(row.direct_contribution_percent)}<small>DPS ${formatNumber(row.direct_contribution_dps)}</small></td>
+                  <td>${percentText(row.support_percent)}<small>DPS ${formatNumber(row.support_dps)}</small></td>
+                </tr>`).join('')}</tbody>
+            </table>
+          </div>
+          <p>伤害贡献与拐力的比例均以原队 DPS 为基准；上方总览采用全部移除自带环合的白板。</p>
+        </section>` : (result.self_reaction_types?.length
+          ? '<div class="shaft-substat-contribution-note">自带环合保留与移除的效能结果一致。</div>' : '');
       content.innerHTML = `
         <div class="shaft-substat-contribution-note">保证原轴不变，对比同属性白板，计算该角色带来的队伍 DPS 增幅。</div>
         <div class="shaft-action-analysis-kpis shaft-character-effectiveness-kpis">
@@ -3599,6 +3620,7 @@
           <div><dt>原队 DPS</dt><dd>${formatNumber(result.full_dps)}</dd></div>
           <div><dt>白板队 DPS</dt><dd>${formatNumber(result.without_dps)}</dd></div>
         </dl>
+        ${reactionVariants}
         <div class="shaft-substat-contribution-note">白板为80级、0环合强度；轴长 ${formatNumber(result.duration_seconds, 1)} 秒。${result.increase_percent == null ? '白板队 DPS 为0，涨幅显示 —。' : ''}${result.full_dps === 0 ? '原队 DPS 为0，细分比例显示 —。' : ''}</div>`;
     } catch (error) {
       if (isCurrent()) content.innerHTML = `<div class="shaft-empty">${escapeHtml(error.message || '角色效能计算失败')}</div>`;

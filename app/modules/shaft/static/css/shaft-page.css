@@ -4885,3 +4885,16 @@ body.shaft-dragging .shaft-action-bar {
     width: 16px;
     height: 16px;
 }
+
+/* Fixed-timeline character effectiveness: self-provided harmony scenarios. */
+#shaft-action-contribution-content { min-width: 0; }
+.shaft-effectiveness-variants { min-width: 0; max-width: 100%; margin: 18px 0; }
+.shaft-effectiveness-variants h3 { margin: 0 0 6px; font-size: 13px; }
+.shaft-effectiveness-variants p { margin: 6px 0 10px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.shaft-effectiveness-variants-scroll { min-width: 0; max-width: 100%; max-height: 340px; overflow: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; }
+.shaft-effectiveness-variants table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.shaft-effectiveness-variants th, .shaft-effectiveness-variants td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.07); text-align: right; white-space: nowrap; }
+.shaft-effectiveness-variants th:first-child { text-align: left; }
+.shaft-effectiveness-variants thead th { position: sticky; top: 0; z-index: 1; background: #19232e; color: var(--muted); }
+.shaft-effectiveness-variants tbody tr:first-child { background: rgba(103,213,213,0.06); }
+.shaft-effectiveness-variants td small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }

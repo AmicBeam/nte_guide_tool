@@ -59,11 +59,14 @@ class ElymsAdjustmentsTest(unittest.TestCase):
             initial=r['initial_buffs']
             self.assertEqual({b['rule_id'] for b in initial},{'arc_elyms_team_def','arc_elyms_self_def','arc_elyms_light_pen'})
             self.assertTrue(all(b['trigger_tick']==0 and b['end_tick']==200 for b in initial))
+            expected_team_def = [.12, .14, .16, .18, .20][refine-1]
+            self.assertAlmostEqual(next(b for b in initial if b['rule_id']=='arc_elyms_team_def')['effects']['def_ignore'], expected_team_def)
             pen=.08+.03*(refine-1)
             self.assertAlmostEqual(self.effects(r['details'][0])['arc_elyms_light_pen']['res_down_光'],pen)
             self.assertAlmostEqual(self.effects(r['details'][1])['arc_elyms_light_pen']['res_down_光'],pen)
             self.assertAlmostEqual(r['details'][1]['formula_parts']['res_down'],pen)
             self.assertIn('arc_elyms_team_def',self.effects(r['details'][1]))
+            self.assertAlmostEqual(self.effects(r['details'][1])['arc_elyms_team_def']['def_ignore'], expected_team_def)
             self.assertNotIn('arc_elyms_team_def',self.effects(r['details'][2]))
             self.assertAlmostEqual(self.effects(r['details'][4])['arc_elyms_light_pen']['res_down_光'],pen)
             self.assertAlmostEqual(r['details'][4]['formula_parts']['res_down'],pen)
@@ -80,6 +83,9 @@ class ElymsAdjustmentsTest(unittest.TestCase):
             self.assertEqual(len(buffs),1)
             self.assertAlmostEqual(buffs[0]['effects']['res_down_光'],.2)
             self.assertAlmostEqual(detail['formula_parts']['res_down'],.2)
+            team_def=[b for b in detail['applied_buffs'] if b['rule_id']=='arc_elyms_team_def']
+            self.assertEqual(len(team_def),1)
+            self.assertAlmostEqual(team_def[0]['effects']['def_ignore'],.2)
 
 
 class ElymsTeamDamageBuffsTest(unittest.TestCase):

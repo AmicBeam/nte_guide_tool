@@ -15,7 +15,7 @@
         5
       ],
       "effect_name": "静候彩铃",
-      "effect_description": "攻击力提升15%/30%。释放极轨终结后累计造成3次追击伤害，全队无视防御12%/24%，装备者额外10%/20%，持续20秒。释放变轨技能时，全队无视敌人8%/20%光属性异能抗性，持续20秒。装备者进入战斗时直接触发以上全部效果；全队无视防御与无视光抗效果分别队伍唯一。",
+      "effect_description": "攻击力提升15%/30%。释放极轨终结后累计造成3次追击伤害，全队无视防御12%/20%，装备者额外10%/20%，持续20秒。释放变轨技能时，全队无视敌人8%/20%光属性异能抗性，持续20秒。装备者进入战斗时直接触发以上全部效果；全队无视防御与无视光抗效果分别队伍唯一。",
       "levels": {
         "1": {
           "effect_values": [
@@ -44,7 +44,7 @@
         "2": {
           "effect_values": [
             "18.75%",
-            "15%",
+            "14%",
             "12.5%",
             "11%"
           ],
@@ -55,7 +55,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_elyms_team_def": {
-              "def_ignore": 0.15
+              "def_ignore": 0.14
             },
             "arc_elyms_self_def": {
               "def_ignore": 0.125
@@ -68,7 +68,7 @@
         "3": {
           "effect_values": [
             "22.5%",
-            "18%",
+            "16%",
             "15%",
             "14%"
           ],
@@ -79,7 +79,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_elyms_team_def": {
-              "def_ignore": 0.18
+              "def_ignore": 0.16
             },
             "arc_elyms_self_def": {
               "def_ignore": 0.15
@@ -92,7 +92,7 @@
         "4": {
           "effect_values": [
             "26.25%",
-            "21%",
+            "18%",
             "17.5%",
             "17%"
           ],
@@ -103,7 +103,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_elyms_team_def": {
-              "def_ignore": 0.21
+              "def_ignore": 0.18
             },
             "arc_elyms_self_def": {
               "def_ignore": 0.175
@@ -116,7 +116,7 @@
         "5": {
           "effect_values": [
             "30%",
-            "24%",
+            "20%",
             "20%",
             "20%"
           ],
@@ -127,7 +127,7 @@
           "element_dmg": {},
           "buff_effects": {
             "arc_elyms_team_def": {
-              "def_ignore": 0.24
+              "def_ignore": 0.2
             },
             "arc_elyms_self_def": {
               "def_ignore": 0.2

@@ -110,7 +110,7 @@ class ElymsCatalogTest(unittest.TestCase):
             self.assertNotIn('harmony_strength',values['panel_modifiers'])
             self.assertAlmostEqual(values['panel_modifiers']['atk_pct'],.15+.0375*(level-1))
             self.assertAlmostEqual(values['buff_effects']['arc_elyms_light_pen']['res_down_光'],.08+.03*(level-1))
-            self.assertAlmostEqual(values['buff_effects']['arc_elyms_team_def']['def_ignore'],.12+.03*(level-1))
+            self.assertAlmostEqual(values['buff_effects']['arc_elyms_team_def']['def_ignore'],.12+.02*(level-1))
             self.assertAlmostEqual(values['buff_effects']['arc_elyms_self_def']['def_ignore'],.1+.025*(level-1))
 
     def test_b_awakening_only_grants_consumption_defense_ignore_to_e3(self):

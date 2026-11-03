@@ -87,7 +87,7 @@ async function bootstrapHome() {
       if (option) {
         option.disabled = Boolean(item.pending);
         option.textContent = item.unavailable_reason ? item.name + '（暂不开放）' :
-          (item.pending ? item.name + '（待训练）' : '实验性 · ' + item.name);
+          (item.pending ? item.name + '（待训练）' : item.name);
         option.title = item.unavailable_reason || '';
       }
     });
@@ -101,7 +101,7 @@ async function bootstrapHome() {
       const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
       const playerDeck = saved || starter;
       buildSummary.textContent = '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」';
-      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。高级人机采用实验性模型与搜索；可用预组以列表为准，尚未接入模型的预组暂不开放。';
+      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。高级人机使用训练后的策略进行对战；可用预组以列表为准，尚未接入模型的预组暂不开放。';
       return;
     }
     if (selectedMode === 'solo') {

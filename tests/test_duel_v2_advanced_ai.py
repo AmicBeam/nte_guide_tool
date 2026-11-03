@@ -108,7 +108,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
                     'request_id':f'{deck}-{index}','action':action},token=self.token)
             self.assertEqual(result['game']['phase'],'finished')
             self.assertTrue(result['room']['has_replay'])
-            self.assertEqual(result['game']['sides']['b']['name'],'实验性高级人机')
+            self.assertEqual(result['game']['sides']['b']['name'],'高级人机')
             self._post('/api/duel-v2/leave',token=self.token)
 
     def test_evaluated_bot_allocation_and_mirror_match_without_changing_saved_build(self):

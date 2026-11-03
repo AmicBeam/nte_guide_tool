@@ -67,13 +67,13 @@ class ElymsCatalogTest(unittest.TestCase):
          '重击': (0.449, 4, 2.801, 4.7, 0.6, 10),
          '下落': (0.296, 1, 1.9, 3.1, 0.4, 8),
          '闪反': (1.0, 1, 2.5, 4.2, 2.5, 10),
-         'e1': (3.402, 6, 5.1, 8.399, 1.001, 10),
+         'e1': (1.701, 6, 5.1, 8.399, 1.001, 10),
          'e2': (0.998, 6, 8.3, 0.0, 0.0, 0),
-         'e3': (2.553, 6, 8.3, 0.0, 0.0, 0),
-         'q群': (8.097, 4, 0.0, 0.0, 1.501, 0),
-         'q单': (8.995, 8, 0.0, 0.0, 1.502, 0),
-         '追忆群': (2.16, 4, 1.7, 2.8, 0.3, 0),
-         '追忆单': (2.4, 4, 1.7, 2.8, 0.3, 0),
+         'e3': (1.277, 6, 8.3, 0.0, 0.0, 0),
+         'q群': (4.05, 4, 0.0, 0.0, 1.501, 0),
+         'q单': (4.5, 8, 0.0, 0.0, 1.502, 0),
+         '追忆群': (1.08, 4, 1.7, 2.8, 0.3, 0),
+         '追忆单': (1.2, 4, 1.7, 2.8, 0.3, 0),
          '援护': (2.0, 1, 5.2, 0.0, 2.5, 15)}
         for name,(mult,hits,energy,harmony,stagger,ticks) in expected.items():
             with self.subTest(action=name):
@@ -163,7 +163,7 @@ class ElymsCatalogTest(unittest.TestCase):
         fx=self.effects(d[5]);self.assertEqual(fx['character_elyms_a'],{})
         extras=[e for e in r['periodic_damage_events'] if e.get('action_id')=='action_elyms_six_extra']
         self.assertEqual(len(extras),1)
-        self.assertAlmostEqual(extras[0]['atk_multiplier'],13.432)
+        self.assertAlmostEqual(extras[0]['atk_multiplier'],6.72)
         self.assertGreater(extras[0]['damage'],0)
         no_consume=self.own([('goodbye',0)],nodes=range(1,7))
         self.assertFalse(any(e.get('action_id')=='action_elyms_six_extra' for e in no_consume['periodic_damage_events']))

@@ -10963,7 +10963,7 @@
     "duration_ticks": 10,
     "duration_pending": false,
     "multipliers": {
-      "atk": 3.402,
+      "atk": 1.701,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10984,7 +10984,7 @@
     "harmony_on_start": 100,
     "duration_implemented": true,
     "duration_estimated": true,
-    "multiplier_level": 10
+    "multiplier_level": 1
   },
   {
     "id": "action_elyms_skill2",
@@ -11034,7 +11034,7 @@
     "duration_ticks": 0,
     "duration_pending": false,
     "multipliers": {
-      "atk": 2.553,
+      "atk": 1.277,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -11057,7 +11057,7 @@
     "is_time_stop_zero": true,
     "locks_foreground_switch": true,
     "duration_estimated": false,
-    "multiplier_level": 10
+    "multiplier_level": 1
   },
   {
     "id": "action_elyms_ultraskilla1",
@@ -11071,7 +11071,7 @@
     "duration_ticks": 0,
     "duration_pending": false,
     "multipliers": {
-      "atk": 8.097,
+      "atk": 4.05,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -11095,7 +11095,7 @@
     "duration_estimated": true,
     "is_time_stop_zero": true,
     "locks_foreground_switch": true,
-    "multiplier_level": 10
+    "multiplier_level": 1
   },
   {
     "id": "action_elyms_ultraskillb1",
@@ -11109,7 +11109,7 @@
     "duration_ticks": 0,
     "duration_pending": false,
     "multipliers": {
-      "atk": 8.995,
+      "atk": 4.5,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -11138,7 +11138,7 @@
     "duration_estimated": true,
     "is_time_stop_zero": true,
     "locks_foreground_switch": true,
-    "multiplier_level": 10
+    "multiplier_level": 1
   },
   {
     "id": "action_elyms_xietongskilla1",
@@ -11152,7 +11152,7 @@
     "duration_ticks": 0,
     "duration_pending": false,
     "multipliers": {
-      "atk": 2.16,
+      "atk": 1.08,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -11188,7 +11188,7 @@
       "character_elyms_follow_group"
     ],
     "duration_estimated": false,
-    "multiplier_level": 10
+    "multiplier_level": 1
   },
   {
     "id": "action_elyms_xietongskillb1",
@@ -11202,7 +11202,7 @@
     "duration_ticks": 0,
     "duration_pending": false,
     "multipliers": {
-      "atk": 2.4,
+      "atk": 1.2,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -11238,7 +11238,7 @@
       "character_elyms_follow_single"
     ],
     "duration_estimated": false,
-    "multiplier_level": 10
+    "multiplier_level": 1
   },
   {
     "id": "action_elyms_qte",

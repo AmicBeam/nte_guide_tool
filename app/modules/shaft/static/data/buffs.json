@@ -6094,9 +6094,9 @@
         "multipliers": {
           "atk": 0
         },
-        "multiplier_level": 10
+        "multiplier_level": 1
       },
-      "atk_per_stack": 3.358
+      "atk_per_stack": 1.68
     },
     "display": {
       "line": false

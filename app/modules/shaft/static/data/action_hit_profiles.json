@@ -5319,42 +5319,42 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.538,
+        "damage": 0.269,
         "energy": 0.808,
         "harmony": 1.331,
         "stagger": 0.158
       },
       {
         "hit_count": 2,
-        "damage": 1.01,
+        "damage": 0.505,
         "energy": 1.515,
         "harmony": 2.495,
         "stagger": 0.297
       },
       {
         "hit_count": 3,
-        "damage": 1.482,
+        "damage": 0.741,
         "energy": 2.222,
         "harmony": 3.659,
         "stagger": 0.436
       },
       {
         "hit_count": 4,
-        "damage": 1.954,
+        "damage": 0.977,
         "energy": 2.929,
         "harmony": 4.823,
         "stagger": 0.575
       },
       {
         "hit_count": 5,
-        "damage": 2.426,
+        "damage": 1.213,
         "energy": 3.636,
         "harmony": 5.987,
         "stagger": 0.714
       },
       {
         "hit_count": 6,
-        "damage": 3.402,
+        "damage": 1.701,
         "energy": 5.1,
         "harmony": 8.399,
         "stagger": 1.001

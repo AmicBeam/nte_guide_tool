@@ -62,6 +62,10 @@ python3 scripts/seed_mock_account.py
 - 异能对决「高级人机」：`pip install -r requirements-ai.txt`，仅 CPU 推理。两套镜像模型随 `app/` 发布，路径见 [模块说明](app/modules/card_game/README.md#高级人机)。
 - 训练与评估：`pip install -r requirements-rl.txt`。网站启动不会加载训练权重或开始训练；命令见 [公开卡池训练](docs/duel-v2-public-training.md)。
 
+## 安卓安装包
+
+异能对决提供复用现有网站的轻量安卓外壳。构建与安装说明见 [安卓项目](android/README.md)。安装后需要联网，网站服务与数据继续复用。
+
 ## Windows 发布
 
 `scripts/deploy_windows_app.sh` 只把当前 Git `HEAD` 里的 `app/` 推到服务器，不上传 `.env`、数据库、日志或虚拟环境。`app/` 有未提交改动时默认拒绝；确认只发 `HEAD` 时可加 `--allow-dirty-app`。不要求该提交已推送或合入 `main`。

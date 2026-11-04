@@ -20,7 +20,7 @@ LABELS = {
     'required_puka_level': '所需噗卡计划等级', 'fons_cost': '升入本级方斯', 'total_fons': '累计方斯',
     'intro': '前言', 'gameplay': '一.游戏玩法讲解', 'currencies': '二.货币讲解及氪金建议',
     'events': '三.游戏活动讲解', 'wishes': '四.抽卡资源规划', 'closing': '结语',
-    'status': '资料状态', 'preview': '预告', 'preview_image': '预告图',
+    'status': '资料状态', 'preview': '预告', 'preview_image': '预告图', 'reference_details': '已确认资料',
     'rules': '楼层机制', 'enhanced_resistances': '强化抗性', 'node_first': '节点起始层', 'node_last': '关底',
     'reserve_character_count': '备选角色数', 'floor_slot_count': '角色栏位数',
     'buff_selection': '关底正向效果与反向效果', 'enabled': '开放选择', 'default_count': '默认正向效果数量', 'count_bonuses': '数量加成',

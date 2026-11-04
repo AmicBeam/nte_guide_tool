@@ -237,8 +237,8 @@
     "adaptation": "固态",
     "rarity": "S",
     "level": 80,
-    "avatar": "/static/guide/character-previews/elyms-avatar.webp",
-    "portrait": "",
+    "avatar": "/static/images/characters/avatar/曳尔沐.webp",
+    "portrait": "/static/images/characters/portrait/曳尔沐.webp",
     "base_stats": {
       "atk": 660,
       "hp": 15392,

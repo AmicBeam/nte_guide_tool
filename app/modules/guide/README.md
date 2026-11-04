@@ -61,7 +61,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 ## 本地角色图片
 
-共享资源位于 `app/static/images/characters/`，按 `avatar/`、`portrait/`、`fullbody/` 分类；`index.json` 只维护角色 ID 与本地图片绑定。当前25个角色条目各有256×256头像、沿用既有画布的默认立绘、2160×2560高清立绘，共75张WebP。复用原有合适图片，补齐缺失文件，不覆盖其他模块原有引用。角色详情顶部只显示右侧高清立绘，不显示左侧头像、查看高清立绘按钮或Markdown／JSON按钮；立绘使用完整展示高度，不预留说明按钮区域；索引卡片显示头像。图片全部由本站静态路径提供，不依赖外部图床或另一个项目目录。`assets` 字段同时出现在角色 JSON/Markdown 与 CLI 详情中。高清资源保留原生构图，部分原图触及底边，不保证完整到脚。
+共享资源位于 `app/static/images/characters/`，按 `avatar/`、`portrait/`、`fullbody/` 分类；`index.json` 只维护角色 ID 与本地图片绑定。当前26个角色图片条目各有256×256头像、沿用既有画布的默认立绘、2160×2560高清立绘，共78张WebP；其中曳尔沐的角色资料仍处于预告阶段。复用原有合适图片，补齐缺失文件，不覆盖其他模块原有引用。角色详情顶部只显示右侧高清立绘，不显示左侧头像、查看高清立绘按钮或Markdown／JSON按钮；立绘使用完整展示高度，不预留说明按钮区域；索引卡片显示头像。图片全部由本站静态路径提供，不依赖外部图床或另一个项目目录。`assets` 字段同时出现在角色 JSON/Markdown 与 CLI 详情中。高清资源保留原生构图，部分原图触及底边，不保证完整到脚。
 
 ## 招式分组与命中明细
 
@@ -356,7 +356,7 @@ CLI通过`skill_level=10&hit_details=0`请求服务端裁剪，省去无用传�
 
 ## 角色预告模式
 
-目录额外提供 Exe（暗属性S级）和曳尔沐（光属性S级）的预告卡片，左上角显示“预告”，属性、星级和搜索筛选沿用现有目录。预告详情只显示完整宣传图及已确认的所需升级材料；材料为空时省略材料区，即使记录中有其他字段也不显示技能、面板、羁遇、定位或工具入口。
+目录额外提供 Exe（暗属性S级）和曳尔沐（光属性S级）的预告卡片，左上角显示“预告”，属性、星级和搜索筛选沿用现有目录。预告详情显示宣传图或已绑定的高清立绘，以及已确认的所需升级材料；材料为空时省略材料区。仅独立资料快照明确提供时，显示技能、觉醒与共鸣；不凭预告记录中的零散字段开放面板、羁遇、定位或工具入口。
 
 `data/character_previews.json` 独立维护预告，`previews.py` 在公共查询中与完整角色合并，不写入正式计算目录；同ID已有完整资料时优先使用完整条目。曳尔沐使用1090，Exe暂用`preview-exe`，取得正式角色编号时再修改，不以NPC编号猜测。`preview_image`绑定模块本地WebP横幅，`assets.avatar`绑定目录头像。可选`materials`沿用角色材料结构（`breakthrough[].items`和`skills[].levels[].items`）；顶部按现有规则去重展示最高品质材料及名称，不显示数量。Exe已配置倾诉花种、数符系列及水波的迟疑／倒悬的轻响／「第二人」系列；Exe与曳尔沐的技能升级材料均包含空心花籽。曳尔沐突破材料包含海之泪与褪色／失焦／晦暗掠影，技能材料包含雏鸟的希冀／白鸽的振翅／「橄榄枝」及空心花籽。仅记录已确认种类，不填写未知数量或升级档位；页面概览沿用各系列只展示最高品质的规则，完整三级材料保留在JSON与Markdown中。
 
@@ -491,3 +491,14 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 `scripts/guide_skill_cooldowns.py`沿技能`CooldownDuration`及父类默认配置读取实际绑定的冷却曲线，不按相似技能名猜测别名，也不把`CancelCooldownDuration`当作技能冷却。常量曲线支持配置倍率；缺失引用、继承循环、截断的技能目录或尚无展示协议的变等级冷却曲线会中止同步，保留旧快照。请求与启动不联网。
 
 常规`refresh_guide_data.py`在写入前同时补录冷却；也可单独执行`python scripts/guide_skill_cooldowns.py`更新当前快照的冷却字段。`--ntedata-dir`支持完整NTEData导出目录，或包含技能Blueprint、父类及`CoolDwonCurveTable.json`的扁平目录；其余资料的离线刷新仍遵循各自原有输入约定。同步后重启服务清理缓存。验证：`.venv/bin/python -m unittest tests.test_guide_cooldowns tests.test_guide tests.test_module_routes -q`，覆盖真实配置的父类／曲线别名、未知／显式0、失效输入、重复同步、网页和机器读取一致性。
+
+
+## 预告角色已确认资料
+
+曳尔沐保持预告状态，使用共享默认头像、1024立绘与2160×2560高清立绘，详情补充7项技能／天赋／特性、逐级倍率与单次命中明细、6项觉醒和3／6次共鸣及本地图标。缺失的基础面板、完整突破配置、都市技能与好感度不套用其他角色。养成、排轴和一图流工具仍按预告权限关闭。Wiki天赋一正文为3秒；排轴的20秒持续时间按其独立配置计算。
+
+`data/character_preview_details.json`只存已确认的技能和觉醒章节；HTML、Markdown、搜索和JSON共用该快照。`section=overview`返回可读取章节，`section=reference_details`读取完整补充资料。既有预告记录中的任意字段不自动成为已确认章节。纯宣传预告继续只展示图片与材料。
+
+显式导入：`python scripts/sync_guide_preview_details.py --ntedata-dir /path/to/tables --character-id 1090 --prefix Elyms`。输入包括技能说明、单次伤害、角色EffectFigure和觉醒表；常量曲线在技能等级内保持不变，伤害数组保留逐级实际值，不推算缺失冷却。技能和觉醒图标复用本地文件，缺图不生成无效链接。各章节校验后原子替换，请求与启动不联网。
+
+验证：`tests.test_guide_previews`及完整攻略回归；排轴头像／立绘绑定另执行排轴与合轴回归。浏览器核验高清立绘、技能滑块、命中明细、图标、手机版面与预告工具隔离。

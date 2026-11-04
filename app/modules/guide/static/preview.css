@@ -1,5 +1,7 @@
 .guide-preview-hero { margin:24px 0 0; overflow:hidden; border:1px solid var(--g-line); border-radius:12px; }
 .guide-preview-hero img { display:block; width:100%; height:auto; }
+.guide-preview-portrait { max-width:580px; margin-inline:auto; border:0; }
+.guide-preview-portrait img { max-height:700px; object-fit:contain; }
 .guide-preview-materials { margin-top:28px; padding:24px; border:1px solid var(--g-line); border-radius:12px; }
 .guide-preview-materials h2 { margin:0 0 20px; font-size:20px; }
 @media(max-width:700px) {

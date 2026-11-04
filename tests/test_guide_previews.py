@@ -34,19 +34,43 @@ class GuidePreviewTest(unittest.TestCase):
         for identifier in ('1090', 'preview-exe'):
             path = '/guide/characters/' + identifier
             html = self.client.get(path).text
-            self.assertIn('class="guide-preview-hero"', html)
+            self.assertIn('class="guide-preview-hero', html)
             self.assertIn('所需升级材料', html)
             self.assertIn('空心花籽', html)
-            for text in ('属性数值', '角色定位', '养成计算器', 'guide-toc', 'type="range"'):
+            hidden = ['属性数值', '角色定位', '养成计算器', 'guide-toc']
+            if identifier == 'preview-exe':
+                hidden.append('type="range"')
+            for text in hidden:
                 self.assertNotIn(text, html)
             self.assertEqual(self.client.get(path + '.md').status_code, 200)
             overview = self.client.get('/api/guide/characters/' + identifier + '?section=overview').json['data']
-            self.assertEqual(set(overview), {'id', 'name', 'status', 'preview_image', 'materials'})
+            expected = {'id', 'name', 'status', 'preview_image', 'materials'}
+            if identifier == '1090':
+                expected.add('available_sections')
+            self.assertEqual(set(overview), expected)
             self.assertEqual(self.client.get('/api/guide/characters/' + identifier + '?ability_id=missing').status_code, 404)
             self.assertEqual(set(entry_links('characters', service.detail('characters', identifier))), {'detail'})
             for suffix in ('/cultivation', '/builds', '/axes/1/compare'):
                 self.assertEqual(self.client.get(path + suffix).status_code, 404)
             self.assertEqual(self.client.post('/api/guide/characters/' + identifier + '/cultivation', json={}).status_code, 404)
+
+    def test_elyms_verified_skill_sections_keep_incomplete_tools_closed(self):
+        response = self.client.get('/api/guide/characters/1090?section=reference_details')
+        self.assertEqual(response.status_code, 200)
+        data = response.json['data']['reference_details']
+        self.assertEqual(len(data['abilities']), 7)
+        self.assertEqual(len(data['awaken']), 6)
+        self.assertEqual([r['resonance_level'] for r in data['resonance']], [3, 6])
+        skill = next(a for a in data['abilities'] if a['id'] == 'GA_Elyms_Skill')
+        row = next(r for r in skill['param_rows'] if r['label'] == '「离去的人们」伤害倍率')
+        self.assertEqual(len(row['values']), 13)
+        self.assertTrue(row['hit_details'])
+        html = self.client.get('/guide/characters/1090').text
+        for text in ('沉入电子梦', '错频故障', '404 遥望一座孤岛', '拜启，我的旧友', '基础面板与完整养成配置待补'):
+            self.assertIn(text, html)
+        self.assertIn('沉入电子梦', self.client.get('/guide/characters/1090.md').text)
+        for ability in data['abilities']:
+            self.assertEqual(self.client.get(ability['icon']).status_code, 200)
 
     def test_elyms_includes_both_breakthrough_and_skill_material_series(self):
         record = self.client.get('/api/guide/characters/1090?section=overview').json['data']

@@ -217764,7 +217764,7 @@
       "id": "char_elyms",
       "name": "曳尔沐",
       "element": "光",
-      "avatar": "/static/guide/character-previews/elyms-avatar.webp",
+      "avatar": "/static/images/characters/avatar/曳尔沐.webp",
       "actions": [
         {
           "name": "强a1",
@@ -218356,7 +218356,7 @@
     }
   ],
   "input_sha256": {
-    "characters.json": "53c275be5fdcf6a1634975843684449d663ac99d12d07d8c1c52a758238aa059",
+    "characters.json": "0fcbc3ce7dc28eb74e31f76553506a210e8ad108ab6d0e96b91d8c5d0309a497",
     "actions.json": "1a1acd7958289f7d4ea77a650127c6df819d6c9de57e29947be9a3d3cca86f54",
     "rules.json": "1089d950962377295c03dfd082823ca297b6ea049d75847478b86aed2bba5c2b",
     "generator.py": "1bfa06a2d8bad4986c4db83f0f55bf463b042c3c4a23084915426da2c364d5a7"

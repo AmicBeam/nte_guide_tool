@@ -45,7 +45,10 @@ def at_level(value, level):
 
 def overview(kind, record, level=10):
     if record.get('status') == 'preview':
-        return {key: record[key] for key in ('id', 'name', 'status', 'preview_image', 'materials') if key in record}
+        result = {key: record[key] for key in ('id', 'name', 'status', 'preview_image', 'materials') if key in record}
+        if record.get('reference_details'):
+            result['available_sections'] = ['materials', 'reference_details']
+        return result
     result = {key: value for key, value in record.items() if key in (
         'id', 'name', 'aliases', 'element_name', 'rarity', 'arc_type', 'char_tags',
         'type_name', 'effect', 'exclusive_desc', 'exclusive_character_ids',

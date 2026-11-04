@@ -5,7 +5,10 @@ from pathlib import Path
 
 def characters():
     rows = json.loads((Path(__file__).parent / 'data/character_previews.json').read_text(encoding='utf-8'))
+    details = json.loads((Path(__file__).parent / 'data/character_preview_details.json').read_text(encoding='utf-8'))
     for row in rows:
+        if row['id'] in details:
+            row['reference_details'] = details[row['id']]
         row['status'] = 'preview'
         row['element_icon'] = f'/static/images/elements/{row["element_name"]}.png'
         rank = {4: 'A', 5: 'S'}[row['rarity']]

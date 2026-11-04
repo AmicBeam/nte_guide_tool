@@ -8,7 +8,9 @@
     "element_name": "光",
     "rarity": 5,
     "assets": {
-      "avatar": "/static/guide/character-previews/elyms-avatar.webp"
+      "avatar": "/static/images/characters/avatar/曳尔沐.webp",
+      "portrait": "/static/images/characters/portrait/曳尔沐.webp",
+      "fullbody": "/static/images/characters/fullbody/曳尔沐.webp"
     },
     "preview_image": "/static/guide/character-previews/elyms.webp",
     "materials": {

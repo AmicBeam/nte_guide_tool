@@ -175,6 +175,13 @@
       "avatar": "/static/images/characters/avatar/真红.webp",
       "portrait": "/static/images/characters/portrait/真红.webp",
       "fullbody": "/static/images/characters/fullbody/真红.webp"
+    },
+    {
+      "id": "1090",
+      "name": "曳尔沐",
+      "avatar": "/static/images/characters/avatar/曳尔沐.webp",
+      "portrait": "/static/images/characters/portrait/曳尔沐.webp",
+      "fullbody": "/static/images/characters/fullbody/曳尔沐.webp"
     }
   ]
 }

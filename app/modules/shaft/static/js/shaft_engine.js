@@ -4853,8 +4853,28 @@
             triggerTick + Math.max(0, int(runtimeRule.triggered_damage.delay_ticks)));
         }
         if (runtimeRule.delayed_reaction?.reaction) {
+          let echoTick = triggerTick + Math.max(0, int(runtimeRule.delayed_reaction.delay_ticks));
+          if (runtimeRule.delayed_reaction.advance_on_timeline_mask === true) {
+            // Use the compiled clock, including the adjacent cycle when a wait
+            // crosses the loop boundary. Virtual mask width is never elapsed time.
+            const shifts = options.loop_enabled && loopDurationTicks > 0
+              ? (extraContext.loop_prime_only ? [-loopDurationTicks, 0] : [0, loopDurationTicks]) : [0];
+            const visualTriggerTick = int(extraContext.visual_trigger_tick,
+              visualTickFromCalculationTick(triggerTick, qVirtualIntervals));
+            scheduledSteps.forEach((entry) => {
+              if (!isZeroForegroundQStep(entry.step, entry.action)) return;
+              shifts.forEach((shift) => {
+                const tick = int(entry.start_tick) + shift;
+                if (tick > triggerTick || (tick === triggerTick
+                  && int(entry.visual_start_tick) + shift > visualTriggerTick)) {
+                  echoTick = Math.min(echoTick, tick);
+                }
+              });
+            });
+            instance.end_tick = echoTick;
+          }
           reactionDamageEvents.push({kind: 'reaction_echo', reaction: runtimeRule.delayed_reaction.reaction,
-            tick: triggerTick + Math.max(0, int(runtimeRule.delayed_reaction.delay_ticks)), sequence: 0,
+            tick: echoTick, sequence: 0,
             contributor_slot: ownerSlot, source_step_id: step.id, damage: null});
         }
         if (runtimeRule.reaction_pulse) {

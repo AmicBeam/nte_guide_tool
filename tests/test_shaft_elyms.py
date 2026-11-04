@@ -271,6 +271,60 @@ class ElymsCatalogTest(unittest.TestCase):
                     self.assertIn(waiting['end_tick'],[e['start_tick'] for e in echoes])
                     self.assertEqual(len(echoes),1)
 
+    def test_delay_echo_advances_to_first_mask_and_shortens_waiting_line(self):
+        catalog=load_shaft_catalog()
+        support=next(a['id'] for a in catalog['actions_by_character']['char_d38b672525'] if a['name']=='援护')
+        others=[dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''),
+                dict(slot=2,character_id='char_d38b672525',arc_id='',cartridge_id=''),
+                dict(slot=3,character_id='char_0846d632e0',arc_id='',cartridge_id='')]
+        for slot,action,advances in [(0,'action_elyms_skill2',True),
+                (0,'action_elyms_goodbye',True),(0,'action_elyms_ultraskilla1',True),
+                (1,'action_b356b46da2',True),(3,'action_lingke_time_stop_select',True),
+                (0,'action_elyms_melee1',False),(0,'action_elyms_xietongskilla1',False)]:
+            with self.subTest(action=action):
+                result=simulate_shaft_axis(self.axis([(1,'action_982c67944f',0),(2,support,30),
+                    (slot,action,65),(0,'action_elyms_ultraskillb1',170),
+                    (1,'action_none_dd034941ef',240)],others=others))['result']
+                waiting=next(b for d in result['details'] for b in d['triggered_buffs']
+                             if b['rule_id']=='character_elyms_delay_echo')
+                expected=result['details'][2]['start_tick'] if advances else waiting['trigger_tick']+75
+                echoes=[e for e in result['reaction_effects'] if e.get('is_echo')]
+                self.assertEqual([e['start_tick'] for e in echoes],[expected])
+                self.assertEqual(waiting['end_tick'],expected)
+                self.assertTrue(waiting['display_as_line'])
+
+    def test_early_echo_keeps_original_seven_second_cooldown(self):
+        catalog=load_shaft_catalog()
+        support=next(a['id'] for a in catalog['actions_by_character']['char_d38b672525'] if a['name']=='援护')
+        others=[dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''),
+                dict(slot=2,character_id='char_d38b672525',arc_id='',cartridge_id='')]
+        for next_start,expected_count in [(99,1),(100,2)]:
+            with self.subTest(next_start=next_start):
+                result=simulate_shaft_axis(self.axis([(1,'action_982c67944f',0),(2,support,30),
+                    (0,'action_elyms_skill2',65),(1,'action_none_dd034941ef',90),
+                    (2,support,next_start+5),(1,'action_none_dd034941ef',240)],others=others))['result']
+                waits=[b for d in result['details'] for b in d['triggered_buffs']
+                       if b['rule_id']=='character_elyms_delay_echo']
+                self.assertEqual(len(waits),expected_count)
+                self.assertEqual(waits[0]['end_tick'],65)
+                if expected_count==2:
+                    self.assertEqual(waits[1]['trigger_tick']-waits[0]['trigger_tick'],70)
+
+    def test_carried_echo_advances_to_next_cycles_first_mask(self):
+        catalog=load_shaft_catalog()
+        support=next(a['id'] for a in catalog['actions_by_character']['char_d38b672525'] if a['name']=='援护')
+        others=[dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''),
+                dict(slot=2,character_id='char_d38b672525',arc_id='',cartridge_id='')]
+        result=simulate_shaft_axis(self.axis([(0,'action_elyms_skill2',20),
+            (1,'action_982c67944f',50),(2,support,100),(1,'action_none_dd034941ef',160)],
+            others=others,loop_enabled=True))['result']
+        mask_tick=result['details'][0]['start_tick']
+        self.assertEqual([e['start_tick'] for e in result['reaction_effects'] if e.get('is_echo')],[mask_tick])
+        waiting=next(b for d in result['details'] for b in d['triggered_buffs']
+                     if b['rule_id']=='character_elyms_delay_echo')
+        self.assertEqual(waiting['end_tick'],result['summary']['duration_ticks']+mask_tick)
+        self.assertLess(waiting['end_tick']-waiting['trigger_tick'],75)
+
     def test_regular_energy_without_yingxu_never_grants_light_stacks(self):
         axis=self.axis([(0,'action_elyms_melee1',0),(0,'action_elyms_melee2',10),
                         (0,'action_elyms_skill2',20),(0,'action_elyms_melee1',30)])

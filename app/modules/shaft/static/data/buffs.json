@@ -6188,7 +6188,8 @@
     "effects": {},
     "delayed_reaction": {
       "reaction": "延滞",
-      "delay_ticks": 75
+      "delay_ticks": 75,
+      "advance_on_timeline_mask": true
     },
     "display": {
       "line": true

@@ -498,7 +498,7 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 
 显式导入：`python scripts/sync_guide_elyms.py --ntedata-dir /path/to/tables --equipment-json app/modules/kongmu/static/data/characters/1090.json`。输入包括技能说明／单次伤害、EffectFigure、觉醒、等级成长、突破、技能费用、机制词条及冷却曲线；只在已知材料与字段校验通过后写入正式快照。`data/ntedata_characters.json`保存独立导入的正式角色与等级上限；常规刷新在远端索引未包含这些角色时保留其完整资料，不回退为预告。目录元数据、图片、空幕绑定与好感状态分别沿用对应本地配置。
 
-头像从共享1024立绘主动裁剪，方形区域为`(340,40,780,480)`，缩至256×256并保存为保留透明像素的无损WebP。使用`requirements-assets.txt`安装离线素材与像素验证依赖；执行`python scripts/crop_character_avatar.py app/static/images/characters/portrait/曳尔沐.webp app/static/images/characters/avatar/曳尔沐-square.webp --box 340 40 780 480`后同步旧头像兼容地址。
+头像从共享1024立绘主动裁剪，方形区域为`(340,100,780,540)`，缩至256×256并保存为保留透明像素的无损WebP。使用`requirements-assets.txt`安装离线素材与像素验证依赖；执行`python scripts/crop_character_avatar.py app/static/images/characters/portrait/曳尔沐.webp app/static/images/characters/avatar/曳尔沐-square-v2.webp --box 340 100 780 540`后同步旧头像兼容地址。
 
 正式角色交付不能以“返回200”或模板类名存在代替验收。`tests.test_guide_elyms_complete`逐项断言标题／属性／星级／适配／标签、五项完整成长数组、材料与费用、技能／命中、觉醒／共鸣、词条、空幕、好感度明确状态、目录、相关攻略和数值约定；实际请求四个工具，执行养成及弧盘费用、授权空幕方案与旧ID兼容、一图流鉴权数据及攻略挂载；测试账号可查到实际发布的测试轴，匿名、正式与受邀账号均查不到且不能直读，Wiki正式展示不改变这项权限；同时检查索引无预告、机器读取、图片可用与头像逐像素等于确定性立绘裁剪结果。还须运行完整攻略回归、空幕权限与预选回归，以及桌面／手机浏览器检查。
 

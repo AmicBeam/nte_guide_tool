@@ -131,7 +131,7 @@ class ElymsCharacterModulesTest(unittest.TestCase):
     def test_avatar_is_the_deterministic_portrait_crop_not_the_round_original(self):
         avatar=ROOT/'app'/service.detail('characters','1090')['assets']['avatar'].removeprefix('/')
         with Image.open(ROOT/'app/static/images/characters/portrait/曳尔沐.webp')as portrait:
-            expected=portrait.convert('RGBA').crop((340,40,780,480)).resize((256,256),Image.Resampling.LANCZOS)
+            expected=portrait.convert('RGBA').crop((340,100,780,540)).resize((256,256),Image.Resampling.LANCZOS)
         with Image.open(avatar)as actual:
             self.assertEqual(actual.size,(256,256))
             self.assertEqual(actual.convert('RGBA').tobytes(),expected.tobytes())

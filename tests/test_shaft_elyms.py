@@ -50,7 +50,7 @@ class ElymsCatalogTest(unittest.TestCase):
         self.assertEqual(character['adaptation'], '固态')
         self.assertEqual(character['base_stats'], {'atk':660,'hp':15392,'def':909})
         self.assertEqual(character['energy_capacity'],100)
-        self.assertEqual(character['avatar'],'/static/images/characters/avatar/曳尔沐-square.webp')
+        self.assertEqual(character['avatar'],'/static/images/characters/avatar/曳尔沐-square-v2.webp')
         self.assertEqual(character['portrait'],'/static/images/characters/portrait/曳尔沐.webp')
         self.assertNotIn('fullbody',character)
         actions = {a['name']:a for a in c['actions_by_character'][CID]}

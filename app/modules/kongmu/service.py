@@ -75,7 +75,7 @@ FIXED_CHARACTER_AVATAR_SOURCE_ICONS = {
 }
 
 FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
-    '1090': 'images/characters/avatar/曳尔沐-square.webp',
+    '1090': 'images/characters/avatar/曳尔沐-square-v2.webp',
     '1046': 'images/characters/avatar/男主.webp',
     '1051': 'images/characters/avatar/男主.webp',
     '1036': 'images/characters/avatar/残虹.png',

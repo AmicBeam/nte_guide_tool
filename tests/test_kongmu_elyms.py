@@ -42,7 +42,7 @@ class ElymsKongmuTest(RoomFlowTestCase):
         self.assertEqual(character['name'], '曳尔沐')
         self.assertEqual(character['element'], '光')
         self.assertEqual(character['owner_grid_count'], 3)
-        self.assertEqual(character['avatar'], '/static/images/characters/avatar/曳尔沐-square.webp')
+        self.assertEqual(character['avatar'], '/static/images/characters/avatar/曳尔沐-square-v2.webp')
         self.assertIn('8%', character['kongmu_passive']['text'])
         self.assertIn('暴击率', character['kongmu_passive']['text'])
         self.assertEqual(self.client.get(character['avatar']).status_code, 200)

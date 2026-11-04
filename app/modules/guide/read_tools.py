@@ -65,7 +65,7 @@ def reference_search(query: str = '', kind: str | None = None, limit: int = 10, 
 
 
 def cultivation_result(character: str, values: dict) -> dict:
-    record = service.detail('characters', character)
+    record = service.cultivation_character(character)
     config = service.catalog()['cultivation']
     state = cultivation.defaults(record, config)
     state.update(values)

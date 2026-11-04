@@ -1,4 +1,5 @@
 """Elyms must satisfy the whole normal character page and all four tools."""
+from tests.guide_release_fixtures import published_character_data
 import importlib
 import importlib.util
 import json
@@ -6,6 +7,8 @@ from copy import deepcopy
 from pathlib import Path
 import unittest
 import tempfile
+from datetime import datetime
+from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
 from PIL import Image
@@ -16,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 URL = '/guide/characters/1090'
 
 
+@published_character_data
 class ElymsCharacterModulesTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -143,6 +147,7 @@ class ElymsCharacterModulesTest(unittest.TestCase):
             self.assertEqual(self.client.get(path).status_code,200)
 
 
+@published_character_data
 class ElymsToolFlowTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -184,17 +189,20 @@ class ElymsToolFlowTest(unittest.TestCase):
         published=self.client.post(f'/api/shaft/axes/{identifier}/publish',headers=tester_headers,json={})
         self.assertEqual(published.status_code,200)
         public_id=published.json['id']
-        allowed=self.client.get('/api/guide/axes?character=1090',headers=tester_headers)
-        self.assertEqual(allowed.status_code,200)
-        self.assertIn(public_id,{row['id']for row in allowed.json['items']})
-        for headers in ({},{'Authorization':'Bearer '+regular},{'Authorization':'Bearer '+invited}):
-            with self.subTest(authenticated=bool(headers)):
-                self.assertEqual(self.client.get(URL).status_code,200)
-                self.assertEqual(self.client.get(URL+'/builds').status_code,200)
-                filtered=self.client.get('/api/guide/axes?character=1090',headers=headers)
-                self.assertEqual(filtered.status_code,200)
-                self.assertNotIn(public_id,{row['id']for row in filtered.json['items']})
-                self.assertEqual(self.client.get('/api/guide/axes/'+str(public_id),headers=headers).status_code,400)
+        for instant,opened in [('2026-11-05T09:59:59+08:00',False),('2026-11-05T10:00:00+08:00',True)]:
+            with self.subTest(instant=instant),patch.object(service.character_release,'current_time',return_value=datetime.fromisoformat(instant)):
+                self.assertEqual(self.client.get('/api/guide/characters/1090').json['data']['content_released'],opened)
+                allowed=self.client.get('/api/guide/axes?character=1090',headers=tester_headers)
+                self.assertEqual(allowed.status_code,200)
+                self.assertIn(public_id,{row['id']for row in allowed.json['items']})
+                for headers in ({},{'Authorization':'Bearer '+regular},{'Authorization':'Bearer '+invited}):
+                    with self.subTest(authenticated=bool(headers)):
+                        self.assertEqual(self.client.get(URL).status_code,200)
+                        self.assertEqual(self.client.get(URL+'/builds').status_code,200)
+                        filtered=self.client.get('/api/guide/axes?character=1090',headers=headers)
+                        self.assertEqual(filtered.status_code,200)
+                        self.assertNotIn(public_id,{row['id']for row in filtered.json['items']})
+                        self.assertEqual(self.client.get('/api/guide/axes/'+str(public_id),headers=headers).status_code,400)
 
     def test_cultivation_kongmu_editor_and_related_articles(self):
         token=self._issue_login_and_get_token('elyms-complete-tools')

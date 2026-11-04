@@ -1,4 +1,5 @@
 """Downloaded CLI defaults to level-ten skills and optional per-hit details."""
+from tests.guide_release_fixtures import published_character_data
 from contextlib import redirect_stdout, redirect_stderr
 import importlib.util
 import io
@@ -13,6 +14,7 @@ from app.modules.guide import blueprint, service
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@published_character_data
 class CliSkillDefaultsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

@@ -1,4 +1,5 @@
 """Affinity import joins, shop semantics, and public format integration."""
+from tests.guide_release_fixtures import published_character_data
 import importlib.util
 import json
 from pathlib import Path
@@ -10,6 +11,7 @@ from app.modules.guide import blueprint, service
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@published_character_data
 class GuideAffinityTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

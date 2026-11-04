@@ -40,11 +40,11 @@ def register(blueprint):
             'awakens': {effect['name']: {'icon': effect.get('icon')}
                         for effect in item.get('awaken', [])},
             'portrait': item.get('assets', {}).get('fullbody') or item.get('assets', {}).get('portrait'),
-            'skills': {skill['id']: service.ability_title(skill) for skill in item['abilities']},
+            'skills': {skill['id']: service.ability_title(skill) for skill in item.get('abilities', [])},
             'skill_details': {skill['id'].casefold(): {
                 'name': service.ability_title(skill), 'icon': skill.get('icon'), 'type': skill.get('type')
-            } for skill in item['abilities']}
-        } for item in service.catalog()['characters']}
+            } for skill in item.get('abilities', [])}
+        } for item in service.public_records('characters') if item.get('status') != 'preview'}
         arcs = {item['id']: {'name': item['name'], 'image': item.get('image')}
                 for item in service.catalog()['arcs']}
         return render_template('guide/account.html', characters=characters, arcs=arcs,

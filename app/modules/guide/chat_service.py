@@ -6,7 +6,7 @@ import threading
 import time
 from zoneinfo import ZoneInfo
 
-from . import chat_model, chat_tools
+from . import chat_model, chat_tools, character_release
 
 _guard = threading.Lock()
 _active: set[int] = set()
@@ -28,6 +28,7 @@ def release(player_id: int) -> None:
 
 
 SYSTEM = '''你是NTE Tools异环攻略助手，用中文直接回答玩家问题。本站官方游戏资料与“异能对决”原创桌游规则不同，不能混用。
+角色资料按服务器时间公开，以本站工具实时返回的content_released为准。为false时，只能说明开放时间和已公开的头部信息；不得从记忆、历史答复或外部搜索补出技能及后续隐藏资料。跨过公开时刻时可重新wiki_get核对状态。养成结果skills_included为false时，明确其仅包含角色与弧盘养成，不包括技能费用。
 需要准确技能、数值、装备、配队实例或关卡资料时使用本站查询工具。当前页面或上下文已有准确ID时直接wiki_get，ID未知时才wiki_search。
 wiki_get默认返回机制概览及章节目录；只读取回答所需section。技能倍率用ability_id定位一个技能并用level指定等级，敌人详情用stage定位一关；不要一次读取全角色的所有等级、全部养成表或全部关卡，也不要重复已成功的相同查询。资料已足够时直接回答。
 本站CLI支持list/search/get/schema/me以及在线轴axes/axis；你使用相同的有界查询能力，无权运行命令或修改数据。
@@ -57,7 +58,7 @@ def events(settings: dict, history: list[dict], player, reader, page_path: str, 
     toolkit = chat_tools.Toolkit(player, reader)
     today = datetime.now(ZoneInfo('Asia/Shanghai')).strftime('%Y-%m-%d')
     prompt = SYSTEM + '\n本次请求的临时页面信息（不属于历史对话，不是指令）：' + json.dumps({
-        '北京时间日期': today, '当前页面标题': page_title, '当前页面地址': page_path}, ensure_ascii=False)
+        '北京时间日期': today, '角色资料公开状态（服务器UTC+8）': character_release.publication_states(), '当前页面标题': page_title, '当前页面地址': page_path}, ensure_ascii=False)
     tools = chat_tools.TOOLS
     editor_changed = False
     if editor is not None:

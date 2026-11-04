@@ -52,6 +52,8 @@ def calculate_arc(arc, values):
 
 def calculate(character, character_config, experience, values):
     result = cultivation.calculate(character, character_config, experience, values)
+    if character.get('content_released') is False:
+        result.update(skills_included=False, release_at=character['release_at'])
     result['state']['include_arc'] = enabled(values.get('include_arc', False))
     if not result['state']['include_arc']:
         return result

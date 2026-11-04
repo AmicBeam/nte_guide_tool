@@ -12,6 +12,7 @@
 {% block content %}
 <nav class="guide-breadcrumb"><a href="/guide">攻略数据库</a> / <a href="/guide/characters/{{ record.id }}">{{ record.name }}</a> / 养成计算器</nav>
 <header class="guide-hero"><p class="guide-eyebrow">CULTIVATION</p><h1>{{ record.name }} · 养成计算器</h1><p>填写当前练度与目标，计算角色升级、突破和技能养成所需的全部材料。</p></header>
+{% if record.content_released|default(true) == false %}<p class="guide-muted" role="status">技能养成将于 {{ record.release_at|guide_release_time }} 开放；当前仅计算角色与弧盘养成。</p>{% endif %}
 <section class="cultivation-personal" aria-label="我的游戏数据" data-character-id="{{ record.id }}" data-skill-labels='{ {% for skill in skills %}{{ skill.id|tojson }}: {{ skill.label|tojson }}{{ "," if not loop.last else "" }}{% endfor %} }'>
 <div class="cultivation-personal-title"><div><h2>我的练度</h2><p id="personal-status" role="status">登录本站后，可同步并保存角色练度和已装备数据；也可直接手填计算。</p></div><button type="button" id="sync-open">同步游戏数据</button></div>
 <div id="personal-controls" hidden><label>游戏账号<select id="profile-select" aria-label="已同步游戏账号"></select></label><button type="button" id="use-profile">使用已同步练度</button><button type="button" id="delete-profile" class="cultivation-secondary">删除此账号数据</button></div>

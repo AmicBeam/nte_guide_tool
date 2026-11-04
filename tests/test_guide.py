@@ -1,3 +1,4 @@
+from tests.guide_release_fixtures import published_character_data
 import importlib.util
 import io
 import re
@@ -19,6 +20,7 @@ def load_file(name, path):
     return module
 
 
+@published_character_data
 class GuideTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

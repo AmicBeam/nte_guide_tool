@@ -22,6 +22,7 @@
 {% if kind == 'beginner' %}<p class="guide-text">{{ record.description|default('') }}</p><p class="guide-links"><a href="{{ record.article_url }}" target="_blank" rel="noopener noreferrer">{% if record.author is defined %}作者原帖 · {{ record.author }}{% else %}在哔哩哔哩观看{% endif %} ↗</a></p>{% endif %}
 
 {% if kind == 'characters' and profile.status|default('') != 'preview' %}{% include 'guide/character_tools.html' %}{% endif %}
+{% if kind != 'characters' or profile.content_released|default(true) %}
 {% if kind != 'challenges' %}{% include 'guide/related_articles.html' %}{% endif %}
 <button class="guide-toc-toggle" type="button" aria-expanded="false" aria-controls="guide-toc" data-toc-toggle>目录</button>
 <aside class="guide-toc" id="guide-toc" data-guide-toc data-open="false">
@@ -52,4 +53,5 @@
 {% elif kind == 'beginner' %}{% include 'guide/beginner_blocks.html' %}
 {% else %}{{ tree(value) }}{% endif %}</section>{% endfor %}</div>
 {% if kind != 'beginner' %}<details class="guide-notes"><summary>数值阅读约定</summary>{% for note in notes %}<p>{{ note }}</p>{% endfor %}</details>{% endif %}
+{% else %}<p class="guide-muted" role="status">技能及后续资料将于 {{ profile.release_at|guide_release_time }} 公开。</p>{% endif %}
 {% endblock %}

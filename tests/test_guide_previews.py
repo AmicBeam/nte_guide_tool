@@ -1,4 +1,5 @@
 """Announcements share discovery but never expose incomplete character tools."""
+from tests.guide_release_fixtures import published_character_data
 from copy import deepcopy
 import unittest
 from unittest.mock import patch
@@ -10,6 +11,7 @@ from flask import Flask
 from app.modules.guide import blueprint
 
 
+@published_character_data
 class GuidePreviewTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -45,7 +47,7 @@ class GuidePreviewTest(unittest.TestCase):
                 self.assertNotIn(text, html)
             self.assertEqual(self.client.get(path + '.md').status_code, 200)
             overview = self.client.get('/api/guide/characters/' + identifier + '?section=overview').json['data']
-            expected = {'id', 'name', 'status', 'preview_image', 'materials'}
+            expected = {'id', 'name', 'status', 'preview_image', 'materials', 'release_at', 'content_released'}
             self.assertEqual(set(overview), expected)
             self.assertEqual(self.client.get('/api/guide/characters/' + identifier + '?ability_id=missing').status_code, 404)
             self.assertEqual(set(entry_links('characters', service.detail('characters', identifier))), {'detail'})

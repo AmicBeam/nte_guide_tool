@@ -5,10 +5,12 @@ from flask import Blueprint, Response, redirect, jsonify, render_template, reque
 from . import service, cultivation, presentation, arc_cultivation
 from .challenge_calendar import is_current_challenge
 from .rich_text import description_html
+from .character_release import display_time
 
 blueprint = Blueprint('guide_module', __name__, template_folder='templates',
                       static_folder='static', static_url_path='/static/guide')
 blueprint.add_app_template_filter(description_html, 'guide_description_html')
+blueprint.add_app_template_filter(display_time, 'guide_release_time')
 blueprint.add_app_template_filter(is_current_challenge, 'guide_current_challenge')
 blueprint.add_app_template_filter(presentation.material_display, 'guide_material_display')
 blueprint.add_app_template_filter(presentation.kongmu_entry, 'guide_kongmu_entry')
@@ -78,6 +80,7 @@ def index():
     authored = public_items(request.args.get('q', '').strip()) if kind == 'beginner' else []
     counts = {key: len(service.public_records(key)) for key in service.KINDS}
     return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts, selected_ids=selected_ids, result_count=result_count, authored_articles=authored,
+        pending_releases=[item for item in items if item.get('content_released') is False],
         hide_story=selected_filters['hide_story'],
         food_groups=list({row['bonus_group']: row['bonus_name'] for row in service.catalog()['foods']}.items()),
         food_asset_version=max((Path(__file__).parent / 'static' / name).stat().st_mtime_ns for name in ('foods.js', 'foods.css')),
@@ -89,16 +92,16 @@ def index():
 
 @blueprint.get('/guide/<kind>/<identifier>')
 def entry(kind, identifier):
-    record = get_record(kind, identifier)
+    profile = service.detail(kind, identifier) if kind == 'characters' else None
+    record = profile if profile and profile.get('content_released') is False else get_record(kind, identifier)
     if kind == 'foods':
         return redirect('/guide?kind=foods&food=' + record['id'])
     if kind == 'characters':
-        profile = service.detail(kind, identifier)
         if profile.get('status') == 'preview' and not profile.get('reference_details'):
             return render_template('guide/preview.html', record=profile,
-                                   material_preview=presentation.upgrade_material_preview(profile))
+                                   material_preview=presentation.upgrade_material_preview(profile),
+                                   pending_releases=[profile] if profile.get('content_released') is False else [])
     sections = service.page_sections(kind, record)
-    profile = service.detail(kind, identifier) if kind == 'characters' else None
     if profile and profile.get('status') == 'preview':
         profile = {key: profile[key] for key in ('id', 'name', 'status', 'assets', 'rarity',
             'rarity_icon', 'element_name', 'element_icon', 'materials') if key in profile}
@@ -110,7 +113,20 @@ def entry(kind, identifier):
     return render_template('guide/detail.html', attached_articles=attached, record=record, sections=sections, kind=kind,
                            kinds=service.KINDS, art=art, profile=profile, overview=overview, arc_image=arc_image,
                            material_preview=presentation.upgrade_material_preview(overview) if overview else [],
+                           pending_releases=[profile] if profile and profile.get('content_released') is False else [],
                            notes=service.schema()['notes'], recommended_arc=arc_cultivation.recommended(profile) if profile else None)
+
+
+@blueprint.get('/api/guide/characters/<identifier>/release')
+def character_release_state(identifier):
+    return jsonify(data=service.character_release_status(identifier))
+
+
+@blueprint.after_request
+def dynamic_reference_cache(response):
+    if request.path == '/guide' or request.path.startswith(('/guide/', '/api/guide/')):
+        response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @blueprint.get('/guide/characters/<identifier>/axes/<int:axis_id>/compare')
@@ -127,7 +143,7 @@ def axis_compare_page(identifier, axis_id):
 
 @blueprint.get('/guide/characters/<identifier>/cultivation')
 def cultivation_page(identifier):
-    record = service.playable_character(identifier)
+    record = service.cultivation_character(identifier)
     config = service.catalog()['cultivation']
     values = arc_cultivation.defaults(record, config)
     values.update({key: request.args[key] for key in values if key in request.args})
@@ -152,7 +168,7 @@ def character_builds_page(identifier):
 
 @blueprint.post('/api/guide/characters/<identifier>/cultivation')
 def api_cultivation(identifier):
-    record = service.playable_character(identifier)
+    record = service.cultivation_character(identifier)
     config = service.catalog()['cultivation']
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):

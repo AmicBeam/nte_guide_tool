@@ -5,5 +5,6 @@
 {% block guide_back %}<a class="guide-top-back" href="/guide?kind=characters" aria-label="返回角色档案">← 返回</a>{% endblock %}
 {% block content %}
 <figure class="guide-preview-hero"><img src="{{ record.preview_image }}" alt="{{ record.name }}角色预告" width="1052" height="592" fetchpriority="high"></figure>
+{% if record.content_released|default(true) == false %}<p class="guide-muted">资料开放时间：{{ record.release_at|guide_release_time }}</p>{% endif %}
 {% if material_preview %}<section class="guide-preview-materials" aria-label="所需升级材料"><h2>所需升级材料</h2>{{ material_cards(material_preview, false) }}</section>{% endif %}
 {% endblock %}

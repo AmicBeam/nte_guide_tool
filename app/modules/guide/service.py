@@ -9,7 +9,7 @@ from markupsafe import Markup, escape
 from .affinity import with_gift_costs
 from .description_parameters import bind_description_parameters
 from .challenge_calendar import is_released_challenge
-from . import reference_view, previews
+from . import reference_view, previews, character_release
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'permanent': '常驻加成', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '攻略'}
 BEGINNER_SECTIONS = ('intro', 'gameplay', 'currencies', 'events', 'wishes', 'closing')
@@ -28,6 +28,8 @@ LABELS = {
     'floor_begin': '起始层', 'floor_end': '结束层', 'single': '敌人配置',
     'total_affinity': '从零到满好感所需好感值', 'required_gifts': '所需礼物份数',
     'full_affinity_total': '满好感总需求',
+    'release_at': '资料开放时间（UTC+8）', 'content_released': '技能及后续资料已开放',
+    'skills_included': '包含技能养成',
     'costs': '礼物花费', 'unit_price': '单价', 'total_cost': '总花费',
     'story_only': '剧情专属料理',
     'bonus_group': '具体加成分类', 'bonus_name': '加成类型', 'fons_price': '最低方斯标价',
@@ -145,7 +147,9 @@ def public_records(kind):
     records = catalog()[kind]
     if kind == 'characters':
         complete_ids = {str(record['id']) for record in records}
-        return records + [row for row in previews.characters() if str(row['id']) not in complete_ids]
+        records = records + [row for row in previews.characters() if str(row['id']) not in complete_ids]
+        now = character_release.current_time()
+        return [character_release.project(row, now) for row in records]
     if kind == 'challenges':
         return [record for record in records if is_released_challenge(record)]
     return records
@@ -154,7 +158,7 @@ def public_records(kind):
 def summary(kind, record):
     identifier = str(record['id'])
     result = {k: record[k] for k in ('id', 'name', 'aliases', 'element_name', 'rarity',
-        'type_name', 'image', 'element_icon', 'rarity_icon', 'is_permanent', 'begin_date', 'end_date', 'stage_count', 'floor_begin', 'floor_end', 'status', 'preview_image') if k in record}
+        'type_name', 'image', 'element_icon', 'rarity_icon', 'is_permanent', 'begin_date', 'end_date', 'stage_count', 'floor_begin', 'floor_end', 'status', 'preview_image', 'release_at', 'content_released') if k in record}
     result.update(kind=kind, url=f'/guide/{kind}/{identifier}',
                   json_url=f'/api/guide/{kind}/{identifier}',
                   markdown_url=f'/guide/{kind}/{identifier}.md')
@@ -219,12 +223,32 @@ def playable_character(identifier):
     return record
 
 
+def character_release_status(identifier):
+    records = catalog()['characters'] + previews.characters()
+    record = next((row for row in records if str(row['id']) == identifier), None)
+    if record is None:
+        raise LookupError('未找到角色')
+    return character_release.release_status(record)
+
+
+def cultivation_character(identifier):
+    record = playable_character(identifier)
+    if record.get('content_released') is False:
+        raw = next(c for c in catalog()['characters'] if str(c['id']) == identifier)
+        record = {**record, 'abilities': [], 'materials': {
+            'breakthrough': raw['materials']['breakthrough'], 'skills': []},
+            'experience': raw['experience']}
+    return record
+
+
 def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None, *, skill_level=None, hit_details=None):
     if kind == 'beginner' and section == 'progression':
         section = 'gameplay'
     record = next((r for r in public_records(kind) if str(r['id']) == identifier), None)
     if record is None:
         raise LookupError('未找到条目')
+    if record.get('content_released') is False and (section in character_release.AFTER_SKILL_FIELDS or ability_id is not None):
+        raise LookupError('角色技能及后续资料尚未开放，开放时间：' + character_release.display_time(record['release_at']))
     if stage is not None:
         if kind not in ('challenges', 'endless'):
             raise ValueError('stage 仅适用于轨外之境或全站深境')
@@ -233,6 +257,8 @@ def detail(kind, identifier, section=None, stage=None, ability_id=None, level=No
         if not record['stages']:
             raise LookupError('未找到关卡')
     selected = reference_view.select(record, kind, section, ability_id, level, skill_level, hit_details)
+    if kind == 'characters':
+        selected = {**selected, **{key: record[key] for key in ('release_at', 'content_released') if key in record}}
     if kind == 'beginner':
         selected = {**selected, **{key: record[key] for key in ('description', 'author', 'article_url', 'chapter_titles') if key in record}}
     return selected
@@ -340,6 +366,8 @@ def schema():
 
 
 def page_sections(kind, record):
+    if kind == 'characters' and record.get('content_released') is False:
+        return {}
     if kind == 'characters' and record.get('status') == 'preview':
         confirmed = record.get('reference_details', {})
         return {key: confirmed[key] for key in ('abilities', 'awaken', 'resonance') if confirmed.get(key)}

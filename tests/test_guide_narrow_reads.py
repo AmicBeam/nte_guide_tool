@@ -1,4 +1,5 @@
 """Narrow CLI/API/model reads retain exact values without bulk context."""
+from tests.guide_release_fixtures import published_character_data
 import importlib.util
 import io
 import json
@@ -14,6 +15,7 @@ from app.modules.guide import blueprint, service, chat_tools, chat_service
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@published_character_data
 class NarrowReadTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

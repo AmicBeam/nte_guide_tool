@@ -34,12 +34,13 @@ class GuidePreviewTest(unittest.TestCase):
         for identifier in ('1090', 'preview-exe'):
             path = '/guide/characters/' + identifier
             html = self.client.get(path).text
-            self.assertIn('class="guide-preview-hero', html)
+            self.assertIn('guide-character-intro' if identifier == '1090' else 'class="guide-preview-hero', html)
+            self.assertEqual('guide-preview-hero' in html, identifier == 'preview-exe')
             self.assertIn('所需升级材料', html)
             self.assertIn('空心花籽', html)
-            hidden = ['属性数值', '角色定位', '养成计算器', 'guide-toc']
+            hidden = ['角色定位', '养成计算器']
             if identifier == 'preview-exe':
-                hidden.append('type="range"')
+                hidden.extend(['属性数值', 'guide-toc', 'type="range"'])
             for text in hidden:
                 self.assertNotIn(text, html)
             self.assertEqual(self.client.get(path + '.md').status_code, 200)
@@ -66,8 +67,15 @@ class GuidePreviewTest(unittest.TestCase):
         self.assertEqual(len(row['values']), 13)
         self.assertTrue(row['hit_details'])
         html = self.client.get('/guide/characters/1090').text
-        for text in ('沉入电子梦', '错频故障', '404 遥望一座孤岛', '拜启，我的旧友', '基础面板与完整养成配置待补'):
+        for text in ('沉入电子梦', '错频故障', '404 遥望一座孤岛', '拜启，我的旧友', '基础面板暂未提供'):
             self.assertIn(text, html)
+        self.assertIn('guide-character-header', html)
+        self.assertIn('guide-character-overview', html)
+        self.assertIn('guide-toc', html)
+        self.assertIn('alt="光属性"', html)
+        self.assertIn('alt="5星角色"', html)
+        self.assertNotIn('guide-preview-hero', html)
+        self.assertNotIn('曳尔沐 · 预告', html)
         self.assertIn('沉入电子梦', self.client.get('/guide/characters/1090.md').text)
         for ability in data['abilities']:
             self.assertEqual(self.client.get(ability['icon']).status_code, 200)

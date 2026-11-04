@@ -94,11 +94,14 @@ def entry(kind, identifier):
         return redirect('/guide?kind=foods&food=' + record['id'])
     if kind == 'characters':
         profile = service.detail(kind, identifier)
-        if profile.get('status') == 'preview':
+        if profile.get('status') == 'preview' and not profile.get('reference_details'):
             return render_template('guide/preview.html', record=profile,
                                    material_preview=presentation.upgrade_material_preview(profile))
     sections = service.page_sections(kind, record)
     profile = service.detail(kind, identifier) if kind == 'characters' else None
+    if profile and profile.get('status') == 'preview':
+        profile = {key: profile[key] for key in ('id', 'name', 'status', 'assets', 'rarity',
+            'rarity_icon', 'element_name', 'element_icon', 'materials') if key in profile}
     art = profile.get('assets') if profile else None
     overview = profile if profile else (service.detail(kind, identifier) if kind == 'arcs' else None)
     arc_image = overview.get('image') if kind == 'arcs' else None

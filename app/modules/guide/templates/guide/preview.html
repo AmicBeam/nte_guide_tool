@@ -1,14 +1,9 @@
 {% extends 'guide/layout.html' %}
-{% from 'guide/components.html' import material_cards, skill %}
+{% from 'guide/components.html' import material_cards %}
 {% block title %}{{ record.name }} · 预告 · NTE Tools{% endblock %}
-{% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='preview.css') }}">{% if record.reference_details|default(none) %}<script src="{{ url_for('guide_module.static', filename='guide.js') }}" defer></script><script src="{{ url_for('guide_module.static', filename='rich_text.js') }}" defer></script><link rel="stylesheet" href="{{ url_for('guide_module.static', filename='rich_text.css') }}">{% endif %}{% endblock %}
+{% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='preview.css') }}">{% endblock %}
 {% block guide_back %}<a class="guide-top-back" href="/guide?kind=characters" aria-label="返回角色档案">← 返回</a>{% endblock %}
 {% block content %}
-{% if record.assets.fullbody|default(none) %}<figure class="guide-preview-hero guide-preview-portrait"><img src="{{ record.assets.fullbody }}" alt="{{ record.name }}高清立绘" width="2160" height="2560" fetchpriority="high"></figure>{% else %}<figure class="guide-preview-hero"><img src="{{ record.preview_image }}" alt="{{ record.name }}角色预告" width="1052" height="592" fetchpriority="high"></figure>{% endif %}
-{% if record.reference_details|default(none) %}
-<h1>{{ record.name }}</h1><p class="guide-muted">技能与觉醒资料已补充，基础面板与完整养成配置待补。</p>
-<div class="guide-detail-body"><section class="guide-detail-section"><h2>技能</h2>{% for ability in record.reference_details.abilities %}{{ skill(ability, loop.index, record.id) }}{% endfor %}</section>
-{% for key in ['awaken', 'resonance'] %}<section class="guide-detail-section"><h2>{{ key|guide_label }}</h2><div class="guide-passive-grid">{% for item in record.reference_details[key] %}<article class="guide-passive-card"><header class="guide-passive-heading">{% if item.icon|default(none) %}<img class="guide-passive-icon" src="{{ item.icon }}" alt="" width="56" height="56" loading="lazy">{% endif %}<div>{% if key == 'resonance' %}<span class="guide-eyebrow">共鸣 Lv.{{ item.resonance_level }}</span>{% endif %}<h3>{{ item.name }}</h3></div></header><p class="guide-text">{{ item.desc|guide_description_html(record.id, item.parameters|default([])) }}</p></article>{% endfor %}</div></section>{% endfor %}</div>
-{% endif %}
+<figure class="guide-preview-hero"><img src="{{ record.preview_image }}" alt="{{ record.name }}角色预告" width="1052" height="592" fetchpriority="high"></figure>
 {% if material_preview %}<section class="guide-preview-materials" aria-label="所需升级材料"><h2>所需升级材料</h2>{{ material_cards(material_preview, false) }}</section>{% endif %}
 {% endblock %}

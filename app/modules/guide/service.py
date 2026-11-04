@@ -339,6 +339,9 @@ def schema():
 
 
 def page_sections(kind, record):
+    if kind == 'characters' and record.get('status') == 'preview':
+        confirmed = record.get('reference_details', {})
+        return {key: confirmed[key] for key in ('abilities', 'awaken', 'resonance') if confirmed.get(key)}
     preferred = {
         'characters': ('abilities', 'awaken', 'resonance', 'nouns', 'equip_slots', 'affinity', 'aliases'),
         'arcs': ('effect', 'exclusive_desc', 'exclusive_character_ids'),

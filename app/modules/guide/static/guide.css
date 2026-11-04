@@ -97,5 +97,3 @@
 /* Keep role tags within the text column beside wide character artwork. */
 .guide-character-header>div{max-width:100%}
 @media(min-width:901px){.guide-character-intro .guide-character-header{padding-right:60%}}
-
-.guide-profile-icons .guide-missing-arc{flex-basis:100%}

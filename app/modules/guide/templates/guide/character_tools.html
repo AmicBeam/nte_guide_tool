@@ -10,10 +10,7 @@
   {% set kongmu = profile|guide_kongmu_entry %}{% if kongmu %}<a class="guide-tool-entry" href="{{ kongmu.url }}">
     <span class="guide-tool-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></span>
     <span class="guide-tool-copy"><strong>空幕计算</strong><small>{% if kongmu.recommendations %}推荐 {{ kongmu.recommendations[0].name }}{% else %}查看{{ profile.name }}的空幕搭配方案{% endif %}</small></span><span class="guide-tool-arrow" aria-hidden="true">↗</span>
-  </a>{% else %}<span class="guide-tool-entry" aria-disabled="true">
-    <span class="guide-tool-icon" aria-hidden="true">▦</span>
-    <span class="guide-tool-copy"><strong>空幕计算</strong><small>该角色的空幕计算资料暂未接入</small></span>
-  </span>{% endif %}
+  </a>{% endif %}
   <a class="guide-tool-entry" href="/guide/characters/{{ record.id }}/infographic">
     <span class="guide-tool-icon" aria-hidden="true">▧</span>
     <span class="guide-tool-copy"><strong>制作角色一图流攻略</strong><small>自由排版、编辑配装与队伍，导出高清图片</small></span><span class="guide-tool-arrow" aria-hidden="true">↗</span>

@@ -12,7 +12,7 @@
 {% block content %}
 <nav class="guide-breadcrumb"><a href="/guide">攻略数据库</a> / <a href="/guide/characters/{{ record.id }}">{{ record.name }}</a> / 养成计算器</nav>
 <header class="guide-hero"><p class="guide-eyebrow">CULTIVATION</p><h1>{{ record.name }} · 养成计算器</h1><p>填写当前练度与目标，计算角色升级、突破和技能养成所需的全部材料。</p></header>
-{% if record.content_released|default(true) == false %}<p class="guide-muted" role="status">技能养成将于 {{ record.release_at|guide_release_time }} 开放；当前仅计算角色{% if arcs %}与弧盘{% endif %}养成。</p>{% endif %}
+{% if record.content_released|default(true) == false %}<p class="guide-muted" role="status">技能养成将于 {{ record.release_at|guide_release_time }} 开放；当前仅计算角色与弧盘养成。</p>{% endif %}
 <section class="cultivation-personal" aria-label="我的游戏数据" data-character-id="{{ record.id }}" data-skill-labels='{ {% for skill in skills %}{{ skill.id|tojson }}: {{ skill.label|tojson }}{{ "," if not loop.last else "" }}{% endfor %} }'>
 <div class="cultivation-personal-title"><div><h2>我的练度</h2><p id="personal-status" role="status">登录本站后，可同步并保存角色练度和已装备数据；也可直接手填计算。</p></div><button type="button" id="sync-open">同步游戏数据</button></div>
 <div id="personal-controls" hidden><label>游戏账号<select id="profile-select" aria-label="已同步游戏账号"></select></label><button type="button" id="use-profile">使用已同步练度</button><button type="button" id="delete-profile" class="cultivation-secondary">删除此账号数据</button></div>
@@ -29,7 +29,7 @@
 </fieldset>{% endfor %}</div><p class="guide-muted">突破阶段按等级自动判断；临界等级可选择是否已突破。按刚达到该等级计算，不计等级内已累计经验。</p>
 </section>
 <section class="cultivation-arc" aria-label="弧盘养成">
-<label class="cultivation-arc-toggle"><input type="checkbox" name="include_arc" id="include-arc" value="1" {% if not arcs %}disabled{% endif %} {% if values.include_arc in [true, 1, '1'] %}checked{% endif %}>{% if arcs %}一并计算弧盘（可选）{% else %}弧盘适配暂未提供，当前仅计算角色养成{% endif %}</label>
+<label class="cultivation-arc-toggle"><input type="checkbox" name="include_arc" id="include-arc" value="1" {% if values.include_arc in [true, 1, '1'] %}checked{% endif %}>一并计算弧盘（可选）</label>
 <fieldset id="arc-fields" {% if values.include_arc not in [true, 1, '1'] %}disabled hidden{% endif %}>
 <label class="guide-cultivation-field">选择弧盘<select name="arc_id" id="arc-select">{% for arc in arcs %}<option value="{{ arc.id }}" {% if values.arc_id == arc.id %}selected{% endif %}>{{ arc.name }} · {{ arc.rarity }}星</option>{% endfor %}</select></label>
 <div class="cultivation-level-pair">{% for side, title in [('current', '当前练度'), ('target', '目标练度')] %}<fieldset><legend>{{ title }}</legend>
@@ -37,9 +37,8 @@
 <label class="guide-cultivation-field" data-arc-boundary="{{ side }}">{{ title }} · 是否已突破<select name="arc_{{ side }}_ascended"><option value="0" {% if values['arc_' ~ side ~ '_ascended'] not in [true, 1, '1'] %}selected{% endif %}>尚未突破</option><option value="1" {% if values['arc_' ~ side ~ '_ascended'] in [true, 1, '1'] %}selected{% endif %}>已突破</option></select></label>
 </fieldset>{% endfor %}</div><p class="guide-muted">计算等级与突破材料，不计混频消耗；可选择同类型的其他弧盘。</p>
 </fieldset></section>
-{% if skills %}<h2>技能与天赋</h2><p class="guide-muted">填写基础技能等级，不含觉醒或共鸣额外增加的等级。可解锁的天赋、都市技能以 0 表示未解锁。</p>
+<h2>技能与天赋</h2><p class="guide-muted">填写基础技能等级，不含觉醒或共鸣额外增加的等级。可解锁的天赋、都市技能以 0 表示未解锁。</p>
 <div class="guide-cultivation-skills cultivation-skill-rows">{% for skill in skills %}{% set i = loop.index0 %}<fieldset><legend>{{ skill.label }}</legend><div class="cultivation-sliders">{{ skill_slider('current_skill_' ~ i, skill.label ~ ' · 当前等级', skill.minimum, skill.maximum, '当前等级') }}{{ skill_slider('target_skill_' ~ i, skill.label ~ ' · 目标等级', skill.minimum, skill.maximum, '目标等级') }}</div></fieldset>{% endfor %}</div>
-{% endif %}
 {% if error %}<p class="guide-cultivation-error" role="alert">{{ error }}</p>{% endif %}
 <div class="guide-links cultivation-actions"><button type="submit">计算所需资源</button><a href="/guide/characters/{{ record.id }}/cultivation">重置</a></div>
 </form>

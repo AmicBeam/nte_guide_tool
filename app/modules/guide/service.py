@@ -74,7 +74,6 @@ LABELS = {
     'spawn_type': '出场方式', 'spawn_time': '出场时间（秒）',
     'class_id': '敌人类型 ID', 'is_boss': '首领', 'attach': '附加说明',
     'image': '图片', 'swallowable': '可被鬼郎丸吞噬',
-    'growth_values': '等级及突破成长增量',
     'stats': '属性数值', 'abilities': '技能', 'awaken': '觉醒', 'resonance': '共鸣',
     'nouns': '机制词条', 'effect': '弧盘效果', 'stages': '关卡', 'values': '数值',
     'name': '名称', 'id': 'ID', 'description': '说明', 'desc': '说明', 'simple_desc': '简述',
@@ -386,9 +385,6 @@ def page_sections(kind, record):
     if kind in ('characters', 'arcs'):
         for key in ('stats', 'materials', 'experience'):
             result.pop(key, None)
-    for key in record.get('unavailable_sections', {}):
-        if key in keys:
-            result.setdefault(key, [])
     if isinstance(result.get('nouns'), dict):
         result['nouns'] = list(result['nouns'].values())
     return result

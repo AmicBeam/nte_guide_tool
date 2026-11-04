@@ -16,9 +16,6 @@ class GuideKongmuLinksTest(unittest.TestCase):
         cartridge_ids = {c['id'] for c in catalog['cartridges']}
         for character in service.catalog()['characters']:
             entry = presentation.kongmu_entry(character)
-            if character['id'] == '1074':
-                self.assertIsNone(entry)
-                continue
             params = parse_qs(urlsplit(entry['url']).query)
             self.assertEqual(params['character'], [str(character['id'])])
             self.assertIn(params['character'][0], character_ids)

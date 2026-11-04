@@ -42,10 +42,6 @@ class ArcCultivationTest(unittest.TestCase):
         for character in service.catalog()['characters']:
             first = arc_cultivation.recommended(character)
             choices = arc_cultivation.choices(character)
-            if character['id'] == '1074':
-                self.assertEqual(choices, [])
-                self.assertIsNone(first)
-                continue
             self.assertTrue(choices)
             if first is None:
                 self.assertNotIn(character['id'], arc_cultivation.config()['recommendations'])

@@ -136,10 +136,7 @@ def main():
     record, caps, rich = assemble(args.ntedata_dir, catalog, json.loads(args.equipment_json.read_text()))
     records = [c for c in catalog['characters'] if c['id'] != CID] + [record]
     catalog['characters'] = records; catalog['cultivation']['level_caps'][CID] = caps
-    supplemental = json.loads((DATA / 'ntedata_characters.json').read_text())
-    supplemental['characters'] = [c for c in supplemental['characters'] if c['id'] != CID] + [record]
-    supplemental['level_caps'][CID] = caps
-    outputs = {'catalog.json': catalog, 'ntedata_characters.json': supplemental}
+    outputs = {'catalog.json': catalog, 'ntedata_characters.json': {'characters': [record], 'level_caps': {CID: caps}}}
     def load(name): return json.loads((DATA / name).read_text())
     for name in ('skill_icons.json', 'passive_icons.json', 'character_rich_text.json'):
         payload = load(name)

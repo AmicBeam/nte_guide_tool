@@ -54,7 +54,7 @@ class ElymsCharacterModulesTest(unittest.TestCase):
         self.assertNotIn('预告', html)
         card = next(c for c in self.client.get('/api/guide/characters?q=曳尔沐').json['items'] if c['id']=='1090')
         self.assertNotEqual(card.get('status'), 'preview')
-        self.assertEqual(self.client.get('/guide').text.count('class="guide-preview-badge"'), 0)
+        self.assertEqual(self.client.get('/guide').text.count('class="guide-preview-badge"'), 1)
 
     def test_real_attributes_skills_costs_equipment_and_explicit_affinity_state(self):
         record = service.detail('characters', '1090')
@@ -126,7 +126,7 @@ class ElymsCharacterModulesTest(unittest.TestCase):
         data={'characters':[],'cultivation':{'level_caps':{}}}
         refresh.merge_local_characters(data,local)
         refresh.merge_local_characters(data,local)
-        self.assertEqual([c['id']for c in data['characters']],['1090','1074'])
+        self.assertEqual([c['id']for c in data['characters']],['1090'])
         self.assertEqual(data['cultivation']['level_caps']['1090'],[20,30,40,50,60,70,80])
         self.assertTrue(data['characters'][0]['stats'])
         broken=deepcopy(local);broken['characters'][0]['stats']=[]

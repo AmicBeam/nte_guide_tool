@@ -20,17 +20,8 @@ class GuidePreviewTest(unittest.TestCase):
         app.register_blueprint(blueprint)
         cls.client = app.test_client()
 
-    def setUp(self):
-        row = {'id': 'preview-test', 'name': '测试预告', 'element_name': '暗', 'rarity': 5,
-               'status': 'preview', 'assets': {'avatar': '/static/images/characters/avatar/Exe-square.webp'},
-               'preview_image': '/static/images/characters/portrait/Exe.webp',
-               'materials': {'breakthrough': [{'items': [{'id': 'weeklycloneboss_a04_01', 'name': '空心花籽'}]}], 'skills': []}}
-        self.fixture = [row]
-        patcher = patch.object(previews, 'characters', side_effect=lambda: deepcopy(self.fixture))
-        patcher.start(); self.addCleanup(patcher.stop)
-
     def test_discovery_filters_and_local_assets(self):
-        for identifier, name, element in [('preview-test', '测试预告', '暗')]:
+        for identifier, name, element in [('preview-exe', 'Exe', '暗')]:
             rows = self.client.get('/api/guide/characters?q=' + name + '&element=' + element + '&rarity=5').json['items']
             row = next(row for row in rows if row['id'] == identifier)
             self.assertEqual(row['status'], 'preview')
@@ -39,10 +30,10 @@ class GuidePreviewTest(unittest.TestCase):
                     self.assertEqual(response.status_code, 200)
         html = self.client.get('/guide').text
         self.assertEqual(html.count('class="guide-preview-badge"'), 1)
-        self.assertEqual(len(service.catalog()['characters']), 27)
+        self.assertEqual(len(service.catalog()['characters']), 26)
 
     def test_detail_is_preview_only_and_readable_in_public_formats(self):
-        for identifier in ('preview-test',):
+        for identifier in ('preview-exe',):
             path = '/guide/characters/' + identifier
             html = self.client.get(path).text
             self.assertIn('class="guide-preview-hero', html)
@@ -50,13 +41,13 @@ class GuidePreviewTest(unittest.TestCase):
             self.assertIn('所需升级材料', html)
             self.assertIn('空心花籽', html)
             hidden = ['角色定位', '养成计算器']
-            if identifier == 'preview-test':
+            if identifier == 'preview-exe':
                 hidden.extend(['属性数值', 'guide-toc', 'type="range"'])
             for text in hidden:
                 self.assertNotIn(text, html)
             self.assertEqual(self.client.get(path + '.md').status_code, 200)
             overview = self.client.get('/api/guide/characters/' + identifier + '?section=overview').json['data']
-            expected = {'id', 'name', 'status', 'preview_image', 'materials'}
+            expected = {'id', 'name', 'status', 'preview_image', 'materials', 'release_at', 'content_released'}
             self.assertEqual(set(overview), expected)
             self.assertEqual(self.client.get('/api/guide/characters/' + identifier + '?ability_id=missing').status_code, 404)
             self.assertEqual(set(entry_links('characters', service.detail('characters', identifier))), {'detail'})

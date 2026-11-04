@@ -255,16 +255,5 @@
     "GA_Elyms_Passive3": "/static/guide/skill-icons/Elyms_Pas3.webp",
     "City_Ability_Elyms_01": null,
     "City_Ability_Elyms_02": null
-  },
-  "1074": {
-    "GA_Exe_Melee": null,
-    "GA_Exe_Skill": null,
-    "GA_Exe_UltraSkill": null,
-    "GA_Exe_QTE": null,
-    "GA_Exe_Passive_1": null,
-    "GA_Exe_Passive_2": null,
-    "GA_Exe_Passive_3": null,
-    "City_Ability_Exe_01": null,
-    "City_Ability_Exe_02": null
   }
 }

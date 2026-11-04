@@ -986,43 +986,5 @@
         "icon": "/static/guide/passive-icons/1009_2.webp"
       }
     ]
-  },
-  "1074": {
-    "awaken": [
-      {
-        "name": "觉醒 1",
-        "icon": null
-      },
-      {
-        "name": "觉醒 2",
-        "icon": null
-      },
-      {
-        "name": "觉醒 3",
-        "icon": null
-      },
-      {
-        "name": "觉醒 4",
-        "icon": null
-      },
-      {
-        "name": "觉醒 5",
-        "icon": null
-      },
-      {
-        "name": "觉醒 6",
-        "icon": null
-      }
-    ],
-    "resonance": [
-      {
-        "name": "共鸣 3",
-        "icon": null
-      },
-      {
-        "name": "共鸣 6",
-        "icon": null
-      }
-    ]
   }
 }

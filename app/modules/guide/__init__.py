@@ -86,7 +86,7 @@ def index():
         food_asset_version=max((Path(__file__).parent / 'static' / name).stat().st_mtime_ns for name in ('foods.js', 'foods.css')),
         catalog_asset_version=(Path(__file__).parent / 'static/catalog_cards.css').stat().st_mtime_ns,
         challenge_asset_version=(Path(__file__).parent / 'static/challenge_index.css').stat().st_mtime_ns,
-        arc_types=sorted({c['arc_type']['id']: c['arc_type'] for c in service.catalog()['characters'] if c.get('arc_type')}.values(),
+        arc_types=sorted({c['arc_type']['id']: c['arc_type'] for c in service.catalog()['characters']}.values(),
                          key=lambda arc: int(arc['id'])))
 
 

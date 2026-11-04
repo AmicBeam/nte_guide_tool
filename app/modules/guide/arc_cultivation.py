@@ -16,8 +16,7 @@ def recommended(character):
 
 
 def choices(character):
-    return [arc for arc in service.catalog()['arcs']
-            if str(arc['type_id']) == str(character.get('arc_type', {}).get('id', ''))]
+    return [arc for arc in service.catalog()['arcs'] if str(arc['type_id']) == str(character['arc_type']['id'])]
 
 
 def defaults(character, character_config):

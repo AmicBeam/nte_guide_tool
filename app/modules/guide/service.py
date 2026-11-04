@@ -27,7 +27,7 @@ LABELS = {
     'options': '可选组合', 'positive': '正向效果', 'negative': '反向效果', 'target': '目标', 'score': '挑战积分', 'floor': '层数',
     'floor_begin': '起始层', 'floor_end': '结束层', 'single': '敌人配置',
     'total_affinity': '从零到满好感所需好感值', 'required_gifts': '所需礼物份数',
-    'estimated_total_affinity': '经验估算的满好感需求', 'total_affinity_estimated': '总花费采用经验估算',
+    'full_affinity_total': '满好感总需求',
     'costs': '礼物花费', 'unit_price': '单价', 'total_cost': '总花费',
     'story_only': '剧情专属料理',
     'bonus_group': '具体加成分类', 'bonus_name': '加成类型', 'fons_price': '最低方斯标价',

@@ -42,7 +42,7 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertIn('affinity', service.schema()['character_sections'])
         self.assertIn('section=affinity', self.client.get('/guide/llms.txt').text)
 
-    def test_explicit_empirical_total_estimates_costs_without_fabricating_levels(self):
+    def test_confirmed_total_calculates_costs_without_fabricating_levels(self):
         from app.modules.guide.affinity import with_gift_costs
         totals={sum(row['max_value']for row in c['affinity']['levels'])
                 for c in service.catalog()['characters']if c['affinity']['levels']}
@@ -52,7 +52,7 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertEqual(affinity['levels'],[])
         self.assertEqual(affinity['full_affinity_bonus'],[])
         self.assertEqual(affinity['total_affinity'],56100)
-        self.assertTrue(affinity['total_affinity_estimated'])
+        self.assertNotIn('total_affinity_estimated',affinity)
         gifts={g['name']:g for g in affinity['gifts']}
         self.assertEqual(gifts['复古风手机壳']['required_gifts'],47)
         self.assertEqual(gifts['大防御家！']['required_gifts'],561)
@@ -60,15 +60,17 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertEqual(gifts['一封手写信']['required_gifts'],29)
         self.assertEqual(gifts['复古风手机壳']['costs'],[])
         html=self.client.get('/guide/characters/1090?section=affinity').text
-        for text in ('按经验值估算','56,100','总花费（估算）','1,009,800','共 561 份'):
+        for text in ('从零到满好感共需 56,100','总花费</th>','1,009,800','共 561 份'):
             self.assertIn(text,html)
-        raw={'levels':[],'estimated_total_affinity':56100,'gifts':[]}
+        self.assertNotIn('（估算）',html)
+        self.assertNotIn('按经验值估算',html)
+        raw={'levels':[],'full_affinity_total':56100,'gifts':[]}
         for invalid in (True,0,-1,56100.0,'56100'):
             with self.subTest(invalid=invalid),self.assertRaises(ValueError):
-                with_gift_costs({**raw,'estimated_total_affinity':invalid})
+                with_gift_costs({**raw,'full_affinity_total':invalid})
         actual=with_gift_costs({**raw,'levels':[{'max_value':100}]})
         self.assertEqual(actual['total_affinity'],100)
-        self.assertFalse(actual['total_affinity_estimated'])
+        self.assertNotIn('total_affinity_estimated',actual)
 
     def test_total_costs_round_up_fons_only_and_sort(self):
         from app.modules.guide.affinity import with_gift_costs

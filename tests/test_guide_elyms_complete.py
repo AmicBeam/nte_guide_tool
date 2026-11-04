@@ -78,11 +78,11 @@ class ElymsCharacterModulesTest(unittest.TestCase):
         for stage in record['materials']['breakthrough']:
             self.assertTrue(stage['items'])
             self.assertTrue(all(i['name'] and i['amount']>0 for i in stage['items']))
-        # Gift bindings are usable independently; the authorized empirical total does not create level/reward rows.
+        # Gift bindings are usable independently; the confirmed total does not create level/reward rows.
         self.assertFalse(record['affinity']['available'])
         self.assertEqual(len(record['affinity']['gifts']),14)
         self.assertEqual(record['affinity']['total_affinity'],56100)
-        self.assertTrue(record['affinity']['total_affinity_estimated'])
+        self.assertNotIn('total_affinity_estimated',record['affinity'])
         phone=next(g for g in record['affinity']['gifts']if g['id']=='SpecialGift_1090')
         self.assertEqual((phone['name'],phone['affinity_gain']),('复古风手机壳',1200))
         self.assertTrue(phone['exclusive'])

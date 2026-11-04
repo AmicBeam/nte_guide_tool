@@ -602,4 +602,4 @@ C觉音域范围提升由25%改30%，同步觉醒说明，点按E追加1000%不�
 验证：`tests.test_shaft_effectiveness`覆盖攻击与被动的三种来源八组合、等价组合合并、保留后的0环合强度与固定时钟、循环起始来源，以及曳尔沐回响、明音凛周期施加、伊洛伊复制体和黑羽黯星续生；另执行完整排轴回归和组合表浏览器验收。
 
 
-曳尔沐的头像与默认立绘分别绑定共享`images/characters/avatar/曳尔沐.webp`和`images/characters/portrait/曳尔沐.webp`，默认立绘不再为空。仅更新素材绑定，不改变角色面板、动作或测试可见权限。
+曳尔沐的头像与默认立绘分别绑定共享`images/characters/avatar/曳尔沐-square.webp`和`images/characters/portrait/曳尔沐.webp`，默认立绘不再为空。仅更新素材绑定，不改变角色面板、动作或测试可见权限。

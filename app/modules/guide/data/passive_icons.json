@@ -948,5 +948,43 @@
         "icon": "/static/guide/passive-icons/1009_2.webp"
       }
     ]
+  },
+  "1090": {
+    "awaken": [
+      {
+        "name": "404 遥望一座孤岛",
+        "icon": "/static/guide/passive-icons/1090_1.webp"
+      },
+      {
+        "name": "200 节点彼此相连",
+        "icon": "/static/guide/passive-icons/1090_2.webp"
+      },
+      {
+        "name": "504 访问响应超时",
+        "icon": "/static/guide/passive-icons/1090_3.webp"
+      },
+      {
+        "name": "302 祈愿重新定向",
+        "icon": "/static/guide/passive-icons/1090_4.webp"
+      },
+      {
+        "name": "304 今日一如往昔",
+        "icon": "/static/guide/passive-icons/1090_5.webp"
+      },
+      {
+        "name": "301 您访问的地址已被永久转移",
+        "icon": "/static/guide/passive-icons/1090_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "拜启，我的旧友",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "再会，我的新知",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
   }
 }

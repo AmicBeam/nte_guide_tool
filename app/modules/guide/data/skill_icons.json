@@ -244,5 +244,16 @@
     "GA_Shinku_Passive_3": "/static/guide/skill-icons/Shinku_Pas3.webp",
     "City_Ability_Shinku_01": "/static/guide/skill-icons/YH_UI_Skill_oemy.webp",
     "City_Ability_Shinku_02": "/static/guide/skill-icons/YH_UI_Skill_cchs.webp"
+  },
+  "1090": {
+    "GA_Elyms_Melee": "/static/guide/skill-icons/Elyms_Melee.webp",
+    "GA_Elyms_Skill": "/static/guide/skill-icons/Elyms_Skill1.webp",
+    "GA_Elyms_QTE": "/static/guide/skill-icons/Elyms_QTE.webp",
+    "GA_Elyms_UltraSkill": "/static/guide/skill-icons/Elyms_UltraSkill1.webp",
+    "GA_Elyms_Passive1": "/static/guide/skill-icons/Elyms_Pas1.webp",
+    "GA_Elyms_Passive2": "/static/guide/skill-icons/Elyms_Pas2.webp",
+    "GA_Elyms_Passive3": "/static/guide/skill-icons/Elyms_Pas3.webp",
+    "City_Ability_Elyms_01": null,
+    "City_Ability_Elyms_02": null
   }
 }

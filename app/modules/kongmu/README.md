@@ -58,7 +58,7 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 
 ## 曳尔沐
 
-曳尔沐为光属性5星角色，空幕规划仅测试用户可用，复用现有测试用户字段，角色开放状态由本模块独立维护。角色编号暂沿用`char_elyms`，不推测正式数字ID；头像复用现有预告头像。Ⅲ型特化，每装配一个Ⅲ型驱动使暴击率增加8%。5×5画布、20个可用格，布局保持如下方向（1为可用格）：
+曳尔沐为光属性5星角色，空幕规划仅测试用户可用，复用现有测试用户字段，角色开放状态由本模块独立维护。正式角色编号为1090，旧`char_elyms`作为兼容别名；头像使用从共享默认立绘主动裁剪的方形头像。Ⅲ型特化，每装配一个Ⅲ型驱动使暴击率增加8%。5×5画布、20个可用格，布局保持如下方向（1为可用格）：
 
 ```text
 11110
@@ -68,4 +68,4 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 01111
 ```
 
-支持`/kongmu?character=char_elyms`预选并生成方案。验证：`python3 -m unittest tests.test_kongmu_elyms tests.test_module_routes tests.test_lingke_modules tests.test_guide_kongmu_links`，并检查页面角色选择、布局和方案生成。
+支持`/kongmu?character=1090&cartridge=cosmos`预选并生成方案，旧ID与名称同样可解析。角色对当前账号不可用时，不自动换成其他角色计算，而是提示登录有权限的账号或手动选择可用角色。验证：`python3 -m unittest tests.test_kongmu_elyms tests.test_module_routes tests.test_lingke_modules tests.test_guide_kongmu_links`，并检查页面角色选择、布局和方案生成。

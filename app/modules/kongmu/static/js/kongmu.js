@@ -37,11 +37,18 @@ async function bootstrapKongmu() {
     const cartridges = kongmuState.catalog.cartridges || [];
     const linkedCharacterId = pickExistingId(characters, params.get('character'));
     const linkedCartridgeId = pickExistingId(cartridges, params.get('cartridge'));
-    kongmuState.selectedCharacterId = linkedCharacterId || characters[0]?.id || '';
+    kongmuState.selectedCharacterId = linkedCharacterId || (params.get('character') ? '' : characters[0]?.id) || '';
     kongmuState.selectedCartridgeId = linkedCartridgeId || cartridges[0]?.id || '';
     renderKongmuPickers();
     bindKongmuEvents();
     updatePlanButton();
+    if (params.get('character') && !linkedCharacterId) {
+      kongmuEls.planBtn.textContent = '请选择可用角色';
+      kongmuEls.resultShell.hidden = false;
+      kongmuEls.emptyResult.hidden = false;
+      kongmuEls.emptyResult.textContent = '该角色不存在或当前账号暂无权限，请登录有权限的账号，或选择其他角色。';
+      return;
+    }
     if (linkedCharacterId || linkedCartridgeId) {
       await runKongmuPlan();
     }

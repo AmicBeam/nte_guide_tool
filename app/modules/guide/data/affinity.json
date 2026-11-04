@@ -14431,6 +14431,15 @@
           }
         ]
       }
+    },
+    {
+      "id": "1090",
+      "affinity": {
+        "available": false,
+        "levels": [],
+        "gifts": [],
+        "full_affinity_bonus": []
+      }
     }
   ]
 }

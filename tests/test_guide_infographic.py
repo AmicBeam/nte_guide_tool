@@ -37,7 +37,7 @@ class InfographicTest(unittest.TestCase):
         self.assertEqual(selector.status_code, 200)
         for character in infographic.service.catalog()['characters']:
             self.assertIn('/guide/characters/' + character['id'] + '/infographic', selector.text)
-        self.assertNotIn('/guide/characters/1090/infographic', selector.text)
+        self.assertIn('/guide/characters/1090/infographic', selector.text)
         self.assertNotIn('default_script', selector.text)
 
     def test_public_entry_data_and_preview_boundary(self):
@@ -52,7 +52,7 @@ class InfographicTest(unittest.TestCase):
         self.assertEqual(self.client.get('/api/guide/characters/1042/infographic').status_code, 401)
         self.assertTrue(all(c['element_icon'] and c['rarity_icon'] for c in self.options['characters']))
         self.assertNotIn('ig-data', self.client.get('/guide/characters/1042').text)
-        self.assertEqual(self.client.get('/guide/characters/1090/infographic').status_code, 404)
+        self.assertEqual(self.client.get('/guide/characters/1090/infographic').status_code, 200)
         self.assertEqual(self.client.get('/guide/characters/missing/infographic').status_code, 404)
         for char in infographic.service.catalog()['characters']:
             opts = infographic.options(char['id'])

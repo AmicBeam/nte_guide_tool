@@ -42,6 +42,10 @@ class ArcCultivationTest(unittest.TestCase):
         for character in service.catalog()['characters']:
             first = arc_cultivation.recommended(character)
             choices = arc_cultivation.choices(character)
+            self.assertTrue(choices)
+            if first is None:
+                self.assertNotIn(character['id'], arc_cultivation.config()['recommendations'])
+                continue
             self.assertIn(first['id'], [arc['id'] for arc in choices])
             page = self.client.get('/guide/characters/' + character['id'])
             self.assertIn('href="/guide/arcs/' + first['id'] + '"', page.text)

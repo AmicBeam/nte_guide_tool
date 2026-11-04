@@ -91,7 +91,7 @@ class GuideCooldownPresentationTest(unittest.TestCase):
 
     def test_all_base_skills_have_a_verified_value_or_explicit_unknown(self):
         abilities=[a for c in service.catalog()['characters'] for a in c['abilities'] if a['type_name'] in ('Skill','UltraSkill')]
-        self.assertEqual(len(abilities),50)
+        self.assertEqual(len(abilities),52)
         self.assertTrue(all('base_cooldown'in a for a in abilities))
         unknown=[a['id'] for a in abilities if a['base_cooldown'] is None]
         self.assertEqual(unknown,['GA_Jin_UltraSkill'])

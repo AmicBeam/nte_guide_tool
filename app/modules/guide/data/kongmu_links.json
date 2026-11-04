@@ -223,5 +223,14 @@
         "name": "失落光芒"
       }
     ]
+  },
+  "1090": {
+    "character_id": "1090",
+    "recommendations": [
+      {
+        "id": "cosmos",
+        "name": "失落光芒"
+      }
+    ]
   }
 }

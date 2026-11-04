@@ -311,7 +311,7 @@ class GuideTest(unittest.TestCase):
 
     def test_all_characters_have_local_webp_art(self):
         characters = service.catalog()['characters']
-        self.assertEqual(len(characters), 25)
+        self.assertEqual(len(characters), 26)
         for character in characters:
             for kind in ('avatar', 'portrait', 'fullbody'):
                 url = character['assets'][kind]

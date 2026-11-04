@@ -149,6 +149,22 @@ def load_character_experience(directory=None):
     return character_experience(payload)
 
 
+def merge_local_characters(data, supplemental):
+    """Keep explicitly imported normal characters absent from the remote index."""
+    present = {str(row['id']) for row in data['characters']}
+    for record in supplemental['characters']:
+        identifier = str(record['id'])
+        if identifier in present:
+            continue
+        caps = supplemental['level_caps'][identifier]
+        if not record.get('stats') or not record.get('materials') or caps[-1] != 80:
+            raise ValueError('Incomplete locally imported character')
+        data['characters'].append(record)
+        data['cultivation']['level_caps'][identifier] = caps
+        present.add(identifier)
+    return data
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', default='latest')
@@ -161,6 +177,9 @@ def main():
     data['character_experience'] = load_character_experience(args.ntedata_dir)
     data['cultivation'] = load_cultivation_data(args.ntedata_dir)
     enrich_cooldowns(data, CooldownData(args.ntedata_dir))
+    local = ROOT / 'app/modules/guide/data/ntedata_characters.json'
+    if local.exists():
+        merge_local_characters(data, json.loads(local.read_text(encoding='utf-8')))
     # Do not replace the working dataset until every detail has validated.
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix('.tmp')

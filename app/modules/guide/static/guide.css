@@ -93,3 +93,7 @@
 .guide-card[href^="/guide/endless/"] .guide-card-identity h3 { margin-top:0; }
 
 .guide-affinity-bonus{padding:16px 18px;border:1px solid #9ee76644;border-radius:10px;background:#9ee76608}.guide-affinity-bonus>span{color:#9ee766;font-weight:650}.guide-affinity-bonus>small{display:block;margin-top:8px;color:var(--g-dim)}.guide-affinity-rewards th:nth-child(1){min-width:72px}.guide-affinity-rewards th:nth-child(2){min-width:110px}.guide-affinity-rewards td>div+div{margin-top:8px}.guide-affinity-rewards small{display:block;margin-top:4px;font-size:12px;line-height:1.65}
+
+/* Keep role tags within the text column beside wide character artwork. */
+.guide-character-header>div{max-width:100%}
+@media(min-width:901px){.guide-character-intro .guide-character-header{padding-right:60%}}

@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 import unittest
 from urllib.parse import parse_qs, urlsplit
 
@@ -9,7 +10,7 @@ from app.modules.kongmu.service import get_kongmu_catalog_payload, get_character
 
 class GuideKongmuLinksTest(unittest.TestCase):
     def test_all_character_links_select_existing_character_and_cartridge(self):
-        catalog = get_kongmu_catalog_payload()
+        catalog = get_kongmu_catalog_payload(player=SimpleNamespace(shaft_test_whitelisted=True))
         character_ids = {str(identifier) for c in catalog['characters']
                          for identifier in [c['id'], *c['merged_ids']]}
         cartridge_ids = {c['id'] for c in catalog['cartridges']}

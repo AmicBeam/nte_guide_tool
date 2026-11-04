@@ -67,7 +67,7 @@ OWNER_TYPE_LABELS = {
     4: 'IV型',
 }
 
-LEGACY_CHARACTER_IDS = {'char_076a1f4e53': '1036', 'char_heiyu': '1042', 'char_akane': '1057'}
+LEGACY_CHARACTER_IDS = {'char_elyms': '1090', 'char_076a1f4e53': '1036', 'char_heiyu': '1042', 'char_akane': '1057'}
 
 FIXED_CHARACTER_AVATAR_SOURCE_ICONS = {
     '1046': '/Game/UI/UI_Icon/AvatarImage/256/player_009_256',
@@ -75,7 +75,7 @@ FIXED_CHARACTER_AVATAR_SOURCE_ICONS = {
 }
 
 FIXED_CHARACTER_AVATAR_LOCAL_PATHS = {
-    'char_elyms': 'guide/character-previews/elyms-avatar.webp',
+    '1090': 'images/characters/avatar/曳尔沐-square.webp',
     '1046': 'images/characters/avatar/男主.webp',
     '1051': 'images/characters/avatar/男主.webp',
     '1036': 'images/characters/avatar/残虹.png',

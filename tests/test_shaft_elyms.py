@@ -286,7 +286,7 @@ class ElymsCatalogTest(unittest.TestCase):
                 dict(slot=2,character_id='char_d38b672525',arc_id='',cartridge_id='')]
         axis=self.axis([(0,'action_none_elyms',0),(1,'action_8a8000d4a4',2),
                         (0,'action_none_elyms',18),(2,'action_17efab5dbd',20),
-                        *[(0,'action_none_elyms',t) for t in (40,55,80,105,120,145)]],
+                        *[(0,'action_none_elyms',t) for t in (40,55,80,105,120,145,314,315)]],
                        others=others,switch_loss_ticks=0)
         axis['initial_energy']=initial_energy
         return axis
@@ -294,7 +294,7 @@ class ElymsCatalogTest(unittest.TestCase):
     def test_only_actual_yingxu_energy_stacks_and_refreshes(self):
         r=simulate_shaft_axis(self.yingxu_axis())['result']
         events=[e for e in r['energy_events'] if e['kind']=='yingxu_gain']
-        # Creation hits at 35/55/75 overlap delay; 95 misses, 115 hits the delayed echo.
+        # Creation hits at 35/55/75 overlap delay; 95 misses, 115 hits the delayed echo and refreshes the 20s buff.
         self.assertEqual([(e['tick'],e['slot']) for e in events],[(35,2),(55,0),(75,0),(115,0)])
         for e in events:
             self.assertAlmostEqual(e['amount'],10)
@@ -302,13 +302,13 @@ class ElymsCatalogTest(unittest.TestCase):
         summaries=[b for d in r['details'] for b in d['triggered_buffs']
                    if b['rule_id']=='character_elyms_energy_light']
         self.assertEqual(sorted((b['trigger_tick'], b['visual_trigger_tick'], b['stack_count'])
-                                for b in summaries), [(35,35,1),(55,55,2),(75,75,3),(115,115,1)])
+                                for b in summaries), [(35,35,1),(55,55,2),(75,75,3),(115,115,4)])
         by_tick={d['start_tick']:d for d in r['details']}
-        for tick,stacks in ((40,1),(55,2),(80,3),(120,1)):
+        for tick,stacks in ((40,1),(55,2),(80,3),(105,3),(120,4),(145,4),(314,4)):
             buff=next(b for b in by_tick[tick]['applied_buffs'] if b['rule_id']=='character_elyms_energy_light')
             self.assertEqual(buff['stack_count'],stacks)
             self.assertAlmostEqual(buff['effects']['element_dmg_光'],.0375*stacks)
-        for tick in (105,145):
+        for tick in (315,):
             self.assertNotIn('character_elyms_energy_light',self.effects(by_tick[tick]))
 
     def test_full_energy_still_stacks_but_creation_without_delay_does_not(self):
@@ -316,7 +316,7 @@ class ElymsCatalogTest(unittest.TestCase):
         events=[e for e in capped['energy_events'] if e['kind']=='yingxu_gain']
         self.assertEqual([e['tick'] for e in events],[35,55,75,115])
         self.assertTrue(all(e['amount']==0 for e in events))
-        for tick,stacks in ((40,1),(55,2),(80,3),(120,1)):
+        for tick,stacks in ((40,1),(55,2),(80,3),(105,3),(120,4),(145,4),(314,4)):
             detail=next(d for d in capped['details'] if d['start_tick']==tick)
             buff=next(b for b in detail['applied_buffs'] if b['rule_id']=='character_elyms_energy_light')
             self.assertEqual(buff['stack_count'],stacks)
@@ -338,9 +338,9 @@ class ElymsCatalogTest(unittest.TestCase):
                            (0,'action_none_elyms',18),(1,'action_8a8000d4a4',20),
                            (0,'action_none_elyms',36),(2,'action_17efab5dbd',38),
                            (0,'action_none_elyms',58),(0,'action_none_elyms',100),
-                           (0,'action_none_elyms',130)])]
+                           (0,'action_none_elyms',400)])]
         r=simulate_shaft_axis(axis)['result']
-        self.assertEqual(len([e for e in r['energy_events'] if e['kind']=='yingxu_gain']),10)
+        self.assertEqual(len([e for e in r['energy_events'] if e['kind']=='yingxu_gain']),11)
         full=next(d for d in r['details'] if d['start_tick']==100)
         buff=next(b for b in full['applied_buffs'] if b['rule_id']=='character_elyms_energy_light')
         self.assertEqual(buff['stack_count'],8)

@@ -6132,7 +6132,7 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 30,
+      "ticks": 200,
       "loop_carry": true
     },
     "stacking": {

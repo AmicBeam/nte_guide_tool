@@ -298,6 +298,10 @@ class GuideTest(unittest.TestCase):
         self.assertEqual(character['arc_type']['name'], '气态')
         self.assertEqual([tag['name'] for tag in character['char_tags']], ['输出', '即瞬环合', '主力输出', '输出增益'])
         for record in service.catalog()['characters']:
+            if record['id'] == '1074':
+                self.assertNotIn('arc_type', record)
+                self.assertEqual(record['char_tags'], [])
+                continue
             self.assertIn(record['arc_type']['name'], ['固态', '液态', '等离子', '气态', '聚合'])
             self.assertTrue((ROOT / 'app' / record['rarity_icon'].removeprefix('/')).is_file())
             for badge in [record['arc_type'], *record['char_tags']]:
@@ -313,7 +317,7 @@ class GuideTest(unittest.TestCase):
 
     def test_all_characters_have_local_webp_art(self):
         characters = service.catalog()['characters']
-        self.assertEqual(len(characters), 26)
+        self.assertEqual(len(characters), 27)
         for character in characters:
             for kind in ('avatar', 'portrait', 'fullbody'):
                 url = character['assets'][kind]

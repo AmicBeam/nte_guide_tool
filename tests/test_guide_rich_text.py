@@ -37,7 +37,7 @@ class GuideRichTextTest(unittest.TestCase):
 
     def test_all_current_skills_have_text_equivalent_segments(self):
         data = description_data()
-        self.assertEqual(len(data['characters']), 26)
+        self.assertEqual(len(data['characters']), 27)
         for character in service.catalog()['characters']:
             rich = data['characters'][str(character['id'])]
             for ability in character['abilities']:

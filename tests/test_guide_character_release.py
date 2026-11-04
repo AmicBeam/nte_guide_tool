@@ -120,25 +120,21 @@ class CharacterReleaseTest(unittest.TestCase):
             self.assertFalse(result['skills_included'])
             self.assertNotIn('沉入电子梦',json.dumps(result,ensure_ascii=False))
 
-    def test_exe_reference_data_is_gated_even_when_added_to_preview(self):
-        records=deepcopy(previews.characters());row=next(r for r in records if r['id']=='preview-exe')
-        row['reference_details']={'abilities':[{'id':'GA_Exe_hidden','name':'EXE_SECRET',
-            'type_name':'Melee','phases':[{'name':'EXE_SECRET','desc':'EXE_PRIVATE_EFFECT'}],
-            'param_rows':[],'groups':[{'name':'EXE_SECRET','description':'EXE_PRIVATE_EFFECT','param_rows':[]}]}],
-            'awaken':[],'resonance':[]}
-        row['assets']['fullbody']=row['preview_image']
-        for time,visible in [('2026-11-26T09:59:59+08:00',False),('2026-11-26T02:00:00+00:00',True)]:
-            with patch.object(previews,'characters',return_value=records),self.clock(time):
-                result=service.detail('characters','preview-exe')
+    def test_formal_exe_uses_its_own_release_window(self):
+        for time, visible in [('2026-11-26T09:59:59+08:00',False),('2026-11-26T02:00:00+00:00',True)]:
+            with self.clock(time):
+                result=service.detail('characters','1074')
                 self.assertEqual(result['content_released'],visible)
-                for path in ['/api/guide/characters/preview-exe','/guide/characters/preview-exe.md',
-                             '/guide/characters/preview-exe']:
+                self.assertNotEqual(result.get('status'),'preview')
+                for path in ['/api/guide/characters/1074','/guide/characters/1074.md','/guide/characters/1074']:
                     response=self.client.get(path)
                     self.assertEqual(response.status_code,200)
-                    self.assertEqual('EXE_SECRET'in response.text,visible)
-                self.assertEqual(self.client.get('/api/guide/characters/preview-exe?section=reference_details').status_code,
+                    marker = '独立伤害项' if path.startswith('/guide/') and not path.endswith('.md') else 'GE_Player_Exe_Melee1_Damage'
+                    self.assertEqual(marker in response.text,visible)
+                self.assertEqual(self.client.get('/api/guide/characters/1074?section=abilities').status_code,
                                  200 if visible else 404)
-        for record in [{'id':'synthetic-new-exe','name':'Exe'},
+        for record in [{'id':'preview-exe','name':'测试角色'},
+                       {'id':'synthetic-new-exe','name':'Exe'},
                        {'id':'synthetic-new-exe','name':'测试角色','aliases':['Exe']}]:
             self.assertFalse(release.metadata(record,datetime.fromisoformat('2026-11-26T09:59:59+08:00'))['content_released'])
 

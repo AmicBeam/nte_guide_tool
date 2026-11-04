@@ -14756,6 +14756,389 @@
         "full_affinity_bonus": [],
         "full_affinity_total": 56100
       }
+    },
+    {
+      "id": "1074",
+      "affinity": {
+        "available": false,
+        "levels": [],
+        "gifts": [
+          {
+            "id": "Food_003",
+            "name": "冰点冷萃",
+            "affinity_gain": 100,
+            "default_gain": 50,
+            "unlimited": false,
+            "exclusive": false,
+            "offers": [
+              {
+                "shop_name": "售货机",
+                "currency_id": "Fons",
+                "currency_name": "方斯",
+                "price": 600,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "VendingMachine_001"
+                ],
+                "goods_ids": [
+                  "VendingMachine_001_3"
+                ]
+              },
+              {
+                "shop_name": "2-Four便利店",
+                "currency_id": "Fons",
+                "currency_name": "方斯",
+                "price": 600,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "Shop_007_01_01",
+                  "Shop_007_01_02",
+                  "Shop_007_01_03",
+                  "Shop_007_01_04",
+                  "Shop_007_03_01",
+                  "Shop_007_03_02",
+                  "Shop_007_03_03",
+                  "Shop_007_03_04"
+                ],
+                "goods_ids": [
+                  "Shop_007_01_07",
+                  "Shop_007_01_18",
+                  "Shop_007_01_29",
+                  "Shop_007_01_39",
+                  "Shop_007_03_04",
+                  "Shop_007_03_15",
+                  "Shop_007_03_26",
+                  "Shop_007_03_37"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "Food_055",
+            "name": "沸腾炼金术",
+            "affinity_gain": 100,
+            "default_gain": 50,
+            "unlimited": false,
+            "exclusive": false,
+            "offers": [
+              {
+                "shop_name": "9℃",
+                "currency_id": "Fons",
+                "currency_name": "方斯",
+                "price": 600,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "Shop_028_01_01",
+                  "Shop_028_01_02",
+                  "Shop_028_03_01",
+                  "Shop_028_03_02",
+                  "Shop_028_04_01",
+                  "Shop_028_04_02",
+                  "Shop_028_05_01",
+                  "Shop_028_05_02",
+                  "Shop_028_05_03",
+                  "Shop_028_05_04"
+                ],
+                "goods_ids": [
+                  "Shop_028_01_01",
+                  "Shop_028_01_06",
+                  "Shop_028_03_01",
+                  "Shop_028_03_06",
+                  "Shop_028_04_01",
+                  "Shop_028_04_06",
+                  "Shop_028_05_01",
+                  "Shop_028_05_06",
+                  "Shop_028_05_11",
+                  "Shop_028_05_16"
+                ]
+              },
+              {
+                "shop_name": "Starry Night",
+                "currency_id": "Fons",
+                "currency_name": "方斯",
+                "price": 600,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "Starry_Night"
+                ],
+                "goods_ids": [
+                  "Starry_Night_001"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "Food_058",
+            "name": "砂海白",
+            "affinity_gain": 100,
+            "default_gain": 50,
+            "unlimited": false,
+            "exclusive": false,
+            "offers": []
+          },
+          {
+            "id": "Food_094",
+            "name": "清凉凉提神药",
+            "affinity_gain": 100,
+            "default_gain": 50,
+            "unlimited": false,
+            "exclusive": false,
+            "offers": [
+              {
+                "shop_name": "竹本清源",
+                "currency_id": "Fons",
+                "currency_name": "方斯",
+                "price": 600,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "Shop_012_01_01",
+                  "Shop_012_01_02",
+                  "Shop_012_03_01",
+                  "Shop_012_03_02",
+                  "Shop_012_03_03",
+                  "Shop_012_04_01",
+                  "Shop_012_04_02",
+                  "Shop_012_04_03",
+                  "Shop_012_04_04",
+                  "Shop_012_05_01",
+                  "Shop_012_05_02",
+                  "Shop_012_05_03"
+                ],
+                "goods_ids": [
+                  "Shop_012_01_03",
+                  "Shop_012_01_08",
+                  "Shop_012_03_03",
+                  "Shop_012_03_08",
+                  "Shop_012_03_13",
+                  "Shop_012_04_03",
+                  "Shop_012_04_08",
+                  "Shop_012_04_13",
+                  "Shop_012_04_18",
+                  "Shop_012_05_03",
+                  "Shop_012_05_08",
+                  "Shop_012_05_13"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "Food_098",
+            "name": "竹本！Vitamin！",
+            "affinity_gain": 100,
+            "default_gain": 50,
+            "unlimited": false,
+            "exclusive": false,
+            "offers": [
+              {
+                "shop_name": "竹本清源",
+                "currency_id": "Fons",
+                "currency_name": "方斯",
+                "price": 750,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "Shop_012_01_01",
+                  "Shop_012_01_02",
+                  "Shop_012_03_01",
+                  "Shop_012_03_02",
+                  "Shop_012_03_03",
+                  "Shop_012_04_01",
+                  "Shop_012_04_02",
+                  "Shop_012_04_03",
+                  "Shop_012_04_04",
+                  "Shop_012_05_01",
+                  "Shop_012_05_02",
+                  "Shop_012_05_03"
+                ],
+                "goods_ids": [
+                  "Shop_012_01_02",
+                  "Shop_012_01_07",
+                  "Shop_012_03_02",
+                  "Shop_012_03_07",
+                  "Shop_012_03_12",
+                  "Shop_012_04_02",
+                  "Shop_012_04_07",
+                  "Shop_012_04_12",
+                  "Shop_012_04_17",
+                  "Shop_012_05_02",
+                  "Shop_012_05_07",
+                  "Shop_012_05_12"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "Furniture_Light_005",
+            "name": "清影台灯",
+            "affinity_gain": 400,
+            "default_gain": 200,
+            "unlimited": false,
+            "exclusive": false,
+            "offers": []
+          },
+          {
+            "id": "Furniture_Ornament_020",
+            "name": "显像屏",
+            "affinity_gain": 400,
+            "default_gain": 200,
+            "unlimited": false,
+            "exclusive": false,
+            "offers": []
+          },
+          {
+            "id": "Furniture_Ornament_021",
+            "name": "拉普本",
+            "affinity_gain": 400,
+            "default_gain": 200,
+            "unlimited": false,
+            "exclusive": false,
+            "offers": []
+          },
+          {
+            "id": "SpecialGift_ticket",
+            "name": "浮冰影券",
+            "affinity_gain": 400,
+            "default_gain": 400,
+            "unlimited": true,
+            "exclusive": false,
+            "offers": [
+              {
+                "shop_name": "螺钉商店",
+                "currency_id": "BattleRaceCoin",
+                "currency_name": "黑铁螺钉",
+                "price": 630,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "DarkRacingShop"
+                ],
+                "goods_ids": [
+                  "DarkRacingShop_Limited_28"
+                ]
+              },
+              {
+                "shop_name": "徊影商店",
+                "currency_id": "HideSeekCoin",
+                "currency_name": "纸杯电话",
+                "price": 300,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "HideSeekShop"
+                ],
+                "goods_ids": [
+                  "HideSeekShop_Honor_01"
+                ]
+              },
+              {
+                "shop_name": "书签商店",
+                "currency_id": "Scratch_bookmark",
+                "currency_name": "回声书签",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "ScratchShop"
+                ],
+                "goods_ids": [
+                  "ScratchShop_07"
+                ]
+              },
+              {
+                "shop_name": "焦糖商店",
+                "currency_id": "GingerbreadCoin",
+                "currency_name": "焦糖风滚草",
+                "price": 75,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "GingerbreadShop"
+                ],
+                "goods_ids": [
+                  "GingerBreadShop_03"
+                ]
+              },
+              {
+                "shop_name": "花糖商店",
+                "currency_id": "DefendTowerCoin",
+                "currency_name": "五彩花糖",
+                "price": 50,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "DefendAthenaShop"
+                ],
+                "goods_ids": [
+                  "DefendAthenaShop_02"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "SpecialGift_1074",
+            "name": "离线留言终端",
+            "affinity_gain": 1200,
+            "default_gain": 300,
+            "unlimited": true,
+            "exclusive": true,
+            "offers": []
+          },
+          {
+            "id": "SpecialGift_letter",
+            "name": "一封手写信",
+            "affinity_gain": 2000,
+            "default_gain": 2000,
+            "unlimited": true,
+            "exclusive": false,
+            "offers": [
+              {
+                "shop_name": "失纬兑换",
+                "currency_id": "Dice_ticket_01",
+                "currency_name": "失纬棋子",
+                "price": 60,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "WarpPieceShop"
+                ],
+                "goods_ids": [
+                  "WarpPieceShop_10"
+                ]
+              }
+            ]
+          }
+        ],
+        "full_affinity_total": 56100
+      }
     }
   ]
 }

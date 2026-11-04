@@ -3,6 +3,6 @@
 <section class="guide-character-overview" id="section-stats" data-level-group aria-label="{{ kinds[kind] }}属性与升级材料">
 <header><h2>属性数值</h2>{% if maximum %}<div class="guide-overview-level"><div class="guide-level-bar"><label for="stat-level">{{ profile.name }}属性等级</label><span>Lv. <output data-level-output for="stat-level">{{ maximum }}</output><small> / {{ maximum }}</small></span></div><input id="stat-level" type="range" min="1" max="{{ maximum }}" value="{{ maximum }}" step="1" data-level-control aria-label="{{ profile.name }}属性等级"></div>{% endif %}</header>
 {% if not stat_rows %}<p class="guide-muted">基础面板暂未提供。</p>{% endif %}
-<div class="guide-facts">{% for row in stat_rows %}<div><span>{{ row.name }}</span><strong><span data-level-values="{{ row['values']|tojson|forceescape }}">{{ row['values'][maximum - 1] }}</span>{% if row.b_is_percent|default(false) or row.b_show_percent|default(false) or row.id_stats in ['CritBase','CritDamageBase'] %}<small>%</small>{% endif %}</strong></div>{% endfor %}</div>
+<div class="guide-facts">{% for row in stat_rows %}<div><span>{{ row.name }}</span><strong><span data-level-values="{{ row['values']|tojson|forceescape }}">{{ row['values'][maximum - 1]|guide_scalar }}</span>{% if row.b_is_percent|default(false) or row.b_show_percent|default(false) or row.id_stats in ['CritBase','CritDamageBase'] %}<small>%</small>{% endif %}</strong></div>{% endfor %}</div>
 {% if material_preview %}<div class="guide-overview-materials"><h3>所需升级材料</h3>{{ material_cards(material_preview, false) }}</div>{% endif %}
 </section>

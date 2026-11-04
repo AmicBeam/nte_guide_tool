@@ -604,6 +604,10 @@
           "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuijiagongji.webp"
         }
       ]
+    },
+    {
+      "id": "1074",
+      "char_tags": []
     }
   ]
 }

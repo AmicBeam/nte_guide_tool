@@ -78,14 +78,15 @@ class ElymsCharacterModulesTest(unittest.TestCase):
         for stage in record['materials']['breakthrough']:
             self.assertTrue(stage['items'])
             self.assertTrue(all(i['name'] and i['amount']>0 for i in stage['items']))
-        # Gift bindings are usable independently; absent levels must not invent a full-level total.
+        # Gift bindings are usable independently; the authorized empirical total does not create level/reward rows.
         self.assertFalse(record['affinity']['available'])
         self.assertEqual(len(record['affinity']['gifts']),14)
-        self.assertIsNone(record['affinity']['total_affinity'])
+        self.assertEqual(record['affinity']['total_affinity'],56100)
+        self.assertTrue(record['affinity']['total_affinity_estimated'])
         phone=next(g for g in record['affinity']['gifts']if g['id']=='SpecialGift_1090')
         self.assertEqual((phone['name'],phone['affinity_gain']),('复古风手机壳',1200))
         self.assertTrue(phone['exclusive'])
-        self.assertIsNone(phone['required_gifts'])
+        self.assertEqual(phone['required_gifts'],47)
         self.assertIn('复古风手机壳',self.client.get(URL).text)
         self.assertNotIn('该角色尚未提供喜好礼物配置',self.client.get(URL).text)
         self.assertIn('未提供', self.client.get(URL).text.split('id="section-affinity"',1)[1])

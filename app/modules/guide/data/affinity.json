@@ -14753,7 +14753,8 @@
             ]
           }
         ],
-        "full_affinity_bonus": []
+        "full_affinity_bonus": [],
+        "estimated_total_affinity": 56100
       }
     }
   ]

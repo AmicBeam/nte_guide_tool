@@ -7,7 +7,13 @@ from copy import deepcopy
 def with_gift_costs(affinity):
     result = deepcopy(affinity)
     total = sum(row['max_value'] for row in result['levels']) if result['levels'] else None
+    estimated = total is None and result.get('estimated_total_affinity') is not None
+    if estimated:
+        total = result['estimated_total_affinity']
+        if isinstance(total, bool) or not isinstance(total, int) or total <= 0:
+            raise ValueError('Estimated affinity total must be a positive integer')
     result['total_affinity'] = total
+    result['total_affinity_estimated'] = estimated
     for gift in result['gifts']:
         gain = gift['affinity_gain']
         count = (total + gain - 1) // gain if total is not None and gain > 0 else None

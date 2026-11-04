@@ -78,8 +78,16 @@ class ElymsCharacterModulesTest(unittest.TestCase):
         for stage in record['materials']['breakthrough']:
             self.assertTrue(stage['items'])
             self.assertTrue(all(i['name'] and i['amount']>0 for i in stage['items']))
-        # No available upstream affinity values: show the normal module's explicit unavailable state.
+        # Gift bindings are usable independently; absent levels must not invent a full-level total.
         self.assertFalse(record['affinity']['available'])
+        self.assertEqual(len(record['affinity']['gifts']),14)
+        self.assertIsNone(record['affinity']['total_affinity'])
+        phone=next(g for g in record['affinity']['gifts']if g['id']=='SpecialGift_1090')
+        self.assertEqual((phone['name'],phone['affinity_gain']),('复古风手机壳',1200))
+        self.assertTrue(phone['exclusive'])
+        self.assertIsNone(phone['required_gifts'])
+        self.assertIn('复古风手机壳',self.client.get(URL).text)
+        self.assertNotIn('该角色尚未提供喜好礼物配置',self.client.get(URL).text)
         self.assertIn('未提供', self.client.get(URL).text.split('id="section-affinity"',1)[1])
         for section in ('stats','abilities','awaken','resonance','nouns','equip_slots','affinity','materials'):
             response=self.client.get('/api/guide/characters/1090?section='+section)

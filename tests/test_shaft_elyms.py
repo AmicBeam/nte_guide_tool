@@ -293,22 +293,42 @@ class ElymsCatalogTest(unittest.TestCase):
                 self.assertEqual(waiting['end_tick'],expected)
                 self.assertTrue(waiting['display_as_line'])
 
-    def test_early_echo_keeps_original_seven_second_cooldown(self):
+    def test_echo_cooldown_advances_on_mask_and_otherwise_lasts_seven_seconds(self):
         catalog=load_shaft_catalog()
         support=next(a['id'] for a in catalog['actions_by_character']['char_d38b672525'] if a['name']=='援护')
         others=[dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''),
                 dict(slot=2,character_id='char_d38b672525',arc_id='',cartridge_id='')]
-        for next_start,expected_count in [(99,1),(100,2)]:
-            with self.subTest(next_start=next_start):
+        for masked,next_start,expected_count in [(True,99,2),(True,100,2),(False,99,1),(False,100,2)]:
+            with self.subTest(masked=masked,next_start=next_start):
+                action='action_elyms_skill2' if masked else 'action_elyms_melee1'
+                # A mask inserts five display ticks without advancing the real clock.
+                shift=5 if masked else 0
                 result=simulate_shaft_axis(self.axis([(1,'action_982c67944f',0),(2,support,30),
-                    (0,'action_elyms_skill2',65),(1,'action_none_dd034941ef',90),
-                    (2,support,next_start+5),(1,'action_none_dd034941ef',240)],others=others))['result']
+                    (0,action,65),(1,'action_none_dd034941ef',90),
+                    (2,support,next_start+shift),(1,'action_none_dd034941ef',240)],others=others))['result']
                 waits=[b for d in result['details'] for b in d['triggered_buffs']
                        if b['rule_id']=='character_elyms_delay_echo']
                 self.assertEqual(len(waits),expected_count)
-                self.assertEqual(waits[0]['end_tick'],65)
+                self.assertEqual(waits[0]['end_tick'],65 if masked else waits[0]['trigger_tick']+75)
                 if expected_count==2:
-                    self.assertEqual(waits[1]['trigger_tick']-waits[0]['trigger_tick'],70)
+                    self.assertEqual(waits[1]['trigger_tick']-waits[0]['trigger_tick'],next_start-30)
+
+    def test_mask_ends_carried_cooldown_in_a_cycle_shorter_than_seven_seconds(self):
+        catalog=load_shaft_catalog()
+        support=next(a['id'] for a in catalog['actions_by_character']['char_d38b672525'] if a['name']=='援护')
+        others=[dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''),
+                dict(slot=2,character_id='char_d38b672525',arc_id='',cartridge_id='')]
+        for masked in (False,True):
+            with self.subTest(masked=masked):
+                action='action_elyms_skill2' if masked else 'action_elyms_melee1'
+                result=simulate_shaft_axis(self.axis([(1,'action_982c67944f',0),(0,action,20),
+                    (1,'action_none_dd034941ef',27),(2,support,35),
+                    (1,'action_none_dd034941ef',65 if masked else 60)],
+                    others=others,loop_enabled=True))['result']
+                self.assertEqual(result['summary']['duration_ticks'],60)
+                waits=[b for d in result['details'] for b in d['triggered_buffs']
+                       if b['rule_id']=='character_elyms_delay_echo']
+                self.assertEqual(len(waits),1 if masked else 0)
 
     def test_carried_echo_advances_to_next_cycles_first_mask(self):
         catalog=load_shaft_catalog()

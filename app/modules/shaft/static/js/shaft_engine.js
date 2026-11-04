@@ -4583,6 +4583,25 @@
       return String(rule.trigger?.event || '') === 'action_end' ? endTick : startTick;
     }
 
+    function advanceToTimelineMask(deadlineTick, triggerTick, extraContext) {
+      // Include adjacent cycles; virtual mask width is never elapsed time.
+      const shifts = options.loop_enabled && loopDurationTicks > 0
+        ? (extraContext.loop_prime_only ? [-loopDurationTicks, 0] : [0, loopDurationTicks]) : [0];
+      const visualTriggerTick = int(extraContext.visual_trigger_tick,
+        visualTickFromCalculationTick(triggerTick, qVirtualIntervals));
+      scheduledSteps.forEach((entry) => {
+        if (!isZeroForegroundQStep(entry.step, entry.action)) return;
+        shifts.forEach((shift) => {
+          const tick = int(entry.start_tick) + shift;
+          if (tick > triggerTick || (tick === triggerTick
+            && int(entry.visual_start_tick) + shift > visualTriggerTick)) {
+            deadlineTick = Math.min(deadlineTick, tick);
+          }
+        });
+      });
+      return deadlineTick;
+    }
+
     function triggerBuffsForEvent(event, triggerTick, step, action, snapshot, isBackground, extraContext = {}) {
       const triggered = [];
       const dotLayerApplications = [];
@@ -4855,22 +4874,7 @@
         if (runtimeRule.delayed_reaction?.reaction) {
           let echoTick = triggerTick + Math.max(0, int(runtimeRule.delayed_reaction.delay_ticks));
           if (runtimeRule.delayed_reaction.advance_on_timeline_mask === true) {
-            // Use the compiled clock, including the adjacent cycle when a wait
-            // crosses the loop boundary. Virtual mask width is never elapsed time.
-            const shifts = options.loop_enabled && loopDurationTicks > 0
-              ? (extraContext.loop_prime_only ? [-loopDurationTicks, 0] : [0, loopDurationTicks]) : [0];
-            const visualTriggerTick = int(extraContext.visual_trigger_tick,
-              visualTickFromCalculationTick(triggerTick, qVirtualIntervals));
-            scheduledSteps.forEach((entry) => {
-              if (!isZeroForegroundQStep(entry.step, entry.action)) return;
-              shifts.forEach((shift) => {
-                const tick = int(entry.start_tick) + shift;
-                if (tick > triggerTick || (tick === triggerTick
-                  && int(entry.visual_start_tick) + shift > visualTriggerTick)) {
-                  echoTick = Math.min(echoTick, tick);
-                }
-              });
-            });
+            echoTick = advanceToTimelineMask(echoTick, triggerTick, extraContext);
             instance.end_tick = echoTick;
           }
           reactionDamageEvents.push({kind: 'reaction_echo', reaction: runtimeRule.delayed_reaction.reaction,
@@ -4902,7 +4906,11 @@
           }
         }
         if (instance.rule?.periodic_heal) registerPeriodicHealing(instance);
-        if (cooldownTicks > 0) buffTriggerCooldowns.set(cooldownKey, triggerTick + cooldownTicks);
+        if (cooldownTicks > 0) {
+          const cooldownEndTick = triggerTick + cooldownTicks;
+          buffTriggerCooldowns.set(cooldownKey, runtimeRule.trigger?.cooldown_advance_on_timeline_mask === true
+            ? advanceToTimelineMask(cooldownEndTick, triggerTick, extraContext) : cooldownEndTick);
+        }
         const summary = buffSummary(instance);
         if (dotLayerExpansion.additions.length) summary.dot_layer_additions = dotLayerExpansion.additions;
         if (turbidBurnStackCount > 0) summary.turbid_burn_stack_count = turbidBurnStackCount;

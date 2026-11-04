@@ -6170,7 +6170,8 @@
           "type": "reaction_not_echo"
         }
       ],
-      "cooldown_ticks": 70
+      "cooldown_ticks": 70,
+      "cooldown_advance_on_timeline_mask": true
     },
     "target": {
       "scope": "registrar"

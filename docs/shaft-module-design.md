@@ -947,7 +947,7 @@ Everness当天核实「未迟到的正义」：基础800%攻击力相属性伤�
 
 `activation.stack_gain_from_key`在清除前读取拥有者指定状态当前总层数，用于把实际消费保存在本次快照或跨动作累计中；`effects_from_stack.max_count`可限制快照增益的计数，但不限制实际状态层数或消耗量。`triggered_damage.atk_per_stack`按同次`effects_from_stack`的计数构造独立伤害倍率，依然使用正常技能等级和结算时面板。`activation.full_stack_buff_ids`在跨过阈值时同时激活多个目标规则，兼容旧单一ID；满层重复不重触发。`activation.full_stack_clear_keys`在阈值增益生成后清除同拥有者指定状态并截断时间线；静候彩铃用它结束终结后追击窗口和计数，已生成的20秒无视防御独立保留，下次Q重新开启。
 
-`delayed_reaction`配置反应类型和延迟tick，队列在该时刻施加正常环合实例并标记`is_echo`；可选`advance_on_timeline_mask=true`将等待终点改为等待期间首个零耗时遮罩动作的开始时刻，并同步结束等待Buff线。使用编译后的真实时钟，循环轴包含相邻轮的遮罩；虚拟展示宽度不计时，触发冷却仍从原触发时刻计算。`reaction_not_echo`用于避免自己再次调度自己。回响不伪造主动援护双方，因此不获得要求`reaction_owner_involved`的资源。`forbidden_buff_any_keys`支持多个互斥形态的动作自检；`requires_off_field`检查协同拥有者实际前后台，而不是仅凭动作画在后台推断。
+`delayed_reaction`配置反应类型和延迟tick，队列在该时刻施加正常环合实例并标记`is_echo`；可选`advance_on_timeline_mask=true`将等待终点改为等待期间首个零耗时遮罩动作的开始时刻，并同步结束等待Buff线。使用编译后的真实时钟，循环轴包含相邻轮的遮罩；虚拟展示宽度不计时。`trigger.cooldown_advance_on_timeline_mask=true`独立让触发冷却在期间首个零耗时遮罩动作开始时结束；没有遮罩时保留配置的完整冷却，遮罩不额外派发触发事件。`reaction_not_echo`用于避免自己再次调度自己。回响不伪造主动援护双方，因此不获得要求`reaction_owner_involved`的资源。`forbidden_buff_any_keys`支持多个互斥形态的动作自检；`requires_off_field`检查协同拥有者实际前后台，而不是仅凭动作画在后台推断。
 
 曳尔沐使用这些通用字段实现信号、错视幻觉、追忆快照、觉醒增益、延滞回响和弧盘阈值；数值、待补窗口与验收范围见排轴README，当前未知时长与资源仍不作为完整DPS证据。
 

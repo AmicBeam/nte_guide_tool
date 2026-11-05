@@ -29,9 +29,9 @@ class ElymsCatalogTest(unittest.TestCase):
     def effects(self, detail):
         return {b['rule_id']: b.get('effects', {}) for b in detail['applied_buffs']}
 
-    def test_bond_bonus_adds_four_percent_crit_rate_only_when_enabled(self):
+    def test_bond_bonus_adds_five_percent_attack_only_when_enabled(self):
         character=next(c for c in load_shaft_catalog()['characters'] if c['id']==CID)
-        self.assertEqual(character['bond_bonus'],{'label':'4暴击','modifiers':{'crit_rate':.04}})
+        self.assertEqual(character['bond_bonus'],{'label':'5攻击','modifiers':{'atk_pct':.05}})
         panels=[]
         for enabled in (False,True):
             axis=self.axis([(0,'action_elyms_melee1',0)])
@@ -40,8 +40,8 @@ class ElymsCatalogTest(unittest.TestCase):
             self.assertEqual(normalized['team'][0]['bond_full'],enabled)
             self.assertEqual(normalized['character_builds'][CID]['bond_full'],enabled)
             panels.append(simulate_shaft_axis(axis)['result']['details'][0]['panel'])
-        self.assertAlmostEqual(panels[1]['crit_rate']-panels[0]['crit_rate'],.04)
-        for key in ('atk','hp','def','crit_dmg'):
+        self.assertAlmostEqual(panels[1]['atk']-panels[0]['atk'],character['base_stats']['atk']*.05)
+        for key in ('crit_rate','hp','def','crit_dmg'):
             self.assertEqual(panels[1][key],panels[0][key])
 
     def test_confirmed_catalog_and_action_resources(self):

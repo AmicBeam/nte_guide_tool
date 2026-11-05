@@ -249,9 +249,9 @@
       "crit_dmg": 0.5
     },
     "bond_bonus": {
-      "label": "4暴击",
+      "label": "5攻击",
       "modifiers": {
-        "crit_rate": 0.04
+        "atk_pct": 0.05
       }
     },
     "self_check_activations": [

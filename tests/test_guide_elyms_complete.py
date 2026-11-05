@@ -82,8 +82,10 @@ class ElymsCharacterModulesTest(unittest.TestCase):
         for stage in record['materials']['breakthrough']:
             self.assertTrue(stage['items'])
             self.assertTrue(all(i['name'] and i['amount']>0 for i in stage['items']))
-        # Gift bindings are usable independently; the confirmed total does not create level/reward rows.
-        self.assertFalse(record['affinity']['available'])
+        # The live role binding now includes all ten levels and the actual full-affinity bonus.
+        self.assertTrue(record['affinity']['available'])
+        self.assertEqual(len(record['affinity']['levels']),10)
+        self.assertEqual(record['affinity']['full_affinity_bonus'][0]['text'],'攻击力＋5%')
         self.assertEqual(len(record['affinity']['gifts']),14)
         self.assertEqual(record['affinity']['total_affinity'],56100)
         self.assertNotIn('total_affinity_estimated',record['affinity'])
@@ -93,7 +95,7 @@ class ElymsCharacterModulesTest(unittest.TestCase):
         self.assertEqual(phone['required_gifts'],47)
         self.assertIn('复古风手机壳',self.client.get(URL).text)
         self.assertNotIn('该角色尚未提供喜好礼物配置',self.client.get(URL).text)
-        self.assertIn('未提供', self.client.get(URL).text.split('id="section-affinity"',1)[1])
+        self.assertNotIn('尚未提供好感度等级配置', self.client.get(URL).text)
         for section in ('stats','abilities','awaken','resonance','nouns','equip_slots','affinity','materials'):
             response=self.client.get('/api/guide/characters/1090?section='+section)
             self.assertEqual(response.status_code,200)

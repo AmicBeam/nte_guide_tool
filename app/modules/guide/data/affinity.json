@@ -526,6 +526,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -1083,6 +1099,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -1685,6 +1717,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -2448,6 +2496,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -3122,6 +3186,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -3831,6 +3911,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -4483,6 +4579,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -5154,6 +5266,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -5730,6 +5858,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -6314,6 +6458,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -6911,6 +7071,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -7442,6 +7618,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -8161,6 +8353,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -8727,6 +8935,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -9269,6 +9493,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -9823,6 +10063,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -10419,6 +10675,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -11021,6 +11293,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -11713,6 +12001,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -12357,6 +12661,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -12960,6 +13280,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -13636,6 +13972,22 @@
                 ],
                 "goods_ids": [
                   "DefendAthenaShop_02"
+                ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
                 ]
               }
             ]
@@ -14382,6 +14734,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -14435,25 +14803,268 @@
     {
       "id": "1090",
       "affinity": {
-        "available": false,
-        "levels": [],
+        "available": true,
+        "levels": [
+          {
+            "level": 1,
+            "max_value": 100,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "资深猎人攻略",
+                "amount": 3,
+                "description": "可以提供5000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
+          },
+          {
+            "level": 2,
+            "max_value": 500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "混沌染剂",
+                "amount": 2,
+                "description": "弧盘升级材料，包含10000点弧盘经验，可以用于升级弧盘。"
+              },
+              {
+                "name": "相逢初识：曳尔沐",
+                "amount": 1,
+                "description": "解锁曳尔沐副驾驶乘坐功能。可以邀请曳尔沐来「小小麻雀」同台竞技。"
+              }
+            ],
+            "bonuses": []
+          },
+          {
+            "level": 3,
+            "max_value": 1000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 2,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              }
+            ],
+            "bonuses": []
+          },
+          {
+            "level": 4,
+            "max_value": 2000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 10,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "特级猎人攻略",
+                "amount": 3,
+                "description": "可以提供20000点的角色经验，用于角色提高等级。"
+              },
+              {
+                "name": "意气相投：曳尔沐",
+                "amount": 1,
+                "description": "解锁曳尔沐基础交互动作，可邀请曳尔沐来家做客。解锁都市偕游事件。"
+              }
+            ],
+            "bonuses": []
+          },
+          {
+            "level": 5,
+            "max_value": 3500,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "无梦果核",
+                "amount": 5,
+                "description": "可用于提升角色的都市特技等级。"
+              }
+            ],
+            "bonuses": []
+          },
+          {
+            "level": 6,
+            "max_value": 5000,
+            "rewards": [
+              {
+                "name": "环石",
+                "amount": 20,
+                "description": "蕴含特殊能量的稀有货币。"
+              },
+              {
+                "name": "至交密友：曳尔沐",
+                "amount": 1,
+                "description": "解锁曳尔沐特殊交互动作。解锁都市偕游事件。"
+              },
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              }
+            ],
+            "bonuses": []
+          },
+          {
+            "level": 7,
+            "max_value": 7000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 20000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "假朋友",
+                "amount": 1,
+                "description": "获得贴纸：假朋友"
+              }
+            ],
+            "bonuses": []
+          },
+          {
+            "level": 8,
+            "max_value": 9000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 30000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "一二沫",
+                "amount": 1,
+                "description": "获得头像：一二沫"
+              },
+              {
+                "name": "契心之交：曳尔沐",
+                "amount": 1,
+                "description": "解锁曳尔沐特殊都市偕游事件。"
+              }
+            ],
+            "bonuses": []
+          },
+          {
+            "level": 9,
+            "max_value": 12000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 40000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "谜点热线",
+                "amount": 1,
+                "description": "获得头像框：谜点热线"
+              }
+            ],
+            "bonuses": []
+          },
+          {
+            "level": 10,
+            "max_value": 16000,
+            "rewards": [
+              {
+                "name": "甲硬币",
+                "amount": 50000,
+                "description": "养成消耗的基础货币。"
+              },
+              {
+                "name": "通讯官",
+                "amount": 1,
+                "description": "获得名片：通讯官"
+              },
+              {
+                "name": "微风精灵",
+                "amount": 1,
+                "description": "获得「曳尔沐」专属角色时装「微风精灵」及「头像-微风精灵」。"
+              }
+            ],
+            "bonuses": [
+              {
+                "level": 10,
+                "name": "攻击力",
+                "value": 5.0,
+                "percent": true,
+                "text": "攻击力＋5%"
+              }
+            ]
+          }
+        ],
         "gifts": [
           {
             "id": "Food_096",
             "name": "明亮~wink大作战！",
             "affinity_gain": 100,
             "default_gain": 50,
-            "unlimited": false,
             "exclusive": false,
-            "offers": []
+            "unlimited": false,
+            "offers": [
+              {
+                "shop_name": "竹本清源",
+                "currency_id": "Fons",
+                "currency_name": "方斯",
+                "price": 600,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "Shop_012_01_01",
+                  "Shop_012_01_02",
+                  "Shop_012_03_01",
+                  "Shop_012_03_02",
+                  "Shop_012_03_03",
+                  "Shop_012_04_01",
+                  "Shop_012_04_02",
+                  "Shop_012_04_03",
+                  "Shop_012_04_04",
+                  "Shop_012_05_01",
+                  "Shop_012_05_02",
+                  "Shop_012_05_03"
+                ],
+                "goods_ids": [
+                  "Shop_012_01_04",
+                  "Shop_012_01_09",
+                  "Shop_012_03_04",
+                  "Shop_012_03_09",
+                  "Shop_012_03_14",
+                  "Shop_012_04_04",
+                  "Shop_012_04_09",
+                  "Shop_012_04_14",
+                  "Shop_012_04_19",
+                  "Shop_012_05_04",
+                  "Shop_012_05_09",
+                  "Shop_012_05_14"
+                ]
+              }
+            ]
           },
           {
             "id": "Food_097",
             "name": "大防御家！",
             "affinity_gain": 100,
             "default_gain": 50,
-            "unlimited": false,
             "exclusive": false,
+            "unlimited": false,
             "offers": [
               {
                 "shop_name": "竹本清源",
@@ -14500,35 +15111,8 @@
             "name": "空想特饮",
             "affinity_gain": 100,
             "default_gain": 50,
-            "unlimited": false,
             "exclusive": false,
-            "offers": []
-          },
-          {
-            "id": "SpecialGift_elyms1",
-            "name": "好朋友贴纸",
-            "affinity_gain": 100,
-            "default_gain": 50,
             "unlimited": false,
-            "exclusive": false,
-            "offers": []
-          },
-          {
-            "id": "SpecialGift_elyms2",
-            "name": "小幽灵徽章",
-            "affinity_gain": 100,
-            "default_gain": 50,
-            "unlimited": false,
-            "exclusive": false,
-            "offers": []
-          },
-          {
-            "id": "SpecialGift_elyms3",
-            "name": "烦恼纸飞机",
-            "affinity_gain": 100,
-            "default_gain": 50,
-            "unlimited": false,
-            "exclusive": false,
             "offers": []
           },
           {
@@ -14536,8 +15120,8 @@
             "name": "阑雨",
             "affinity_gain": 200,
             "default_gain": 100,
-            "unlimited": false,
             "exclusive": false,
+            "unlimited": false,
             "offers": [
               {
                 "shop_name": "集山忘野",
@@ -14558,30 +15142,93 @@
             ]
           },
           {
+            "id": "SpecialGift_elyms1",
+            "name": "好朋友贴纸",
+            "affinity_gain": 200,
+            "default_gain": 100,
+            "exclusive": false,
+            "unlimited": false,
+            "offers": []
+          },
+          {
+            "id": "SpecialGift_elyms2",
+            "name": "小幽灵徽章",
+            "affinity_gain": 200,
+            "default_gain": 100,
+            "exclusive": false,
+            "unlimited": false,
+            "offers": []
+          },
+          {
+            "id": "SpecialGift_elyms3",
+            "name": "烦恼纸飞机",
+            "affinity_gain": 200,
+            "default_gain": 100,
+            "exclusive": false,
+            "unlimited": false,
+            "offers": []
+          },
+          {
             "id": "Furniture_Light_003",
             "name": "复古暖灯",
             "affinity_gain": 400,
             "default_gain": 200,
-            "unlimited": false,
             "exclusive": false,
-            "offers": []
+            "unlimited": false,
+            "offers": [
+              {
+                "shop_name": "Mr.Brown",
+                "currency_id": "Fons",
+                "currency_name": "方斯",
+                "price": 15000,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "Shop_029_03_01",
+                  "Shop_029_03_02"
+                ],
+                "goods_ids": [
+                  "Shop_029_03_03",
+                  "Shop_029_03_09"
+                ]
+              }
+            ]
           },
           {
             "id": "Furniture_Ornament_031",
             "name": "映像机",
             "affinity_gain": 400,
             "default_gain": 200,
-            "unlimited": false,
             "exclusive": false,
-            "offers": []
+            "unlimited": false,
+            "offers": [
+              {
+                "shop_name": "Mr.Brown",
+                "currency_id": "Fons",
+                "currency_name": "方斯",
+                "price": 22000,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "Shop_029_05_01"
+                ],
+                "goods_ids": [
+                  "Shop_029_05_08"
+                ]
+              }
+            ]
           },
           {
             "id": "Furniture_Ornament_038",
             "name": "「九百九十九夜」",
             "affinity_gain": 400,
             "default_gain": 200,
-            "unlimited": false,
             "exclusive": false,
+            "unlimited": false,
             "offers": [
               {
                 "shop_name": "DSD",
@@ -14606,8 +15253,8 @@
             "name": "幽梦",
             "affinity_gain": 400,
             "default_gain": 200,
-            "unlimited": false,
             "exclusive": false,
+            "unlimited": false,
             "offers": [
               {
                 "shop_name": "Oops！Chest",
@@ -14632,8 +15279,8 @@
             "name": "浮冰影券",
             "affinity_gain": 400,
             "default_gain": 400,
-            "unlimited": true,
             "exclusive": false,
+            "unlimited": true,
             "offers": [
               {
                 "shop_name": "螺钉商店",
@@ -14714,6 +15361,22 @@
                 "goods_ids": [
                   "DefendAthenaShop_02"
                 ]
+              },
+              {
+                "shop_name": "TX纪念商店",
+                "currency_id": "TankBattleCoin",
+                "currency_name": "TX纪念币",
+                "price": 100,
+                "discount_price": null,
+                "discount_time_limited": false,
+                "availability_limited": false,
+                "unlock_id": null,
+                "shop_ids": [
+                  "TankBattleShop"
+                ],
+                "goods_ids": [
+                  "TankBattleShop_03"
+                ]
               }
             ]
           },
@@ -14722,8 +15385,8 @@
             "name": "复古风手机壳",
             "affinity_gain": 1200,
             "default_gain": 300,
-            "unlimited": true,
             "exclusive": true,
+            "unlimited": true,
             "offers": []
           },
           {
@@ -14731,8 +15394,8 @@
             "name": "一封手写信",
             "affinity_gain": 2000,
             "default_gain": 2000,
-            "unlimited": true,
             "exclusive": false,
+            "unlimited": true,
             "offers": [
               {
                 "shop_name": "失纬兑换",
@@ -14753,8 +15416,15 @@
             ]
           }
         ],
-        "full_affinity_bonus": [],
-        "full_affinity_total": 56100
+        "full_affinity_bonus": [
+          {
+            "level": 10,
+            "name": "攻击力",
+            "value": 5.0,
+            "percent": true,
+            "text": "攻击力＋5%"
+          }
+        ]
       }
     }
   ]

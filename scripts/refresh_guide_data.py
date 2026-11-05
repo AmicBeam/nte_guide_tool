@@ -165,6 +165,20 @@ def merge_local_characters(data, supplemental):
     return data
 
 
+def merge_local_arcs(data, supplemental):
+    """Preserve independently imported arcs absent from the remote index."""
+    present = {str(row['id']) for row in data['arcs']}
+    for record in supplemental['arcs']:
+        identifier = str(record['id'])
+        if identifier in present:
+            continue
+        if not record.get('stats') or not record.get('effect') or len(record.get('materials', [])) != 6:
+            raise ValueError('Incomplete locally imported arc')
+        data['arcs'].append(record)
+        present.add(identifier)
+    return data
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', default='latest')
@@ -180,6 +194,9 @@ def main():
     local = ROOT / 'app/modules/guide/data/ntedata_characters.json'
     if local.exists():
         merge_local_characters(data, json.loads(local.read_text(encoding='utf-8')))
+    local_arcs = ROOT / 'app/modules/guide/data/ntedata_arcs.json'
+    if local_arcs.exists():
+        merge_local_arcs(data, json.loads(local_arcs.read_text(encoding='utf-8')))
     # Do not replace the working dataset until every detail has validated.
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix('.tmp')

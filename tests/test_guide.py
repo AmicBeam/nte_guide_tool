@@ -71,7 +71,7 @@ class GuideTest(unittest.TestCase):
 
     def test_arc_icon_filters_and_rarity_images(self):
         html = self.client.get('/guide?kind=arcs&rarity=3&arc_type=1').text
-        self.assertEqual(html.count('data-filter-card '), 51)
+        self.assertEqual(html.count('data-filter-card '), 52)
         self.assertIn('aria-label="3星"', html)
         self.assertIn('data-guide-filter-group', html)
         self.assertNotIn('class="guide-arc-types"', html)

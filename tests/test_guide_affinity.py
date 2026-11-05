@@ -44,15 +44,15 @@ class GuideAffinityTest(unittest.TestCase):
         self.assertIn('affinity', service.schema()['character_sections'])
         self.assertIn('section=affinity', self.client.get('/guide/llms.txt').text)
 
-    def test_confirmed_total_calculates_costs_without_fabricating_levels(self):
+    def test_actual_levels_and_confirmed_total_fallback_calculate_costs(self):
         from app.modules.guide.affinity import with_gift_costs
         totals={sum(row['max_value']for row in c['affinity']['levels'])
                 for c in service.catalog()['characters']if c['affinity']['levels']}
         self.assertEqual(totals,{56100})
         affinity=service.detail('characters','1090')['affinity']
-        self.assertFalse(affinity['available'])
-        self.assertEqual(affinity['levels'],[])
-        self.assertEqual(affinity['full_affinity_bonus'],[])
+        self.assertTrue(affinity['available'])
+        self.assertEqual(len(affinity['levels']),10)
+        self.assertEqual(affinity['full_affinity_bonus'][0]['text'],'攻击力＋5%')
         self.assertEqual(affinity['total_affinity'],56100)
         self.assertNotIn('total_affinity_estimated',affinity)
         gifts={g['name']:g for g in affinity['gifts']}
@@ -66,7 +66,12 @@ class GuideAffinityTest(unittest.TestCase):
             self.assertIn(text,html)
         self.assertNotIn('（估算）',html)
         self.assertNotIn('按经验值估算',html)
-        raw={'levels':[],'full_affinity_total':56100,'gifts':[]}
+        raw={'available':False,'levels':[],'full_affinity_bonus':[],'full_affinity_total':56100,'gifts':[]}
+        fallback=with_gift_costs(raw)
+        self.assertEqual(fallback['total_affinity'],56100)
+        self.assertEqual(fallback['levels'],[])
+        self.assertEqual(fallback['full_affinity_bonus'],[])
+        self.assertFalse(fallback['available'])
         for invalid in (True,0,-1,56100.0,'56100'):
             with self.subTest(invalid=invalid),self.assertRaises(ValueError):
                 with_gift_costs({**raw,'full_affinity_total':invalid})

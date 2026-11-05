@@ -47,7 +47,7 @@ def build(directory, character_id, prefix):
             elif source.get('EffectFigureDataList'):
                 numbers = []
                 for binding in source['EffectFigureDataList']:
-                    keys = curves[binding['NameID']]['Keys']
+                    keys = curves[binding.get('NameId', binding.get('NameID'))]['Keys']
                     if len(keys) != 1 or keys[0]['Time'] != 1:
                         raise ValueError('Nonconstant curve needs explicit level evaluation')
                     value = Decimal(str(keys[0]['Value'])) * (100 if binding['bIsPercent'] else 1)

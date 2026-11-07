@@ -21,7 +21,7 @@
   const NS = "http://www.w3.org/2000/svg";
   const MAX_EVENT_MS = 3600;
   const ACTOR_FX_CLASSES = [
-    "v2-fx-lunge", "v2-fx-enter", "v2-fx-hurt", "v2-fx-shield", "v2-fx-heal",
+    "v2-fx-support-immune", "v2-fx-lunge", "v2-fx-enter", "v2-fx-hurt", "v2-fx-shield", "v2-fx-heal",
     "v2-fx-down", "v2-fx-revive", "v2-fx-awaken", "v2-fx-shape", "v2-fx-growth",
   ];
   const BEATS = {
@@ -742,8 +742,13 @@
       const rawAmount = numericValue(amountOf(event));
       const isHeal = event && event.type === "heal";
       if (event && event.type === "combat" && event.counter_immunity === "support") {
-        this._floater(point, stageRect, "无敌", "invincible");
-        await this._wait(this._duration(instant, BEATS.damageHold));
+        this._floater(point, stageRect, "免疫", "invincible");
+        if (target) target.classList.add("v2-fx-support-immune");
+        try {
+          await this._wait(this._duration(instant, BEATS.damageHold));
+        } finally {
+          if (target) target.classList.remove("v2-fx-support-immune");
+        }
         return;
       }
       let shown = false;

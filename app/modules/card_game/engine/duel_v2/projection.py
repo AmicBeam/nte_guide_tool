@@ -10,7 +10,7 @@ from .flow import acting_side, apply_owned_action, card_plays_instant, legal_act
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
-from .state import SIDES, attack_value, collapsed, collapse_max, damage_immune, damage_limit, effective_card, hero, name, other, team_order
+from .state import SIDES, attack_value, collapsed, collapse_max, damage_immune, damage_limit, protection_state, effective_card, hero, name, other, team_order
 
 
 def _card(state, side, instance_id):
@@ -303,6 +303,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             c['effect_markers'] = character_effect_markers(h, state, ps)
             c['damage_immune'] = damage_immune(state, ps, cid)
             c['damage_limit'] = damage_limit(state, ps, cid)
+            c.update(protection_state(state, ps, cid))
             chars.append(c)
         team['characters'] = chars
         team['deck_count'] = len(source['deck'])

@@ -350,6 +350,22 @@ def damage_immune(state, side, cid):
     return alive(state, side, cid) and bool(evaluate(state, side, h, 'rule.damage_immune', False)['value'])
 
 
+def protection_state(state, side, cid):
+    """Public protection traits, shared by live boards and replay patches."""
+    from .modifiers import evaluate
+    from .context import EffectContext
+    from app.modules.card_game.content.duel_v2.registry import decide
+    if not alive(state, side, cid):
+        return dict(combat_immune=False, noncombat_immune=False, hp_floor=0)
+    target = hero(state, side, cid)
+    context = EffectContext(state, side, cid, state.get('operation') or {'side': side})
+    return dict(
+        combat_immune=bool(evaluate(state, side, target, 'rule.combat_immune', False)['value']),
+        noncombat_immune=bool(decide(context, 'noncombat_damage_immune', False, actor_only=True)),
+        hp_floor=int(decide(context, 'hp_floor', 0, target_id=cid) or 0),
+    )
+
+
 def damage_limit(state, side, cid):
     """Public per-event damage cap; None means there is no active limit."""
     if not alive(state, side, cid):

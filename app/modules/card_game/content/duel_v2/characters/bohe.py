@@ -63,8 +63,12 @@ class Bohe:
         return None
 
     @staticmethod
+    def noncombat_damage_immune(c, current=False, **_data):
+        return bool(c.character.get('awakened'))
+
+    @staticmethod
     def incoming_damage(c, current=0, kind=None, target_id=None, source=None, **_data):
-        if target_id != c.cid or not c.character.get('awakened'):
+        if target_id != c.cid or not Bohe.noncombat_damage_immune(c):
             return None
         if kind in ('combat', 'followup', 'penetration'):
             return None

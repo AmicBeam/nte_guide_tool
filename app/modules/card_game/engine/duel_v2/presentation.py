@@ -129,6 +129,7 @@ def capture_public_board(state):
                 'effect_markers': character_effect_markers(hero, state, ps),
                 'damage_immune': duel_state.damage_immune(state, ps, cid),
                 'damage_limit': duel_state.damage_limit(state, ps, cid),
+                **duel_state.protection_state(state, ps, cid),
                 'collapse_count': (hero.get('flags') or {}).get('collapse_count', 0),
                 'collapse_max': duel_state.collapse_max(hero),
                 'collapse': duel_state.collapsed(hero),

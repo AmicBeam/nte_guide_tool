@@ -112,6 +112,7 @@
   box-shadow: 0 0 0 calc(2px * var(--table-layout-scale, 1)) rgba(255, 191, 87, 0.9), 0 0 calc(18px * var(--table-layout-scale, 1)) rgba(255, 191, 87, 0.24);
 }
 
+.v2-character-card.has-protection-frame,
 .v2-character-card.is-damage-immune,
 .v2-character-card.is-damage-limited {
   overflow: visible;
@@ -119,9 +120,9 @@
 
 .v2-immunity-frame {
   position: absolute;
-  inset: calc(-5px * var(--table-layout-scale, 1));
-  width: calc(100% + 10px * var(--table-layout-scale, 1));
-  height: calc(100% + 10px * var(--table-layout-scale, 1));
+  inset: calc((-5px - var(--protection-offset, 0px)) * var(--table-layout-scale, 1));
+  width: calc(100% + (10px + var(--protection-offset, 0px) * 2) * var(--table-layout-scale, 1));
+  height: calc(100% + (10px + var(--protection-offset, 0px) * 2) * var(--table-layout-scale, 1));
   overflow: visible;
   z-index: 4;
   pointer-events: none;
@@ -143,6 +144,13 @@
   fill: rgba(82, 166, 255, 0.045);
   stroke: #75beff;
 }
+
+.v2-combat-immunity-frame { filter: drop-shadow(0 0 4px #b780ffb3); }
+.v2-combat-immunity-frame path { fill: #b780ff0b; stroke: #c397ff; }
+.v2-noncombat-immunity-frame { filter: drop-shadow(0 0 4px #63d990b3); }
+.v2-noncombat-immunity-frame path { fill: #63d9900b; stroke: #7ce6a2; }
+.v2-hp-floor-frame { filter: drop-shadow(0 0 4px #ff6262b3); }
+.v2-hp-floor-frame path { fill: #ff62620b; stroke: #ff7979; }
 
 .v2-character-art {
   position: relative;

@@ -167,14 +167,24 @@
     const panelSig = [attack, hp, shield, data.harmony, energyNow, energyMax, data.awakened ? 1 : 0, data.jingu, data.protagonist_aura, data.beast_fangs].join('|');
     const prevPanel = node.getAttribute('data-pop-sig');
     node.setAttribute('data-pop-sig', panelSig);
-    const protectionLabel = damageLimited ? '单次至多受到 ' + data.damage_limit + ' 点伤害' : '免疫伤害';
+    const protectedAlive = !options.placeholder && !data.down_turns && data.hp > 0;
+    const protections = [
+      [damageImmune, '', '免疫'],
+      [damageLimited, 'v2-damage-limit-frame', '单次至多受到 ' + data.damage_limit + ' 点伤害'],
+      [protectedAlive && data.combat_immune, 'v2-combat-immunity-frame', '免疫战斗伤害'],
+      [protectedAlive && data.noncombat_immune, 'v2-noncombat-immunity-frame', '免疫对方非战斗伤害'],
+      [protectedAlive && data.hp_floor >= 1, 'v2-hp-floor-frame', '生命至少保留 1 点'],
+    ].filter(function (entry) { return entry[0]; });
+    node.classList.toggle('has-protection-frame', protections.length > 0);
+    const protectionFrames = protections.map(function (entry, index) {
+      return '<svg class="v2-immunity-frame ' + entry[1] + '" style="--protection-offset:' + index * 4 + 'px" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="' + entry[2] + '"><path d="M8 1 H92 Q99 1 99 8 V98 Q90 102 50 106 Q10 102 1 98 V8 Q1 1 8 1 Z"/></svg>';
+    }).join('');
     const collapseHalo = showCollapse ? '<svg class="v2-collapse-halo" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="倾陷">' +
       '<circle class="v2-collapse-ring" cx="50" cy="50" r="37"/>' +
       '<g class="v2-collapse-orbit"><path d="M50 5l3 7 7 1-6 5 2 8-6-4-6 4 2-8-6-5 7-1z"/>' +
       '<path d="M82 63l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>' +
       '<path d="M18 63l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></g></svg>' : '';
-    node.innerHTML = collapseHalo + (damageImmune || damageLimited ? '<svg class="v2-immunity-frame' +
-      (damageLimited ? ' v2-damage-limit-frame' : '') + '" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="' + protectionLabel + '"><path d="M8 1 H92 Q99 1 99 8 V98 Q90 102 50 106 Q10 102 1 98 V8 Q1 1 8 1 Z"/></svg>' : '') +
+    node.innerHTML = collapseHalo + protectionFrames +
       '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + (data.summoned && !portrait ? '<div class="v2-summon-art" aria-label="召唤物">⌛</div>' : V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar')) +
       vitalsHtml + (mobileCard ? '' : actions.join('')) + '</div>' +
       '<div class="v2-character-panel">' +

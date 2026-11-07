@@ -609,3 +609,8 @@
   height: 100%;
   border-radius: calc(14px * var(--table-layout-scale, 1));
 }
+
+.v2-fx-support-immune {
+  outline: calc(2.5px * var(--table-layout-scale, 1)) solid #ffda75;
+  outline-offset: calc(5px * var(--table-layout-scale, 1));
+}

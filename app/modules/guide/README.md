@@ -210,7 +210,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 ## 全站深境
 
-`/guide?kind=endless` 按期展示，当前仅一个“第一期”入口，进入 `/guide/endless/EndlessTrial_Season1` 查看200层，页面内保留1–50、51–100、101–150、151–200四个50层分组。默认第1组第1层，跨组导航进入该组首层，带 `stage` 的链接自动选中所在组；每组只显示对应50层的楼层按钮，组内切换只显示／隐藏已加载楼层并同步 `stage`。第一期为北京时间2026-09-28 05:00至2026-11-05 05:59，标记“已结束”，历史敌人、机制和数值保留。`data/endless_seasons.json` 维护期数、起止时间、状态及楼层组绑定；网页、JSON、Markdown、CLI共用同一赛期资料。原四个50层分组URL保留读取兼容及原层号边界，目录、检索不再重复列出四组。敌人保留独立属性配置ID、单只生命、等级、数量、攻击、防御、倾陷上限与抗性。全部58个敌人模板按深境专表绑定名称、弱点及强化抗性；缺少图标或吞噬标记时保留未提供状态，不借用同名敌人的属性；基础属性不含局内增益。各层限时120秒，展示原始计分目标。
+`/guide?kind=endless` 按期展示，当前仅一个“第一期”入口，卡片起止日期沿用轨外之境样式放在右下角，悬停显示北京时间的完整起止时刻，不显示英文编号；进入 `/guide/endless/EndlessTrial_Season1` 查看200层，页面内保留1–50、51–100、101–150、151–200四个50层分组。默认第1组第1层，跨组导航进入该组首层，带 `stage` 的链接自动选中所在组；每组只显示对应50层的楼层按钮，组内切换只显示／隐藏已加载楼层并同步 `stage`。第一期为北京时间2026-09-28 05:00至2026-11-05 05:59，标记“已结束”，历史敌人、机制和数值保留。`data/endless_seasons.json` 维护期数、起止时间、状态及楼层组绑定；网页、JSON、Markdown、CLI共用同一赛期资料。原四个50层分组URL保留读取兼容及原层号边界，目录、检索不再重复列出四组。敌人保留独立属性配置ID、单只生命、等级、数量、攻击、防御、倾陷上限与抗性。全部58个敌人模板按深境专表绑定名称、弱点及强化抗性；缺少图标或吞噬标记时保留未提供状态，不借用同名敌人的属性；基础属性不含局内增益。各层限时120秒，展示原始计分目标。
 
 网页、搜索、JSON、Markdown与CLI共用独立本地快照 `data/endless.json`。JSON列表 `/api/guide/endless`，详情 `/api/guide/endless/EndlessTrial_Season1?stage=100`；Markdown `/guide/endless/EndlessTrial_Season1.md?stage=100`；CLI `python nte-guide.py get endless EndlessTrial_Season1 --stage 100`。层号不存在返回404；旧分组URL仍限制在原50层范围。
 

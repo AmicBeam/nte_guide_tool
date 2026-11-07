@@ -27,6 +27,6 @@ def legacy_record(groups, identifier):
         return None
     for definition, season in zip(_definitions(), season_records(groups)):
         if identifier in definition['group_ids']:
-            return {**season, **group,
+            return {**season, **group, 'season_id': season['id'],
                     'name': f"{season['name']} · {group['floor_begin']}–{group['floor_end']} 层"}
     return None

@@ -92,7 +92,11 @@ class GuideEndlessTest(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             parser = Stages()
             parser.feed(response.text)
-            self.assertEqual(parser.all, list(map(str, range(1, 201))))
+            first = ((floor - 1) // 50) * 50 + 1
+            self.assertEqual(parser.all, list(map(str, range(first, first + 50))))
+            for start in (1, 51, 101, 151):
+                self.assertIn(f'href="/guide/endless/EndlessTrial_Season1?stage={start}"', response.text)
+            self.assertIn(f'?stage={first}" aria-current="page"', response.text)
             self.assertEqual(parser.visible, [str(floor)])
             self.assertIn('已结束', response.text)
         data = self.client.get('/api/guide/endless/EndlessTrial_Season1?stage=200').json['data']

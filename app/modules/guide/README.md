@@ -554,3 +554,5 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 显式刷新：`python scripts/sync_guide_dungeons.py`，或加`--ntedata-dir /path/to/tables`读取完整目录／同名扁平表。连接副本、客户端掉落组、掉落序列、道具／货币／空幕和获取关联表；缺表、丢失引用或材料名称、重复难度等输入错误中止导入，校验成功后原子替换副本快照。请求与启动不联网。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_dungeons tests.test_guide tests.test_module_routes -q`；检查六个副本入口与30个关卡的网页／机器格式、角色材料预选对应关卡、多地点筛选、难度切换、隐藏数量不冒充固定量、范围不冒充均值，以及桌面和手机布局；同时确认本机及局域网5001服务可访问。
+
+副本奖励中的猎人等级经验复用材料展示绑定与本地WebP图标；`sync_guide_material_images.py`固定包含该条目，常规刷新不会遗漏。

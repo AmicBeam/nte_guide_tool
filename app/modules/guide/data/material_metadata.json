@@ -308,5 +308,10 @@
     "name": "空心花籽",
     "icon": "/static/images/materials/weeklycloneboss_a04_01.webp",
     "quality": "orange"
+  },
+  "hunterlvexp": {
+    "name": "猎人等级经验",
+    "icon": "/static/images/materials/hunterlvexp.webp",
+    "quality": "orange"
   }
 }

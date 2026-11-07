@@ -5,6 +5,14 @@ if (V2.ensureLogin()) {
 }
 
 async function bootstrapHome() {
+  const playPanel = document.getElementById('v2-home-play');
+  const detailTitle = document.getElementById('v2-home-detail-title');
+  const backBtn = document.getElementById('v2-home-back');
+  const joinRow = document.getElementById('v2-join-row');
+  const backdrop = document.getElementById('v2-home-backdrop');
+  const tutorialPanel = document.getElementById('v2-home-tutorial');
+  const modes = ['solo', 'advanced', 'pvp', 'tutorial'];
+  const modeNames = {solo: '普通人机', advanced: '高级人机', pvp: '好友对战', tutorial: '新手教学'};
   const banner = document.getElementById('v2-home-banner');
   const resumeCard = document.getElementById('v2-resume-card');
   const resumeTitle = document.getElementById('v2-resume-title');
@@ -43,9 +51,10 @@ async function bootstrapHome() {
     busy = Boolean(next);
     startBtn.disabled = busy;
     joinBtn.disabled = busy;
-    ['solo', 'advanced', 'pvp'].forEach(function (mode) {
+    modes.forEach(function (mode) {
       document.getElementById('v2-mode-' + mode).disabled = busy;
     });
+    backBtn.disabled = busy;
     aiDeck.disabled = busy;
     soloDeck.disabled = busy;
     if (tutorialStart) tutorialStart.disabled = busy;
@@ -66,8 +75,14 @@ async function bootstrapHome() {
     const ids = Array.isArray(deck.character_ids) && deck.character_ids.length
       ? deck.character_ids.slice(0, 4)
       : ['nanali', 'zero', 'jiuyuan', 'iloy'];
-    starterGrid.innerHTML = ids.map(function (id) {
-      const character = Object.assign({}, V2.characterFallback(id) || { id: id }, byId[id] || {});
+    const characters = ids.map(function (id) {
+      return Object.assign({}, V2.characterFallback(id) || {id: id}, byId[id] || {});
+    });
+    backdrop.innerHTML = characters.map(function (character) {
+      const portrait = V2.characterAsset(character, 'portrait') || V2.characterAsset(character, 'avatar');
+      return '<div class="v2-backdrop-esper">' + V2.imageMarkup(portrait, '', 'v2-portrait') + '</div>';
+    }).join('');
+    starterGrid.innerHTML = characters.map(function (character) {
       const portrait = V2.characterAsset(character, 'portrait') || V2.characterAsset(character, 'avatar');
       return (
         '<article class="v2-home-esper">' +
@@ -223,18 +238,29 @@ async function bootstrapHome() {
   function selectMode(mode) {
     if (busy) return;
     selectedMode = mode;
-    ['solo', 'advanced', 'pvp'].forEach(function (value) {
+    playPanel.dataset.view = 'detail';
+    detailTitle.textContent = modeNames[mode];
+    modes.forEach(function (value) {
       const button = document.getElementById('v2-mode-' + value);
       button.classList.toggle('selected', value === mode);
       button.setAttribute('aria-pressed', String(value === mode));
     });
+    V2.setHidden(joinRow, mode !== 'pvp');
+    V2.setHidden(tutorialPanel, mode !== 'tutorial');
+    V2.setHidden(startBtn, mode === 'tutorial');
     V2.setHidden(aiPicker, mode !== 'advanced');
     V2.setHidden(soloPicker, mode !== 'solo');
     startBtn.textContent = mode === 'advanced' ? '挑战高级人机' : (mode === 'pvp' ? '创建 1v1 房间' : '开始人机对局');
     renderStarter();
     renderBuildSummary();
+    detailTitle.focus({preventScroll: true});
   }
-  ['solo', 'advanced', 'pvp'].forEach(function (mode) {
+  backBtn.addEventListener('click', function () {
+    if (busy) return;
+    playPanel.dataset.view = 'menu';
+    document.getElementById('v2-mode-' + selectedMode).focus({preventScroll: true});
+  });
+  modes.forEach(function (mode) {
     document.getElementById('v2-mode-' + mode).addEventListener('click', function () { selectMode(mode); });
   });
   soloDeck.addEventListener('change', renderBuildSummary);
@@ -276,6 +302,7 @@ async function bootstrapHome() {
   }
 
   function flipTutorial(delta) {
+    if (busy) return;
     const available = selectableTutorialLevels();
     const index = available.findIndex(function (item) { return item.id === selectedTutorialId; });
     const next = available[index + delta];

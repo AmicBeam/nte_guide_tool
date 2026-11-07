@@ -1,6 +1,6 @@
 # 攻略数据库
 
-公共资料可匿名阅读，提供异环角色、弧盘、料理、轨外之境、全站深境及攻略文章；攻略撰写和个人练度同步须登录本站，养成计算仍可匿名使用。角色工具页通过排轴公开接口展示相关轴，并链接到排轴模块的配装收益比较。工具主页可进入 `/guide`；不依赖其他模块的领域服务，不使用异能对决的原创卡牌数值。当前快照包含 25 个角色条目（男女主分别计数）、52 个弧盘、15 个环线，以及全站深境200层（每50层一组）；包含数据集中已提供的条目，不以列表顺序推断实装或赛期开放状态。
+公共资料可匿名阅读，提供异环角色、弧盘、料理、轨外之境、全站深境及攻略文章；攻略撰写和个人练度同步须登录本站，养成计算仍可匿名使用。角色工具页通过排轴公开接口展示相关轴，并链接到排轴模块的配装收益比较。工具主页可进入 `/guide`；不依赖其他模块的领域服务，不使用异能对决的原创卡牌数值。当前快照包含 25 个角色条目（男女主分别计数）、52 个弧盘、15 个环线，以及全站深境第一期200层；包含数据集中已提供的条目，不以列表顺序推断实装或赛期开放状态。
 
 ## 网页和机器读取
 
@@ -210,13 +210,13 @@ python scripts/refresh_guide_data.py --transport curl
 
 ## 全站深境
 
-`/guide?kind=endless` 按1–50、51–100、101–150、151–200层分为四组；每组详情复用环线怪物卡片，按实际层号升序切换，默认显示组内首层。切换只显示／隐藏已加载楼层并同步 `stage`，分享链接和刷新保留选择；组间通过顶部层数范围跳转。敌人保留独立属性配置ID、单只生命、等级、数量、攻击、防御、倾陷上限与抗性。全部58个敌人模板按深境专表绑定名称、弱点及强化抗性；缺少图标或吞噬标记时保留未提供状态，不借用同名敌人的属性；基础属性不含局内增益。各层限时120秒，展示原始计分目标，不推断开放状态。
+`/guide?kind=endless` 按期展示，当前仅一个“第一期”入口，进入 `/guide/endless/EndlessTrial_Season1` 查看全部200层，默认第1层，按实际层号升序切换；切换只显示／隐藏已加载楼层并同步 `stage`。第一期为北京时间2026-09-28 05:00至2026-11-05 05:59，标记“已结束”，历史敌人、机制和数值保留。`data/endless_seasons.json` 维护期数、起止时间、状态及楼层组绑定；网页、JSON、Markdown、CLI共用同一赛期资料。原四个50层分组URL保留读取兼容及原层号边界，目录、检索不再重复列出四组。敌人保留独立属性配置ID、单只生命、等级、数量、攻击、防御、倾陷上限与抗性。全部58个敌人模板按深境专表绑定名称、弱点及强化抗性；缺少图标或吞噬标记时保留未提供状态，不借用同名敌人的属性；基础属性不含局内增益。各层限时120秒，展示原始计分目标。
 
-网页、搜索、JSON、Markdown与CLI共用独立本地快照 `data/endless.json`。JSON列表 `/api/guide/endless`，详情 `/api/guide/endless/EndlessTrial_51_100?stage=100`；Markdown `/guide/endless/EndlessTrial_51_100.md?stage=100`；CLI `python nte-guide.py get endless EndlessTrial_51_100 --stage 100`。层号越组或不存在返回404。
+网页、搜索、JSON、Markdown与CLI共用独立本地快照 `data/endless.json`。JSON列表 `/api/guide/endless`，详情 `/api/guide/endless/EndlessTrial_Season1?stage=100`；Markdown `/guide/endless/EndlessTrial_Season1.md?stage=100`；CLI `python nte-guide.py get endless EndlessTrial_Season1 --stage 100`。层号不存在返回404；旧分组URL仍限制在原50层范围。
 
 显式刷新：`python scripts/sync_guide_endless.py --ntedata-dir /path/to/NTEData`。读取解包目录的 `DataTable/CloneSystem/DT_EndlessTrialMonsterInfo.json`、`DataTable/PackData/DT_MonsterPackData.json`、`DataAssets/DataAssetSet/EndlessTrial/DT_EndlessTrialFloor_1.json`、`DT_EndlessTrialMonsterConfig.json` 及 `Text/PlayerSkillDes/EndlessTrail_Des.json`。名称与抗性标记来自深境怪物表，实体模板路径的功能绑定 `data/endless_identities.json` 提供本地图标和已知吞噬标记；可用 `--identities` 指定更新后的绑定。核验200层齐全、所有属性引用、固定等级与零成长项后原子替换快照；非零成长参数拒绝导入，不猜公式。常规角色／环线刷新不覆盖该独立快照；请求和启动不联网。刷新后重启服务生效。
 
-验证：`.venv/bin/python -m unittest tests.test_guide_endless tests.test_guide tests.test_guide_challenges tests.test_module_routes -v`；浏览器核对四组入口、组首／末层、层数切换、详情展开和旧环线。
+验证：`.venv/bin/python -m unittest tests.test_guide_endless tests.test_guide tests.test_guide_challenges tests.test_module_routes -v`；浏览器核对第一期唯一入口、第1／200层、层数切换、详情展开和旧环线。
 
 深境逐层机制包含推荐属性、强化抗性属性、节点起始／关底标记、备选角色数和角色栏位数。每10层关底显示当层配置的5组正向效果与反向效果，逐组保留配对关系，并显示默认正向效果数量及关联楼层的数量加成。敌人属性表使用固定属性包中的抗性，不额外按强化抗性标记猜测叠加值；关底可选的全属性抗性、生命、防御等修正不默认计入敌人数值。JSON与Markdown保留完整规则和每个效果的作用对象；不根据配置字段推断未明确提供的选择持续时间或生效时机。
 

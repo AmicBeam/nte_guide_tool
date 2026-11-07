@@ -78,12 +78,41 @@ class GuideEndlessTest(unittest.TestCase):
                 self.assertIn('选择层数', response.text)
         self.assertEqual(self.client.get('/guide/endless/EndlessTrial_1_50?stage=51').status_code, 404)
 
+    def test_archived_season_entry_and_all_floors(self):
+        listing = self.client.get('/guide?kind=endless').text
+        self.assertEqual(listing.count('href="/guide/endless/EndlessTrial_Season1"'), 1)
+        self.assertNotIn('href="/guide/endless/EndlessTrial_1_50"', listing)
+        self.assertIn('第一期', listing)
+        self.assertIn('已结束', listing)
+        self.assertIn('2026-09-28 05:00', listing)
+        self.assertIn('2026-11-05 05:59', listing)
+        for floor in (1, 50, 51, 100, 101, 150, 151, 200):
+            url = f'/guide/endless/EndlessTrial_Season1?stage={floor}'
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            parser = Stages()
+            parser.feed(response.text)
+            self.assertEqual(parser.all, list(map(str, range(1, 201))))
+            self.assertEqual(parser.visible, [str(floor)])
+            self.assertIn('已结束', response.text)
+        data = self.client.get('/api/guide/endless/EndlessTrial_Season1?stage=200').json['data']
+        self.assertEqual(data['season'], 1)
+        self.assertEqual(data['status'], 'ended')
+        self.assertEqual(data['stage_count'], 200)
+        self.assertEqual(data['begin_at'], '2026-09-28T05:00:00+08:00')
+        self.assertEqual(data['end_at'], '2026-11-05T05:59:00+08:00')
+        md = self.client.get('/guide/endless/EndlessTrial_Season1.md?stage=200').text
+        self.assertIn('第一期', md)
+        self.assertIn('2026-11-05T05:59:00+08:00', md)
+        self.assertIn('第 200 层', md)
+        self.assertEqual(self.client.get('/guide/endless/EndlessTrial_Season1?stage=201').status_code, 404)
+
     def test_list_search_json_markdown_and_discovery(self):
         listing = self.client.get('/api/guide/endless?limit=2').json
-        self.assertEqual(listing['total'], 4)
-        self.assertEqual(listing['next_offset'], 2)
-        self.assertEqual(listing['items'][0]['id'], 'EndlessTrial_1_50')
-        self.assertEqual(self.client.get('/api/guide/endless?q=讨债人').json['total'], 4)
+        self.assertEqual(listing['total'], 1)
+        self.assertIsNone(listing['next_offset'])
+        self.assertEqual(listing['items'][0]['id'], 'EndlessTrial_Season1')
+        self.assertEqual(self.client.get('/api/guide/endless?q=讨债人').json['total'], 1)
         response = self.client.get('/api/guide/endless/EndlessTrial_51_100?stage=100').json['data']
         self.assertEqual([s['id'] for s in response['stages']], [100])
         md = self.client.get('/guide/endless/EndlessTrial_51_100.md?stage=100').text

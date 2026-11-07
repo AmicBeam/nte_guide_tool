@@ -80,6 +80,7 @@ LABELS = {
     'element_name': '属性', 'rarity': '星级', 'type_name': '类型', 'phases': '技能阶段',
     'params': '技能参数', 'attributes': '技能属性', 'level': '等级', 'hp': '生命', 'atk': '攻击',
     'def': '防御', 'attack': '攻击', 'defense': '防御', 'is_permanent': '常驻',
+    'season': '期数', 'begin_at': '开始时间', 'end_at': '结束时间',
     'begin_date': '开始日期', 'end_date': '结束日期', 'stage_count': '关卡数',
     'maximum_time': '限时（秒）', 'objectives': '目标', 'halves': '半场', 'waves': '波次',
     'wave': '波次', 'monsters': '敌人', 'count': '数量', 'weaknesses': '弱点',
@@ -150,6 +151,9 @@ def public_records(kind):
         records = records + [row for row in previews.characters() if str(row['id']) not in complete_ids]
         now = character_release.current_time()
         return [character_release.project(row, now) for row in records]
+    if kind == 'endless':
+        from .endless_seasons import season_records
+        return season_records(records)
     if kind == 'challenges':
         return [record for record in records if is_released_challenge(record)]
     return records
@@ -158,7 +162,7 @@ def public_records(kind):
 def summary(kind, record):
     identifier = str(record['id'])
     result = {k: record[k] for k in ('id', 'name', 'aliases', 'element_name', 'rarity',
-        'type_name', 'image', 'element_icon', 'rarity_icon', 'is_permanent', 'begin_date', 'end_date', 'stage_count', 'floor_begin', 'floor_end', 'status', 'preview_image', 'release_at', 'content_released') if k in record}
+        'type_name', 'image', 'element_icon', 'rarity_icon', 'is_permanent', 'begin_date', 'end_date', 'stage_count', 'floor_begin', 'floor_end', 'season', 'begin_at', 'end_at', 'status', 'preview_image', 'release_at', 'content_released') if k in record}
     result.update(kind=kind, url=f'/guide/{kind}/{identifier}',
                   json_url=f'/api/guide/{kind}/{identifier}',
                   markdown_url=f'/guide/{kind}/{identifier}.md')
@@ -245,6 +249,9 @@ def detail(kind, identifier, section=None, stage=None, ability_id=None, level=No
     if kind == 'beginner' and section == 'progression':
         section = 'gameplay'
     record = next((r for r in public_records(kind) if str(r['id']) == identifier), None)
+    if record is None and kind == 'endless':
+        from .endless_seasons import legacy_record
+        record = legacy_record(catalog()['endless'], identifier)
     if record is None:
         raise LookupError('未找到条目')
     if record.get('content_released') is False and (section in character_release.AFTER_SKILL_FIELDS or ability_id is not None):

@@ -57,7 +57,7 @@ def overview(kind, record, level=10):
         'id', 'name', 'aliases', 'element_name', 'rarity', 'arc_type', 'char_tags',
         'type_name', 'effect', 'exclusive_desc', 'exclusive_character_ids',
         'is_permanent', 'begin_date', 'end_date', 'resonance', 'description',
-        'floor_begin', 'floor_end', 'stage_count')}
+        'floor_begin', 'floor_end', 'stage_count', 'season', 'begin_at', 'end_at', 'status')}
     result['available_sections'] = [key for key in record if key not in ('id', 'name')]
     if kind == 'characters':
         result['abilities'] = [{key: value for key, value in ability.items() if key in (

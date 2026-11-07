@@ -231,7 +231,7 @@ def llms():
 - [料理列表](/api/guide/foods)
 - [常驻加成（异象家具、噗咔特训）](/api/guide/permanent)
 - [轨外之境赛期](/api/guide/challenges)
-- [全站深境（每50层一组）](/api/guide/endless)
+- [全站深境（按期查询）](/api/guide/endless)
 - [攻略](/api/guide/beginner)
 - [自建攻略](/api/guide/articles)
 - [CLI 下载](/guide/cli.py)

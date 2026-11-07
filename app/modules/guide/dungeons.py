@@ -118,11 +118,22 @@ def material_url(identifier):
 def display_rewards(record, stage):
     result = []
     orange = []
+    purple = []
+    purple_position = None
     for reward in stage['rewards']:
         if record['category'] == '空幕' and reward['id'].endswith('_orange'):
             orange.append(reward)
+        elif record['category'] == '空幕' and reward['id'].endswith('_purple'):
+            if purple_position is None:
+                purple_position = len(result)
+            purple.append(reward)
         else:
             result.append(reward)
+    if purple:
+        result.insert(purple_position, {'id': 'purple-cartridges', 'name': '紫色卡带（' + ' / '.join(
+            dict.fromkeys(row['name'] for row in purple)) + '）', 'amount': None,
+            'items': [{'id': row['id'], 'name': row['name']} for row in purple],
+            'quantity': '数量未确认'})
     if orange:
         bounds = {30: (0, 1), 40: (1, 1), 45: (1, 2), 50: (2, 3)}.get(stage['required_level'])
         result.insert(0, {'id': 'orange-cartridges', 'name': '金色卡带（' + ' / '.join(

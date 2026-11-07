@@ -66,3 +66,37 @@ class ProtectionProjectionTest(unittest.TestCase):
                    if c['id'] == 'canhong']
         self.assertTrue(any(c.get('hp_floor') == 1 for c in patches))
         self.assertEqual(protection_state(s, 'a', 'canhong')['hp_floor'], 0)
+
+    def test_immunity_events_require_actual_positive_damage_block(self):
+        from app.modules.card_game.engine.duel_v2.state import damage
+        from app.modules.card_game.engine.duel_v2.presentation import project_event, sanitize_public_event
+        for kind, source, amount, expected in [
+            ('damage', 'b:canhong', 3, 'noncombat'),
+            ('genesis', 'b:canhong', 2, 'noncombat'),
+            ('nightmare', 'b:canhong', 2, 'noncombat'),
+            ('damage', 'a:canhong', 2, None),
+            ('combat', 'b:canhong', 2, None),
+            ('followup', 'b:canhong', 2, None),
+            ('damage', 'b:canhong', 0, None),
+        ]:
+            with self.subTest(kind=kind, source=source, amount=amount):
+                s = fixtures.SurplusReworkTest().game(team=('bohe', 'baicang', 'canhong', 'heiyu'))
+                hero(s, 'a', 'bohe')['awakened'] = True
+                damage(s, 'a', 'bohe', amount, source=source, kind=kind)
+                event = next(e for e in reversed(s['events']) if e.get('target') == 'a:bohe' and e['type'] == kind)
+                self.assertEqual(event.get('immunity_kind'), expected)
+                for viewer in ('a', 'b'):
+                    self.assertEqual(project_event(event, viewer).get('immunity_kind'), expected)
+                    self.assertEqual(sanitize_public_event(event, viewer).get('immunity_kind'), expected)
+
+    def test_combat_immunity_marks_damage_but_not_zero_or_noncombat(self):
+        from app.modules.card_game.engine.duel_v2.state import damage
+        for kind, amount, expected in [('combat', 3, 'combat'), ('combat', 0, None), ('damage', 1, None)]:
+            with self.subTest(kind=kind, amount=amount):
+                s = fixtures.SurplusReworkTest().game(team=('bohe', 'baicang', 'canhong', 'heiyu'))
+                h = hero(s, 'a', 'canhong')
+                add_effect(h, 'canhong.combat_immune', 'rule.combat_immune', True, op='allow',
+                           source_entity_id=h.entity_id, source_key='C05')
+                damage(s, 'a', 'canhong', amount, source='b:baicang', kind=kind)
+                event = next(e for e in reversed(s['events']) if e.get('target') == 'a:canhong' and e['type'] == kind)
+                self.assertEqual(event.get('immunity_kind'), expected)

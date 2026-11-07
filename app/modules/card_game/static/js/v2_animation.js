@@ -432,6 +432,10 @@
         if (this._isSilent(event)) {
           return;
         }
+        if (event.immunity_kind) {
+          await this._presentDamage(event, instant);
+          return;
+        }
         if (kind === "rewind") {
           const curtain = this._el("div", "v2-rewind-curtain");
           this._ensureOverlay().appendChild(curtain);
@@ -741,13 +745,16 @@
       const shieldGained = shieldLost == null ? null : -shieldLost;
       const rawAmount = numericValue(amountOf(event));
       const isHeal = event && event.type === "heal";
-      if (event && event.type === "combat" && event.counter_immunity === "support") {
-        this._floater(point, stageRect, "免疫", "invincible");
-        if (target) target.classList.add("v2-fx-support-immune");
+      const supportImmune = event && event.type === "combat" && event.counter_immunity === "support";
+      const immunityKinds = {all: "invincible", combat: "combat-immune", noncombat: "noncombat-immune"};
+      const immunityTone = supportImmune ? "invincible" : immunityKinds[event && event.immunity_kind];
+      if (immunityTone) {
+        this._floater(point, stageRect, "免疫", immunityTone);
+        if (target && supportImmune) target.classList.add("v2-fx-support-immune");
         try {
           await this._wait(this._duration(instant, BEATS.damageHold));
         } finally {
-          if (target) target.classList.remove("v2-fx-support-immune");
+          if (target && supportImmune) target.classList.remove("v2-fx-support-immune");
         }
         return;
       }

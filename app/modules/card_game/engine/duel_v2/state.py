@@ -403,12 +403,19 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         from app.modules.card_game.content.duel_v2.registry import tally
         amount += tally(EffectContext(state, src_side, team_order(state, src_side)[0],
                                       {'side': src_side}), 'attachment_damage_bonus')
+    immunity_kind = None
     if esper:
         from app.modules.card_game.content.duel_v2.registry import decide
         from .context import EffectContext
+        incoming_amount = amount
+        incoming_immunity = decide(EffectContext(state, side, cid, {'side': side}),
+                                   'incoming_damage_immunity', None,
+                                   kind=kind, target_id=cid, source=source)
         amount = decide(EffectContext(state, side, cid, {'side': side}), 'incoming_damage',
                         amount, kind=kind, target_id=cid, source=source)
         amount = max(0, int(amount or 0))
+        if incoming_amount > 0 and amount == 0 and incoming_immunity:
+            immunity_kind = incoming_immunity
     klass = damage_class_for(kind, damage_class)
     attr = attribute or source_attribute(state, source)
     zone = front_debuff(state, side)
@@ -416,6 +423,8 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
               or (kind == 'combat' and evaluate(state, side, target, 'rule.combat_immune', False)['value'])
               or (counter_immunity == 'support' and kind == 'combat'))
     if immune:
+        if amount > 0 and not (counter_immunity == 'support' and kind == 'combat'):
+            immunity_kind = ('all' if esper and damage_immune(state, side, cid) else 'combat')
         amount = 0
     if (not immune and kind == 'combat' and attr in ('魂', '相') and zone.get('stain')
             and (state['sides'][side]['front'] == cid or (not esper and not state['sides'][side]['front']))):
@@ -468,6 +477,8 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         team = state['sides'][src_side]
         team['genesis_player_hits'] = int(team.get('genesis_player_hits', 0)) + 1
     extra = {}
+    if immunity_kind:
+        extra['immunity_kind'] = immunity_kind
     if attribute is not None or additional_attack:
         extra.update(attribute=attr, additional_attack=bool(additional_attack))
     if group_id:

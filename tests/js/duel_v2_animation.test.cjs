@@ -1355,3 +1355,18 @@ test("divination releases reveal publicly to both viewers without response or a 
     assert.deepEqual(order, ["reveal", "patch", "patch"]);
   }
 });
+
+test('combat and noncombat immunity float matching colors at the blocked target', async () => {
+  for (const [type, immunity, tone] of [['combat', 'combat', 'combat-immune'], ['damage', 'noncombat', 'noncombat-immune'], ['genesis', 'noncombat', 'noncombat-immune'], ['nightmare', 'noncombat', 'noncombat-immune']]) {
+    const harness = makeRoot();
+    const player = new Player({ root: harness.root, clock: harness.clock });
+    const shown = [];
+    player._floater = (point, rect, text, kind) => shown.push({point, text, kind});
+    await settle(player.play([{seq: 1000, type, target: 'a:nanali', amount: 0, immunity_kind: immunity,
+      before: {hp: 5, shield: 0}, after: {hp: 5, shield: 0}}], {instant: true}), harness.clock, player);
+    assert.equal(shown.length, 1);
+    assert.equal(shown[0].text, '免疫');
+    assert.equal(shown[0].kind, tone);
+    assert.deepEqual(shown[0].point, {x: 365, y: 355});
+  }
+});

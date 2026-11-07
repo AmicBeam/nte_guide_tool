@@ -317,6 +317,9 @@
   color: #ffe49a;
 }
 
+.v2-fx-floater.is-combat-immune { color: #c397ff; }
+.v2-fx-floater.is-noncombat-immune { color: #7ce6a2; }
+
 .v2-fx-floater.is-shield {
   color: #8ecbff;
 }

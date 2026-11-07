@@ -67,7 +67,7 @@ class Bohe:
         return bool(c.character.get('awakened'))
 
     @staticmethod
-    def incoming_damage(c, current=0, kind=None, target_id=None, source=None, **_data):
+    def incoming_damage_immunity(c, current=None, kind=None, target_id=None, source=None, **_data):
         if target_id != c.cid or not Bohe.noncombat_damage_immune(c):
             return None
         if kind in ('combat', 'followup', 'penetration'):
@@ -78,8 +78,12 @@ class Bohe:
         if src_side == c.side:
             return None
         if src_side or kind in ('burn', 'star', 'nightmare', 'overlay', 'genesis', 'delay', 'sync'):
-            return 0
+            return 'noncombat'
         return None
+
+    @staticmethod
+    def incoming_damage(c, current=0, **data):
+        return 0 if Bohe.incoming_damage_immunity(c, **data) else None
 
     @staticmethod
     def after_hits(c, **_data):

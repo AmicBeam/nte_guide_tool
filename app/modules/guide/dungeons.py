@@ -61,7 +61,7 @@ def encounters():
     for row in rows:
         if not row['stages'] and row['category'] == '异象追猎':
             row['stages'] = [{'id': level, 'name': '鉴别等级 ' + str(level), 'required_level': level,
-                              'stamina': None, 'rewards': row['rewards']} for level in (30, 40, 45)]
+                              'stamina': 60, 'rewards': row['rewards']} for level in (30, 40, 45)]
         row['stages'] = [{**stage, 'rewards': [{**reward,
             'quantity': quantity(reward['id'], row['category'], stage['required_level'], reward['amount'])}
             for reward in stage['rewards']]} for stage in row['stages']]

@@ -112,3 +112,24 @@ class GuideDungeonsTest(unittest.TestCase):
         variant['sequences'] = {}
         with self.assertRaises(ValueError):
             module.build(variant)
+
+    def test_all_dungeon_reward_icons_are_bound_and_decodable(self):
+        from PIL import Image
+        identifiers = set()
+        for encounter in dungeons.encounters():
+            for stage in encounter['stages']:
+                for reward in dungeons.display_rewards(encounter, stage):
+                    for item in reward.get('items', [reward]):
+                        identifiers.add(item['id'])
+        for identifier in identifiers:
+            icon = presentation.material_display({'id': identifier}).get('icon')
+            self.assertIsNotNone(icon, identifier)
+            self.assertTrue(icon.startswith('/static/'), identifier)
+            path = ROOT / 'app' / icon.lstrip('/')
+            with Image.open(path) as image:
+                self.assertEqual(image.format, 'WEBP', identifier)
+                image.verify()
+        html = self.client.get('/guide/dungeons/equipment?encounter=DLC_equipment_001&stage=6').text
+        for identifier in ('equipment_orangeticket', 'equipment_purpleticket', 'equipmentupmaterial_lv3',
+                           'equipmentupmaterial_lv2', 'cosmos_orange', 'chaos_orange'):
+            self.assertIn(presentation.material_display({'id': identifier})['icon'], html)

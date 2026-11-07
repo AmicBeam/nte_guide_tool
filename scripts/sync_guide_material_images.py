@@ -5,12 +5,15 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import re
+import subprocess
 from sync_guide_arc_images import BASE, ROOT, download
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--index', type=Path)
+    parser.add_argument('--equipment-table', type=Path, help='本地DT_Equipment.json')
+    parser.add_argument('--only-missing', action='store_true', help='保留已有可用图标，仅补缺失绑定')
     args = parser.parse_args()
     if args.index:
         index = json.loads(args.index.read_text())
@@ -39,11 +42,35 @@ def main():
     for book in arc_config['exp_books']:
         materials[book['id'].casefold()] = book['name']
     materials.update(gold='甲硬币', fons='方斯', hunterlvexp='猎人等级经验')
+    dungeons = json.loads((ROOT / 'app/modules/guide/data/dungeons.json').read_text())
+    for dungeon in dungeons:
+        for reward in dungeon.get('rewards', []) + [reward for stage in dungeon['stages'] for reward in stage['rewards']]:
+            materials[reward['id'].casefold()] = reward['name']
+    if any(identifier not in lookup for identifier in materials if identifier not in ('gold', 'fons')):
+        equipment = json.loads(args.equipment_table.read_text()) if args.equipment_table else json.loads(
+            subprocess.check_output(['gh', 'api', '-H', 'Accept: application/vnd.github.raw+json',
+                                     'repos/mc-ctrl/NTEData/contents/DataTable/Equipment/DT_Equipment.json']))
+        for identifier, row in equipment[0]['Rows'].items():
+            key = identifier.casefold()
+            if key not in materials or key in lookup:
+                continue
+            path = row['ItemIcon']['AssetPathName'].split('.')[0]
+            lookup[key] = {'icon': path, 'quality': row['ItemQuality'].rsplit('_', 1)[-1].lower()}
+    target = ROOT / 'app/modules/guide/data/material_metadata.json'
+    previous = json.loads(target.read_text())
     output = ROOT / 'app/static/images/materials'
     output.mkdir(parents=True, exist_ok=True)
 
     def sync(pair):
         identifier, name = pair
+        if args.only_missing and identifier in previous:
+            icon = previous[identifier].get('icon', '')
+            if icon.startswith('/static/'):
+                local = ROOT / 'app' / icon.lstrip('/')
+                if local.is_file():
+                    data = local.read_bytes()
+                    if data[:4] == b'RIFF' and data[8:12] == b'WEBP':
+                        return identifier, previous[identifier]
         row = lookup[{'gold': 'gold_1000', 'fons': 'fons_100'}.get(identifier, identifier)]
         if not re.fullmatch(r'[a-z0-9_-]+', identifier) or row['quality'] not in ('gray', 'green', 'blue', 'purple', 'orange', 'red'):
             raise ValueError('Invalid material binding')
@@ -64,7 +91,8 @@ def main():
         return identifier, {'name': name, 'icon': icon, 'quality': row['quality']}
     with ThreadPoolExecutor(max_workers=6) as executor:
         records = dict(executor.map(sync, sorted(materials.items())))
-    target = ROOT / 'app/modules/guide/data/material_metadata.json'
+    if args.only_missing:
+        records = {**previous, **records}
     temporary = target.with_suffix('.tmp')
     temporary.write_text(json.dumps(records, ensure_ascii=False, indent=2) + '\n')
     temporary.replace(target)

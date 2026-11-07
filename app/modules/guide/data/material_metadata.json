@@ -313,5 +313,215 @@
     "name": "猎人等级经验",
     "icon": "/static/images/materials/hunterlvexp.webp",
     "quality": "orange"
+  },
+  "attack_blue": {
+    "name": "「影之信条」",
+    "icon": "/static/images/materials/attack_blue.webp",
+    "quality": "blue"
+  },
+  "attack_orange": {
+    "name": "「影之信条」",
+    "icon": "/static/images/materials/attack_orange.webp",
+    "quality": "orange"
+  },
+  "attack_purple": {
+    "name": "「影之信条」",
+    "icon": "/static/images/materials/attack_purple.webp",
+    "quality": "purple"
+  },
+  "chaos_blue": {
+    "name": "「迪亚波罗斯」",
+    "icon": "/static/images/materials/chaos_blue.webp",
+    "quality": "blue"
+  },
+  "chaos_orange": {
+    "name": "「迪亚波罗斯」",
+    "icon": "/static/images/materials/chaos_orange.webp",
+    "quality": "orange"
+  },
+  "chaos_purple": {
+    "name": "「迪亚波罗斯」",
+    "icon": "/static/images/materials/chaos_purple.webp",
+    "quality": "purple"
+  },
+  "cosmos_blue": {
+    "name": "「失落光芒」",
+    "icon": "/static/images/materials/cosmos_blue.webp",
+    "quality": "blue"
+  },
+  "cosmos_orange": {
+    "name": "「失落光芒」",
+    "icon": "/static/images/materials/cosmos_orange.webp",
+    "quality": "orange"
+  },
+  "cosmos_purple": {
+    "name": "「失落光芒」",
+    "icon": "/static/images/materials/cosmos_purple.webp",
+    "quality": "purple"
+  },
+  "equipment_blueticket": {
+    "name": "胡萝卜币",
+    "icon": "/static/images/item/胡萝卜币.webp",
+    "quality": "blue"
+  },
+  "equipment_orangeticket": {
+    "name": "金萝卜币",
+    "icon": "/static/images/item/金萝卜币.webp",
+    "quality": "orange"
+  },
+  "equipment_purpleticket": {
+    "name": "银萝卜币",
+    "icon": "/static/images/item/银萝卜币.webp",
+    "quality": "purple"
+  },
+  "equipmentupmaterial_lv1": {
+    "name": "井小屑",
+    "icon": "/static/images/item/井小屑.webp",
+    "quality": "green"
+  },
+  "equipmentupmaterial_lv2": {
+    "name": "井屑达人",
+    "icon": "/static/images/materials/equipmentupmaterial_lv2.webp",
+    "quality": "blue"
+  },
+  "equipmentupmaterial_lv3": {
+    "name": "超屑井主",
+    "icon": "/static/images/materials/equipmentupmaterial_lv3.webp",
+    "quality": "purple"
+  },
+  "getefficiency_blue": {
+    "name": "「音速蓝刺猬」",
+    "icon": "/static/images/materials/getefficiency_blue.webp",
+    "quality": "blue"
+  },
+  "getefficiency_orange": {
+    "name": "「音速蓝刺猬」",
+    "icon": "/static/images/materials/getefficiency_orange.webp",
+    "quality": "orange"
+  },
+  "getefficiency_purple": {
+    "name": "「音速蓝刺猬」",
+    "icon": "/static/images/materials/getefficiency_purple.webp",
+    "quality": "purple"
+  },
+  "heal_blue": {
+    "name": "「缇娅的夜间酒馆」",
+    "icon": "/static/images/materials/heal_blue.webp",
+    "quality": "blue"
+  },
+  "heal_orange": {
+    "name": "「缇娅的夜间酒馆」",
+    "icon": "/static/images/materials/heal_orange.webp",
+    "quality": "orange"
+  },
+  "heal_purple": {
+    "name": "「缇娅的夜间酒馆」",
+    "icon": "/static/images/materials/heal_purple.webp",
+    "quality": "purple"
+  },
+  "incantation_blue": {
+    "name": "「真红：双生蝶」",
+    "icon": "/static/images/materials/incantation_blue.webp",
+    "quality": "blue"
+  },
+  "incantation_orange": {
+    "name": "「真红：双生蝶」",
+    "icon": "/static/images/materials/incantation_orange.webp",
+    "quality": "orange"
+  },
+  "incantation_purple": {
+    "name": "「真红：双生蝶」",
+    "icon": "/static/images/materials/incantation_purple.webp",
+    "quality": "purple"
+  },
+  "lakshana_blue": {
+    "name": "「街头拳王」",
+    "icon": "/static/images/materials/lakshana_blue.webp",
+    "quality": "blue"
+  },
+  "lakshana_orange": {
+    "name": "「街头拳王」",
+    "icon": "/static/images/materials/lakshana_orange.webp",
+    "quality": "orange"
+  },
+  "lakshana_purple": {
+    "name": "「街头拳王」",
+    "icon": "/static/images/materials/lakshana_purple.webp",
+    "quality": "purple"
+  },
+  "mag_blue": {
+    "name": "「小小大冒险」",
+    "icon": "/static/images/materials/mag_blue.webp",
+    "quality": "blue"
+  },
+  "mag_orange": {
+    "name": "「小小大冒险」",
+    "icon": "/static/images/materials/mag_orange.webp",
+    "quality": "orange"
+  },
+  "mag_purple": {
+    "name": "「小小大冒险」",
+    "icon": "/static/images/materials/mag_purple.webp",
+    "quality": "purple"
+  },
+  "nature_blue": {
+    "name": "「森林萤火之心」",
+    "icon": "/static/images/materials/nature_blue.webp",
+    "quality": "blue"
+  },
+  "nature_orange": {
+    "name": "「森林萤火之心」",
+    "icon": "/static/images/materials/nature_orange.webp",
+    "quality": "orange"
+  },
+  "nature_purple": {
+    "name": "「森林萤火之心」",
+    "icon": "/static/images/materials/nature_purple.webp",
+    "quality": "purple"
+  },
+  "psyche_blue": {
+    "name": "「恶魔之血：诅咒」",
+    "icon": "/static/images/materials/psyche_blue.webp",
+    "quality": "blue"
+  },
+  "psyche_orange": {
+    "name": "「恶魔之血：诅咒」",
+    "icon": "/static/images/materials/psyche_orange.webp",
+    "quality": "orange"
+  },
+  "psyche_purple": {
+    "name": "「恶魔之血：诅咒」",
+    "icon": "/static/images/materials/psyche_purple.webp",
+    "quality": "purple"
+  },
+  "psychically_blue": {
+    "name": "「静谧山庄」",
+    "icon": "/static/images/materials/psychically_blue.webp",
+    "quality": "blue"
+  },
+  "psychically_orange": {
+    "name": "「静谧山庄」",
+    "icon": "/static/images/materials/psychically_orange.webp",
+    "quality": "orange"
+  },
+  "psychically_purple": {
+    "name": "「静谧山庄」",
+    "icon": "/static/images/materials/psychically_purple.webp",
+    "quality": "purple"
+  },
+  "shield_blue": {
+    "name": "「守卫王国」",
+    "icon": "/static/images/materials/shield_blue.webp",
+    "quality": "blue"
+  },
+  "shield_orange": {
+    "name": "「守卫王国」",
+    "icon": "/static/images/materials/shield_orange.webp",
+    "quality": "orange"
+  },
+  "shield_purple": {
+    "name": "「守卫王国」",
+    "icon": "/static/images/materials/shield_purple.webp",
+    "quality": "purple"
   }
 }

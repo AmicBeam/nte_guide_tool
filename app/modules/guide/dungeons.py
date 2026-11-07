@@ -127,6 +127,7 @@ def display_rewards(record, stage):
         bounds = {30: (0, 1), 40: (1, 1), 45: (1, 2), 50: (2, 3)}.get(stage['required_level'])
         result.insert(0, {'id': 'orange-cartridges', 'name': '金色卡带（' + ' / '.join(
             dict.fromkeys(row['name'] for row in orange)) + '）', 'amount': None,
+            'items': [{'id': row['id'], 'name': row['name']} for row in orange],
             'quantity': approximate(*bounds) if bounds else '数量未确认'})
     return result
 

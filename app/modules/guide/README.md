@@ -556,3 +556,5 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 验证：`.venv/bin/python -m unittest tests.test_guide_dungeons tests.test_guide tests.test_module_routes -q`；检查六个副本入口与30个关卡的网页／机器格式、角色材料预选对应关卡、多地点筛选、难度切换、隐藏数量不冒充固定量、范围不冒充均值，以及桌面和手机布局；同时确认本机及局域网5001服务可访问。
 
 副本奖励中的猎人等级经验复用材料展示绑定与本地WebP图标；`sync_guide_material_images.py`固定包含该条目，常规刷新不会遗漏。
+
+材料图标同步覆盖全部副本产物，包括萝卜币、空幕经验材料及各品质核心卡带；核心卡带保留各品质实际图标。合并展示的金色卡带显示对应两套图标。可用`--only-missing`保留已有可用绑定并仅补缺项，`--equipment-table`指定本地空幕道具表。`tests.test_guide_dungeons`核验全部副本产物与合并卡带的图标绑定、WebP解码及网页图片地址。

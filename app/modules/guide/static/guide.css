@@ -48,6 +48,7 @@
 /* Material cards shared by detail pages and cultivation results. */
 .guide-material-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:26px 18px;list-style:none;padding:0;margin:24px 0 32px;max-width:100%}
 .guide-material-card{min-width:0;text-align:center;list-style:none}
+.guide-material-link{display:block;color:inherit;text-decoration:none;border-radius:14px}.guide-material-link:hover .guide-material-icon,.guide-material-link:focus-visible .guide-material-icon{border-color:var(--g-accent)}.guide-material-link:focus-visible{outline:2px solid var(--g-accent);outline-offset:4px}.guide-material-link>span{display:block;margin-top:7px;font-weight:600;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 .guide-material-icon{--material-color:#8e969e;position:relative;aspect-ratio:1;border:2px solid #ffffff1c;border-bottom-color:var(--material-color);border-radius:22px;background:linear-gradient(0deg,color-mix(in srgb,var(--material-color) 24%,transparent),transparent 45%),#ffffff03;overflow:hidden}
 .guide-material-icon img{display:block;width:100%;height:100%;object-fit:contain;padding:10%;box-sizing:border-box}
 .guide-material-icon strong{position:absolute;inset:auto 0 0;padding:5px 2px 7px;background:#090e185c;color:#fff;font-size:clamp(15px,1.8vw,23px);line-height:1.2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}

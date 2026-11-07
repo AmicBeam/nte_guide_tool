@@ -17,7 +17,9 @@ def equipment_images():
 
 
 def material_display(item):
-    return material_metadata().get(str(item['id']).casefold(), {})
+    from .dungeons import material_url
+    return {**material_metadata().get(str(item['id']).casefold(), {}),
+            'dungeon_url': material_url(item['id'])}
 
 
 def upgrade_material_preview(record):

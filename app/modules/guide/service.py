@@ -11,9 +11,11 @@ from .description_parameters import bind_description_parameters
 from .challenge_calendar import is_released_challenge
 from . import reference_view, previews, character_release
 
-KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'permanent': '常驻加成', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '攻略'}
+KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'permanent': '常驻加成', 'dungeons': '副本', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '攻略'}
 BEGINNER_SECTIONS = ('intro', 'gameplay', 'currencies', 'events', 'wishes', 'closing')
 LABELS = {
+    'category': '副本类型', 'required_level': '鉴别等级', 'stamina': '本性像素消耗',
+    'encounters': '关卡', 'quantity': '单倍领取数量参考',
     'notes': '加成与升级说明', 'entries': '异象家具加成与升级',
     'max_level_name': '满级名称', 'max_level': '等级上限', 'unlock': '解锁条件',
     'next_level': '升至等级', 'upgrade_costs': '升至下一级要求',
@@ -130,6 +132,8 @@ def catalog():
     data['permanent'] = json.loads((Path(__file__).parent / 'data/permanent_bonuses.json').read_text(encoding='utf-8'))
     data['endless'] = json.loads((Path(__file__).parent / 'data/endless.json').read_text(encoding='utf-8'))['groups']
     data['beginner'] = json.loads((Path(__file__).parent / 'data/beginner.json').read_text(encoding='utf-8'))
+    from . import dungeons
+    data['dungeons'] = dungeons.records()
     monsters = json.loads((Path(__file__).parent / 'data/monster_metadata.json').read_text(encoding='utf-8'))
     for challenge in data['challenges'] + data['endless']:
         for stage in challenge['stages']:
@@ -173,18 +177,29 @@ def summary(kind, record):
         result['assets'] = record['assets']
     if kind == 'endless':
         result['description'] = record.get('description', '')
-    if kind in ('beginner', 'permanent'):
+    if kind in ('beginner', 'permanent', 'dungeons'):
         result['description'] = record['description']
+    if kind == 'dungeons':
+        result['category'] = record['category']
+        result['stage_count'] = len(record['encounters'])
     if kind == 'challenges':
         result['description'] = record.get('resonance', {}).get('description', '')
     return result
 
 
-def search(kind=None, query='', element='', rarity=None, arc_type='', function='', bonus='', hide_story=False):
+def search(kind=None, query='', element='', rarity=None, arc_type='', function='', bonus='', hide_story=False,
+           material='', category=''):
     result = []
     for group in ([kind] if kind else KINDS):
         records = reversed(public_records(group)) if group == 'challenges' else public_records(group)
         for record in records:
+            if category and record.get('category') != category:
+                continue
+            if material:
+                from . import dungeons
+                if group != 'dungeons' or not any(row['id'] in dungeons.material_index().get(material.casefold(), [])
+                                                  for row in record['encounters']):
+                    continue
             if element and element not in (record.get('element_name'), record.get('element_id'), record.get('element')):
                 continue
             if rarity is not None and record.get('rarity') != rarity:
@@ -245,10 +260,27 @@ def cultivation_character(identifier):
     return record
 
 
-def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None, *, skill_level=None, hit_details=None):
+def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None, *, skill_level=None, hit_details=None, encounter=None):
     if kind == 'beginner' and section == 'progression':
         section = 'gameplay'
     record = next((r for r in public_records(kind) if str(r['id']) == identifier), None)
+    if kind == 'dungeons':
+        from . import dungeons
+        record = dungeons.find(identifier)
+        if encounter is not None:
+            candidates = [row for row in record.get('encounters', []) if row['id'] == encounter]
+            if not candidates:
+                raise LookupError('未找到对应关卡')
+            record = {**record, 'encounters': candidates}
+        if stage is not None and 'encounters' in record:
+            if len(record['encounters']) != 1:
+                raise ValueError('请用encounter指定关卡后再选择stage难度')
+            child = record['encounters'][0]
+            stages = [row for row in child['stages'] if str(row['id']) == str(stage)]
+            if not stages:
+                raise LookupError('未找到副本难度')
+            record = {**record, 'encounters': [{**child, 'stages': stages}]}
+            stage = None
     if record is None and kind == 'endless':
         from .endless_seasons import legacy_record
         record = legacy_record(catalog()['endless'], identifier)
@@ -257,8 +289,8 @@ def detail(kind, identifier, section=None, stage=None, ability_id=None, level=No
     if record.get('content_released') is False and (section in character_release.AFTER_SKILL_FIELDS or ability_id is not None):
         raise LookupError('角色技能及后续资料尚未开放，开放时间：' + character_release.display_time(record['release_at']))
     if stage is not None:
-        if kind not in ('challenges', 'endless'):
-            raise ValueError('stage 仅适用于轨外之境或全站深境')
+        if kind not in ('challenges', 'endless', 'dungeons'):
+            raise ValueError('stage 仅适用于轨外之境、全站深境或副本')
         record = dict(record)
         record['stages'] = [x for x in record['stages'] if str(x['id']) == str(stage)]
         if not record['stages']:
@@ -363,6 +395,7 @@ def schema():
             'equip_slots': '空幕格位矩阵、驱动特化和加成属性',
             'materials': '突破与技能升级：每阶段所需材料、数量和突破条件'},
         'notes': ['空幕 slots 中 -1 为不可用格，0 为可装配格；矩阵按从上到下、从左到右排列。',
+            '副本amount为可确认的明示数量，null不表示零；quantity合并实测数量参考，约数与范围不保证每次产量。',
             '材料为各目标等级/阶段的单次消耗，不是累计消耗；items 为中文名称与数量，items_id/amount 保留原始配对。','数据为本地快照；请求与启动不会拉取外部数据。',
             '数值数组保留原始顺序：角色属性与弧盘属性按等级，技能参数按技能等级，弧盘效果按精炼档位。',
             '百分比保留原字段表示；敌人 resistances 为小数比例（0.3 = 30%）。',
@@ -385,6 +418,7 @@ def page_sections(kind, record):
         'challenges': ('resonance', 'stages', 'rewards'),
         'endless': ('stages',),
         'permanent': ('notes', 'entries', 'levels'),
+        'dungeons': ('category', 'encounters', 'stages', 'rewards'),
         'beginner': tuple(record.get('chapter_titles', {})) or BEGINNER_SECTIONS,
     }
     keys = preferred[kind] if len(record) > 3 else tuple(key for key in record if key not in ('id', 'name'))

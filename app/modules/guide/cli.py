@@ -9,7 +9,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-KINDS = ('characters', 'arcs', 'foods', 'permanent', 'challenges', 'endless', 'beginner', 'articles')
+KINDS = ('characters', 'arcs', 'foods', 'permanent', 'dungeons', 'challenges', 'endless', 'beginner', 'articles')
 
 
 def filter_profiles(payload, role_id=None, character_id=None):
@@ -51,6 +51,7 @@ def main(argv=None):
     getting.add_argument('id')
     getting.add_argument('--section')
     getting.add_argument('--stage', type=int)
+    getting.add_argument('--encounter', help='Select one dungeon encounter')
     getting.add_argument('--ability', dest='ability_id', help='Read one exact character ability ID (section=abilities)')
     levels = getting.add_mutually_exclusive_group()
     levels.add_argument('--level', type=int, choices=range(1, 14), help='Skill level (characters default: 10)')
@@ -98,7 +99,7 @@ def main(argv=None):
     elif args.command == 'get':
         ident = urllib.parse.quote(args.id, safe='')
         path = f'/guide/{args.kind}/{ident}.md' if args.format == 'markdown' else f'/api/guide/{args.kind}/{ident}'
-        query = {k: getattr(args, k) for k in ('section', 'stage', 'ability_id', 'level') if getattr(args, k) is not None}
+        query = {k: getattr(args, k) for k in ('section', 'stage', 'encounter', 'ability_id', 'level') if getattr(args, k) is not None}
         if args.kind == 'characters':
             query.pop('level', None)
             if not args.all_levels:

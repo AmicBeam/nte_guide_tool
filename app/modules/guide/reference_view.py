@@ -57,7 +57,7 @@ def overview(kind, record, level=10):
         'id', 'name', 'aliases', 'element_name', 'rarity', 'arc_type', 'char_tags',
         'type_name', 'effect', 'exclusive_desc', 'exclusive_character_ids',
         'is_permanent', 'begin_date', 'end_date', 'resonance', 'description',
-        'floor_begin', 'floor_end', 'stage_count', 'season', 'begin_at', 'end_at', 'status')}
+        'floor_begin', 'floor_end', 'stage_count', 'season', 'begin_at', 'end_at', 'status', 'category')}
     result['available_sections'] = [key for key in record if key not in ('id', 'name')]
     if kind == 'characters':
         result['abilities'] = [{key: value for key, value in ability.items() if key in (
@@ -72,6 +72,11 @@ def overview(kind, record, level=10):
         result['stages'] = [{key: value for key, value in stage.items() if key in ('id', 'name')}
                             for stage in record['stages']]
         result['read_hint'] = '此处仅列关卡目录；敌人和数值请用stage指定一关。'
+        if kind == 'dungeons':
+            result['read_hint'] = '此处仅列难度目录；等级要求、消耗和奖励用stage指定难度。'
+    if kind == 'dungeons' and 'encounters' in record:
+        result['encounters'] = [{key: row[key] for key in ('id', 'name')} for row in record['encounters']]
+        result['read_hint'] = '用encounter指定关卡、stage指定难度读取消耗与奖励；quantity中的约数与范围仅供估算。'
     return result
 
 

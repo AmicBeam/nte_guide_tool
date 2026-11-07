@@ -25,7 +25,7 @@ blueprint.add_app_template_filter(service.display_scalar, 'guide_scalar')
 
 def kind_check(kind):
     if kind not in service.KINDS:
-        raise LookupError('未知分类；可选 characters、arcs、foods、permanent、challenges、endless、beginner')
+        raise LookupError('未知分类；可选 characters、arcs、foods、permanent、dungeons、challenges、endless、beginner')
 
 
 def integer(name, default, low, high):
@@ -42,7 +42,7 @@ def filters():
     return dict(query=request.args.get('q', '').strip(), element=request.args.get('element', ''),
                 rarity=integer('rarity', 5, 1, 5) if request.args.get('rarity') else None,
                 arc_type=request.args.get('arc_type', ''), function=request.args.get('function', ''), bonus=request.args.get('bonus', ''),
-                hide_story=story == '1')
+                hide_story=story == '1', material=request.args.get('material', ''), category=request.args.get('category', ''))
 
 
 def get_record(kind, identifier, *, narrow=False):
@@ -51,7 +51,8 @@ def get_record(kind, identifier, *, narrow=False):
                           request.args.get('ability_id') if narrow else None,
                           integer('level', 10, 1, 13) if narrow and 'level' in request.args else None,
                           skill_level=integer('skill_level', 10, 1, 13) if narrow and 'skill_level' in request.args else None,
-                          hit_details=bool(integer('hit_details', 0, 0, 1)) if narrow and 'hit_details' in request.args else None)
+                          hit_details=bool(integer('hit_details', 0, 0, 1)) if narrow and 'hit_details' in request.args else None,
+                          encounter=request.args.get('encounter') if kind == 'dungeons' else None)
 
 
 @blueprint.errorhandler(ValueError)
@@ -79,6 +80,16 @@ def index():
     from .article_routes import public_items
     authored = public_items(request.args.get('q', '').strip()) if kind == 'beginner' else []
     counts = {key: len(service.public_records(key)) for key in service.KINDS}
+    if kind == 'dungeons':
+        from . import dungeons
+        material = request.args.get('material', '').casefold()
+        category = request.args.get('category', '')
+        records = [row for row in dungeons.records() if row['id'] in selected_ids]
+        material_name = next((reward['name'] for row in records for reward in dungeons.rewards(row)
+                              if reward['id'] == material), material)
+        return render_template('guide/dungeons_index.html', kind=kind, kinds=service.KINDS, counts=counts,
+            records=records, categories=list(dict.fromkeys(row['category'] for row in dungeons.records())),
+            selected_material=material, material_name=material_name, selected_category=category)
     return render_template('guide/index.html', kind=kind, kinds=service.KINDS, items=items, counts=counts, selected_ids=selected_ids, result_count=result_count, authored_articles=authored,
         pending_releases=[item for item in items if item.get('content_released') is False],
         hide_story=selected_filters['hide_story'],
@@ -92,6 +103,10 @@ def index():
 
 @blueprint.get('/guide/<kind>/<identifier>')
 def entry(kind, identifier):
+    if kind == 'dungeons':
+        from .dungeons import page_context
+        return render_template('guide/dungeon.html', **page_context(service.detail(kind, identifier),
+            request.args.get('stage'), request.args.get('material', ''), request.args.get('encounter')))
     profile = service.detail(kind, identifier) if kind == 'characters' else None
     record = profile if profile and profile.get('content_released') is False else get_record(kind, identifier)
     if kind == 'foods':
@@ -222,7 +237,7 @@ def cli_download():
 def llms():
     text = '''# NTE Tools 攻略数据库
 
-范围：角色、弧盘、料理、常驻加成、轨外之境、全站深境、通用攻略与自建攻略。匿名只读；网页正文由服务端渲染。
+范围：角色、弧盘、料理、常驻加成、副本、轨外之境、全站深境、通用攻略与自建攻略。匿名只读；网页正文由服务端渲染。
 
 - [网页入口](/guide)
 - [接口与数值约定](/api/guide/schema)
@@ -230,6 +245,7 @@ def llms():
 - [弧盘列表](/api/guide/arcs)
 - [料理列表](/api/guide/foods)
 - [常驻加成（异象家具、噗咔特训）](/api/guide/permanent)
+- [副本与材料掉落](/api/guide/dungeons)
 - [轨外之境赛期](/api/guide/challenges)
 - [全站深境（按期查询）](/api/guide/endless)
 - [攻略](/api/guide/beginner)
@@ -237,8 +253,8 @@ def llms():
 - [CLI 下载](/guide/cli.py)
 
 检索：GET /api/guide/search?q=关键词&limit=20&offset=0
-详情：GET /api/guide/{characters|arcs|foods|permanent|challenges|endless|beginner|articles}/{id}
-纯文本：GET /guide/{characters|arcs|foods|permanent|challenges|endless|beginner|articles}/{id}.md
+详情：GET /api/guide/{characters|arcs|foods|permanent|dungeons|challenges|endless|beginner|articles}/{id}
+纯文本：GET /guide/{characters|arcs|foods|permanent|dungeons|challenges|endless|beginner|articles}/{id}.md
 空幕：角色详情加 ?section=equip_slots；升级材料：详情加 ?section=materials。
 等级经验：角色详情加 ?section=experience。
 好感度与喜好礼物：角色详情加 ?section=affinity，包含赠送数值和各商店标价。
@@ -246,6 +262,7 @@ def llms():
 角色排轴与配装：/guide/characters/{id}/builds；固定当前角色筛选相关轴，再进入收益对比。
 按字段读取：详情加 ?section=abilities（角色技能）或 ?section=effect（弧盘效果）。
 按关卡读取：轨外之境详情加 ?stage=12；全站深境详情加 ?stage=50（实际层号）。
+副本列表加 ?material=物品ID 或 category=副本类型；详情加 ?encounter=关卡ID&stage=难度。quantity中的约数与范围仅供估算。
 列表返回 total、next_offset 和摘要；详情返回 data。使用 ID 区分重名赛期。
 数值数组保留等级/精炼顺序；敌人抗性为小数比例。日期缺失不代表当前开放。
 CLI：python nte-guide.py beginner --format markdown
@@ -277,3 +294,6 @@ register_infographic_routes(blueprint)
 
 from .tool_routes import register as register_tool_routes
 register_tool_routes(blueprint)
+
+from .dungeons import register as register_dungeon_routes
+register_dungeon_routes(blueprint)

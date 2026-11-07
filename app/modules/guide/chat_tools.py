@@ -12,14 +12,14 @@ def definition(name: str, description: str, properties: dict, required: list[str
 
 
 TEXT = {'type': 'string'}
-KINDS = {'type': 'string', 'enum': ['characters', 'arcs', 'foods', 'permanent', 'challenges', 'endless']}
+KINDS = {'type': 'string', 'enum': ['characters', 'arcs', 'foods', 'permanent', 'dungeons', 'challenges', 'endless']}
 TOOLS = [
     definition('wiki_search', '查询本站资料目录或跨分类全文搜索，等同CLI list/search。先搜索获得准确ID；links为可直接使用的本站网页链接。',
                {'query': TEXT, 'kind': KINDS, 'limit': {'type': 'integer', 'minimum': 1, 'maximum': 20},
                 'offset': {'type': 'integer', 'minimum': 0}, 'element': TEXT,
                 'rarity': {'type': 'integer', 'minimum': 1, 'maximum': 5}}),
     definition('wiki_get', '默认读取机制概览和可读章节。section=abilities未指定ability_id时仅列技能机制与ID；精确参数用ability_id和level（1–13）。关卡用stage。links为网页跳转。',
-               {'kind': KINDS, 'id': TEXT, 'section': TEXT, 'stage': {'type': 'integer'},
+               {'kind': KINDS, 'id': TEXT, 'section': TEXT, 'stage': {'type': 'integer'}, 'encounter': TEXT,
                 'ability_id': TEXT, 'level': {'type': 'integer', 'minimum': 1, 'maximum': 13}}, ['kind', 'id']),
     definition('wiki_schema', '读取本站数据范围和数值含义，等同CLI schema。', {}),
     definition('my_profiles', '仅在用户询问本人已同步练度或配装时读取当前登录者自己的快照，等同CLI me。不会同步游戏。',
@@ -69,8 +69,8 @@ class Toolkit:
             if args['kind'] == 'characters' and section == 'abilities' and not args.get('ability_id'):
                 section = 'overview'
             value = service.detail(args['kind'], args['id'], section, args.get('stage'),
-                                   args.get('ability_id'), args.get('level'))
-            value = {**value, 'links': chat_links.entry_links(args['kind'], value, args.get('stage'))}
+                                   args.get('ability_id'), args.get('level'), encounter=args.get('encounter'))
+            value = {**value, 'links': chat_links.entry_links(args['kind'], value, args.get('stage'), args.get('encounter'))}
             self.source(value['name'], value['links']['detail'])
         elif name == 'wiki_schema':
             value = service.schema()

@@ -563,9 +563,9 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 
 `/guide?kind=diyboss` 提供三套独立阵容配置，共23个关卡；`/guide/diyboss/config-1` 至 `config-3` 展示完整关卡、敌人立绘、难度与基础积分、自选强化、额外挑战目标和奖励积分门槛。国服三期分别为6月12日—7月2日、8月13日—9月24日、11月5日—12月17日。前两期名称为「争锋赏宴」，第三期为「争锋赏宴·攻坚」；卡片右下角展示日期范围，详情展示北京时间与开放说明。第一期10:00开放，其余两期在版本更新后开放，结束日均为05:59。`data/diyboss_calendar.json`维护实际活动名称与日历，离线导入时合并；更新后开放的活动不猜测具体开服时刻。
 
-自选强化按类别为行、档位为列展示，每格并列效果数值与积分，避免把敌方强化当作玩家增益。特殊挑战保留自己的选项和积分。第三套目标节点缺少效果与独立积分，明确显示未提供；奖励只展示已核实的积分门槛，不补造物品或总积分公式。敌人立绘使用独立本地WebP，保留完整原图比例与透明通道。
+自选强化按类别为行、档位为列展示，每格并列效果数值与积分，避免把敌方强化当作玩家增益。特殊挑战保留自己的选项和积分。第三期的24条额外挑战目标展示完整效果说明，按实际关卡引用匹配；独立积分缺失时保持空值，只展示关卡目标积分上限，不平均分配或反推；奖励只展示已核实的积分门槛，不补造物品或总积分公式。敌人立绘使用独立本地WebP，保留完整原图比例与透明通道。
 
-JSON、Markdown、全文搜索与下载CLI共用 `data/diyboss.json`；支持 `stage=关卡编号`。例如 `python nte-guide.py get diyboss config-3 --stage 7`。显式离线更新：`.venv/bin/python scripts/sync_guide_diyboss.py --snapshot /path/to/config-1 --snapshot /path/to/config-2 --snapshot /path/to/config-3`；每个目录提供 `DT_DiyBossStage.json`、`DT_DiyBossOptions.json`、`CloneSystemDataTable.json`、`DT_CloneMonsterConfig.json`、`DT_MonsterStaticData_BigWorld.json` 和 `DT_MonsterPackData.json`，按内容顺序传入。图片优先读 `--ntedata-dir` 的同路径资源；否则通过已登录 `gh` 获取，已移除的历史图可用重复的 `--art-ref` 参数指定备用引用。空表、缺失选项、积分或图片拒绝导入；请求和启动均不联网。
+JSON、Markdown、全文搜索与下载CLI共用 `data/diyboss.json`；支持 `stage=关卡编号`。例如 `python nte-guide.py get diyboss config-3 --stage 7`。显式离线更新：`.venv/bin/python scripts/sync_guide_diyboss.py --snapshot /path/to/config-1 --snapshot /path/to/config-2 --snapshot /path/to/config-3`；每个目录提供 `DT_DiyBossStage.json`、`DT_DiyBossOptions.json`、`CloneSystemDataTable.json`、`DT_CloneMonsterConfig.json`、`DT_MonsterStaticData_BigWorld.json` 和 `DT_MonsterPackData.json`，按内容顺序传入。有额外挑战目标的配置另提供`ST_UI_hpy.json`，从文本表按目标ID读取说明；缺失目标说明拒绝导入。图片优先读 `--ntedata-dir` 的同路径资源；否则通过已登录 `gh` 获取，已移除的历史图可用重复的 `--art-ref` 参数指定备用引用。空表、缺失选项、积分或图片拒绝导入；请求和启动均不联网。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_diyboss tests.test_guide tests.test_module_routes -q`。浏览器核对分类入口、关卡／难度切换、刷新与前进后退恢复、敌人面板、三档强化排版、图片解码与窄屏表格横向滚动，并确认本机和局域网5001可访问。
 

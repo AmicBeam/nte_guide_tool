@@ -21,7 +21,7 @@
 <div class="guide-table-scroll"><table class="diy-buffs"><thead><tr><th scope="col">强化类别</th>{% set columns = stage.buff_groups|map(attribute='options')|map('length')|max %}{% for index in range(columns) %}<th scope="col">第 {{ index + 1 }} 档</th>{% endfor %}</tr></thead><tbody>
 {% for group in stage.buff_groups %}<tr><th scope="row">{{ group.name }}</th>{% for option in group.options %}<td><strong>{{ '+' if option.unit == '%' else '' }}{{ option.value }}{{ option.unit }}</strong><span>积分 {{ option.score }}</span></td>{% endfor %}</tr>{% endfor %}
 </tbody></table></div>
-{% if stage.targets %}<div class="diy-targets"><h3>额外挑战目标</h3><p>已配置 {{ stage.targets|length }} 项 · 目标积分上限 {{ stage.target_score_limit }}</p><p class="guide-muted">当前资料未提供各项目标的效果说明与独立积分，暂不展示具体效果。</p></div>{% endif %}
+{% if stage.targets %}<div class="diy-targets"><h3>额外挑战目标</h3><p>目标积分上限 {{ stage.target_score_limit }}</p><ol class="diy-target-list">{% for target in stage.targets %}<li><h4>目标 {{ loop.index }}</h4><p>{{ target.description }}</p>{% if target.score is not none %}<small>积分 {{ target.score }}</small>{% endif %}</li>{% endfor %}</ol><p class="guide-muted">各项目标的独立积分暂未提供。</p></div>{% endif %}
 <details class="diy-rewards"><summary>查看奖励积分门槛</summary><div class="diy-score-list">{% for reward in stage.rewards %}<span>{{ reward.score }} 分</span>{% endfor %}</div><p class="guide-muted">这里只列出领取门槛，奖励物品明细暂未提供。</p></details>
 </section>{% endfor %}
 </div>

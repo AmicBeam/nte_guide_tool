@@ -45,3 +45,8 @@
 .diy-weakness{display:inline-flex;align-items:center;gap:4px;margin-right:10px;vertical-align:middle}
 .diy-monster summary{font-size:12px;cursor:pointer;color:var(--g-dim)}
 .diy-resistances{display:flex;flex-wrap:wrap;gap:10px 18px;font-size:12px}.diy-resistances>div{display:flex;gap:6px}.diy-resistances dd{margin:0}
+
+.diy-target-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px;list-style:none;padding:0;margin:18px 0}
+.diy-target-list li{border:1px solid var(--g-line);border-radius:9px;padding:15px;background:#ffffff03}
+.diy-target-list h4{margin:0 0 9px;font-size:12px;color:var(--g-accent)}
+.diy-target-list p{margin:0;line-height:1.8;font-size:14px;white-space:pre-line}

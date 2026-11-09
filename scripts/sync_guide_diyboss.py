@@ -70,7 +70,25 @@ def difficulty_monsters(stage_id, difficulty_id, tables):
         raise ValueError('Empty monster lineup: ' + stage_id)
     return result
 
-def build(stages, options, index, calendar=None, monster_tables=None):
+
+def mechanism_targets(choices, options, descriptions):
+    entries = {key.casefold(): text(value) for key, value in descriptions.items()}
+    targets = []
+    for choice in choices:
+        key = choice['OptionID']
+        option = options[key]
+        if not option['OptionType'].endswith('::MechanismBuff'):
+            raise ValueError('Unexpected mechanism option type: ' + key)
+        if option['OptionNode'] is not None:
+            raise ValueError('New mechanism node needs an explicit parser: ' + key)
+        description = entries.get(key.casefold())
+        if not description:
+            raise ValueError('Missing mechanism description: ' + key)
+        # The client text table provides descriptions, but no independent scores.
+        targets.append({'id': key, 'description': description, 'score': None})
+    return targets
+
+def build(stages, options, index, calendar=None, monster_tables=None, target_texts=None):
     result, images = [], {}
     for identifier, row in stages.items():
         enemies = []
@@ -104,14 +122,7 @@ def build(stages, options, index, calendar=None, monster_tables=None):
                 value = node['LimitSeconds'] if is_time else node['AddPercent']
                 choices.append({'id': key, 'value': value, 'unit': '秒' if is_time else '%', 'score': score})
             groups.append({'name': text(group['CategoryDesc']), 'options': choices})
-        targets = []
-        for choice in row.get('MechanismOptionChoices', []):
-            key = choice['OptionID']
-            node = options[key]['OptionNode']
-            # Client exports currently omit these nodes. Preserve unknowns explicitly.
-            if node is not None:
-                raise ValueError('New mechanism node needs an explicit parser: ' + key)
-            targets.append({'id': key, 'description': None, 'score': None})
+        targets = mechanism_targets(row.get('MechanismOptionChoices', []), options, target_texts or {})
         unlock = row['UnlockNode']
         result.append({'id': identifier.removeprefix('DiyBossStage'), 'name': text(row['DescName']),
             'special': row.get('bSpecialHighDifficulty', False),
@@ -146,8 +157,10 @@ def main():
         monster_tables = {key: rows(folder / filename) for key, filename in {
             'clones': 'CloneSystemDataTable.json', 'spawns': 'DT_CloneMonsterConfig.json',
             'monsters': 'DT_MonsterStaticData_BigWorld.json', 'packs': 'DT_MonsterPackData.json'}.items()}
+        text_file = folder / 'ST_UI_hpy.json'
+        descriptions = json.loads(text_file.read_text())[0]['StringTable']['KeysToEntries'] if text_file.exists() else {}
         record, images = build(rows(folder / 'DT_DiyBossStage.json'), rows(folder / 'DT_DiyBossOptions.json'),
-                               index, calendar, monster_tables)
+                               index, calendar, monster_tables, descriptions)
         records.append(record)
         bindings.update(images)
     output = MODULE / 'static/diyboss'

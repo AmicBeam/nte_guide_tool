@@ -25,7 +25,7 @@ blueprint.add_app_template_filter(service.display_scalar, 'guide_scalar')
 
 def kind_check(kind):
     if kind not in service.KINDS:
-        raise LookupError('未知分类；可选 characters、arcs、foods、permanent、dungeons、challenges、endless、beginner')
+        raise LookupError('未知分类；可选 characters、arcs、foods、permanent、dungeons、challenges、endless、diyboss、beginner')
 
 
 def integer(name, default, low, high):
@@ -109,6 +109,9 @@ def entry(kind, identifier):
             request.args.get('stage'), request.args.get('material', ''), request.args.get('encounter')))
     profile = service.detail(kind, identifier) if kind == 'characters' else None
     record = profile if profile and profile.get('content_released') is False else get_record(kind, identifier)
+    if kind == 'diyboss':
+        return render_template('guide/diyboss.html', record=record,
+                               configurations=service.catalog()['diyboss'])
     if kind == 'foods':
         return redirect('/guide?kind=foods&food=' + record['id'])
     if kind == 'characters':
@@ -248,13 +251,14 @@ def llms():
 - [副本与材料掉落](/api/guide/dungeons)
 - [轨外之境赛期](/api/guide/challenges)
 - [全站深境（按期查询）](/api/guide/endless)
+- [争锋赏宴（配置与自选强化）](/api/guide/diyboss)
 - [攻略](/api/guide/beginner)
 - [自建攻略](/api/guide/articles)
 - [CLI 下载](/guide/cli.py)
 
 检索：GET /api/guide/search?q=关键词&limit=20&offset=0
-详情：GET /api/guide/{characters|arcs|foods|permanent|dungeons|challenges|endless|beginner|articles}/{id}
-纯文本：GET /guide/{characters|arcs|foods|permanent|dungeons|challenges|endless|beginner|articles}/{id}.md
+详情：GET /api/guide/{characters|arcs|foods|permanent|dungeons|challenges|endless|diyboss|beginner|articles}/{id}
+纯文本：GET /guide/{characters|arcs|foods|permanent|dungeons|challenges|endless|diyboss|beginner|articles}/{id}.md
 空幕：角色详情加 ?section=equip_slots；升级材料：详情加 ?section=materials。
 等级经验：角色详情加 ?section=experience。
 好感度与喜好礼物：角色详情加 ?section=affinity，包含赠送数值和各商店标价。

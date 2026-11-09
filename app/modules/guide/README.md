@@ -558,3 +558,13 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 副本奖励中的猎人等级经验复用材料展示绑定与本地WebP图标；`sync_guide_material_images.py`固定包含该条目，常规刷新不会遗漏。
 
 材料图标同步覆盖全部副本产物，包括萝卜币、空幕经验材料及各品质核心卡带；核心卡带保留各品质实际图标。金色与紫色卡带按品质分别合并展示，保留各自两套图标与名称；紫色数量未核实前保持未知。可用`--only-missing`保留已有可用绑定并仅补缺项，`--equipment-table`指定本地空幕道具表。`tests.test_guide_dungeons`核验全部副本产物与合并卡带的图标绑定、WebP解码及网页图片地址。
+
+## 争锋赏宴
+
+`/guide?kind=diyboss` 提供三套独立阵容配置，共23个关卡；`/guide/diyboss/config-1` 至 `config-3` 展示完整关卡、敌人立绘、难度与基础积分、自选强化、额外挑战目标和奖励积分门槛。配置序号只区分内容，不代表官方活动期号；未确认的开放日期保留空值，不按版本或列表顺序推断开放状态。
+
+自选强化按类别为行、档位为列展示，每格并列效果数值与积分，避免把敌方强化当作玩家增益。特殊挑战保留自己的选项和积分。第三套目标节点缺少效果与独立积分，明确显示未提供；奖励只展示已核实的积分门槛，不补造物品或总积分公式。敌人立绘使用独立本地WebP，保留完整原图比例与透明通道。
+
+JSON、Markdown、全文搜索与下载CLI共用 `data/diyboss.json`；支持 `stage=关卡编号`。例如 `python nte-guide.py get diyboss config-3 --stage 7`。显式离线更新：`.venv/bin/python scripts/sync_guide_diyboss.py --snapshot /path/to/config-1 --snapshot /path/to/config-2 --snapshot /path/to/config-3`；每个目录提供 `DT_DiyBossStage.json` 与 `DT_DiyBossOptions.json`，按内容顺序传入。图片优先读 `--ntedata-dir` 的同路径资源；否则通过已登录 `gh` 获取，已移除的历史图可用重复的 `--art-ref` 参数指定备用引用。空表、缺失选项、积分或图片拒绝导入；请求和启动均不联网。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_diyboss tests.test_guide tests.test_module_routes -q`。浏览器核对分类入口、配置切换、关卡锚点、三档强化排版、图片解码与窄屏表格横向滚动，并确认本机和局域网5001可访问。

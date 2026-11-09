@@ -11,9 +11,13 @@ from .description_parameters import bind_description_parameters
 from .challenge_calendar import is_released_challenge
 from . import reference_view, previews, character_release
 
-KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'permanent': '常驻加成', 'dungeons': '副本', 'challenges': '轨外之境', 'endless': '全站深境', 'beginner': '攻略'}
+KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'permanent': '常驻加成', 'dungeons': '副本', 'challenges': '轨外之境', 'endless': '全站深境', 'diyboss': '争锋赏宴', 'beginner': '攻略'}
 BEGINNER_SECTIONS = ('intro', 'gameplay', 'currencies', 'events', 'wishes', 'closing')
 LABELS = {
+    'enemy_label': '敌人', 'special': '特殊挑战', 'enemies': '敌人',
+    'unlock_hours': '活动开始后解锁小时数', 'difficulties': '挑战难度',
+    'base_score': '基础积分', 'score_rate': '积分倍率', 'buff_groups': '自选强化',
+    'targets': '额外挑战目标', 'target_score_limit': '额外挑战目标积分上限', 'unit': '单位',
     'category': '副本类型', 'required_level': '鉴别等级', 'stamina': '本性像素消耗',
     'encounters': '关卡', 'quantity': '单倍领取数量参考',
     'notes': '加成与升级说明', 'entries': '异象家具加成与升级',
@@ -131,6 +135,7 @@ def catalog():
     data['foods'] = json.loads((Path(__file__).parent / 'data/foods.json').read_text(encoding='utf-8'))
     data['permanent'] = json.loads((Path(__file__).parent / 'data/permanent_bonuses.json').read_text(encoding='utf-8'))
     data['endless'] = json.loads((Path(__file__).parent / 'data/endless.json').read_text(encoding='utf-8'))['groups']
+    data['diyboss'] = json.loads((Path(__file__).parent / 'data/diyboss.json').read_text(encoding='utf-8'))
     data['beginner'] = json.loads((Path(__file__).parent / 'data/beginner.json').read_text(encoding='utf-8'))
     from . import dungeons
     data['dungeons'] = dungeons.records()
@@ -177,7 +182,7 @@ def summary(kind, record):
         result['assets'] = record['assets']
     if kind == 'endless':
         result['description'] = record.get('description', '')
-    if kind in ('beginner', 'permanent', 'dungeons'):
+    if kind in ('beginner', 'permanent', 'dungeons', 'diyboss'):
         result['description'] = record['description']
     if kind == 'dungeons':
         result['category'] = record['category']
@@ -289,8 +294,8 @@ def detail(kind, identifier, section=None, stage=None, ability_id=None, level=No
     if record.get('content_released') is False and (section in character_release.AFTER_SKILL_FIELDS or ability_id is not None):
         raise LookupError('角色技能及后续资料尚未开放，开放时间：' + character_release.display_time(record['release_at']))
     if stage is not None:
-        if kind not in ('challenges', 'endless', 'dungeons'):
-            raise ValueError('stage 仅适用于轨外之境、全站深境或副本')
+        if kind not in ('challenges', 'endless', 'dungeons', 'diyboss'):
+            raise ValueError('stage 仅适用于轨外之境、全站深境、争锋赏宴或副本')
         record = dict(record)
         record['stages'] = [x for x in record['stages'] if str(x['id']) == str(stage)]
         if not record['stages']:
@@ -417,6 +422,7 @@ def page_sections(kind, record):
         'foods': ('effect', 'description', 'cooldown'),
         'challenges': ('resonance', 'stages', 'rewards'),
         'endless': ('stages',),
+        'diyboss': ('stages',),
         'permanent': ('notes', 'entries', 'levels'),
         'dungeons': ('category', 'encounters', 'stages', 'rewards'),
         'beginner': tuple(record.get('chapter_titles', {})) or BEGINNER_SECTIONS,

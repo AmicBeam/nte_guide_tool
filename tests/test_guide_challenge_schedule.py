@@ -26,7 +26,7 @@ class ChallengeScheduleTest(unittest.TestCase):
             self.assertEqual(records[i-1]['end_date'], records[i]['begin_date'])
             self.assertEqual((date.fromisoformat(records[i]['end_date']) - date.fromisoformat(records[i]['begin_date'])).days, 14)
         self.assertEqual(records[11]['begin_date'], '2026-10-16')
-        self.assertEqual(records[13]['name'], '未命名环线')
+        self.assertEqual(records[13]['name'], '澄明环线')
         self.assertIsNone(records[14]['begin_date'])
         self.assertIsNone(records[15]['begin_date'])
 
@@ -35,7 +35,7 @@ class ChallengeScheduleTest(unittest.TestCase):
         app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
         app.register_blueprint(blueprint)
         client = app.test_client()
-        for challenge in service.catalog()['challenges']:
+        for challenge in service.public_records('challenges'):
             with self.subTest(challenge=challenge['id']):
                 response = client.get('/guide/challenges/' + challenge['id'] + '?stage=1')
                 self.assertEqual(response.status_code, 200)
@@ -46,18 +46,20 @@ class ChallengeScheduleTest(unittest.TestCase):
                 self.assertNotIn('built-in method', section)
 
     @patch('app.modules.guide.challenge_calendar.current_time', return_value=datetime.fromisoformat('2026-11-14T12:00:00+08:00'))
-    def test_public_dates_and_unnamed_last_season(self, _clock):
+    def test_public_dates_and_named_fourteenth_season(self, _clock):
         app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
         app.register_blueprint(blueprint)
         client = app.test_client()
         data = client.get('/api/guide/challenges/Abyss_12').json['data']
         self.assertEqual((data['begin_date'], data['end_date']), ('2026-10-16', '2026-10-30'))
         last = client.get('/api/guide/challenges/Abyss_14').json['data']
-        self.assertEqual(last['name'], '未命名环线')
+        self.assertEqual(last['name'], '霜寒环线')
         self.assertEqual((last['begin_date'], last['end_date']), ('2026-11-13', '2026-11-27'))
         html = client.get('/guide?kind=challenges').text
         self.assertIn('2026-10-16 → 2026-10-30', re.sub(r'<[^>]+>', '', html))
-        self.assertIn('未命名环线', html)
+        self.assertIn('霜寒环线', html)
+        self.assertEqual(last['resonance']['name'], '寒光流转')
+        self.assertIn('20%无视防御', last['resonance']['description'])
         self.assertIn('长期开放', html)
         self.assertNotIn('日期未提供', html)
         md = client.get('/guide/challenges/Abyss_12.md?section=begin_date').text

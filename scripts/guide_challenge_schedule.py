@@ -18,8 +18,6 @@ def apply_challenge_schedule(challenges):
         if challenge.get('is_permanent') or identifier not in periods:
             continue
         challenge['begin_date'], challenge['end_date'] = periods[identifier]
-        if identifier == 'Abyss_14':
-            challenge['name'] = '未命名环线'
     return challenges
 
 

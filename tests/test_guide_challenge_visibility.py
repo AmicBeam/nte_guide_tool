@@ -39,15 +39,15 @@ class ChallengeVisibilityTest(unittest.TestCase):
             self.assertNotIn('/guide/challenges/Abyss_13', html)
             self.assertNotIn('/guide/challenges/Abyss_14', html)
             self.assertIn('轨外之境 <span>13</span>', html)
-        for identifier in ['Abyss_13', 'Abyss_14']:
+        for identifier in ['Abyss_13', 'Abyss_14', 'Abyss_15', 'Abyss_16']:
             self.assertEqual(self.client.get('/api/guide/search?q=' + identifier).json['total'], 0)
             toolkit = chat_tools.Toolkit(None, None)
             result, _ = toolkit.execute('wiki_search', {'kind': 'challenges', 'query': identifier})
             self.assertEqual(result['total'], 0)
-        self.assertEqual(len(service.catalog()['challenges']), 15)
+        self.assertEqual(len(service.catalog()['challenges']), 17)
 
     def test_future_direct_reads_are_not_found_in_every_format(self):
-        for identifier in ['Abyss_13', 'Abyss_14']:
+        for identifier in ['Abyss_13', 'Abyss_14', 'Abyss_15', 'Abyss_16']:
             for path in [f'/guide/challenges/{identifier}', f'/guide/challenges/{identifier}.md',
                          f'/api/guide/challenges/{identifier}?section=resonance&stage=12']:
                 response = self.client.get(path)
@@ -75,6 +75,9 @@ class ChallengeVisibilityTest(unittest.TestCase):
             self.assertFalse(is_released_challenge({'begin_date': begin}))
         self.clock.return_value = datetime.fromisoformat('2026-11-13T05:00:00+08:00')
         self.assertEqual(self.client.get('/api/guide/challenges/Abyss_14').status_code, 200)
+        self.clock.return_value = datetime.fromisoformat('2027-01-01T12:00:00+08:00')
+        for identifier in ['Abyss_15', 'Abyss_16']:
+            self.assertEqual(self.client.get('/api/guide/challenges/' + identifier).status_code, 404)
 
     def test_cli_list_search_get_share_server_cutoff(self):
         def opening(url, **kwargs):

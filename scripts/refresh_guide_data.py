@@ -52,6 +52,31 @@ def fetch_curl(url):
     return json.loads(result.stdout)
 
 
+def build_challenges(version='latest', fetcher=fetch):
+    """Refresh complete challenge records without touching character or arc data."""
+    if version == 'latest':
+        version = fetcher(f'{BASE}/manifest.json')['nte']['latest']
+    root = f'{BASE}/nte/{version}/zh/abyss'
+    seasons = fetcher(f'{root}/index.json')['seasons']
+    if not seasons or len({row['id'] for row in seasons}) != len(seasons):
+        raise ValueError('Empty or duplicate challenge seasons')
+
+    def load(season):
+        record = fetcher(f'{root}/{season["id"]}.json')
+        stages = record.get('stages', [])
+        if (record.get('id') != season['id'] or not record.get('name')
+                or not stages or len(stages) != record.get('stage_count')
+                or len({stage['id'] for stage in stages}) != len(stages)
+                or not record.get('resonance', {}).get('description')):
+            raise ValueError(f'Incomplete challenge: {season["id"]}')
+        record = clean(record)
+        record['aliases'] = []
+        return record
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        return apply_challenge_schedule(list(executor.map(load, seasons)))
+
+
 def build(version, fetcher=fetch):
     if version == 'latest':
         version = fetcher(f'{BASE}/manifest.json')['nte']['latest']
@@ -184,8 +209,20 @@ def main():
     parser.add_argument('--version', default='latest')
     parser.add_argument('--ntedata-dir', type=Path, help='Local directory with skill and character cultivation tables; otherwise read with gh.')
     parser.add_argument('--transport', choices=('urllib', 'curl'), default='urllib')
+    parser.add_argument('--challenges-only', action='store_true', help='Refresh only challenges in an existing catalog.')
     parser.add_argument('--output', type=Path, default=ROOT / 'app/modules/guide/data/catalog.json')
     args = parser.parse_args()
+    if args.challenges_only:
+        data = json.loads(args.output.read_text(encoding='utf-8'))
+        challenges = build_challenges(args.version, fetch_curl if args.transport == 'curl' else fetch)
+        if not {row['id'] for row in data['challenges']} <= {row['id'] for row in challenges}:
+            raise ValueError('Challenge refresh would remove existing seasons')
+        data['challenges'] = challenges
+        temporary = args.output.with_suffix('.tmp')
+        temporary.write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
+        temporary.replace(args.output)
+        print(f'challenges: {len(challenges)}')
+        return
     tables = load_tables(args.ntedata_dir)
     data = enrich_catalog(build(args.version, fetch_curl if args.transport == 'curl' else fetch), tables)
     data['character_experience'] = load_character_experience(args.ntedata_dir)

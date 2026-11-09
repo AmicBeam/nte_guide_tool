@@ -225,7 +225,7 @@ class ElymsToolFlowTest(unittest.TestCase):
             self.assertEqual(planned.status_code,200)
             self.assertEqual(planned.json['character']['id'],'1090')
             self.assertGreater(planned.json['result']['total_solution_count'],0)
-        self.assertEqual(self.client.post('/api/kongmu/plan',json={'character_id':'1090','cartridge_id':'cosmos'}).status_code,400)
+        self.assertEqual(self.client.post('/api/kongmu/plan',json={'character_id':'1090','cartridge_id':'cosmos'}).status_code,200)
         self.assertEqual(self.client.get('/api/guide/characters/1090/infographic').status_code,401)
         editor=self.client.get('/api/guide/characters/1090/infographic',headers=headers)
         self.assertEqual(editor.status_code,200)

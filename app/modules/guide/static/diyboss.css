@@ -50,3 +50,23 @@
 .diy-target-list li{border:1px solid var(--g-line);border-radius:9px;padding:15px;background:#ffffff03}
 .diy-target-list h4{margin:0 0 9px;font-size:12px;color:var(--g-accent)}
 .diy-target-list p{margin:0;line-height:1.8;font-size:14px;white-space:pre-line}
+
+.diy-buffs{min-width:580px}
+.diy-buffs td{padding:8px 5px}
+.diy-buff-choice{position:relative;display:flex;flex-direction:column;justify-content:center;gap:5px;min-height:82px;padding:10px 8px;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.diy-buff-choice:has(input:checked){border-color:var(--g-accent);background:#c9f47a10}
+.diy-buff-choice input,.diy-target-choice input{accent-color:var(--g-accent);width:17px;height:17px;padding:0;flex:none}
+.diy-buff-choice input{margin:0 0 4px}
+.diy-buff-choice:focus-within,.diy-target-choice:focus-within{outline:2px solid var(--g-accent);outline-offset:2px}
+.diy-target-list li{padding:0}
+.diy-target-choice{display:block;padding:16px;cursor:pointer;height:100%;border:1px solid transparent;border-radius:9px}
+.diy-target-choice:has(input:checked){border-color:var(--g-accent);background:#c9f47a10}
+.diy-target-title{display:block;margin:8px 0;font-size:12px;color:var(--g-accent)}
+.diy-target-copy{display:block;line-height:1.8;font-size:14px;white-space:pre-line}
+.diy-score-summary{position:sticky;bottom:12px;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:16px;margin:22px 0;padding:18px 22px;border:1px solid var(--g-accent);border-radius:12px;background:#182126f5;box-shadow:0 6px 24px #0004}
+.diy-score-summary>div>span{display:block;font-size:12px;color:var(--g-dim)}
+.diy-score-summary strong{display:block;margin:5px 0;font-size:32px;color:var(--g-accent)}
+.diy-score-summary p{font-size:12px;line-height:1.6;margin:4px 0 0;color:var(--g-dim)}
+.diy-score-summary button{padding:10px 14px;white-space:nowrap}
+[data-diy-calculator][aria-busy=true] [data-diy-total]{opacity:.5}
+@media(max-width:600px){.diy-score-summary{padding:12px;bottom:8px}.diy-score-summary strong{font-size:27px}.diy-score-summary button{font-size:12px;padding:9px}.diy-stage-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}

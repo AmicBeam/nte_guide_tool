@@ -117,7 +117,9 @@ def entry(kind, identifier):
         stage = next(row for row in record['stages'] if row['id'] == selected_stage)
         if selected_difficulty not in {row['id'] for row in stage['difficulties']}:
             raise LookupError('未找到争锋难度')
-        return render_template('guide/diyboss.html', record=record,
+        from .diyboss_scoring import calculate
+        scores = {row['id']: calculate(record, row['id'], selected_difficulty) for row in record['stages']}
+        return render_template('guide/diyboss.html', record=record, scores=scores,
             selected_stage=selected_stage, selected_difficulty=selected_difficulty,
             configurations=service.catalog()['diyboss'])
     if kind == 'foods':
@@ -141,6 +143,18 @@ def entry(kind, identifier):
                            material_preview=presentation.upgrade_material_preview(overview) if overview else [],
                            pending_releases=[profile] if profile and profile.get('content_released') is False else [],
                            notes=service.schema()['notes'], recommended_arc=arc_cultivation.recommended(profile) if profile else None)
+
+
+@blueprint.post('/api/guide/diyboss/<identifier>/score')
+def diyboss_score(identifier):
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise ValueError('请提交计分选择对象')
+    from .diyboss_scoring import calculate
+    record = service.detail('diyboss', identifier)
+    score = calculate(record, payload.get('stage', record['stages'][0]['id']),
+                      payload.get('difficulty', '1'), payload.get('buffs', []), payload.get('targets', []))
+    return jsonify(data=score)
 
 
 @blueprint.get('/api/guide/characters/<identifier>/release')

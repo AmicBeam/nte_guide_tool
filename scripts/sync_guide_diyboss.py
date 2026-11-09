@@ -71,7 +71,7 @@ def difficulty_monsters(stage_id, difficulty_id, tables):
     return result
 
 
-def mechanism_targets(choices, options, descriptions):
+def mechanism_targets(choices, options, descriptions, scores=None):
     entries = {key.casefold(): text(value) for key, value in descriptions.items()}
     targets = []
     for choice in choices:
@@ -84,11 +84,13 @@ def mechanism_targets(choices, options, descriptions):
         description = entries.get(key.casefold())
         if not description:
             raise ValueError('Missing mechanism description: ' + key)
-        # The client text table provides descriptions, but no independent scores.
-        targets.append({'id': key, 'description': description, 'score': None})
+        score = (scores or {}).get(key)
+        if score is not None and (type(score) not in (int, float) or score < 0):
+            raise ValueError('Invalid mechanism score: ' + key)
+        targets.append({'id': key, 'description': description, 'score': score})
     return targets
 
-def build(stages, options, index, calendar=None, monster_tables=None, target_texts=None):
+def build(stages, options, index, calendar=None, monster_tables=None, target_texts=None, target_scores=None):
     result, images = [], {}
     for identifier, row in stages.items():
         enemies = []
@@ -122,7 +124,7 @@ def build(stages, options, index, calendar=None, monster_tables=None, target_tex
                 value = node['LimitSeconds'] if is_time else node['AddPercent']
                 choices.append({'id': key, 'value': value, 'unit': '秒' if is_time else '%', 'score': score})
             groups.append({'name': text(group['CategoryDesc']), 'options': choices})
-        targets = mechanism_targets(row.get('MechanismOptionChoices', []), options, target_texts or {})
+        targets = mechanism_targets(row.get('MechanismOptionChoices', []), options, target_texts or {}, target_scores)
         unlock = row['UnlockNode']
         result.append({'id': identifier.removeprefix('DiyBossStage'), 'name': text(row['DescName']),
             'special': row.get('bSpecialHighDifficulty', False),
@@ -152,6 +154,7 @@ def main():
     parser.add_argument('--art-ref', action='append', default=[], help='Additional Git refs for removed historical artwork')
     args = parser.parse_args()
     calendar = json.loads((MODULE / 'data/diyboss_calendar.json').read_text())
+    target_scores = json.loads((MODULE / 'data/diyboss_target_scores.json').read_text())
     records, bindings = [], {}
     for index, folder in enumerate(args.snapshot, 1):
         monster_tables = {key: rows(folder / filename) for key, filename in {
@@ -160,7 +163,7 @@ def main():
         text_file = folder / 'ST_UI_hpy.json'
         descriptions = json.loads(text_file.read_text())[0]['StringTable']['KeysToEntries'] if text_file.exists() else {}
         record, images = build(rows(folder / 'DT_DiyBossStage.json'), rows(folder / 'DT_DiyBossOptions.json'),
-                               index, calendar, monster_tables, descriptions)
+                               index, calendar, monster_tables, descriptions, target_scores)
         records.append(record)
         bindings.update(images)
     output = MODULE / 'static/diyboss'

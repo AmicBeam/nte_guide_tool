@@ -40,7 +40,7 @@ class DiyBossTest(unittest.TestCase):
         composite = next(s for s in latest['stages'] if s['id'] == '8')
         self.assertEqual(composite['enemies'][0]['name'], '玛门&瓦楞城堡')
         self.assertEqual(sum(len(s['targets']) for s in latest['stages']), 24)
-        self.assertTrue(all(t['score'] is None and bool(t['description']) for s in latest['stages'] for t in s['targets']))
+        self.assertTrue(all(t['score'] > 0 and bool(t['description']) for s in latest['stages'] for t in s['targets']))
 
     def test_public_routes_search_and_single_stage(self):
         self.assertEqual(self.client.get('/api/guide/diyboss').json['total'], 3)
@@ -108,7 +108,8 @@ class DiyBossTest(unittest.TestCase):
         self.assertIn('id="monsters-7-4" data-diy-difficulty="4" >', response.text)
         self.assertIn('2,542,242', response.text)
         self.assertIn('敌方承伤属性提高20%（包括生命值、防御力、全属性异能伤害抗性）', response.text)
-        self.assertIn('各项目标的独立积分暂未提供', response.text)
+        self.assertIn('目标 1 · 700 分', response.text)
+        self.assertNotIn('各项目标的独立积分暂未提供', response.text)
         self.assertNotIn('暂不展示具体效果', response.text)
         self.assertEqual(self.client.get('/guide/diyboss/config-3?difficulty=99').status_code, 404)
         self.assertEqual(self.client.get('/guide/diyboss/config-3?stage=99').status_code, 404)

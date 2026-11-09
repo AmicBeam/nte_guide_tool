@@ -30,7 +30,47 @@ def rows(path):
     return result
 
 
-def build(stages, options, index, calendar=None):
+
+def difficulty_monsters(stage_id, difficulty_id, tables):
+    """Resolve the clone's actual spawns and difficulty-bound final stat packs."""
+    if tables is None:
+        raise ValueError('Missing clone, spawn, monster and stat-pack tables')
+    lookup = {name: {key.casefold(): value for key, value in table.items()} for name, table in tables.items()}
+    clone = lookup['clones'][stage_id.casefold()]
+    node = next(n for n in clone['CloneSystemSubNodes'] if str(n['DifficultyLevel']) == str(difficulty_id))
+    spawn = lookup['spawns'][node['SpawnID'].casefold()]
+    result = []
+    elements = ('normal', 'cosmos', 'nature', 'incantation', 'chaos', 'psyche', 'lakshana', 'psychically')
+    for wave_index, wave in enumerate(spawn['SpawnWaveEntriesOverride'], 1):
+        for entry in wave['SpawnEntries']:
+            template = entry['AITemplate']['AssetPathName'].split('.')[0].rsplit('/', 1)[-1]
+            key = entry['AIConfigOverrideID']
+            static = lookup['monsters'][(key if key.lower() != 'none' else template).casefold()]
+            if not static['bIsCloneDifficultyLevel'] or entry['bOverrideLevelType']:
+                raise ValueError('Unsupported monster level binding: ' + template)
+            level = static['CloneDifficultyLevelArray'][int(difficulty_id) - 1]
+            pack_id = entry['AISettingsOverrideID']
+            if pack_id.lower() == 'none':
+                pack_id = level['MonsterClonePropModifyID']
+            pack = lookup['packs'][pack_id.casefold()]
+            if any(pack[key] != 0 for key in ('HPMaxUp', 'HPMaxAdd', 'AtkUp', 'AtkAdd', 'DefUp', 'DefAdd')):
+                raise ValueError('Unsupported monster growth: ' + template)
+            weak_types = [item.removeprefix('UNBAL_BAR_').lower() for item in static['UnbalBarTypeList']]
+            if any(element not in elements for element in weak_types):
+                raise ValueError('Unknown weakness type: ' + template)
+            name = text(static['TextName']) or static['Comment'].removeprefix('自定义BOSS-')
+            if not name or pack['HPMaxBase'] <= 0 or level['MonsterCloneLevel'] <= 0:
+                raise ValueError('Missing monster identity or stats: ' + template)
+            result.append({'id': template, 'name': name, 'wave': wave_index, 'count': entry['Count'],
+                'level': level['MonsterCloneLevel'], 'weaknesses': [e for e in weak_types if e != 'normal'],
+                'generic_stagger': 'normal' in weak_types,
+                'stats': {'hp': pack['HPMaxBase'], 'attack': pack['AtkBase'], 'defense': pack['DefBase'],
+                          'resistances': {e: pack['DamageResist' + e.title() + 'Base'] for e in elements}}})
+    if not result:
+        raise ValueError('Empty monster lineup: ' + stage_id)
+    return result
+
+def build(stages, options, index, calendar=None, monster_tables=None):
     result, images = [], {}
     for identifier, row in stages.items():
         enemies = []
@@ -79,7 +119,8 @@ def build(stages, options, index, calendar=None):
             'enemies': enemies, 'unlock': text(unlock.get('UnlockDesc')) or '活动开始时解锁',
             'unlock_hours': unlock['ActiveOpenedHours'],
             'difficulties': [{'id': d['Key'], 'name': text(d['Value']['Desc']),
-                'base_score': d['Value']['BaseScore'], 'score_rate': d['Value']['ScoreRate']}
+                'base_score': d['Value']['BaseScore'], 'score_rate': d['Value']['ScoreRate'],
+                'monsters': difficulty_monsters(identifier, d['Key'], monster_tables)}
                 for d in row['DifficultyMap']],
             'buff_groups': groups, 'targets': targets, 'target_score_limit': row.get('MechanismScoreLimit'),
             'rewards': [{'score': d['Value']['LimitScore'], 'drop_id': d['Value']['DropID']}
@@ -102,7 +143,11 @@ def main():
     calendar = json.loads((MODULE / 'data/diyboss_calendar.json').read_text())
     records, bindings = [], {}
     for index, folder in enumerate(args.snapshot, 1):
-        record, images = build(rows(folder / 'DT_DiyBossStage.json'), rows(folder / 'DT_DiyBossOptions.json'), index, calendar)
+        monster_tables = {key: rows(folder / filename) for key, filename in {
+            'clones': 'CloneSystemDataTable.json', 'spawns': 'DT_CloneMonsterConfig.json',
+            'monsters': 'DT_MonsterStaticData_BigWorld.json', 'packs': 'DT_MonsterPackData.json'}.items()}
+        record, images = build(rows(folder / 'DT_DiyBossStage.json'), rows(folder / 'DT_DiyBossOptions.json'),
+                               index, calendar, monster_tables)
         records.append(record)
         bindings.update(images)
     output = MODULE / 'static/diyboss'

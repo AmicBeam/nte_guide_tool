@@ -14,7 +14,7 @@ from . import reference_view, previews, character_release
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'permanent': '常驻加成', 'dungeons': '副本', 'challenges': '轨外之境', 'endless': '全站深境', 'diyboss': '争锋赏宴', 'beginner': '攻略'}
 BEGINNER_SECTIONS = ('intro', 'gameplay', 'currencies', 'events', 'wishes', 'closing')
 LABELS = {
-    'enemy_label': '敌人', 'special': '特殊挑战', 'enemies': '敌人',
+    'generic_stagger': '通用倾陷条', 'enemy_label': '敌人', 'special': '特殊挑战', 'enemies': '敌人',
     'unlock_hours': '活动开始后解锁小时数', 'difficulties': '挑战难度',
     'base_score': '基础积分', 'score_rate': '积分倍率', 'buff_groups': '自选强化',
     'targets': '额外挑战目标', 'target_score_limit': '额外挑战目标积分上限', 'unit': '单位',

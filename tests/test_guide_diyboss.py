@@ -66,6 +66,78 @@ class DiyBossTest(unittest.TestCase):
         with self.client.get('/guide/cli.py') as response:
             self.assertIn('diyboss', response.text)
 
+    def test_difficulty_stats_and_multi_enemy_stages(self):
+        first = self.records[0]['stages'][0]['difficulties']
+        second = self.records[1]['stages'][0]['difficulties']
+        self.assertEqual([d['monsters'][0]['level'] for d in first], [42, 52, 62, 72])
+        self.assertEqual(first[0]['monsters'][0]['stats']['hp'], 222176)
+        self.assertEqual(first[-1]['monsters'][0]['stats']['hp'], 1114432)
+        self.assertEqual(second[0]['monsters'][0]['stats']['hp'], 502176)
+        self.assertEqual(first[0]['monsters'][0]['weaknesses'], ['lakshana'])
+        latest = {stage['id']: stage for stage in self.records[2]['stages']}
+        judge = latest['7']['difficulties'][0]['monsters']
+        self.assertEqual([m['name'] for m in judge], ['审判官一阶段', '审判官二阶段'])
+        self.assertEqual([m['stats']['hp'] for m in judge], [1914598, 2871897])
+        self.assertEqual([m['name'] for m in latest['8']['difficulties'][0]['monsters']], ['玛门', '瓦楞城堡'])
+        for record in self.records:
+            for stage in record['stages']:
+                for difficulty in stage['difficulties']:
+                    for monster in difficulty['monsters']:
+                        self.assertGreater(monster['level'], 0)
+                        self.assertGreater(monster['stats']['hp'], 0)
+
+    def test_page_selection_preserves_all_options(self):
+        from html.parser import HTMLParser
+        class Panels(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.stages, self.visible, self.links = [], [], []
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if 'data-diy-stage' in attrs:
+                    self.stages.append(attrs)
+                    if 'hidden' not in attrs: self.visible.append(attrs)
+                if 'data-diy-stage-link' in attrs: self.links.append(attrs)
+        response = self.client.get('/guide/diyboss/config-3?stage=7&difficulty=4')
+        self.assertEqual(response.status_code, 200)
+        page = Panels()
+        page.feed(response.text)
+        self.assertEqual(len(page.stages), 8)
+        self.assertEqual([s['data-diy-stage'] for s in page.visible], ['7'])
+        self.assertEqual(len(page.links), 8)
+        self.assertIn('id="monsters-7-4" data-diy-difficulty="4" >', response.text)
+        self.assertIn('2,542,242', response.text)
+        self.assertEqual(self.client.get('/guide/diyboss/config-3?difficulty=99').status_code, 404)
+        self.assertEqual(self.client.get('/guide/diyboss/config-3?stage=99').status_code, 404)
+
+    def test_importer_uses_case_insensitive_bindings_and_rejects_growth(self):
+        import copy
+        spec = importlib.util.spec_from_file_location('sync_diyboss_stats', ROOT / 'scripts/sync_guide_diyboss.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        entry = {'AITemplate': {'AssetPathName': '/Game/Monster/Boss_Test.Boss_Test_C'},
+                 'AIConfigOverrideID': 'None', 'AISettingsOverrideID': 'None',
+                 'bOverrideLevelType': False, 'Count': 1}
+        pack = {key: 0 for key in ('HPMaxUp', 'HPMaxAdd', 'AtkUp', 'AtkAdd', 'DefUp', 'DefAdd')}
+        pack.update(HPMaxBase=502176, AtkBase=354, DefBase=852)
+        for element in ('Normal', 'Cosmos', 'Nature', 'Incantation', 'Chaos', 'Psyche', 'Lakshana', 'Psychically'):
+            pack['DamageResist' + element + 'Base'] = .2
+        tables = {'clones': {'Stage1': {'CloneSystemSubNodes': [{'DifficultyLevel': 1, 'SpawnID': 'SPAWN'}]}},
+                  'spawns': {'spawn': {'SpawnWaveEntriesOverride': [{'SpawnEntries': [entry]}]}},
+                  'monsters': {'boss_test': {'bIsCloneDifficultyLevel': True, 'CloneDifficultyLevelArray': [
+                      {'MonsterCloneLevel': 42, 'MonsterClonePropModifyID': 'PACK'}],
+                      'UnbalBarTypeList': ['UNBAL_BAR_LAKSHANA'], 'TextName': {}, 'Comment': '自定义BOSS-塔吉多'}},
+                  'packs': {'pack': pack}}
+        resolved = module.difficulty_monsters('stage1', '1', tables)[0]
+        self.assertEqual((resolved['name'], resolved['level'], resolved['stats']['hp']), ('塔吉多', 42, 502176))
+        self.assertEqual(resolved['weaknesses'], ['lakshana'])
+        bad = copy.deepcopy(tables)
+        bad['packs']['pack']['HPMaxUp'] = 1
+        with self.assertRaisesRegex(ValueError, 'growth'):
+            module.difficulty_monsters('stage1', '1', bad)
+        with self.assertRaisesRegex(ValueError, 'Missing'):
+            module.difficulty_monsters('stage1', '1', None)
+
     def test_importer_rejects_empty_input(self):
         spec = importlib.util.spec_from_file_location('sync_diyboss', ROOT / 'scripts/sync_guide_diyboss.py')
         module = importlib.util.module_from_spec(spec)

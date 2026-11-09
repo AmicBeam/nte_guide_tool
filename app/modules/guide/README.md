@@ -565,6 +565,11 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 
 自选强化按类别为行、档位为列展示，每格并列效果数值与积分，避免把敌方强化当作玩家增益。特殊挑战保留自己的选项和积分。第三套目标节点缺少效果与独立积分，明确显示未提供；奖励只展示已核实的积分门槛，不补造物品或总积分公式。敌人立绘使用独立本地WebP，保留完整原图比例与透明通道。
 
-JSON、Markdown、全文搜索与下载CLI共用 `data/diyboss.json`；支持 `stage=关卡编号`。例如 `python nte-guide.py get diyboss config-3 --stage 7`。显式离线更新：`.venv/bin/python scripts/sync_guide_diyboss.py --snapshot /path/to/config-1 --snapshot /path/to/config-2 --snapshot /path/to/config-3`；每个目录提供 `DT_DiyBossStage.json` 与 `DT_DiyBossOptions.json`，按内容顺序传入。图片优先读 `--ntedata-dir` 的同路径资源；否则通过已登录 `gh` 获取，已移除的历史图可用重复的 `--art-ref` 参数指定备用引用。空表、缺失选项、积分或图片拒绝导入；请求和启动均不联网。
+JSON、Markdown、全文搜索与下载CLI共用 `data/diyboss.json`；支持 `stage=关卡编号`。例如 `python nte-guide.py get diyboss config-3 --stage 7`。显式离线更新：`.venv/bin/python scripts/sync_guide_diyboss.py --snapshot /path/to/config-1 --snapshot /path/to/config-2 --snapshot /path/to/config-3`；每个目录提供 `DT_DiyBossStage.json`、`DT_DiyBossOptions.json`、`CloneSystemDataTable.json`、`DT_CloneMonsterConfig.json`、`DT_MonsterStaticData_BigWorld.json` 和 `DT_MonsterPackData.json`，按内容顺序传入。图片优先读 `--ntedata-dir` 的同路径资源；否则通过已登录 `gh` 获取，已移除的历史图可用重复的 `--art-ref` 参数指定备用引用。空表、缺失选项、积分或图片拒绝导入；请求和启动均不联网。
 
-验证：`.venv/bin/python -m unittest tests.test_guide_diyboss tests.test_guide tests.test_module_routes -q`。浏览器核对分类入口、配置切换、关卡锚点、三档强化排版、图片解码与窄屏表格横向滚动，并确认本机和局域网5001可访问。
+验证：`.venv/bin/python -m unittest tests.test_guide_diyboss tests.test_guide tests.test_module_routes -q`。浏览器核对分类入口、关卡／难度切换、刷新与前进后退恢复、敌人面板、三档强化排版、图片解码与窄屏表格横向滚动，并确认本机和局域网5001可访问。
+
+
+争锋详情使用页内关卡与难度切换，每次只显示一关、一个难度，切换保留滚动位置并更新URL；刷新、分享及浏览器前进／后退恢复所选项。带`stage`的网页仍保留全部关卡选择；JSON／Markdown的`stage`继续只返回单关。禁用脚本时通过实际查询链接切换。
+
+每期每个难度通过副本节点、实际刷怪模板、难度等级绑定和属性包解析敌人的等级、基础生命、攻击、防御与抗性；属性弱点取倾陷条的明确属性配置，通用倾陷条单独标注。怪物键按游戏名称语义忽略大小写，不根据推荐属性或最低抗性猜弱点。只接受无成长的完整面板包，缺失关联、未知成长和未支持的等级覆盖拒绝导入。页面显示未计入自选强化的基础值；审判官两阶段、玛门与瓦楞城堡分别列出，不合并成总血量。前端只切换已返回的面板，不计算或推断敌人数值。

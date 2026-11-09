@@ -110,8 +110,15 @@ def entry(kind, identifier):
     profile = service.detail(kind, identifier) if kind == 'characters' else None
     record = profile if profile and profile.get('content_released') is False else get_record(kind, identifier)
     if kind == 'diyboss':
+        record = service.detail(kind, identifier)
+        selected_stage = request.args.get('stage') or record['stages'][0]['id']
+        selected_difficulty = request.args.get('difficulty', '1')
+        stage = next(row for row in record['stages'] if row['id'] == selected_stage)
+        if selected_difficulty not in {row['id'] for row in stage['difficulties']}:
+            raise LookupError('未找到争锋难度')
         return render_template('guide/diyboss.html', record=record,
-                               configurations=service.catalog()['diyboss'])
+            selected_stage=selected_stage, selected_difficulty=selected_difficulty,
+            configurations=service.catalog()['diyboss'])
     if kind == 'foods':
         return redirect('/guide?kind=foods&food=' + record['id'])
     if kind == 'characters':

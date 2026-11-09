@@ -26,25 +26,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 42,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 222176.0,
+                  "attack": 354.0,
+                  "defense": 852.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 52,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 440992.0,
+                  "attack": 531.0,
+                  "defense": 912.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 62,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 669120.0,
+                  "attack": 709.0,
+                  "defense": 972.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 72,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1114432.0,
+                  "attack": 1063.0,
+                  "defense": 1032.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -231,25 +343,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "Boss_016_BP_DiyBoss",
+                "name": "随心泥",
+                "wave": 1,
+                "count": 1,
+                "level": 45,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 354496.0,
+                  "attack": 617.0,
+                  "defense": 870.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "Boss_016_BP_DiyBoss",
+                "name": "随心泥",
+                "wave": 1,
+                "count": 1,
+                "level": 55,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 703765.0,
+                  "attack": 925.0,
+                  "defense": 930.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "Boss_016_BP_DiyBoss",
+                "name": "随心泥",
+                "wave": 1,
+                "count": 1,
+                "level": 65,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1067520.0,
+                  "attack": 1234.0,
+                  "defense": 990.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "Boss_016_BP_DiyBoss",
+                "name": "随心泥",
+                "wave": 1,
+                "count": 1,
+                "level": 75,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1778005.0,
+                  "attack": 1851.0,
+                  "defense": 1050.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -436,25 +660,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "Boss_07_BP_DiyBoss",
+                "name": "塞润妮缇",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 394496.0,
+                  "attack": 735.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "Boss_07_BP_DiyBoss",
+                "name": "塞润妮缇",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 783765.0,
+                  "attack": 1102.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "Boss_07_BP_DiyBoss",
+                "name": "塞润妮缇",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1187520.0,
+                  "attack": 1470.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "Boss_07_BP_DiyBoss",
+                "name": "塞润妮缇",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1978005.0,
+                  "attack": 2205.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -641,25 +977,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_18_BP_DiyBoss",
+                "name": "番茄酱恶魔",
+                "wave": 1,
+                "count": 1,
+                "level": 45,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 354496.0,
+                  "attack": 617.0,
+                  "defense": 870.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_18_BP_DiyBoss",
+                "name": "番茄酱恶魔",
+                "wave": 1,
+                "count": 1,
+                "level": 55,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 703765.0,
+                  "attack": 925.0,
+                  "defense": 930.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_18_BP_DiyBoss",
+                "name": "番茄酱恶魔",
+                "wave": 1,
+                "count": 1,
+                "level": 65,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1067520.0,
+                  "attack": 1234.0,
+                  "defense": 990.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_18_BP_DiyBoss",
+                "name": "番茄酱恶魔",
+                "wave": 1,
+                "count": 1,
+                "level": 75,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1778005.0,
+                  "attack": 1851.0,
+                  "defense": 1050.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -846,25 +1294,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 334496.0,
+                  "attack": 757.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 663765.0,
+                  "attack": 1136.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1007520.0,
+                  "attack": 1515.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1678005.0,
+                  "attack": 2272.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -1051,25 +1611,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 364496.0,
+                  "attack": 757.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 723765.0,
+                  "attack": 1136.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1097520.0,
+                  "attack": 1515.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1828005.0,
+                  "attack": 2272.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -1256,25 +1928,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 394496.0,
+                  "attack": 724.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 783765.0,
+                  "attack": 1086.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1187520.0,
+                  "attack": 1449.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1978005.0,
+                  "attack": 2173.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -1475,25 +2259,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 42,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 502176.0,
+                  "attack": 354.0,
+                  "defense": 852.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 52,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1000992.0,
+                  "attack": 531.0,
+                  "defense": 912.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 62,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1509120.0,
+                  "attack": 709.0,
+                  "defense": 972.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 72,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2514432.0,
+                  "attack": 1063.0,
+                  "defense": 1032.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -1680,25 +2576,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_18_BP_DiyBoss",
+                "name": "番茄酱恶魔",
+                "wave": 1,
+                "count": 1,
+                "level": 45,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 802496.0,
+                  "attack": 617.0,
+                  "defense": 870.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_18_BP_DiyBoss",
+                "name": "番茄酱恶魔",
+                "wave": 1,
+                "count": 1,
+                "level": 55,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1599765.0,
+                  "attack": 925.0,
+                  "defense": 930.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_18_BP_DiyBoss",
+                "name": "番茄酱恶魔",
+                "wave": 1,
+                "count": 1,
+                "level": 65,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2411520.0,
+                  "attack": 1234.0,
+                  "defense": 990.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_18_BP_DiyBoss",
+                "name": "番茄酱恶魔",
+                "wave": 1,
+                "count": 1,
+                "level": 75,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 4018005.0,
+                  "attack": 1851.0,
+                  "defense": 1050.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -1885,25 +2893,129 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_17_BP_DiyBoss",
+                "name": "玛门",
+                "wave": 1,
+                "count": 1,
+                "level": 60,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 4066496.0,
+                  "attack": 617.0,
+                  "defense": 870.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_17_BP_DiyBoss",
+                "name": "玛门",
+                "wave": 1,
+                "count": 1,
+                "level": 70,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 4498965.0,
+                  "attack": 925.0,
+                  "defense": 930.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_17_BP_DiyBoss",
+                "name": "玛门",
+                "wave": 1,
+                "count": 1,
+                "level": 80,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 4945920.0,
+                  "attack": 1234.0,
+                  "defense": 990.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_17_BP_DiyBoss",
+                "name": "玛门",
+                "wave": 1,
+                "count": 1,
+                "level": 90,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 5419605.0,
+                  "attack": 1851.0,
+                  "defense": 1050.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -2069,25 +3181,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "Boss_07_BP_DiyBoss",
+                "name": "塞润妮缇",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 898496.0,
+                  "attack": 735.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "Boss_07_BP_DiyBoss",
+                "name": "塞润妮缇",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1791765.0,
+                  "attack": 1102.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "Boss_07_BP_DiyBoss",
+                "name": "塞润妮缇",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2699520.0,
+                  "attack": 1470.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "Boss_07_BP_DiyBoss",
+                "name": "塞润妮缇",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 4498005.0,
+                  "attack": 2205.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -2274,25 +3498,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 898496.0,
+                  "attack": 724.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1791765.0,
+                  "attack": 1086.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2699520.0,
+                  "attack": 1449.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 4498005.0,
+                  "attack": 2173.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -2479,25 +3815,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 754496.0,
+                  "attack": 757.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1503765.0,
+                  "attack": 1136.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2267520.0,
+                  "attack": 1515.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 3778005.0,
+                  "attack": 2272.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -2684,25 +4132,129 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_05_BP_DiyBoss",
+                "name": "墨菲克斯",
+                "wave": 1,
+                "count": 1,
+                "level": 60,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 4066496.0,
+                  "attack": 617.0,
+                  "defense": 870.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_05_BP_DiyBoss",
+                "name": "墨菲克斯",
+                "wave": 1,
+                "count": 1,
+                "level": 70,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 4498965.0,
+                  "attack": 925.0,
+                  "defense": 930.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_05_BP_DiyBoss",
+                "name": "墨菲克斯",
+                "wave": 1,
+                "count": 1,
+                "level": 80,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 4945920.0,
+                  "attack": 1234.0,
+                  "defense": 990.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_05_BP_DiyBoss",
+                "name": "墨菲克斯",
+                "wave": 1,
+                "count": 1,
+                "level": 90,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 5419605.0,
+                  "attack": 1851.0,
+                  "defense": 1050.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -2868,25 +4420,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 826496.0,
+                  "attack": 757.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1647765.0,
+                  "attack": 1136.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2483520.0,
+                  "attack": 1515.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 4138005.0,
+                  "attack": 2272.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -3087,25 +4751,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 42,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 502176.0,
+                  "attack": 354.0,
+                  "defense": 852.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 52,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1000992.0,
+                  "attack": 531.0,
+                  "defense": 912.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 62,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1509120.0,
+                  "attack": 709.0,
+                  "defense": 972.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_04_BP_DiyBoss",
+                "name": "塔吉多",
+                "wave": 1,
+                "count": 1,
+                "level": 72,
+                "weaknesses": [
+                  "lakshana"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2514432.0,
+                  "attack": 1063.0,
+                  "defense": 1032.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.16,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -3308,25 +5084,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_09_BP_Diy",
+                "name": "黑之书",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 754496.0,
+                  "attack": 757.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_09_BP_Diy",
+                "name": "黑之书",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1503765.0,
+                  "attack": 1136.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_09_BP_Diy",
+                "name": "黑之书",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2267520.0,
+                  "attack": 1515.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_09_BP_Diy",
+                "name": "黑之书",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "chaos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 3778005.0,
+                  "attack": 2272.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.16,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -3529,25 +5417,225 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "Boss_039_BP_Diy",
+                "name": "审判官一阶段",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 1914598.0,
+                  "attack": 757.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              },
+              {
+                "id": "Boss_039_2_BP_Diy",
+                "name": "审判官二阶段",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 2871897.0,
+                  "attack": 757.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "Boss_039_BP_Diy",
+                "name": "审判官一阶段",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 2116386.0,
+                  "attack": 1136.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              },
+              {
+                "id": "Boss_039_2_BP_Diy",
+                "name": "审判官二阶段",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 3174579.0,
+                  "attack": 1136.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "Boss_039_BP_Diy",
+                "name": "审判官一阶段",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 2323968.0,
+                  "attack": 1515.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              },
+              {
+                "id": "Boss_039_2_BP_Diy",
+                "name": "审判官二阶段",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 3485952.0,
+                  "attack": 1515.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "Boss_039_BP_Diy",
+                "name": "审判官一阶段",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 2542242.0,
+                  "attack": 2272.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              },
+              {
+                "id": "Boss_039_2_BP_Diy",
+                "name": "审判官二阶段",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 3813363.0,
+                  "attack": 2272.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -3729,25 +5817,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 754496.0,
+                  "attack": 757.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1503765.0,
+                  "attack": 1136.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2267520.0,
+                  "attack": 1515.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_13_BP_DiyBoss",
+                "name": "无首铁驭",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "psyche"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 3778005.0,
+                  "attack": 2272.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.16,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -3950,25 +6150,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "mon_051_BP_Diy",
+                "name": "桀桀熊",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 898496.0,
+                  "attack": 714.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "mon_051_BP_Diy",
+                "name": "桀桀熊",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1791765.0,
+                  "attack": 1071.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "mon_051_BP_Diy",
+                "name": "桀桀熊",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2699520.0,
+                  "attack": 1428.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "mon_051_BP_Diy",
+                "name": "桀桀熊",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "incantation"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 4498005.0,
+                  "attack": 2142.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.16,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -4171,25 +6483,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 898496.0,
+                  "attack": 757.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1791765.0,
+                  "attack": 1136.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2699520.0,
+                  "attack": 1515.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "Boss_08_BP_DiyBoss",
+                "name": "斑蝶",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "nature"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 4498005.0,
+                  "attack": 2272.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.16,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -4392,25 +6816,225 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_17_BP_DiyBoss",
+                "name": "玛门",
+                "wave": 1,
+                "count": 1,
+                "level": 60,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 3829196.0,
+                  "attack": 769.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              },
+              {
+                "id": "mon_48_BP_Diy",
+                "name": "瓦楞城堡",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 2871897.0,
+                  "attack": 769.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_17_BP_DiyBoss",
+                "name": "玛门",
+                "wave": 1,
+                "count": 1,
+                "level": 70,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 4232772.0,
+                  "attack": 1153.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              },
+              {
+                "id": "mon_48_BP_Diy",
+                "name": "瓦楞城堡",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 3174579.0,
+                  "attack": 1153.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_17_BP_DiyBoss",
+                "name": "玛门",
+                "wave": 1,
+                "count": 1,
+                "level": 80,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 4647936.0,
+                  "attack": 1538.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              },
+              {
+                "id": "mon_48_BP_Diy",
+                "name": "瓦楞城堡",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 3485952.0,
+                  "attack": 1538.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_17_BP_DiyBoss",
+                "name": "玛门",
+                "wave": 1,
+                "count": 1,
+                "level": 90,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 5084484.0,
+                  "attack": 2307.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              },
+              {
+                "id": "mon_48_BP_Diy",
+                "name": "瓦楞城堡",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [],
+                "generic_stagger": true,
+                "stats": {
+                  "hp": 3813363.0,
+                  "attack": 2307.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.2,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [
@@ -4592,25 +7216,137 @@
             "id": "1",
             "name": "简单 积分倍率x1",
             "base_score": 500,
-            "score_rate": 1.0
+            "score_rate": 1.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 47,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 898496.0,
+                  "attack": 724.0,
+                  "defense": 882.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "2",
             "name": "普通 积分倍率x2",
             "base_score": 500,
-            "score_rate": 2.0
+            "score_rate": 2.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 57,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 1791765.0,
+                  "attack": 1086.0,
+                  "defense": 942.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "3",
             "name": "困难 积分倍率x3",
             "base_score": 500,
-            "score_rate": 3.0
+            "score_rate": 3.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 67,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 2699520.0,
+                  "attack": 1449.0,
+                  "defense": 1002.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           },
           {
             "id": "4",
             "name": "极难 积分倍率x5",
             "base_score": 500,
-            "score_rate": 5.0
+            "score_rate": 5.0,
+            "monsters": [
+              {
+                "id": "boss_26_BP_DiyBoss",
+                "name": "讨债人",
+                "wave": 1,
+                "count": 1,
+                "level": 77,
+                "weaknesses": [
+                  "cosmos"
+                ],
+                "generic_stagger": false,
+                "stats": {
+                  "hp": 4498005.0,
+                  "attack": 2173.0,
+                  "defense": 1062.0,
+                  "resistances": {
+                    "normal": 0.2,
+                    "cosmos": 0.16,
+                    "nature": 0.2,
+                    "incantation": 0.2,
+                    "chaos": 0.2,
+                    "psyche": 0.2,
+                    "lakshana": 0.2,
+                    "psychically": 0.2
+                  }
+                }
+              }
+            ]
           }
         ],
         "buff_groups": [

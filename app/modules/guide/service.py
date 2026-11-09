@@ -8,7 +8,7 @@ import re
 from markupsafe import Markup, escape
 from .affinity import with_gift_costs
 from .description_parameters import bind_description_parameters
-from .challenge_calendar import is_released_challenge
+from .challenge_calendar import is_released_challenge, period_sort_key
 from . import reference_view, previews, character_release
 
 KINDS = {'characters': '角色', 'arcs': '弧盘', 'foods': '料理', 'permanent': '常驻加成', 'dungeons': '副本', 'challenges': '轨外之境', 'endless': '全站深境', 'diyboss': '争锋赏宴', 'beginner': '攻略'}
@@ -196,7 +196,9 @@ def search(kind=None, query='', element='', rarity=None, arc_type='', function='
            material='', category=''):
     result = []
     for group in ([kind] if kind else KINDS):
-        records = reversed(public_records(group)) if group == 'challenges' else public_records(group)
+        records = public_records(group)
+        if group in ('challenges', 'endless', 'diyboss'):
+            records = sorted(records, key=lambda record: period_sort_key(record, group), reverse=True)
         for record in records:
             if category and record.get('category') != category:
                 continue

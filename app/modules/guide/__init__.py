@@ -3,7 +3,7 @@ from pathlib import Path
 
 from flask import Blueprint, Response, redirect, jsonify, render_template, request, send_file
 from . import service, cultivation, presentation, arc_cultivation
-from .challenge_calendar import is_current_challenge
+from .challenge_calendar import is_current_challenge, is_current_period
 from .rich_text import description_html
 from .character_release import display_time
 
@@ -12,6 +12,7 @@ blueprint = Blueprint('guide_module', __name__, template_folder='templates',
 blueprint.add_app_template_filter(description_html, 'guide_description_html')
 blueprint.add_app_template_filter(display_time, 'guide_release_time')
 blueprint.add_app_template_filter(is_current_challenge, 'guide_current_challenge')
+blueprint.add_app_template_filter(is_current_period, 'guide_current_period')
 blueprint.add_app_template_filter(presentation.material_display, 'guide_material_display')
 blueprint.add_app_template_filter(presentation.kongmu_entry, 'guide_kongmu_entry')
 blueprint.add_app_template_filter(presentation.overlap_entry, 'guide_overlap_entry')

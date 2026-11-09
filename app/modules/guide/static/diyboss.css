@@ -32,3 +32,7 @@
 .diy-buffs th,.diy-buffs td{padding:12px 8px}
 .diy-buffs strong{font-size:18px}
 }
+
+.guide-diy-card{display:flex;flex-direction:column}
+.guide-diy-card .guide-card-bottom{margin-top:auto;padding-top:20px}
+.guide-diy-card .diy-card-dates{margin-left:auto;text-align:right;font-size:11px}

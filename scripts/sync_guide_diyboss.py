@@ -30,7 +30,7 @@ def rows(path):
     return result
 
 
-def build(stages, options, index):
+def build(stages, options, index, calendar=None):
     result, images = [], {}
     for identifier, row in stages.items():
         enemies = []
@@ -86,9 +86,10 @@ def build(stages, options, index):
                 for d in row['ScoreAwardMap']]})
     if len({s['id'] for s in result}) != len(result):
         raise ValueError('Duplicate stage IDs')
+    metadata = (calendar or {}).get(f'config-{index}', {})
     return {'id': f'config-{index}', 'name': f'争锋赏宴 · 配置{index}',
         'description': '、'.join(s['name'] for s in result), 'begin_at': None, 'end_at': None,
-        'stage_count': len(result), 'stages': result}, images
+        'stage_count': len(result), 'stages': result, **metadata}, images
 
 
 def main():
@@ -98,9 +99,10 @@ def main():
     parser.add_argument('--ntedata-dir', type=Path, help='Local image tree; otherwise fetch configured artwork via gh')
     parser.add_argument('--art-ref', action='append', default=[], help='Additional Git refs for removed historical artwork')
     args = parser.parse_args()
+    calendar = json.loads((MODULE / 'data/diyboss_calendar.json').read_text())
     records, bindings = [], {}
     for index, folder in enumerate(args.snapshot, 1):
-        record, images = build(rows(folder / 'DT_DiyBossStage.json'), rows(folder / 'DT_DiyBossOptions.json'), index)
+        record, images = build(rows(folder / 'DT_DiyBossStage.json'), rows(folder / 'DT_DiyBossOptions.json'), index, calendar)
         records.append(record)
         bindings.update(images)
     output = MODULE / 'static/diyboss'

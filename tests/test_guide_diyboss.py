@@ -22,8 +22,8 @@ class DiyBossTest(unittest.TestCase):
         life = [next(g for g in r['stages'][0]['buff_groups'] if '生命' in g['name']) for r in self.records]
         self.assertNotEqual(life[0]['options'], life[2]['options'])
         for record in self.records:
-            self.assertIsNone(record['begin_at'])
-            self.assertIsNone(record['end_at'])
+            self.assertRegex(record['begin_date'], r'^2026-\d{2}-\d{2}$')
+            self.assertTrue(record['end_at'].endswith('05:59:00+08:00'))
             for stage in record['stages']:
                 self.assertTrue(stage['enemies'])
                 for enemy in stage['enemies']:
@@ -34,6 +34,8 @@ class DiyBossTest(unittest.TestCase):
                 for group in stage['buff_groups']:
                     self.assertEqual(len(group['options']), 3)
                     self.assertTrue(all(isinstance(o['score'], (int, float)) for o in group['options']))
+        self.assertEqual([r['name'] for r in self.records], ['争锋赏宴', '争锋赏宴', '争锋赏宴·攻坚'])
+        self.assertEqual([r['end_date'] for r in self.records], ['2026-07-02', '2026-09-24', '2026-12-17'])
         latest = self.records[-1]
         composite = next(s for s in latest['stages'] if s['id'] == '8')
         self.assertEqual(composite['enemies'][0]['name'], '玛门&瓦楞城堡')
@@ -42,7 +44,11 @@ class DiyBossTest(unittest.TestCase):
 
     def test_public_routes_search_and_single_stage(self):
         self.assertEqual(self.client.get('/api/guide/diyboss').json['total'], 3)
-        self.assertIn('争锋赏宴', self.client.get('/guide?kind=diyboss').text)
+        index = self.client.get('/guide?kind=diyboss').text
+        self.assertIn('2026-06-12 → 2026-07-02', index)
+        self.assertIn('2026-08-13 → 2026-09-24', index)
+        self.assertIn('2026-11-05 → 2026-12-17', index)
+        self.assertNotIn('<code>config-', index)
         for record in self.records:
             page = self.client.get('/guide/diyboss/' + record['id'])
             self.assertEqual(page.status_code, 200)

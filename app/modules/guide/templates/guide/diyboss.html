@@ -3,9 +3,9 @@
 {% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='diyboss.css') }}">{% endblock %}
 {% block guide_back %}<a class="guide-top-back" href="/guide?kind=diyboss">← 争锋赏宴</a>{% endblock %}
 {% block content %}
-<header class="guide-detail-header"><div><p class="guide-eyebrow">争锋赏宴 / {{ record.stage_count }} 个关卡</p><h1>{{ record.name }}</h1><p class="guide-muted">自由选择难度与敌方强化，挑战更高研究积分。</p></div></header>
-<nav class="guide-links diy-configs" aria-label="争锋配置">{% for config in configurations %}<a href="/guide/diyboss/{{ config.id }}" {% if config.id == record.id %}aria-current="page"{% endif %}>{{ config.name }}</a>{% endfor %}</nav>
-<p class="guide-muted">配置序号用于区分阵容，活动期号与开放日期待确认。各关卡保留对应配置的独立词条数值。</p>
+<header class="guide-detail-header"><div><p class="guide-eyebrow">争锋赏宴 / 第 {{ record.season }} 期 / {{ record.stage_count }} 个关卡</p><h1>{{ record.name }}</h1><p class="guide-muted">自由选择难度与敌方强化，挑战更高研究积分。</p></div></header>
+<nav class="guide-links diy-configs" aria-label="争锋配置">{% for config in configurations %}<a href="/guide/diyboss/{{ config.id }}" {% if config.id == record.id %}aria-current="page"{% endif %}>{{ config.name }} · 第{{ config.season }}期</a>{% endfor %}</nav>
+<p class="guide-muted">国服活动时间：{{ record.begin_date }} → {{ record.end_date }}（北京时间）。{{ record.opening_note }}，结束日05:59结束。各关卡保留本期独立词条数值。</p>
 <nav class="diy-stage-nav" aria-label="关卡目录">{% for stage in record.stages %}<a href="#stage-{{ stage.id }}">{{ stage.name }}{% if stage.special %}<small>特殊挑战</small>{% endif %}</a>{% endfor %}</nav>
 {% for stage in record.stages %}
 <section class="diy-stage" id="stage-{{ stage.id }}">

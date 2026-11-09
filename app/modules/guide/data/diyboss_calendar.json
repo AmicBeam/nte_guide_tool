@@ -1,0 +1,29 @@
+{
+  "config-1": {
+    "name": "争锋赏宴",
+    "season": 1,
+    "begin_date": "2026-06-12",
+    "end_date": "2026-07-02",
+    "begin_at": "2026-06-12T10:00:00+08:00",
+    "end_at": "2026-07-02T05:59:00+08:00",
+    "opening_note": "6月12日10:00开放"
+  },
+  "config-2": {
+    "name": "争锋赏宴",
+    "season": 2,
+    "begin_date": "2026-08-13",
+    "end_date": "2026-09-24",
+    "begin_at": null,
+    "end_at": "2026-09-24T05:59:00+08:00",
+    "opening_note": "8月13日版本更新后开放"
+  },
+  "config-3": {
+    "name": "争锋赏宴·攻坚",
+    "season": 3,
+    "begin_date": "2026-11-05",
+    "end_date": "2026-12-17",
+    "begin_at": null,
+    "end_at": "2026-12-17T05:59:00+08:00",
+    "opening_note": "11月5日版本更新后开放"
+  }
+}

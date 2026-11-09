@@ -68,5 +68,4 @@
 .diy-score-summary strong{display:block;margin:5px 0;font-size:32px;color:var(--g-accent)}
 .diy-score-summary p{font-size:12px;line-height:1.6;margin:4px 0 0;color:var(--g-dim)}
 .diy-score-summary button{padding:10px 14px;white-space:nowrap}
-[data-diy-calculator][aria-busy=true] [data-diy-total]{opacity:.5}
 @media(max-width:600px){.diy-score-summary{padding:12px;bottom:8px}.diy-score-summary strong{font-size:27px}.diy-score-summary button{font-size:12px;padding:9px}.diy-stage-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}

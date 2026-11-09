@@ -21,9 +21,6 @@ for (const selector of document.querySelectorAll('[data-diy-selector]')) {
       const requestRevision = ++revision;
       calculator.setAttribute('aria-busy', 'true');
       error.hidden = true;
-      total.textContent = '计算中…';
-      breakdown.hidden = true;
-      if (targetScore) targetScore.textContent = '…';
       const buffs = [...calculator.querySelectorAll('input[type="radio"]:checked')]
         .map(input => input.value).filter(Boolean);
       const targets = [...calculator.querySelectorAll('[data-diy-target]:checked')]
@@ -45,6 +42,8 @@ for (const selector of document.querySelectorAll('[data-diy-selector]')) {
       } catch (failure) {
         if (failure.name === 'AbortError' || requestRevision !== revision) return;
         total.textContent = '暂无法计算';
+        breakdown.hidden = true;
+        if (targetScore) targetScore.textContent = '—';
         error.textContent = failure.message;
         error.hidden = false;
       } finally {

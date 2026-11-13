@@ -97,7 +97,7 @@ LABELS = {
     'exclusive_desc': '专属效果', 'aliases': '别名', 'ability_name': '异能',
     'char_tags': '定位', 'normal': '常规', 'cosmos': '光', 'nature': '灵',
     'incantation': '咒', 'chaos': '暗', 'psyche': '魂', 'lakshana': '相',
-    'psychically': '异能', 'FirstHalf': '上半', 'SecondHalf': '下半',
+    'psychically': '心灵', 'FirstHalf': '上半', 'SecondHalf': '下半',
 }
 
 

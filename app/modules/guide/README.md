@@ -135,6 +135,8 @@ python scripts/refresh_guide_data.py --transport curl
 
 ## 环线怪物展示
 
+轨外之境、全站深境与争锋赏宴共用属性标识模板：六种异能属性在弱点、推荐属性、强化抗性与抗性明细中均显示22px本地图标和名称；常规伤害、泛异能及未知条目保留文字，不生成不存在的图标。图标不替代文字说明，缺失值保持原提示；怪物立绘的尺寸规则仅作用于概览直接子图片，不放大嵌套属性图标。
+
 环线详情顶部显示共鸣名称与完整效果；关卡按编号倒序排列，按半场和波次展示怪物贴图、等级、数量、弱点；仅可吞噬怪物在卡片右上角显示鬼郎丸圆形图标（悬停或无障碍名称为“可被鬼郎丸吞噬”），不显示吞噬性质文字。单体生命值直接显示在怪物概览中，使用千分位数字；攻防、倾陷、抗性与出场条件默认折叠，可逐项展开；未标注的吞噬性质不显示图标，不按体型推断。`data/monster_metadata.json` 按怪物ID绑定本站WebP路径和吞噬性质，不按中文名称推断图片；图片由本模块 `static/monsters/` 持有，网站运行不依赖其他仓库或外部图床。JSON、Markdown与CLI同步提供 `image` 与 `swallowable` 字段。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_challenges tests.test_guide_challenge_schedule tests.test_guide tests.test_module_routes -v`；浏览器检查共鸣、关卡筛选、贴图、吞噬标记、默认折叠与展开，以及窄屏布局。

@@ -1,6 +1,7 @@
+{% from 'guide/element_badges.html' import element_badge, element_list %}
 <section class="guide-endless-rules" aria-label="楼层机制">
-  <p><strong>推荐属性：</strong>{% for element in half.recommended_elements %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>
-  <p><strong>强化抗性：</strong>{% for element in stage.rules.enhanced_resistances %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}无{% endfor %}</p>
+  <p><strong>推荐属性：</strong>{{ element_list(half.recommended_elements) }}</p>
+  <p><strong>强化抗性：</strong>{{ element_list(stage.rules.enhanced_resistances, '无') }}</p>
   <p class="guide-muted">{{ '节点起始层 · ' if stage.rules.node_first }}{{ '关底 · ' if stage.rules.node_last }}备选角色 {{ stage.rules.reserve_character_count }} · 角色栏位 {{ stage.rules.floor_slot_count }}</p>
   {% set selection = stage.rules.buff_selection %}
   {% if selection.enabled %}

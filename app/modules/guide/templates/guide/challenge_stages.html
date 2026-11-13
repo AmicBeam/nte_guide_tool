@@ -1,3 +1,4 @@
+{% from 'guide/element_badges.html' import element_badge, element_list %}
 {% set stage_view = record|guide_stage_selection(request.args.get('stage'), kind) %}
 <div data-challenge-stage-selector data-default-stage="{{ stage_view.selected }}">
 {% set unit = "层" if kind == "endless" else "关" %}
@@ -9,7 +10,7 @@
   <div class="guide-challenge-halves{% if kind == 'endless' %} guide-endless-enemies{% endif %}">
   {% for half in stage.halves %}<section class="guide-challenge-half">
     {% if kind == 'endless' and stage.rules is defined %}{% include 'guide/endless_rules.html' %}{% endif %}
-    {% if kind != 'endless' %}<h4>{{ half.id|guide_label }}</h4><p class="guide-muted">推荐属性：{% for element in half.recommended_elements %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>{% endif %}
+    {% if kind != 'endless' %}<h4>{{ half.id|guide_label }}</h4><p class="guide-muted">推荐属性：{{ element_list(half.recommended_elements) }}</p>{% endif %}
     {% for wave in half.waves %}<section class="guide-challenge-wave">
       <h5>第 {{ wave.wave }} 波</h5>
       <div class="guide-monster-grid">{% for monster in wave.monsters %}<article class="guide-monster-card">
@@ -17,7 +18,7 @@
           {% if monster.image %}<img src="{{ monster.image }}" alt="{{ monster.name }}" width="112" height="112" loading="lazy">{% else %}<span class="guide-monster-placeholder">暂无贴图</span>{% endif %}
           <div><h6 class="guide-monster-name"><span>{{ monster.name }}</span><small class="guide-monster-id">{{ monster.id }}</small></h6><p>Lv.{{ monster.level }} · × {{ monster.count }}{% if monster.is_boss %} · 首领{% endif %}</p>
           <p class="guide-monster-hp">单体生命：<strong>{{ '{:,.0f}'.format(monster.stats.hp) if monster.stats.hp is number else '未提供' }}</strong></p>
-          <p class="guide-monster-weakness">弱点：{% for element in monster.weaknesses %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>{% if kind == 'endless' %}<p>强化抗性：{% for element in monster.enhanced_resistances|default([]) %}{{ element|guide_label }}{{ ' / ' if not loop.last }}{% else %}未提供{% endfor %}</p>{% endif %}</div>
+          <p class="guide-monster-weakness">弱点：{{ element_list(monster.weaknesses) }}</p>{% if kind == 'endless' %}<p>强化抗性：{{ element_list(monster.enhanced_resistances|default([])) }}</p>{% endif %}</div>
         </div>
         {% if monster.swallowable == true %}<img class="guide-swallow-badge" src="{{ url_for('guide_module.static', filename='monsters/swallow-badge.webp') }}" alt="可被鬼郎丸吞噬" title="可被鬼郎丸吞噬" width="36" height="36">{% endif %}
         <details class="guide-monster-details"><summary>{{ monster.name }} · 详细数据</summary>{% include 'guide/monster_stats.html' %}{% if monster.attach|default(none) %}{{ tree(monster.attach) }}{% endif %}</details>

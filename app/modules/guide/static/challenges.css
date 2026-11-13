@@ -14,7 +14,7 @@
 .guide-monster-grid { display:grid; gap:12px; }
 .guide-monster-card { position:relative; border:1px solid #ffffff26; border-radius:12px; padding:14px; background:#ffffff04; min-width:0; }
 .guide-monster-overview { padding-right:36px; display:flex; align-items:center; gap:14px; }
-.guide-monster-overview img { width:112px; height:112px; object-fit:contain; flex-shrink:0; background:#ffffff08; border-radius:10px; }
+.guide-monster-overview>img { width:112px; height:112px; object-fit:contain; flex-shrink:0; background:#ffffff08; border-radius:10px; }
 .guide-monster-overview h6 { font-size:18px; margin:0 0 8px; overflow-wrap:anywhere; }
 .guide-monster-overview p { margin:6px 0; font-size:14px; }
 .guide-monster-weakness { color:#70dec2; }
@@ -24,7 +24,7 @@
 .guide-wave-details { margin-top:8px; }
 .guide-wave-details p { font-size:13px; color:#aab6c6; }
 .guide-monster-placeholder { display:grid; place-items:center; width:112px; height:112px; flex-shrink:0; color:#aab6c6; }
-@media(max-width:760px) { .guide-challenge-halves { grid-template-columns:1fr; gap:0; } .guide-monster-overview img { width:88px; height:88px; } .guide-monster-card { padding:12px; } }
+@media(max-width:760px) { .guide-challenge-halves { grid-template-columns:1fr; gap:0; } .guide-monster-overview>img { width:88px; height:88px; } .guide-monster-card { padding:12px; } }
 
 .guide-monster-hp strong { font-variant-numeric:tabular-nums; color:var(--g-ink); }
 

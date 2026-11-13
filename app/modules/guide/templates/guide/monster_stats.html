@@ -1,3 +1,4 @@
+{% from 'guide/element_badges.html' import element_badge, element_list %}
 <dl class="guide-tree">{% for key, child in monster.stats.items() %}
 <div><dt>{{ key|guide_label }}</dt><dd>
 {% if key == 'resistances' and child is mapping %}
@@ -7,7 +8,7 @@
 <dl class="guide-tree">{% for element, resistance in child.items() %}
 {% set enhanced = resistance is number and element in monster.enhanced_resistances|default([]) %}
 {% set weak = not enhanced and varied and resistance is number and resistance == lowest %}
-<div><dt>{{ element|guide_label }}</dt><dd><span class="guide-text{% if enhanced %} guide-resistance-enhanced{% elif weak %} guide-resistance-weak{% endif %}"{% if enhanced %} title="强化抗性" aria-label="强化抗性 {{ resistance|guide_scalar }}"{% elif weak %} title="弱点抗性" aria-label="弱点抗性 {{ resistance|guide_scalar }}"{% endif %}>{{ resistance|guide_scalar }}</span></dd></div>
+<div><dt>{{ element_badge(element) }}</dt><dd><span class="guide-text{% if enhanced %} guide-resistance-enhanced{% elif weak %} guide-resistance-weak{% endif %}"{% if enhanced %} title="强化抗性" aria-label="强化抗性 {{ resistance|guide_scalar }}"{% elif weak %} title="弱点抗性" aria-label="弱点抗性 {{ resistance|guide_scalar }}"{% endif %}>{{ resistance|guide_scalar }}</span></dd></div>
 {% endfor %}</dl>
 {% else %}{{ tree(child) }}{% endif %}
 </dd></div>

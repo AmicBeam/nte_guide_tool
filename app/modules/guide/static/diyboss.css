@@ -42,7 +42,6 @@
 .diy-monsters{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px;margin:20px 0 28px}
 .diy-monster{padding:18px 20px;border:1px solid var(--g-line);border-radius:12px;background:#ffffff04}
 .diy-monster h3{margin:0 0 10px}.diy-monster p{font-size:14px;line-height:1.8}.diy-hp strong{font-size:23px;color:var(--g-accent);margin-left:10px}
-.diy-weakness{display:inline-flex;align-items:center;gap:4px;margin-right:10px;vertical-align:middle}
 .diy-monster summary{font-size:12px;cursor:pointer;color:var(--g-dim)}
 .diy-resistances{display:flex;flex-wrap:wrap;gap:10px 18px;font-size:12px}.diy-resistances>div{display:flex;gap:6px}.diy-resistances dd{margin:0}
 

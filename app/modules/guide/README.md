@@ -47,7 +47,7 @@ python scripts/refresh_guide_data.py
 python scripts/refresh_guide_data.py --transport curl
 ```
 
-刷新使用 Nanoka 完整条目及 NTEData 技能参数/伤害表；默认通过已登录的 `gh` 只读获取技能与等级经验表，也可传 `--ntedata-dir /path/to/tables` 使用本地 `DT_GameplayAbilityTipsData.json`、`DT_SkillDamageData.json` 与 `DT_CharacterUpgradeDataTable.json`。所有联网仅发生在显式刷新阶段。
+现有刷新脚本从聚合接口读取条目结构，再从 NTEData 读取技能参数与伤害等原始配置；聚合快照不能作为已核实最新数据的依据，更新字段须按最新 NTEData 的实际引用逐项核对；默认通过已登录的 `gh` 只读获取技能与等级经验表，也可传 `--ntedata-dir /path/to/tables` 使用本地 `DT_GameplayAbilityTipsData.json`、`DT_SkillDamageData.json` 与 `DT_CharacterUpgradeDataTable.json`。所有联网仅发生在显式刷新阶段。
 
 仅更新轨外之境可执行 `python scripts/refresh_guide_data.py --challenges-only --transport curl`，保留角色、弧盘与其他目录字段；全部环线校验成功后原子替换，缺少既有赛期时拒绝更新。赛期日历只调整日期，不覆盖环线名称。常规刷新和仅环线刷新均按赛期表的 `BuffID` 读取当前共鸣名称与正文，避免远端详情尚未更新时覆盖新效果；`--ntedata-dir` 支持完整目录或扁平目录下的 `AbyssCloneSeasonDataTable.json` 与 `DT_AbyssCloneBuffConfig.json`，缺少关联或正文时中止刷新并保留旧快照。怪物数值同时按关卡表→半场／波次怪物池→独立属性包读取当前生命、攻击、防御、倾陷及抗性，拒绝缺失引用、阵容／等级不匹配和未支持的成长修正；本地表还需 `AbyssCloneLevelDataTable.json`、`DT_AbyssMonsterPool.json` 与 `DT_MonsterPackData.json`。霜寒终点站玛门、墨菲克斯单只生命均为4,930,440，第11站囿巢鸟、桀桀熊均为4,564,128。
 

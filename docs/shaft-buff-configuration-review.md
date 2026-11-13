@@ -1,4 +1,4 @@
-# Shaft Buff Nanoka 校对验收清单
+# Shaft Buff 配置验收清单
 
 明音凛普攻a1–a4回能为2.488/3.84/6.356/4.016，合计16.7；短E回能4.2、倾陷0.7，长E两段回能合计5.7。下落首段命中获得1弦能，0命中不获得。逐段打断按各段实际回能累计，其他倍率、环合、耗时与觉醒配置保持当前定义。
 
@@ -11,17 +11,9 @@
 验证：`python3 -m unittest tests.test_shaft_resonance`、完整排轴回归，以及配装页手动开关、A–F联动和刷新检查。
 
 
-本文以网页角色数据与 Nanoka 1.2 数据为 Buff 配置验收口径。具体数值、持续时间、层数和触发条件以网页文本复核结果为准；实现状态以当前浏览器计算引擎 `app/modules/shaft/static/js/shaft_engine.js`、配置 `app/modules/shaft/static/data/buffs.json`、动作数据 `app/modules/shaft/static/data/actions.json` 为真值。仅出现在说明文档或 `awakenings.json` 中不算已实现。
+本文的数值、持续时间、层数和触发条件按最新 NTEData 原始配置及用户最新明确口径核实；实现状态以当前浏览器计算引擎 `app/modules/shaft/static/js/shaft_engine.js`、配置 `app/modules/shaft/static/data/buffs.json`、动作数据 `app/modules/shaft/static/data/actions.json` 为真值。仅出现在说明文档或 `awakenings.json` 中不算已实现。
 
-校对来源：
-
-- `https://everness.info/character`
-- `https://nte.nanoka.cc/`
-- `https://static.nanoka.cc/manifest.json`
-- `https://static.nanoka.cc/nte/1.2/zh/weapon/{id}.json`
-- `https://static.nanoka.cc/nte/1.3.9/zh/weapon/fork_GoldRecord.json`
-- `https://static.nanoka.cc/nte/1.2/zh/console.json`
-- `https://static.nanoka.cc/nte/1.2/zh/character/{id}.json`
+既有条目中的历史校对记录不作为本次更新的核实依据；配置缺失时保留未知，不用旧聚合快照补齐。
 
 说明：
 

@@ -94,22 +94,70 @@ def enrich_challenge_resonances(challenges, seasons, buffs):
     return challenges
 
 
+def load_challenge_table(relative, directory=None):
+    relative = Path(relative)
+    if directory is not None:
+        path = directory / relative
+        if not path.exists():
+            path = directory / relative.name
+        payload = json.loads(path.read_text(encoding='utf-8'))
+    else:
+        payload = json.loads(subprocess.run(['gh', 'api',
+            'repos/mc-ctrl/NTEData/contents/' + relative.as_posix(),
+            '-H', 'Accept: application/vnd.github.raw+json'],
+            check=True, capture_output=True).stdout)
+    return table_rows(payload)
+
+
 def load_challenge_resonances(challenges, directory=None):
-    def load(filename):
-        relative = Path('DataAssets/DataAssetSet/Abyss') / filename
-        if directory is not None:
-            path = directory / relative
-            if not path.exists():
-                path = directory / filename
-            payload = json.loads(path.read_text(encoding='utf-8'))
-        else:
-            payload = json.loads(subprocess.run(['gh', 'api',
-                'repos/mc-ctrl/NTEData/contents/' + relative.as_posix(),
-                '-H', 'Accept: application/vnd.github.raw+json'],
-                check=True, capture_output=True).stdout)
-        return table_rows(payload)
-    return enrich_challenge_resonances(challenges, load('AbyssCloneSeasonDataTable.json'),
-                                       load('DT_AbyssCloneBuffConfig.json'))
+    root = 'DataAssets/DataAssetSet/Abyss/'
+    return enrich_challenge_resonances(challenges,
+        load_challenge_table(root + 'AbyssCloneSeasonDataTable.json', directory),
+        load_challenge_table(root + 'DT_AbyssCloneBuffConfig.json', directory))
+
+
+def enrich_challenge_monsters(challenges, levels, pools, packs):
+    """Use exact season/stage/half/wave pool bindings and fixed attribute packs."""
+    updates = []
+    for record in challenges:
+        configured = {row['LevelID']: row for row in levels[record['id']]['LevelConfigArray']}
+        for stage in record['stages']:
+            halves = {row['Key'].split('::')[-1]: row['Value']['CloneSpawnMonsterConfigArray']
+                      for row in configured[stage['id']]['SpawnMonsterConfigMap']}
+            for half in stage['halves']:
+                waves = {row['Wave']: row for row in halves[half['id']]}
+                for wave in half['waves']:
+                    pool_id = waves[wave['wave']]['MonsterPoolID']
+                    entries = pools[pool_id]['MonsterPoolArray']
+                    if len(entries) != len(wave['monsters']):
+                        raise ValueError(f'Changed monster lineup: {pool_id}')
+                    for monster, entry in zip(wave['monsters'], entries):
+                        class_id = entry['MonsterClass']['AssetPathName'].rsplit('.', 1)[-1].removesuffix('_C')
+                        if (monster['class_id'].casefold() != class_id.casefold()
+                                or monster['count'] != entry['MonsterCount']
+                                or monster['level'] != entry['MonsterLevel']):
+                            raise ValueError(f'Changed monster binding: {pool_id}')
+                        pack = packs[entry['AttributeID']]
+                        for prefix in ('HPMax', 'Atk', 'Def'):
+                            if pack[prefix + 'Up'] or pack[prefix + 'Add']:
+                                raise ValueError(f'Unsupported monster growth: {entry["AttributeID"]}')
+                        stats = dict(monster['stats'])
+                        for target, source in [('hp', 'HPMaxBase'), ('attack', 'AtkBase'),
+                                               ('defense', 'DefBase'), ('unbalance', 'UnbalMax')]:
+                            stats[target] = pack[source]
+                        stats['resistances'] = {element: pack['DamageResist' + element.title() + 'Base']
+                                                for element in stats['resistances']}
+                        updates.append((monster, stats))
+    for monster, stats in updates:
+        monster['stats'] = stats
+    return challenges
+
+
+def load_challenge_monsters(challenges, directory=None):
+    return enrich_challenge_monsters(challenges,
+        load_challenge_table('DataAssets/DataAssetSet/Abyss/AbyssCloneLevelDataTable.json', directory),
+        load_challenge_table('DataAssets/DataAssetSet/Abyss/DT_AbyssMonsterPool.json', directory),
+        load_challenge_table('DataTable/PackData/DT_MonsterPackData.json', directory))
 
 
 def build(version, fetcher=fetch):
@@ -251,6 +299,7 @@ def main():
         data = json.loads(args.output.read_text(encoding='utf-8'))
         challenges = build_challenges(args.version, fetch_curl if args.transport == 'curl' else fetch)
         load_challenge_resonances(challenges, args.ntedata_dir)
+        load_challenge_monsters(challenges, args.ntedata_dir)
         if not {row['id'] for row in data['challenges']} <= {row['id'] for row in challenges}:
             raise ValueError('Challenge refresh would remove existing seasons')
         data['challenges'] = challenges
@@ -262,6 +311,7 @@ def main():
     tables = load_tables(args.ntedata_dir)
     data = enrich_catalog(build(args.version, fetch_curl if args.transport == 'curl' else fetch), tables)
     load_challenge_resonances(data['challenges'], args.ntedata_dir)
+    load_challenge_monsters(data['challenges'], args.ntedata_dir)
     data['character_experience'] = load_character_experience(args.ntedata_dir)
     data['cultivation'] = load_cultivation_data(args.ntedata_dir)
     enrich_cooldowns(data, CooldownData(args.ntedata_dir))

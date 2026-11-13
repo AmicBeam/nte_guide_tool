@@ -1,10 +1,30 @@
 """Challenge refresh validates complete seasons before replacing the catalog."""
 import copy
 import unittest
-from scripts.refresh_guide_data import build_challenges, enrich_challenge_resonances
+from scripts.refresh_guide_data import build_challenges, enrich_challenge_resonances, enrich_challenge_monsters
 
 
 class ChallengeRefreshTest(unittest.TestCase):
+    def test_monster_stats_follow_explicit_pool_and_attribute_binding(self):
+        monster = {'class_id': 'Boss_BP', 'level': 90, 'count': 1,
+                   'stats': {'hp': 4605680, 'resistances': {'cosmos': 0.3}}}
+        records = [{'id': 'season', 'stages': [{'id': 12, 'halves': [
+            {'id': 'FirstHalf', 'waves': [{'wave': 1, 'monsters': [monster]}]}]}]}]
+        levels = {'season': {'LevelConfigArray': [{'LevelID': 12, 'SpawnMonsterConfigMap': [
+            {'Key': 'EAbyssFightStage::FirstHalf', 'Value': {'CloneSpawnMonsterConfigArray': [
+                {'Wave': 1, 'MonsterPoolID': 'explicit_pool'}]}}]}]}}
+        pools = {'explicit_pool': {'MonsterPoolArray': [{'MonsterClass': {'AssetPathName': '/Game/Boss.Boss_BP_C'},
+            'MonsterCount': 1, 'MonsterLevel': 90, 'AttributeID': 'explicit_pack'}]}}
+        pack = {'HPMaxBase': 4930440, 'AtkBase': 2726, 'DefBase': 1080, 'UnbalMax': 50,
+                'DamageResistCosmosBase': 0.1}
+        pack.update({prefix + suffix: 0 for prefix in ('HPMax', 'Atk', 'Def') for suffix in ('Up', 'Add')})
+        enrich_challenge_monsters(records, levels, pools, {'explicit_pack': pack})
+        self.assertEqual(monster['stats']['hp'], 4930440)
+        self.assertEqual(monster['stats']['resistances']['cosmos'], 0.1)
+        pack['HPMaxUp'] = 0.1
+        with self.assertRaises(ValueError):
+            enrich_challenge_monsters(records, levels, pools, {'explicit_pack': pack})
+
     def test_resonance_uses_season_binding_and_keeps_unknown_dates(self):
         records = [{'id': 'Abyss_15', 'begin_date': None},
                    {'id': 'Abyss_16', 'begin_date': None}]

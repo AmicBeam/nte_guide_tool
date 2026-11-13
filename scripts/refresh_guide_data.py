@@ -77,6 +77,41 @@ def build_challenges(version='latest', fetcher=fetch):
         return apply_challenge_schedule(list(executor.map(load, seasons)))
 
 
+def enrich_challenge_resonances(challenges, seasons, buffs):
+    """Resolve each season's explicit buff binding against the current tables."""
+    updates = []
+    for record in challenges:
+        season = seasons[record['id']]
+        identifier = season['BuffID']
+        buff = buffs[identifier]
+        name = clean(buff['BuffName']['LocalizedString'])
+        description = clean(buff['BuffDesc']['LocalizedString'])
+        if not name or not description:
+            raise ValueError(f'Missing challenge resonance: {record["id"]}')
+        updates.append((record, {'id': identifier, 'name': name, 'description': description}))
+    for record, resonance in updates:
+        record['resonance'] = resonance
+    return challenges
+
+
+def load_challenge_resonances(challenges, directory=None):
+    def load(filename):
+        relative = Path('DataAssets/DataAssetSet/Abyss') / filename
+        if directory is not None:
+            path = directory / relative
+            if not path.exists():
+                path = directory / filename
+            payload = json.loads(path.read_text(encoding='utf-8'))
+        else:
+            payload = json.loads(subprocess.run(['gh', 'api',
+                'repos/mc-ctrl/NTEData/contents/' + relative.as_posix(),
+                '-H', 'Accept: application/vnd.github.raw+json'],
+                check=True, capture_output=True).stdout)
+        return table_rows(payload)
+    return enrich_challenge_resonances(challenges, load('AbyssCloneSeasonDataTable.json'),
+                                       load('DT_AbyssCloneBuffConfig.json'))
+
+
 def build(version, fetcher=fetch):
     if version == 'latest':
         version = fetcher(f'{BASE}/manifest.json')['nte']['latest']
@@ -215,6 +250,7 @@ def main():
     if args.challenges_only:
         data = json.loads(args.output.read_text(encoding='utf-8'))
         challenges = build_challenges(args.version, fetch_curl if args.transport == 'curl' else fetch)
+        load_challenge_resonances(challenges, args.ntedata_dir)
         if not {row['id'] for row in data['challenges']} <= {row['id'] for row in challenges}:
             raise ValueError('Challenge refresh would remove existing seasons')
         data['challenges'] = challenges
@@ -225,6 +261,7 @@ def main():
         return
     tables = load_tables(args.ntedata_dir)
     data = enrich_catalog(build(args.version, fetch_curl if args.transport == 'curl' else fetch), tables)
+    load_challenge_resonances(data['challenges'], args.ntedata_dir)
     data['character_experience'] = load_character_experience(args.ntedata_dir)
     data['cultivation'] = load_cultivation_data(args.ntedata_dir)
     enrich_cooldowns(data, CooldownData(args.ntedata_dir))

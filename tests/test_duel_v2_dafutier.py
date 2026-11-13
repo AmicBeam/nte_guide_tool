@@ -301,7 +301,7 @@ class DafutierTest(unittest.TestCase):
 
     def test_eye_counts_current_entry_support_and_caps_bonus_at_two(self):
         for previous, attack, meter in ((0, 4, 2), (2, 5, 3)):
-            s = game(); s['sides']['a']['front'] = 'canhong'; s['sides']['b']['front'] = 'zero'
+            s = game(); s['sides']['a'].update(front='canhong',last_front='canhong',last_actor_entity_id=hero(s,'a','canhong').entity_id); hero(s,'a','canhong')['harmony']=3; s['sides']['b']['front'] = 'zero'
             s['sides']['a'].update(support_turn=s['turn'], support_count=previous)
             s = play(s, 'F01')
             hit = next(e for e in reversed(s['events']) if e['type'] == 'attack')
@@ -330,7 +330,7 @@ class DafutierTest(unittest.TestCase):
         s = play(game(), 'F02')
         hero(s, 'a', 'dafutier')['energy'] = 6
         s = apply_action(s, 'a', dict(type='ultimate', character_id='dafutier'))
-        s['sides']['a']['front'] = 'canhong'; s['sides']['b']['front'] = 'zero'
+        s['sides']['a'].update(front='canhong',last_front='canhong',last_actor_entity_id=hero(s,'a','canhong').entity_id); hero(s,'a','canhong')['harmony']=3; s['sides']['b']['front'] = 'zero'
         hero(s, 'b', 'zero')['hp'] = 1
         s = play(s, 'F01')
         self.assertEqual(s['sides']['b']['hp'], 98)

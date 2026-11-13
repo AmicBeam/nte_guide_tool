@@ -80,7 +80,8 @@ class Zero:
             return
         if c.character['hp'] <= 0:
             return
-        c.grant_harmony(c.cid, 2, reason='零打出战斗牌，触发异能')
+        from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
+        c.grant_harmony(c.cid, harmony_cap(c.state), reason='零打出战斗牌，触发异能')
 
     weapon_hooks = {
         'Z08': {'on_turn_end': _weapon_attack},

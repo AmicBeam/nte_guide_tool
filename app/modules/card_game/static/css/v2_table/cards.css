@@ -21,8 +21,8 @@
 }
 
 .v2-character-card.harmony-source {
-  border-color: rgba(232, 201, 136, 0.95);
-  box-shadow: 0 0 0 calc(1px * var(--table-layout-scale, 1)) rgba(232, 201, 136, 0.42), 0 0 calc(14px * var(--table-layout-scale, 1)) rgba(232, 201, 136, 0.22);
+  outline: calc(2px * var(--table-layout-scale, 1)) dashed #59b9ff;
+  outline-offset: calc(4px * var(--table-layout-scale, 1));
 }
 
 .v2-character-card.harmony-ready {

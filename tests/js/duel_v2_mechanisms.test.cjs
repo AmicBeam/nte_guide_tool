@@ -108,16 +108,17 @@ test('quoted divination on Heiyu cards resolves without broad unquoted matching'
   const heiyu=clone(raw.characters.find(c=>c.id==='heiyu'));
   heiyu.mechanisms.forEach(m=>Object.assign(m,{type:'mechanism',character_id:heiyu.id}));
   const owned=raw.cards.filter(c=>c.character_id==='heiyu');
-  const omen=owned.find(c=>c.id==='PF01');
+  const example=owned.find(c=>c.id==='P05');
+  assert.ok(!owned.some(c=>c.id==='PF01'));
   const api=await load({characters:[heiyu],cards:owned});
-  for (const id of ['PF01','P05','P06','P08']) {
+  for (const id of ['P05','P06','P08']) {
     const card=owned.find(c=>c.id===id);
     assert.deepEqual(clone(api.referencedCards(card)).map(c=>c.id),['mechanism-divination']);
   }
   assert.deepEqual(clone(api.referencedCards(owned.find(c=>c.id==='P03'))),[]);
-  assert.deepEqual(clone(api.referencedCards({...omen,description:'占卜，然后抽牌。'})),[]);
-  assert.deepEqual(clone(api.referencedCards(omen)).map(c=>c.id),['mechanism-divination']);
-  assert.deepEqual(clone(api.referencedCards({...omen,description:'占卜，然后「占卜」。占卜效果。'})).map(c=>c.id),['mechanism-divination']);
+  assert.deepEqual(clone(api.referencedCards({...example,description:'占卜，然后抽牌。'})),[]);
+  assert.deepEqual(clone(api.referencedCards(example)).map(c=>c.id),['mechanism-divination']);
+  assert.deepEqual(clone(api.referencedCards({...example,description:'占卜，然后「占卜」。占卜效果。'})).map(c=>c.id),['mechanism-divination']);
   const own=heiyu.mechanisms.find(m=>m.id==='mechanism-divination');
   assert.ok(!api.referencedCards(own).some(c=>c.id===own.id));
 });

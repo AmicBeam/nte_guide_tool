@@ -87,7 +87,8 @@ def deal_combat_followup(c, extra=0):
     amount = extra
     reasons = []
     if c.character.get('awakened'):
-        amount += 1
+        from app.modules.card_game.content.duel_v2.registry import decide
+        amount += int(decide(c, 'combat_followup_ultimate', 1, actor_only=True) or 0)
         reasons.append('终结')
     pending = int(c.character.get('flags', {}).pop('next_followup', 0) or 0)
     amount += pending

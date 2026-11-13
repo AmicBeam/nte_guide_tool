@@ -15,8 +15,8 @@ class CollapseHarmonyTest(unittest.TestCase):
         s = new_game(seed=9, first_side='a', skip_mulligan=True, escalation=False)
         for team in s['sides'].values():
             team.update(hand=[], ap=10)
-        s['sides']['a']['front'] = 'nanali'
-        hero(s, 'a', 'nanali')['harmony'] = 2
+        s['sides']['a'].update(front='nanali', last_front='nanali')
+        hero(s, 'a', 'nanali')['harmony'] = 3
         return s
 
     def test_front_and_benched_source_block_preview_projection_and_payment(self):
@@ -40,18 +40,19 @@ class CollapseHarmonyTest(unittest.TestCase):
                 after = apply_action(s, 'a', action)
                 events = [e for e in after['events'] if e['seq'] > seq]
                 self.assertFalse(any(e['type'] == 'harmony' for e in events))
-                self.assertEqual(hero(after, 'a', 'nanali')['harmony'], 2)
+                self.assertEqual(hero(after, 'a', 'nanali')['harmony'], 3)
                 self.assertFalse(after['sides']['a']['harmonized'].get('zero'))
                 self.assertEqual(replay_public_board(opening, events), capture_public_board(after))
 
     def test_collapsed_departure_cannot_create_residue_after_expiry(self):
         s = self.game()
+        s['sides']['a']['last_front'] = None
         force_collapse(s, 'a', 'nanali', by='b')
         move_out(s, 'a', 'nanali')
         self.assertIsNone(s['sides']['a']['last_front'])
         hero(s, 'a', 'nanali')['flags'].pop('collapse')
         self.assertFalse(harmony_marks(s, 'a')['available'])
-        self.assertEqual(hero(s, 'a', 'nanali')['harmony'], 2)
+        self.assertEqual(hero(s, 'a', 'nanali')['harmony'], 3)
 
     def test_natural_expiry_reenables_unchanged_source(self):
         for benched in (False, True):

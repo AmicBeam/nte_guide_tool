@@ -137,6 +137,11 @@ class Xiaozhi:
             change_jingu(c, 1, '小吱对对方玩家造成伤害，触发异能')
 
     @staticmethod
+    def on_surplus_energy(c, amount=0, **_data):
+        if amount > 0:
+            change_jingu(c, 1, '【盈蓄】回能，小吱触发异能')
+
+    @staticmethod
     def on_ultimate(c):
         # Refreshing a live ultimate settles its old loan before lending again.
         if c.character.get('jingu_loan'):

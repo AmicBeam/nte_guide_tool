@@ -1,9 +1,9 @@
-"""黑羽：用户指定的谕石、占卜与救世魔女桌游规则。"""
+"""黑羽：环合占卜与救世魔女桌游规则。"""
 from copy import deepcopy
 from random import Random
 
 from app.modules.card_game.content.duel_v2 import CARDS
-from app.modules.card_game.content.duel_v2.characters.common import revive_character, set_shape, generated_card
+from app.modules.card_game.content.duel_v2.characters.common import revive_character, set_shape
 from app.modules.card_game.content.duel_v2.registry import register, choice_continuation
 from app.modules.card_game.engine.duel_v2.deferred import enqueue
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
@@ -28,14 +28,6 @@ def _rng(state):
     rng = Random(state['rng'])
     state['rng'] = rng.getrandbits(63)
     return rng
-
-
-def insert_omen(c):
-    if in_witch(c) or not alive(c.state, c.side, c.cid) or finished(c.state):
-        return
-    deck = c.state['sides'][c.side]['deck']
-    deck.insert(_rng(c.state).randrange(len(deck) + 1), generated_card(c, 'PF01'))
-    c.history('异能：将 1 张「谕石」随机插入己方牌库。')
 
 
 def _detach(c, card):
@@ -224,10 +216,6 @@ def _p06(c):
     start_inspection(c)
 
 
-def _pf01(c):
-    start_inspection(c, after='draw', min_bottom=1)
-
-
 def _penetrate(c, current=0, attacker_id=None, raw_overflow=0, **_data):
     return int(raw_overflow or 0) if attacker_id == c.cid else None
 
@@ -237,18 +225,20 @@ class Heiyu:
     id = 'heiyu'
     text_name = '黑羽'
     effects = {'P01': _p01, 'P02': _p02, 'P03': _p03, 'P04': _p04,
-               'P05': _p05, 'P06': _p06, 'P07': set_shape, 'P08': set_shape, 'PF01': _pf01}
+               'P05': _p05, 'P06': _p06, 'P07': set_shape, 'P08': set_shape}
     target_policies = {'P02': 'living_enemy_esper', 'P06': 'downed_ally'}
     weapon_hooks = {'P07': {'combat_overflow': _penetrate}}
 
     @staticmethod
-    def on_turn_begin(c):
-        insert_omen(c)
+    def on_harmony_applied(c, kind=None, **_data):
+        if kind in ('浸染', '黯星'):
+            enqueue(c, 'heiyu_harmony_divination')
 
     @staticmethod
     def after_card(c, *, actor_id, card):
         if not in_witch(c) and actor_id == c.cid and card and card.get('type') == 'battle':
-            c.grant_harmony(c.cid, 2, reason='黑羽使用战斗牌，触发异能')
+            from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
+            c.grant_harmony(c.cid, harmony_cap(c.state), reason='黑羽使用战斗牌，触发异能')
 
     @staticmethod
     def stain_duration(c, current=1, **_data):
@@ -275,16 +265,10 @@ class Heiyu:
         return '退出救世魔女'
 
     @staticmethod
-    def on_sortie_ready(c, actor_id=None, response=False, **_data):
-        if response or actor_id != c.cid or not alive(c.state, c.side, c.cid):
-            return
-        if not in_witch(c):
-            insert_omen(c)
-            return
-        start_inspection(c)
-
-    @staticmethod
     def on_deferred_action(c, action):
+        if action.get('kind') == 'heiyu_harmony_divination':
+            start_inspection(c)
+            return
         if action.get('kind') == 'heiyu_release_after_attack' and alive(c.state, c.side, c.cid):
             _release(c, action['card'], preserve_parent=False)
 
@@ -302,7 +286,7 @@ class Heiyu:
         if current.get('kind') != 'heiyu_divination':
             return current
         return dict(current, multi_bottom=True, max_bottom=len(current['cards']),
-                    min_bottom=1 if (c.card or {}).get('card_id') == 'PF01' else 0,
+                    min_bottom=0,
                     execute_divination=True)
 
     @staticmethod

@@ -1,5 +1,10 @@
 # 异能对决模块
 
+当前环合规则为上限 3、实际行动力消耗等量的可改写基础获值、最近用牌／普通出击来源与外扩蓝色虚线；旧退下继承已移除。创生保存各层独立持续时间与每回合计次，并同步到公开投影和回放；角色效果及例外统一见[现行手册](../../../docs/everness-item-chain-card-design.md#当前环合与异能规则)。旧冻结高级模型不因规则变更自动重绑，仍须通过现行规则身份校验；本轮未训练或部署。训练专用复制规则不视为已适配本轮新机制。
+
+本轮回归入口：`.venv/bin/python -m unittest tests.test_duel_v2_harmony_rework tests.test_duel_v2_catalog tests.test_duel_v2_tutorial tests.test_duel_v2_engine tests.test_duel_v2_zone_status tests.test_duel_v2_harmony_lifetime tests.test_duel_v2_escalation tests.test_duel_v2_presentation`。
+
+
 异能对决是仓库内的网页卡牌桌游，页面入口为 `/card-game`。登录后可构筑、查阅图鉴、进入单战场牌桌，并查看公开回放。默认主页、构筑、图鉴和牌桌使用四人轮替 V2；旧盖卡页面通过 `?legacy=1` 访问。
 
 NumPy／PyTorch 的 Mctx 算法适配可显式选择 `q_scale=mctx_default`，与历史 `natural_wdl` 做独立对照；网站与既有训练默认保持原配置。官方 JAX 仅作隔离数值 oracle，不进入 Windows CUDA 或网站运行。准备及验证入口：`python scripts/prepare_duel_v2_mctx.py`，实际 CUDA 组件核对使用 `--verify-cuda --output NEW_DIR`，细则见[Q 配置对照准备](../../../docs/duel-v2-public-training.md#numpy--cuda-的-mctx-q-配置对照准备)。验证：`python -m unittest tests.test_duel_v2_mctx_profiles`。

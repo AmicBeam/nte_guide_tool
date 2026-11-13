@@ -48,7 +48,8 @@ class TutorialProtagonist:
             return
         if c.character['hp'] <= 0:
             return
-        c.character['harmony'] = 2
+        from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
+        c.character['harmony'] = harmony_cap(c.state)
 
 
 @register

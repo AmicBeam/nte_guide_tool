@@ -55,12 +55,24 @@ class Bohe:
     def combat_overflow(c, current=0, attacker_entity_id=None, defender_entity_id=None, raw_overflow=0, **_data):
         raw = int(raw_overflow or 0)
         if attacker_entity_id == c.entity_id:
+            if raw > 0:
+                from app.modules.card_game.engine.duel_v2.genesis import refresh_layers
+                refresh_layers(c.state, c.side)
             return raw
         flags = c.character.setdefault('flags', {})
         if defender_entity_id == c.entity_id and flags.get('share_overflow'):
             flags.pop('share_overflow', None)
             return raw
         return None
+
+    @staticmethod
+    def genesis_targets(c, current=None, **_data):
+        from app.modules.card_game.engine.duel_v2.state import other, hero, team_order, shuffle
+        side = other(c.side)
+        candidates = [cid for cid in team_order(c.state, side) if alive(c.state, side, cid)]
+        candidates.append('player')
+        shuffle(c.state, candidates)
+        return [(side, candidates[0])]
 
     @staticmethod
     def noncombat_damage_immune(c, current=False, **_data):

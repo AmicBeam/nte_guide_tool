@@ -34,7 +34,17 @@ class Haiyue:
 
     @staticmethod
     def sortie_from_bench(c, current=False):
-        return bool(c.character.get('awakened') and c.state['sides'][c.side]['front'] != c.cid)
+        return bool(c.state['sides'][c.side].get('star_trigger_turn') == c.state['turn'])
+
+    @staticmethod
+    def on_harmony_applied(c, kind=None, **_data):
+        if kind == '黯星':
+            c.state['sides'][c.side]['star_trigger_turn'] = c.state['turn']
+
+    @staticmethod
+    def before_hits(c, **_data):
+        if c.character.get('awakened') and c.operation.get('remote_sortie'):
+            c.operation['sortie_attack_bonus'] = int(c.operation.get('sortie_attack_bonus') or 0) + 2
 
     @staticmethod
     def after_sortie(c):

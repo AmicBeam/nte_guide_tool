@@ -94,6 +94,7 @@ def capture_public_board(state):
         team['life_locked'] = bool(source.get('life_locked'))
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
+        team['genesis_layers'] = deepcopy(source.get('genesis_layers', []))
         team['insight_damage'] = 2 + int(source.get('insight_bonus', 0))
         team['insight_played'] = int(source.get('insight_played', 0))
         team['support_count'] = int(source.get('support_count', 0)) if source.get('support_turn') == state['turn'] else 0

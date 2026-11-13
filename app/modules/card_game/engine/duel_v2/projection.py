@@ -189,9 +189,9 @@ def preview(state, side, action):
     projected = apply_owned_action(sandbox, side, action)
     events = [e for e in projected['events'] if e['seq'] > before]
     attacks = [e for e in events if e['type'] == 'attack']
-    harmony = next((e for e in events if e['type'] == 'harmony'), None)
+    harmony = next((e for e in events if e['type'] == 'harmony' and e.get('harmony_kind')), None)
     previous = state['sides'][side]['front']
-    payer = previous or state['sides'][side].get('last_front')
+    payer = state['sides'][side].get('last_front')
     enters = any(e['type'] == 'enter' and e.get('actor') == f'{side}:{cid}' for e in events)
     value.update(will_switch=enters and previous != cid, harmony=harmony['text'] if harmony else '不触发',
                  入场=hero(state, side, cid)['name'] if enters else '不入场',
@@ -250,6 +250,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         team['max_hp'] = source.get('max_hp', 30)
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
+        team['genesis_layers'] = deepcopy(source.get('genesis_layers', []))
         team['insight_damage'] = 2 + int(source.get('insight_bonus', 0))
         team['insight_played'] = int(source.get('insight_played', 0))
         team['support_count'] = int(source.get('support_count', 0)) if source.get('support_turn') == state['turn'] else 0

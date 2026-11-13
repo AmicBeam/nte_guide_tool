@@ -55,8 +55,12 @@ class Zhenhong:
                'RF01': _battle}
 
     @staticmethod
-    def on_game_start(c):
-        c.grant_harmony(c.cid, 1, reason='开局异能')
+    def before_attack_damage(c, attacker_id=None, **_data):
+        if attacker_id != c.cid or c.character.get('first_attack_rewarded'):
+            return
+        c.character['first_attack_rewarded'] = True
+        c.operation['first_bonus'] = int(c.operation.get('first_bonus') or 0) + 2
+        c.grant_harmony(c.cid, 2, reason='本局真红首次攻击')
 
     @staticmethod
     def on_surplus(c, **_data):
@@ -73,7 +77,7 @@ class Zhenhong:
         add_effect(c.character, 'zhenhong.surplus_damage_limit', 'damage.limit', 1, op='set',
                    source_entity_id=c.entity_id, source_key='passive', label='真红伤害限制', show_marker=False,
                    stacking='refresh', expiry=deadline(c.state, c.side, 1, 'turn_start'))
-        c.history('己方触发盈蓄，真红触发「独行」：直到下个己方回合开始时攻击 +1，单次至多受到 1 点伤害，将发起额外攻击。')
+        c.history('己方触发盈蓄，真红触发「独行」：直到下个己方回合开始时攻击 +1，单次至多受到 1 点伤害，将额外造成 2 点伤害。')
         c.heal(c.character['max_hp'], reason='「独行」触发')
         if finished(c.state):
             return
@@ -90,10 +94,9 @@ class Zhenhong:
     def on_deferred_action(c, action):
         if action.get('kind') != 'surplus':
             return
-        c.character['extra_attacks'] = int(c.character.get('extra_attacks', 0)) + 1
-        c.operation['skip_combat_harmony'] = True
-        c.history('「独行」：真红发起额外攻击。')
-        c.sortie(support_allows_counter=True)
+        c.history('「独行」：造成 2 点伤害，前排优先。')
+        c.enter_front()
+        c.hit_front(2)
 
     @staticmethod
     def aura_effects(c, property, query):

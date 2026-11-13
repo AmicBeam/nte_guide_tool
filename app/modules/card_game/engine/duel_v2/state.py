@@ -206,11 +206,12 @@ def victory(state):
 
 
 def upgrade_harmony_residue(state):
-    """Legacy snapshots lack evidence that a benched source was full at departure."""
-    if state.get('harmony_residue_version') != 1:
+    """Old departure records are not evidence of an actual card/sortie action."""
+    if state.get('harmony_residue_version') != 2:
         for team in state['sides'].values():
             team['last_front'] = None
-        state['harmony_residue_version'] = 1
+            team['last_actor_entity_id'] = None
+        state['harmony_residue_version'] = 2
 
 
 def clear_harmony_source(state, side, cid):
@@ -218,6 +219,7 @@ def clear_harmony_source(state, side, cid):
     team = state['sides'][side]
     if team['last_front'] == cid:
         team['last_front'] = None
+        team['last_actor_entity_id'] = None
 
 
 def move_out(state, side, cid, *, reason=None):
@@ -230,11 +232,7 @@ def move_out(state, side, cid, *, reason=None):
         from .summons import dismiss
         dismiss(state, side, cid)
         return
-    from .escalation import harmony_cap
-    # Capture eligibility at departure; later bench resource gains cannot create it.
-    team['last_front'] = (cid if alive(state, side, cid)
-                          and not collapsed(h)
-                          and h['harmony'] >= harmony_cap(state) else None)
+    # Returning to the bench never creates or transfers an action source.
     if reason == 'replace' and alive(state, side, cid) and not h.get('summoned'):
         from app.modules.card_game.content.duel_v2.registry import fire
         from .context import EffectContext
@@ -514,6 +512,12 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
                 fire(EffectContext(state, src_side, src_cid, {'side': src_side}),
                      'on_damage_dealt', actor_only=True, target_side=side, target_id=cid, amount=loss,
                      damage_kind=kind)
+            if src_side in SIDES:
+                from app.modules.card_game.engine.events import GameEvent
+                carrier = team_order(state, src_side)[0]
+                fire(EffectContext(state, src_side, carrier, {'side': src_side}),
+                     GameEvent.V2_ALLIED_DAMAGE, target_side=side, target_id=cid, amount=loss,
+                     damage_kind=kind, damage_reason=reason, source=source)
     if redirect_loss and redirect and not finished(state):
         damage(state, side, redirect, redirect_loss, source=source, kind=kind, settle=settle,
                group_id=group_id, damage_class=damage_class, reason='护盾破碎，溢出伤害转移',

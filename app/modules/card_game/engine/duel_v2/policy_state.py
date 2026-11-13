@@ -2,7 +2,7 @@
 
 Explicit allowlists only: no hands, deck identities, RNG or private choices.
 """
-SIDE_KEYS = ('extra_ap', 'delay_turns', 'delay_counted_turn', 'skip_normal_attack', 'extra_genesis_pending', 'extra_genesis_actor', 'genesis_turn', 'genesis_player_hits', 'surplus', 'harmony_damage',
+SIDE_KEYS = ('genesis_layers', 'star_trigger_turn', 'extra_ap', 'delay_turns', 'delay_counted_turn', 'skip_normal_attack', 'extra_genesis_pending', 'extra_genesis_actor', 'genesis_turn', 'genesis_player_hits', 'surplus', 'harmony_damage',
              'surplus_ever', 'empty_draw_wins', 'genesis_damage_bonus', 'nanali_family', 'nanali_family_played', 'ultimates_used', 'heiyu_divinations')
 FLAG_KEYS = ('next_bonus', 'next_shield', 'next_followup', 'energy_next',
              'allied_hurt', 'pending_atk', 'share_overflow', 'hp_floor',
@@ -31,6 +31,8 @@ def public_policy_state(state):
                       'jingu_loan': bool(h.get('jingu_loan')),
                       'ultimate_used_turn': h.get('ultimate_used_turn', -1),
                       'insight_used_turn': h.get('insight_used_turn', -1),
+                      'first_attack_rewarded': bool(h.get('first_attack_rewarded')),
+                      'genesis_sweep_turn': h.get('genesis_sweep_turn', -1),
                       'attacked_this_turn': h.get('entity_id') in team.get('attacked_this_turn', []),
                       'light_resistance': resistance_values(h).get('光', 0),
                       'resistances': resistance_values(h),

@@ -65,12 +65,15 @@ class Baicang:
             return
         before = attack_value(c.character, c.state, c.side)
         add_atk_buff(c.character, 1, source_entity_id=c.entity_id, source_key='ability')
+        burn = front_debuff(c.state, other(c.side)).get('burn')
+        if burn and burn.get('by') == c.side and not burn.get('infinite'):
+            burn['left'] = 2
         src_side = None
         if isinstance(source, str) and ':' in source:
             src_side = source.split(':', 1)[0]
         if src_side == c.side:
             c.character.setdefault('flags', {})['allied_hurt'] = True
-        c.history('白藏受到伤害，触发异能：攻击 +1。',
+        c.history('白藏受到伤害，触发异能：攻击 +1，重置己方【浊燃】的持续时间。',
                   before={'attack': before}, after={'attack': attack_value(c.character, c.state, c.side)})
 
     @staticmethod
@@ -87,6 +90,11 @@ class Baicang:
             log(c.state, f"白藏造成伤害，触发终结：将{target['name']}消灭。", 'effect',
                 side=target_side, source=c.cid, actor=f'{c.side}:{c.cid}',
                 target=f'{target_side}:{target_id}')
+
+    @staticmethod
+    def on_allied_damage(c, target_side=None, target_id=None, amount=0, damage_kind=None, damage_reason=None, **_data):
+        if damage_kind == 'burn' or damage_reason == '浊燃':
+            Baicang.on_damage_dealt(c, target_side=target_side, target_id=target_id, amount=amount)
 
     @staticmethod
     def after_hits(c, target_loss=0, **_data):

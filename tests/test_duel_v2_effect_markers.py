@@ -69,4 +69,5 @@ class EffectMarkersTest(unittest.TestCase):
         state['sides']['b']['shield'] = 0
         begin_turn(state, 'a')
         self.assertLess(state['sides']['b']['hp'], before_hp)
-        self.assertEqual(capture_public_board(state)['sides']['a']['effect_markers'], [])
+        self.assertFalse(any(m['id']=='extra_genesis' for m in capture_public_board(state)['sides']['a']['effect_markers']))
+        self.assertTrue(capture_public_board(state)['sides']['a']['genesis_layers'])

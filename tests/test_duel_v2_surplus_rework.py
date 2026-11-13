@@ -60,30 +60,30 @@ class SurplusReworkTest(unittest.TestCase):
         self.assertEqual(_zone_slow(s,'b','zero'),0)
         self.assertIn('delay',front_debuff(s,'b'))
 
-    def test_surplus_doubled_genesis_not_two_notifications_and_action_after_resources(self):
-        s=self.game();self.delay(s);s['sides']['a']['front']='zero';hero(s,'a','zero')['harmony']=2
+    def test_each_genesis_segment_notifies_surplus_but_solitary_is_not_an_attack(self):
+        s=self.game();self.delay(s)
+        s['sides']['a'].update(front='zero',last_front='zero');hero(s,'a','zero')['harmony']=3
         s['sides']['b']['front']='yi';hero(s,'b','yi').update(hp=60,max_hp=60)
         seq=s['event_seq'];s=apply_action(s,'a',dict(type='attack',character_id='jiuyuan'))
-        h=hero(s,'a','zhenhong')
-        self.assertEqual(compatibility_flags(h)['atk_buff'],1)
-        self.assertEqual(h['extra_attacks'],1)
-        self.assertEqual((h['harmony'],h['energy']),(1,2))
-        events=[e for e in s['events'] if e['seq']>seq]
-        attacks=[e['actor'] for e in events if e['type']=='attack']
-        self.assertEqual(attacks,['a:jiuyuan','a:zhenhong'])
-        first_resource=next(i for i,e in enumerate(events) if e['type']=='resource' and e.get('actor')=='a:jiuyuan')
-        extra_attack=next(i for i,e in enumerate(events) if e['type']=='attack' and e.get('actor')=='a:zhenhong')
-        self.assertLess(first_resource,extra_attack)
-        self.assertTrue(any(e.get('counter_immunity')=='support' for e in events))
+        h=hero(s,'a','zhenhong');events=[e for e in s['events'] if e['seq']>seq]
+        self.assertEqual(compatibility_flags(h)['atk_buff'],3)
+        self.assertEqual(h['surplus_passive_triggers'],3)
+        self.assertEqual((h['harmony'],h['energy']),(0,0))
+        self.assertEqual([e['actor'] for e in events if e['type']=='attack'],['a:jiuyuan'])
+        solitary=[e for e in events if e['type']=='damage' and e.get('source')=='a:zhenhong']
+        self.assertEqual(len(solitary),3)
+        self.assertTrue(all(e['amount']==2 for e in solitary))
+        self.assertEqual(s['sides']['a']['front'],'zhenhong')
 
-    def test_extra_entry_can_trigger_genesis_and_enqueue_second_attack(self):
-        s=self.game();self.delay(s);s['sides']['a']['front']='jiuyuan';hero(s,'a','jiuyuan')['harmony']=2
+    def test_solitary_effect_enters_without_sortie_or_recursive_genesis(self):
+        s=self.game();self.delay(s);s['sides']['a']['front']='jiuyuan'
         s['sides']['b']['front']='yi';hero(s,'b','yi').update(hp=70,max_hp=70)
         c=operation(s,'a','jiuyuan');resolve_genesis(c);finish_operation(s)
         h=hero(s,'a','zhenhong')
-        self.assertEqual((h['extra_attacks'],compatibility_flags(h)['atk_buff']), (2,2))
-        self.assertEqual(h['harmony'],1)
-        self.assertEqual(h['energy'],5)
+        self.assertEqual(h['surplus_passive_triggers'],1)
+        self.assertEqual(compatibility_flags(h)['atk_buff'],1)
+        self.assertEqual((h['harmony'],h['energy']),(0,0))
+        self.assertEqual(s['sides']['a']['front'],'zhenhong')
         self.assertFalse(s.get('deferred_actions'))
 
     def test_energy_gate_and_escalation_excludes_bench(self):
@@ -98,7 +98,7 @@ class SurplusReworkTest(unittest.TestCase):
 
     def test_iloy_charges_before_front_returns(self):
         s=self.game(team=('zhenhong','iloy','zero','yi'))
-        s['sides']['a']['front']='zhenhong';hero(s,'a','iloy')['flags']['energy_next']=True
+        s['sides']['a']['front']='zhenhong';hero(s,'a','iloy')['awakened']=True
         begin_turn(s,'a');self.assertEqual(hero(s,'a','zhenhong')['energy'],1)
         self.assertIsNone(s['sides']['a']['front'])
 
@@ -108,7 +108,7 @@ class SurplusReworkTest(unittest.TestCase):
                 s=self.game();s['sides']['a']['surplus']=surplus
                 s['sides']['a']['ap']=1
                 s=self.play(s,key)
-                self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],amount)
+                self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],amount+2)
                 self.assertFalse(s['sides']['a']['used'].get('instant'))
                 self.assertEqual(s['sides']['a']['ap'],0)
 
@@ -118,7 +118,7 @@ class SurplusReworkTest(unittest.TestCase):
         h.update(hp=5,down_turns=0)
         s=self.play(s,'R06');h=hero(s,'a','zhenhong')
         self.assertEqual(h['shield'],3)
-        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],5)
+        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],7)
         self.assertEqual(h['surplus_passive_triggers'],3)
 
     def test_downed_response_discards_only_owned_cards_and_retains_other_cards(self):
@@ -147,7 +147,7 @@ class SurplusReworkTest(unittest.TestCase):
         s=apply_action(s,'a',dict(type='play_card',card_id=physical['instance_id']))
         self.assertEqual(s['sides']['a']['discard'][-1]['card_id'],'I03')
         self.assertEqual(hero(s,'a','zhenhong')['energy'],0)
-        self.assertEqual(hero(s,'a','zhenhong')['harmony'],2)
+        self.assertEqual(hero(s,'a','zhenhong')['harmony'],3)
         self.assertEqual(hero(s,'a','yi')['energy'],1)
         self.assertFalse(hero(s,'a','yi').get('beast_fangs'))
         move_out(s,'a','zhenhong')
@@ -160,7 +160,7 @@ class SurplusReworkTest(unittest.TestCase):
         self.assertEqual(hero(s,'a','zhenhong')['ultimate_turns'],1)
         before=s['sides']['b']['hp'];seq=s['event_seq']
         begin_turn(s,'a');h=hero(s,'a','zhenhong')
-        self.assertEqual((h.get('extra_attacks',0),h['energy'],h['harmony']),(0,0,1))
+        self.assertEqual((h.get('extra_attacks',0),h['energy'],h['harmony']),(0,0,0))
         self.assertEqual(s['sides']['b']['hp'],before-3)
         self.assertFalse(any(e['type']=='attack' for e in s['events'] if e['seq']>seq))
         self.assertFalse(h['awakened']);self.assertIsNone(s['sides']['a']['front'])
@@ -200,8 +200,8 @@ class SurplusReworkTest(unittest.TestCase):
         self.assertEqual(h['intimidation'],2);self.assertEqual(attack_value(h,s,'a'),2)
         self.assertEqual((h['hp'],h['max_hp']),(8,8))
         s=apply_action(s,'a',dict(type='attack',character_id='zhenhong'));h=hero(s,'a','zhenhong')
-        self.assertEqual((h['intimidation'],h['harmony']),(0,2))
-        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],4)
+        self.assertEqual((h['intimidation'],h['harmony']),(0,3))
+        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],6)
 
     def test_fangs_pause_before_decrement_and_survive_death(self):
         s=self.game();self.delay(s);s=self.play(s,'I01')
@@ -260,6 +260,7 @@ class SurplusReworkTest(unittest.TestCase):
         begin_turn(s,'a');self.assertEqual(hero(s,'b','zero')['hp'],28)
         h=hero(s,'a','jiuyuan');h['energy']=5;hero(s,'b','yi')['flags']['pact']=True
         s=apply_action(s,'a',dict(type='ultimate',character_id='jiuyuan'))
+        c=operation(s,'a','jiuyuan');resolve_genesis(c);finish_operation(s)
         self.assertEqual(hero(s,'b','yi')['hp'],1) # 1 base + (2+1) pact
         self.assertEqual(hero(s,'b','zhenhong')['hp'],5) # only base 1
 
@@ -383,7 +384,8 @@ class SurplusReworkTest(unittest.TestCase):
         s=self.game();c=self.hold(s,'I04');hero(s,'a','zhenhong').update(awakened=True,ultimate_turns=2)
         fire(EffectContext(s,'a','zhenhong',{'side':'a'}),'on_surplus',actor_only=True)
         restored=clone_state(json.loads(json.dumps(s)));drain(restored)
-        self.assertEqual(hero(restored,'a','zhenhong')['extra_attacks'],1)
+        self.assertEqual(hero(restored,'a','zhenhong')['surplus_passive_triggers'],1)
+        self.assertFalse(any(e['type']=='attack' for e in restored['events']))
         restored=apply_action(restored,'a',dict(type='play_card',card_id=c['instance_id']))
         self.assertEqual(restored['sides']['a']['discard'][-1]['card_id'],'I04')
         self.assertEqual(restored['sides']['a']['discard'][-1]['entity_id'],c.entity_id)
@@ -393,7 +395,7 @@ class SurplusReworkTest(unittest.TestCase):
         before=deepcopy(s);v=observe(s,'a')
         action=next(a for a in v['legal_actions'] if a['action'].get('card_id')==c['instance_id'])
         self.assertEqual(action['interaction']['actor_id'],'a:zhenhong')
-        self.assertEqual(action['preview']['attack'],6)
+        self.assertEqual(action['preview']['attack'],8)
         self.assertEqual(s,before)
 
     def test_down_response_waits_for_nested_response_to_finish(self):
@@ -438,7 +440,7 @@ class SurplusReworkTest(unittest.TestCase):
     def test_delayed_genesis_gives_energy_to_current_front_not_benched_source(self):
         s=self.game();self.delay(s);s['sides']['a']['front']='zero'
         c=operation(s,'a','jiuyuan');resolve_genesis(c,arm_delay=False)
-        self.assertEqual(hero(s,'a','zero')['energy'],2)
+        self.assertEqual(hero(s,'a','zero')['energy'],1)
         self.assertEqual(hero(s,'a','jiuyuan')['energy'],0)
         finish_operation(s)
 

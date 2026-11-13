@@ -1,5 +1,5 @@
 from app.modules.card_game.content.duel_v2.characters.common import (
-    deal_combat_followup, on_first_turn_seed, on_rout_seed, perm_plus,
+    deal_combat_followup, on_first_turn_seed, perm_plus,
     revive_self, set_shape,
 )
 from app.modules.card_game.content.duel_v2.registry import register
@@ -62,7 +62,26 @@ class Nanali:
     }
     target_policies = {'N05': 'living_enemy'}
     on_turn_begin = staticmethod(on_first_turn_seed)
-    on_rout = staticmethod(on_rout_seed)
+    @staticmethod
+    def on_harmony_triggered(c, kind=None, entering=None, payer=None, **_data):
+        if kind == '创生' and c.cid in (entering, payer):
+            from app.modules.card_game.content.duel_v2.characters.common import grant_seed
+            grant_seed(c, reason='娜娜莉参与触发【创生】')
+
+    @staticmethod
+    def combat_followup_ultimate(c, current=0):
+        from app.modules.card_game.engine.duel_v2.state import front_debuff, other
+        has_genesis = bool(c.state['sides'][c.side].get('genesis_layers'))
+        has_weave = bool(front_debuff(c.state, other(c.side)).get('weave'))
+        return 2 if c.character.get('awakened') and (has_genesis or has_weave) else 0
+
+    @staticmethod
+    def on_counter_resolved(c, target=None):
+        amount = Nanali.combat_followup_ultimate(c)
+        if amount and target:
+            if c.character.get('shape') == 'N08':
+                amount += 2
+            c.followup(target, amount, reason='娜娜莉终结的追击伤害')
 
     @staticmethod
     def card_description(c, current, card):

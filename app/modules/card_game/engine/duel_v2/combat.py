@@ -15,10 +15,13 @@ PAIRS = {frozenset(('光', '灵')): '创生', frozenset(('光', '相')): '延滞
 
 
 def harmony_previous(state, side, cid):
-    """Current front, or the eligible payer captured when the last front left."""
+    """Most recent card user / ordinary sortie actor, independent of position."""
     team = state['sides'][side]
-    previous = team['front'] or (team['last_front'] if state.get('harmony_residue_version') == 1 else None)
+    previous = team.get('last_front') if state.get('harmony_residue_version') == 2 else None
     if not previous or previous == cid:
+        return None
+    if (team.get('last_actor_entity_id')
+            and hero(state, side, previous).get('entity_id') != team['last_actor_entity_id']):
         return None
     return previous
 
@@ -34,10 +37,10 @@ def harmony_payer(state, side, cid):
 
 
 def harmony_eligible(state, side, cid):
-    if state['active_side'] != side:
+    from .tutorial import tutorial_flags
+    if tutorial_flags(state).get('disable_harmony_trigger'):
         return False
-    team = state['sides'][side]
-    if team['front'] == cid:
+    if state['active_side'] != side:
         return False
     return harmony_payer(state, side, cid) is not None
 
@@ -66,7 +69,8 @@ def resolved_harmony_kind(state, side, cid):
 
 
 def harmony_marks(state, side):
-    payer = None
+    from .harmony import source_id
+    payer = source_id(state, side)
     ready = {}
     for cid in state['sides'][side]['characters']:
         kind = resolved_harmony_kind(state, side, cid)
@@ -97,37 +101,9 @@ def resolve_genesis(c, *, arm_delay=True):
     team = s['sides'][side]
     team['genesis_turn'] = s['turn']
     from .presentation import next_group_id
-    repeats = 1 + tally(c, 'genesis_extra')
-    surplus_triggered = False
-    for _ in range(repeats):
-        if finished(s) or not alive(s, side, cid):
-            break
-        genesis_target = front_target(s, side)
-        delayed = bool(front_debuff(s, genesis_target[0]).get('delay'))
-        target_side, target_id = genesis_target
-        target = hero(s, target_side, target_id) if is_esper(target_id) else s['sides'][target_side]
-        shield_before = target['shield']
-        loss = damage(s, *genesis_target, 1 + int(team.get('genesis_damage_bonus') or 0), source=f'{side}:{cid}', kind='genesis',
-                      group_id=next_group_id(s))
-        damage_dealt = loss > 0 or target['shield'] < shield_before
-        if delayed and alive(s, side, cid) and not finished(s):
-            surplus_triggered = True
-            s['sides'][side]['surplus'] = True
-            s['sides'][side]['surplus_ever'] = True
-            recipient = team.get('front')
-            gained = 0
-            if recipient and alive(s, side, recipient):
-                before_energy = hero(s, side, recipient)['energy']
-                energy(s, side, recipient, 1)
-                gained = hero(s, side, recipient)['energy'] - before_energy
-            text = f"{c.character['name']}触发盈蓄。"
-            if gained:
-                text += f"{hero(s, side, recipient)['name']}获得 {gained} 点能量。"
-            log(s, text, 'harmony', side=side, source=cid, actor=f'{side}:{cid}',
-                target=f'{side}:{recipient or cid}')
-        fire(c, 'on_genesis_damage', target=genesis_target, damage_dealt=damage_dealt)
-    if surplus_triggered:
-        fire(c, GameEvent.V2_SURPLUS, entering=cid)
+    from .genesis import add_layers, hit
+    add_layers(c, uncapped=not arm_delay)
+    hit(c)
     flowers = genesis_flowers(c) + int(team['extra_flower'])
     team['extra_flower'] = False
     for _ in range(flowers):
@@ -163,6 +139,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
         payer['harmony'] -= harmony_cap(s)
         if team.get('last_front') == payer_id:
             team['last_front'] = None
+            team['last_actor_entity_id'] = None
     c.character['flags']['has_harmonized'] = True
     # This once-per-game fact must survive death.
     team['harmonized'][cid] = True
@@ -174,10 +151,12 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
     if pay:
         log(s, f"{c.character['name']}入场，消耗{payer['name']}的 {harmony_cap(s)} 点环合值，触发{kind}。", 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id}',
+            harmony_kind=kind,
             before={'harmony': before}, after={'harmony': payer['harmony']})
     else:
         log(s, f"{c.character['name']}入场，不消耗环合值，触发{kind}。", 'harmony',
-            side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id or cid}')
+            side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id or cid}', harmony_kind=kind)
+    fire(c, GameEvent.V2_HARMONY_TRIGGERED, kind=kind, entering=cid, payer=payer_id)
     resolve_harmony_effect(c, kind)
     if not finished(s) and alive(s, side, cid):
         c.on_shape(GameEvent.V2_HARMONY_RESOLVED, operation=op)
@@ -192,6 +171,7 @@ def apply_dark_star(c, *, renewals=None):
     had_burn = bool(zone.get('burn'))
     zone['star'] = {'left': 2, 'by': side, 'source_cid': cid,
                     'renewals': int(decide(c, 'dark_star_renewals', 0) or 0) if renewals is None else int(renewals)}
+    fire(c, GameEvent.V2_HARMONY_APPLIED, kind='黯星')
     log(s, '对方战斗区获得黯星。', 'harmony',
         side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
     if had_burn:
@@ -244,6 +224,7 @@ def resolve_harmony_effect(c, kind):
     elif kind == '浸染':
         front_debuff(s, enemy)['stain'] = {'by': side, 'expires_side': s['active_side'],
                                               'ends_left': max(1, int(decide(c, 'stain_duration', 1) or 1))}
+        fire(c, GameEvent.V2_HARMONY_APPLIED, kind='浸染')
         log(s, '对方战斗区获得浸染。', 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
     elif kind == '同频':
@@ -256,13 +237,15 @@ def enter(c, *, as_support=True, resolve_harmony=True):
         return
     team = s['sides'][side]
     if team['front'] == cid:
+        if resolve_harmony:
+            payer_id, kind = _pending_harmony(c)
+            apply_enter_harmony(c, payer_id, kind, as_support=as_support)
         return
     payer_id, kind = _pending_harmony(c)
     if team['front']:
         move_out(s, side, team['front'], reason='replace')
         if team['front']:
             return
-    team['last_front'] = None
     team['front'] = cid
     log(s, f"{c.character['name']}进入战斗区。", 'enter', side=side, source=cid,
         actor=f'{side}:{cid}', target=f'{side}:{cid}')
@@ -287,7 +270,6 @@ def intercept_enter(c):
         move_out(s, side, team['front'])
         if team['front']:
             return
-    team['last_front'] = None
     team['front'] = cid
     log(s, f"{c.character['name']}进入战斗区，作为反击方。", 'enter',
         side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{cid}')
@@ -496,6 +478,9 @@ def attack(c, spec, index):
             settle_deferred_card_marks(s)
             _clear_battle_effects(s)
             return True
+    if is_esper(target_id) and not no_counter and alive(s, enemy, target_id):
+        fire(c.for_character(enemy, target_id), GameEvent.V2_COUNTER_RESOLVED,
+             actor_only=True, target=(side, cid))
     # Attack-after shape effects occur per hit, after simultaneous death handling.
     for ps, pc, loss in [(side, cid, self_loss), (enemy, target_id, target_loss)]:
         if is_esper(pc) and loss > 0 and alive(s, ps, pc) and not finished(s):
@@ -541,6 +526,7 @@ def sortie(c, **spec):
     if chosen:
         spec['target'] = chosen
     stay_bench = bool(spec.get('stay_bench') or decide(c, 'sortie_from_bench', False, actor_only=True))
+    op['remote_sortie'] = stay_bench
     if stay_bench:
         spec['no_counter'] = True
     else:
@@ -566,6 +552,10 @@ def resume_sortie(c):
 
 def _finish_sortie(c, spec, stay_bench):
     s, side, cid = c.state, c.side, c.cid
+    if _attack_stopped(c):
+        return
+    from .genesis import on_sortie
+    on_sortie(c)
     if _attack_stopped(c):
         return
     fire(c, 'before_hits', actor_only=True)

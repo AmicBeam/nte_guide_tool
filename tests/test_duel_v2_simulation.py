@@ -17,6 +17,20 @@ def events(s):
 
 
 class SimulationTest(unittest.TestCase):
+    def setUp(self):
+        # RoomFlowTestCase reloads app modules for isolated databases. Bind the
+        # current engine and its ContextVar together instead of mixing epochs.
+        import importlib
+        engine=importlib.import_module('app.modules.card_game.engine.duel_v2')
+        simulation=importlib.import_module('app.modules.card_game.engine.duel_v2.simulation')
+        catalog=importlib.import_module('app.modules.card_game.content.duel_v2')
+        for name in ('new_game','apply_action','legal_actions','acting_side','observe'):
+            globals()[name]=getattr(engine,name)
+        for name in ('simulate_action','_without_patches','collecting_patches'):
+            globals()[name]=getattr(simulation,name)
+        for name in ('STARTER_DECKS','CARDS','CHARACTERS','validate_deck'):
+            globals()[name]=getattr(catalog,name)
+
     def test_full_catalog_rosters_in_random_legal_trajectories(self):
         ids=list(CHARACTERS);builds=list(STARTER_DECKS)
         for start in range(0,len(ids),4):

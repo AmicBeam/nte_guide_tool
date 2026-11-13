@@ -327,3 +327,11 @@ C07 条件触发取出一张真实卡牌后调用 `resolve_release`，结束后�
 `operation.pending_sortie` 保存可 JSON 序列化的出击 spec 与 stay_bench。当出击前回调打开选择时，纯规则层暂停伤害；内容续步调用 resume_sortie，直接结算剩余攻击，不重放入场或 ready 回调。魔女的占卜续步继续使用 heiyu.divination；延后释放 P04 产生选择时保存真实释放操作，不能用外层空操作覆盖它。
 
 通用修正属性 rule.normal_attack_instant 允许全队按 shared instant 付款。normal_attack_payment 优先提供 ap=0、normal=false、resource=instant，仍遵守封锁、召唤物和角色禁止出击的规则。统一付款阶段消费 used.instant，普通出击次数不变。P07 赋予该属性至当前己方回合结束，P08 设置 used.instant=false，仅恢复一次、不累计。占卜检视取至少 2，底牌效果不受形态限制；公开投影仍隐藏候选。
+
+## 行动力环合与分层创生协议
+
+新状态 design_version=V2.6，harmony_residue_version=2。last_front 兼容字段现在记录最近成功用牌／普通出击的角色，last_actor_entity_id 校验实体身份；旧版本退下记录不迁移为新行动证据。环合上限固定 3，付款通过可改写 action_harmony_gain 决策一次入账，操作结束只按旧规则分配能量。
+
+双方公开 genesis_layers 每项包含 id、left、used_turn、uncapped、source_entity_id；每层独立 2 个己方回合，每个全局回合至多追加一次。观察、公开棋盘与回放 patch 共用这些字段，不包括隐藏手牌、牌序或随机状态。层的来源实体为公开身份，不作为学习特征编号。policy_state 同步层、黯星触发回合、真红首次攻击及九原首次全体创生计次；旧训练编码不因此宣称已支持新机制。
+
+通用时机补充 V2_HARMONY_TRIGGERED（含提供者／发动者）、V2_HARMONY_APPLIED（实际施加）、V2_SURPLUS_ENERGY（实际回能）、V2_ALLIED_DAMAGE（带伤害类型及效果原因）、V2_COUNTER_RESOLVED（反击完成）与 V2_GENESIS_SEGMENT（每段创生前）。环合来源／各层计次均随 JSON 保存，选择续步不重新付款。黑羽环合占卜使用现有可序列化延后队列与占卜选择，不再生成 PF01。

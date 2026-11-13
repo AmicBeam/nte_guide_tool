@@ -8,12 +8,12 @@ from app.modules.card_game.engine.duel_v2.state import (
 
 
 def _mark_healed(c, side, cid):
-    if side != c.side or is_player(cid):
+    if side != c.side or is_player(cid) or c.character.get('shape') != 'Y08':
         return
     target = hero(c.state, side, cid)
     before = attack_value(target, c.state, side)
-    add_atk_buff(target, 1, source_entity_id=c.entity_id, source_key=(c.card or {}).get('card_id', c.cid))
-    c.history(f"{c.character['name']}的治疗效果：{target['name']}攻击 +1。", target_side=side, target_id=cid,
+    add_atk_buff(target, 2, source_entity_id=c.entity_id, source_key=c.weapon_source('Y08'))
+    c.history(f"{c.character['name']}的武备效果：{target['name']}攻击 +2。", target_side=side, target_id=cid,
               before={'attack': before}, after={'attack': attack_value(target, c.state, side)})
 
 
@@ -111,25 +111,37 @@ class Iloy:
 
     @staticmethod
     def on_ultimate(c):
-        c.character.setdefault('flags', {})['energy_next'] = True
-        c.history('伊洛伊的终结生效：下个己方回合开始时，己方存活异能者各获得 1 点能量。')
+        c.history('伊洛伊的终结生效：己方回合开始时，全体存活己方异能者能量 +1，持续 2 个己方回合。')
 
     @staticmethod
     def after_genesis(c, entering=None, **_data):
-        if c.character.get('shape') != 'Y08' or c.character['hp'] <= 0:
+        if c.character['hp'] <= 0:
             return
         team = c.state['sides'][c.side]
         if team.get('extra_genesis_pending'):
             return
         team['extra_genesis_pending'] = True
         team['extra_genesis_actor'] = entering or c.cid
-        c.history('「星月夜」触发：下个己方回合开始时追加 1 次创生。',
+        c.history('伊洛伊异能触发：下个己方回合开始时追加 1 次不占上限的【创生】。',
                   target_id=entering or c.cid)
 
     @staticmethod
     def on_turn_begin(c):
-        if not c.character.get('flags', {}).pop('energy_next', False):
+        if not c.character.get('awakened'):
             return
+        Iloy._ultimate_energy(c)
+
+    @staticmethod
+    def on_effect_expired(c, effect, **_data):
+        # The final start trigger belongs to this ultimate's natural expiry.
+        # Explicit removal by death or other effects never awards it.
+        if (effect.get('definition_id') == 'status.ultimate'
+                and effect.get('source_entity_id') == c.entity_id
+                and c.cid == Iloy.id):
+            Iloy._ultimate_energy(c)
+
+    @staticmethod
+    def _ultimate_energy(c):
         for item in c.state['sides'][c.side]['characters'].values():
             if item['hp'] <= 0:
                 continue

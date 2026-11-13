@@ -16,8 +16,8 @@ class HarmonyLifetimeTest(unittest.TestCase):
         for side in ('a', 'b'):
             state['sides'][side]['hand'] = []
         team = state['sides']['a']
-        team.update(front='zero', last_front='nanali', ap=2)
-        hero(state, 'a', 'zero').update(harmony=2, energy=3)
+        team.update(front='zero', last_front='zero', ap=2)
+        hero(state, 'a', 'zero').update(harmony=3, energy=3)
         return state
 
     def revive(self, state):
@@ -34,7 +34,7 @@ class HarmonyLifetimeTest(unittest.TestCase):
                 self.assertIsNone(state['sides']['a']['last_front'])
                 self.assertFalse(harmony_marks(state, 'a')['available'])
                 self.revive(state)
-                self.assertEqual((hero(state, 'a', 'zero')['harmony'], hero(state, 'a', 'zero')['energy']), (2, 3))
+                self.assertEqual((hero(state, 'a', 'zero')['harmony'], hero(state, 'a', 'zero')['energy']), (3, 3))
                 self.assertFalse(harmony_marks(state, 'a')['available'])
                 state['events'] = []
                 state = apply_action(state, 'a', {'type': 'attack', 'character_id': 'nanali'})

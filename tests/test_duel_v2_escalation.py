@@ -32,7 +32,7 @@ class EscalationTest(unittest.TestCase):
                 chars = observe(s, 'a')['sides']['a']['characters']
                 for c in chars:
                     self.assertEqual(c['energy_max'], (6 if c['attribute'] in ('暗', '魂', '咒') else 5) - (turn >= 13))
-                    self.assertEqual(c['harmony_max'], 1 if turn >= 13 else 2)
+                    self.assertEqual(c['harmony_max'], 3)
                 self.assertEqual(s['sides']['a']['ap'], 3 if turn >= 20 else 2)
 
     def test_all_alive_energy_and_seed_replay(self):
@@ -97,18 +97,18 @@ class EscalationTest(unittest.TestCase):
         for team in s['sides'].values():
             for h in team['characters'].values():
                 self.assertEqual(h['energy'], 5 if h['attribute'] == '咒' else 4)
-                self.assertEqual(h['harmony'], 1)
+                self.assertEqual(h['harmony'], 2)
         s['turn'] = 19
         before = capture_public_board(s)
         begin_turn(s, 'a')
         patch = diff_public(before, capture_public_board(s))
         self.assertEqual(patch['escalation']['stage'], 3)
         for team in s['sides'].values():
-            self.assertTrue(all(h['harmony'] == 1 for h in team['characters'].values()))
+            self.assertTrue(all(h['harmony'] == 2 for h in team['characters'].values()))
         ctx = EffectContext(s, 'a', 'baicang', {'side': 'a'})
         ctx.grant_harmony('baicang', 2)
         energy(s, 'a', 'baicang', 10)
-        self.assertEqual(ctx.character['harmony'], 1)
+        self.assertEqual(ctx.character['harmony'], 3)
         self.assertEqual(ctx.character['energy'], 5)
 
     def test_two_ultimates_and_third_rejected_without_action_points(self):
@@ -131,11 +131,11 @@ class EscalationTest(unittest.TestCase):
         begin_turn(s, 'a')
         self.assertEqual(observe(s, 'a')['sides']['a']['ultimate_remaining'], 2)
 
-    def test_one_harmony_payment_after_thirteen(self):
+    def test_three_harmony_payment_after_thirteen(self):
         s = self.game(13)
         team = s['sides']['a']
         team['last_front'] = 'baicang'
-        team['characters']['baicang']['harmony'] = 1
+        team['characters']['baicang']['harmony'] = 3
         cid = next(cid for cid, h in team['characters'].items() if h['attribute'] == '灵')
         self.assertEqual(harmony_payer(s, 'a', cid), 'baicang')
         apply_enter_harmony(EffectContext(s, 'a', cid, {'side': 'a'}), 'baicang', '覆纹')

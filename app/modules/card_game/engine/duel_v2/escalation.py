@@ -4,7 +4,7 @@ from .state import add_hand, can_gain_energy, energy, energy_max, hero, log, shu
 
 STAGES = (
     (6, '每回合可用 2 次终结；回合开始时，全体己方可获能的存活异能者能量 +1'),
-    (13, '能量上限 -1；环合值上限降为 1 点'),
+    (13, '能量上限 -1'),
     (20, '回合开始时，随机从己方弃牌堆回收 1 张可构筑卡牌；每回合行动力刷新为 3 点'),
 )
 
@@ -22,7 +22,7 @@ def energy_cap(state, character):
 
 
 def harmony_cap(state):
-    return 2 - int(reached(state, 13))
+    return 3
 
 
 def turn_action_points(state):

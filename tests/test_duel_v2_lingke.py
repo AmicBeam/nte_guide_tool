@@ -190,7 +190,7 @@ class LingkeTest(unittest.TestCase):
         s = play(s, 'K05', 'a:zero')
         self.assertEqual(hero(s, 'b', 'iloy')['flags']['collapse_count'], 1)
         self.assertEqual(hero(s, 'a', 'xun')['arid'], 1)
-        self.assertEqual((hero(s, 'a', 'lingke')['energy'], hero(s, 'a', 'lingke')['harmony']), (0, 0))
+        self.assertEqual((hero(s, 'a', 'lingke')['energy'], hero(s, 'a', 'lingke')['harmony']), (0, 1))
         self.assertIsNone(s['sides']['a']['front'])
         for _ in range(4): s = play(s, 'K05', 'a:zero')
         self.assertTrue(hero(s, 'b', 'iloy')['flags'].get('collapse'))
@@ -203,7 +203,7 @@ class LingkeTest(unittest.TestCase):
         self.assertIsNone(s['sides']['a']['front'])
         for cid, h in s['sides']['a']['characters'].items():
             self.assertEqual((h['harmony'], h['energy']),
-                             (before['sides']['a']['characters'][cid]['harmony'], before['sides']['a']['characters'][cid]['energy']))
+                             (before['sides']['a']['characters'][cid]['harmony'] + int(cid == 'lingke'), before['sides']['a']['characters'][cid]['energy']))
         hits = [e for e in s['events'] if e['type'] == 'combat' and e.get('source') == 'a:lingke']
         self.assertEqual((hits[-1]['attribute'], hits[-1]['additional_attack']), ('光', True))
         s = play(s, 'K05', 'a:zero')
@@ -399,7 +399,7 @@ class LingkeTest(unittest.TestCase):
         seq=s['event_seq'];s=play(s,'K05','a:zero')
         self.assertTrue(any(e['type']=='genesis' for e in s['events'] if e['seq']>seq))
         self.assertIsNone(s['sides']['a']['front'])
-        self.assertEqual(hero(s,'a','lingke')['harmony'],0)
+        self.assertEqual(hero(s,'a','lingke')['harmony'],3)
 
     def test_k06_skips_empty_front_without_restricting_later_sync(self):
         s = game(); hp = s['sides']['b']['hp']; seq = s['event_seq']
@@ -419,7 +419,7 @@ class LingkeTest(unittest.TestCase):
         hits = [e for e in after['events'] if e['seq'] > seq and e['type'] == 'attack']
         self.assertEqual([e['target'] for e in hits], ['b:iloy'])
         self.assertEqual(after['sides']['b']['hp'], hp)
-        self.assertEqual((hero(after, 'a', 'lingke')['harmony'], hero(after, 'a', 'lingke')['energy']), (0, 0))
+        self.assertEqual((hero(after, 'a', 'lingke')['harmony'], hero(after, 'a', 'lingke')['energy']), (2, 0))
         self.assertEqual(capture_public_board(simulate_action(s, 'a', action)), capture_public_board(after))
         self.assertEqual(replay_public_board(opening, [e for e in after['events'] if e['seq'] > seq]),
                          capture_public_board(after))
@@ -476,7 +476,7 @@ class LingkeTest(unittest.TestCase):
     def test_ultimate_support_reduces_resistance_and_keeps_normal_resources(self):
         s=game();hero(s,'a','lingke')['energy']=5
         s=apply_action(s,'a',dict(type='ultimate',character_id='lingke'))
-        s['sides']['a']['front']='iloy';hero(s,'a','iloy')['harmony']=2
+        s['sides']['a'].update(front='iloy',last_front='iloy');hero(s,'a','iloy')['harmony']=3
         s['sides']['b']['front']='iloy';seq=s['event_seq']
         s=apply_action(s,'a',dict(type='attack',character_id='zero'))
         h=hero(s,'a','zero')

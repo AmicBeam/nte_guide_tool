@@ -5,7 +5,7 @@ import unittest
 from app.modules.card_game.engine.duel_v2 import apply_action, observe
 from app.modules.card_game.engine.duel_v2.replay_log import public_replay_event
 from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
-from tests.test_duel_v2_heiyu import game, witch, top, play, confirm
+from tests.test_duel_v2_heiyu import game, witch, top, play, confirm, harmony_inspection
 
 
 class HeiyuPresentationTest(unittest.TestCase):
@@ -15,7 +15,7 @@ class HeiyuPresentationTest(unittest.TestCase):
                 state = witch(game())
                 cards = top(state, [card_id, 'Z03'])
                 cards[1]['name'] = 'UNREVEALED_NEXT_TOP'
-                state = apply_action(state, 'a', {'type': 'attack', 'character_id': 'heiyu'})
+                state = harmony_inspection(state)
                 self.assertEqual(state['phase'], 'choice')
                 cursor = state['event_seq']
                 opening = capture_public_board(state)
@@ -52,17 +52,18 @@ class HeiyuPresentationTest(unittest.TestCase):
         state = witch(game())
         top(state, ['P01', 'Z03'])
         cursor = state['event_seq']
-        state = apply_action(state, 'a', {'type': 'attack', 'character_id': 'heiyu'})
+        state = harmony_inspection(state)
         after = confirm(state)
         self.assertFalse(any(e['type'] == 'reveal' or e.get('response') for e in after['events'] if e['seq'] > cursor))
         self.assertEqual([c['card_id'] for c in after['sides']['a']['deck']], ['P01', 'Z03'])
-        self.assertEqual(after['sides']['b']['hp'], 97)
+        after = apply_action(after, 'a', {'type': 'attack', 'character_id': 'heiyu'})
+        self.assertEqual(after['sides']['b']['hp'], 95)
         self.assertEqual(sum(e['type'] == 'attack' for e in after['events'] if e['seq'] > cursor), 1)
 
     def test_basic_divination_reveals_released_card_without_response_title(self):
         state = game()
         top(state, ['P02', 'Z03'])
-        state = play(state, 'PF01')
+        state = harmony_inspection(state)
         cursor = state['event_seq']
         after = confirm(state, 'P02')
         reveal = next(e for e in after['events'] if e['seq'] > cursor and e['type'] == 'reveal')

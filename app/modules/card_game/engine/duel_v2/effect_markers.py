@@ -84,6 +84,11 @@ def team_effect_markers(team):
                        f'{attribute}属性伤害抗性 {value:+d}', False, kind='debuff' if value < 0 else 'buff',
                        attribute=attribute)
                for attribute, value in (team.get('next_damage_resistance') or {}).items()]
+    for index, layer in enumerate(team.get('genesis_layers', []), 1):
+        markers.append(_marker('genesis_layer_' + str(layer['id']), '【创生】' + str(index),
+                               f"剩余 {layer['left']} 个己方回合",
+                               '每回合 1 次，己方异能者出击时造成 1 点伤害，前排优先。' +
+                               ('不占用层数上限。' if layer.get('uncapped') else ''), False))
     for e in all_effects(team):
         if e['property'] == 'damage.resistance' and e.get('visibility') == 'public':
             markers.append(_marker(e['effect_id'], e['label'],
@@ -99,5 +104,5 @@ def team_effect_markers(team):
     if not team.get('extra_genesis_pending'):
         return markers
     actor = (team.get('characters') or {}).get(team.get('extra_genesis_actor')) or {}
-    return markers + [_marker('extra_genesis', '星月夜', '下个己方回合开始',
+    return markers + [_marker('extra_genesis', '伊洛伊异能', '下个己方回合开始',
                     '伊洛伊倒地后保留；原环合角色' + actor.get('name', '') + '须存活，再触发一次创生', False)]

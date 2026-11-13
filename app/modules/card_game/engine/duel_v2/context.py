@@ -120,7 +120,7 @@ class EffectContext:
         combat.sortie(self, **spec)
 
     def enter_front(self):
-        combat.enter(self, as_support=False)
+        combat.enter(self, as_support=False, resolve_harmony=False)
 
     def hit_front(self, amount, bypass=False):
         from .state import reduce_max_hp

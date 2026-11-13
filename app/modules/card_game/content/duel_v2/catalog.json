@@ -117,7 +117,7 @@
       "avatar": "/static/kongmu/images/characters/player_zhenhong_256.webp",
       "portrait": "/static/images/characters/portrait/真红.webp",
       "role": "盈蓄追加攻击与战斗牌成长",
-      "passive": "开局时，真红获得 1 点环合值。己方触发盈蓄后，若真红存活，则触发「独行」。真红不在前排时，不能获得能量。",
+      "passive": "本局首次真红的攻击额外造成 2 点伤害，并获得 2 点环合值。己方触发盈蓄后，若真红存活，则触发「独行」。真红不在前排时，不能获得能量。",
       "awakened_passive": "将真红移入战斗区。真红不能获得能量，不会在己方回合开始时自动返回备战区。己方全部手牌均视为真红•「升腾之赤」，持续 2 个己方回合。持续时间自然结束时，对所有对方角色造成 3 点伤害。真红倒地或被换下时提前结束，不触发这次伤害。",
       "everness_id": 1076,
       "ultimate": {
@@ -129,7 +129,7 @@
         {
           "id": "mechanism-solitary",
           "name": "独行",
-          "description": "回复真红的全部生命。直到下个己方回合开始时，真红攻击 +1，单次至多受到 1 点伤害。当前操作完成后，真红进入战斗区并发起 1 次额外攻击，对方可以正常反击；此次攻击不获得基础环合值。"
+          "description": "回复真红的全部生命。直到下个己方回合开始时，真红攻击 +1，单次至多受到 1 点伤害。当前操作完成后，真红进入战斗区，额外造成 2 点伤害，前排优先。"
         }
       ]
     },
@@ -141,7 +141,7 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/小吱.webp",
       "portrait": "/static/images/characters/portrait/小吱.webp",
-      "passive": "拥有个人资源「金谷」，初始 0 点。己方回合开始时及小吱对对方玩家造成伤害时，获得 1 点金谷。金谷可以为负，倒地时保留。小吱的战斗牌为覆写攻击而非叠加。",
+      "passive": "拥有个人资源「金谷」，初始 0 点。己方回合开始时及小吱对对方玩家造成伤害时，获得 1 点金谷。金谷可以为负，倒地时保留。小吱的战斗牌为覆写攻击而非叠加。【盈蓄】回能时，额外获得 1 点金谷。",
       "awakened_passive": "获得 3 点金谷。己方手牌随机标注金谷 -1/0/+1，出牌结算后生效。己方回合开始时刷新。持续 2 个己方回合；结束时扣除 3 点金谷并清除标注。",
       "everness_id": 1073,
       "ultimate": {
@@ -175,8 +175,8 @@
       "max_hp": 5,
       "avatar": "/static/images/characters/avatar/娜娜莉.webp",
       "portrait": "/static/images/characters/portrait/娜娜莉.webp",
-      "passive": "首个己方回合开始时获得 1 张「家族壮大」。娜娜莉击退对方异能者时，若仍存活且在战斗区，再获得 1 张「家族壮大」。至多获得 3 次。",
-      "awakened_passive": "娜娜莉每次战斗附加 1 点追击伤害，持续 2 个己方回合。",
+      "passive": "首个己方回合开始时，或娜娜莉参与触发【创生】时，获得 1 张「家族壮大」。至多获得 3 次。",
+      "awakened_passive": "娜娜莉战斗时，若已有【创生】或【覆纹】，额外附加 2 点追击伤害，持续 2 个己方回合。",
       "everness_id": 1010,
       "role": "击退换取「家族壮大」，永久强化自身",
       "ultimate": {
@@ -193,13 +193,13 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/九原.webp",
       "portrait": "/static/images/characters/portrait/九原.webp",
-      "passive": "【创生强化】九原存活时，创生效果额外结算 1 次。创生对异能者造成伤害时，附着枚约。",
-      "awakened_passive": "对所有对方异能者造成 1 点伤害。对所有枚约目标额外造成 2 点伤害，并消耗枚约。",
+      "passive": "【创生】强化：触发【创生】时，获得的层数翻倍，层数上限改为 6 层。创生对异能者造成伤害时，附着枚约。",
+      "awakened_passive": "每回合首次造成创生伤害时，对全体对方角色造成该次创生伤害；对附着枚约的目标额外造成 2 点伤害，并消耗枚约。持续 2 个己方回合。",
       "everness_id": 1055,
       "role": "创生强化与枚约",
       "ultimate": {
-        "kind": "instant",
-        "turns": 0
+        "kind": "status",
+        "turns": 2
       },
       "faction": "斯特利速递"
     },
@@ -237,8 +237,8 @@
       "avatar": "/static/kongmu/images/characters/player_yiluoyi_256.webp",
       "portrait": "/static/images/characters/portrait/伊洛伊.webp",
       "role": "治疗加攻与复活",
-      "passive": "受到伊洛伊治疗或复活的己方异能者攻击 +1。",
-      "awakened_passive": "下个己方回合开始时，所有己方异能者获得 1 点能量。",
+      "passive": "【创生】强化：触发【创生】后，下个己方回合开始时，额外施加 1 次不占用层数上限的【创生】。不可叠加。",
+      "awakened_passive": "己方回合开始时，所有己方异能者获得 1 点能量，持续 2 个己方回合。",
       "everness_id": 1075,
       "ultimate": {
         "kind": "status",
@@ -255,7 +255,7 @@
       "avatar": "/static/images/characters/avatar/薄荷.webp",
       "portrait": "/static/images/characters/portrait/薄荷.webp",
       "role": "溢出伤害转打玩家的快攻",
-      "passive": "薄荷战斗造成的溢出伤害穿透至玩家。",
+      "passive": "【创生】强化：创生改为对随机对方角色造成伤害。薄荷战斗造成的溢出伤害穿透至玩家，并在造成溢出时刷新【创生】的持续时间。",
       "awakened_passive": "薄荷免疫对方的非战斗伤害，持续 2 个己方回合。",
       "everness_id": 1019,
       "ultimate": {
@@ -383,7 +383,7 @@
       "avatar": "/static/images/characters/avatar/早雾.webp",
       "portrait": "/static/images/characters/portrait/早雾.webp",
       "role": "持续伤害增幅与鬼郎丸",
-      "passive": "已施加浊燃时，己方持续伤害分配的伤害每有 1 种持续伤害便 +25%（向下取整）。鬼郎丸被召唤时，每有 1 种持续伤害，其攻击 +1。",
+      "passive": "已施加【浊燃】时，己方持续伤害分配的伤害每有 1 种持续伤害便 +25%（向下取整）。鬼郎丸被召唤时，每有 1 种持续伤害，其攻击 +1。",
       "awakened_passive": "其他己方异能者及己方召唤物攻击 +2，持续 2 个己方回合。不可叠加。",
       "everness_id": 1003,
       "ultimate": {
@@ -401,8 +401,8 @@
       "avatar": "/static/images/characters/avatar/白藏.webp",
       "portrait": "/static/images/characters/portrait/白藏.webp",
       "role": "自伤叠攻与斩杀",
-      "passive": "每当白藏受到伤害时，白藏攻击 +1。",
-      "awakened_passive": "白藏对对方异能者造成伤害后，若其生命 ≤2，将其消灭，持续 2 个己方回合。",
+      "passive": "每当白藏受到伤害时，白藏攻击 +1，并重置己方施加的【浊燃】的持续时间。",
+      "awakened_passive": "白藏或己方施加的【浊燃】对对方异能者造成伤害后，若其生命 ≤2，将其消灭，持续 2 个己方回合。",
       "everness_id": 1023,
       "ultimate": {
         "kind": "status",
@@ -419,7 +419,7 @@
       "avatar": "/static/images/characters/avatar/阿德勒.webp",
       "portrait": "/static/images/characters/portrait/阿德勒.webp",
       "role": "护盾即攻击，诛恶护持",
-      "passive": "己方回合开始时，阿德勒获得 2 点护盾；若已有浊燃，改为 3 点。阿德勒的攻击力等同于其护盾值。",
+      "passive": "己方回合开始时，阿德勒获得 2 点护盾；若已有【浊燃】，改为 3 点。阿德勒的攻击力等同于其护盾值。",
       "awakened_passive": "施加「诛恶护持」，持续 2 个己方回合。移除所有对方角色的护盾。",
       "everness_id": 1033,
       "ultimate": {
@@ -442,13 +442,12 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/海月.webp",
       "portrait": "/static/images/characters/portrait/海月.webp",
-      "passive": "海月攻击后返回备战区。",
-      "awakened_passive": "本回合，海月可以在备战区远程出击。",
+      "passive": "海月攻击后返回备战区。己方触发【黯星】的回合，海月改为在备战区远程出击。",
+      "awakened_passive": "海月远程出击的伤害 +2，持续 2 个己方回合。",
       "everness_id": 1070,
       "ultimate": {
         "kind": "status",
-        "turns": 1,
-        "expires": "turn_end"
+        "turns": 2
       },
       "faction": "玉饼街居民协会"
     },
@@ -480,7 +479,7 @@
       "role": "占卜与救世魔女",
       "everness_id": 1042,
       "faction": "尤克阿什庭",
-      "passive": "每个己方回合开始时或黑羽主动出击时，将 1 张「谕石」随机插入己方牌库。黑羽使用战斗牌后，充满自己的环合值。【浸染】强化：己方施加的浸染持续时间翻倍。【黯星】强化：己方施加的黯星结束时，额外施加 1 次黯星；额外施加的黯星不会再次触发此效果。",
+      "passive": "己方触发【浸染】或【黯星】时，执行「占卜」；「救世魔女」状态下也生效。黑羽使用战斗牌后，充满自己的环合值。【浸染】强化：己方施加的浸染持续时间翻倍。【黯星】强化：己方施加的黯星结束时，额外施加 1 次黯星；额外施加的黯星不会再次触发此效果。",
       "awakened_passive": "全体己方异能者攻击 +1，持续 2 个己方回合，不可叠加。黑羽进入「救世魔女」状态，持续 2 个己方回合。可退出该状态。",
       "ultimate": {
         "kind": "status",
@@ -503,7 +502,7 @@
             "救世魔女",
             "魔女效果"
           ],
-          "description": "黑羽环合强化外的异能暂停生效。黑羽出击时，先「占卜」，完成后继续本次出击。期间可退出该状态。"
+          "description": "黑羽环合强化外的异能暂停生效；触发【浸染】或【黯星】时仍执行「占卜」。持续期间可手动退出该状态。"
         }
       ],
       "energy_max": 5
@@ -2277,7 +2276,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "【创生强化】触发创生后，下个己方回合开始时额外触发 1 次创生。不可叠加。",
+      "description": "受到伊洛伊治疗或复活的己方异能者攻击 +2。",
       "starter_copies": 2,
       "attack": 2,
       "hp": 6
@@ -2916,7 +2915,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "【黯星强化】黯星的伤害 +1。",
+      "description": "【黯星】强化：黯星的伤害 +1。",
       "effect_id": "U05",
       "source": {
         "character_id": 1070,
@@ -3946,24 +3945,6 @@
       "starter_copies": 2,
       "attack": 3,
       "hp": 6
-    },
-    {
-      "id": "PF01",
-      "character_id": "heiyu",
-      "name": "谕石",
-      "type": "tactic",
-      "cost": 1,
-      "terminal": false,
-      "description": "瞬发。「占卜」（至少置底 1 张），然后抽 1 张牌。",
-      "effect_id": "PF01",
-      "source": {
-        "character_id": 1042,
-        "type": "derived",
-        "index": 0
-      },
-      "starter_copies": 0,
-      "derived": true,
-      "instant": true
     }
   ],
   "starter_decks": [

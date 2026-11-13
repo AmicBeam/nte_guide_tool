@@ -15,21 +15,21 @@ class ZhenhongHarmonyTest(unittest.TestCase):
         enqueue(c, 'surplus')
         finish_operation(s)
         h = hero(s, 'a', 'zhenhong')
-        self.assertEqual((h['harmony'], h['energy'], h['extra_attacks']), (1, 2, 1))
-        self.assertEqual(hero(s, 'a', 'yi')['energy'], 1)
-        event = next(e for e in reversed(s['events']) if e['type'] == 'resource')
-        self.assertEqual(event['harmony_delta'], 0)
+        self.assertEqual((h['harmony'], h['energy']), (1, 0))
+        self.assertEqual(hero(s, 'a', 'yi')['energy'], 0)
+        self.assertFalse(any(e['type']=='attack' for e in s['events']))
+        self.assertEqual(s['sides']['b']['hp'],98)
 
     def test_next_normal_or_battle_attack_still_gains_harmony(self):
         for battle in (False, True):
             with self.subTest(battle=battle):
                 s = fixtures.SurplusReworkTest().game()
                 c = operation(s, 'a', 'zhenhong'); enqueue(c, 'surplus'); finish_operation(s)
-                self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 1)
+                self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 0)
                 if battle:
                     card = card_instance(s, 'R02', 'a'); s['sides']['a']['hand'].append(card)
                     action = dict(type='play_card', card_id=card['instance_id'])
                 else:
                     action = dict(type='attack', character_id='zhenhong')
                 s = apply_action(s, 'a', action)
-                self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 2)
+                self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 3)

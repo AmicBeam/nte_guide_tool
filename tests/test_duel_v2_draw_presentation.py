@@ -16,7 +16,7 @@ class DrawPresentationTest(unittest.TestCase):
 
     def test_in_turn_draw_has_single_movement_for_normal_derived_and_copied_cards(self):
         for side in ('a', 'b'):
-            for card_id, copied in [('P01', False), ('PF01', False), ('P01', True)]:
+            for card_id, copied in [('P01', False), ('NF01', False), ('P01', True)]:
                 with self.subTest(side=side, card=card_id, copied=copied):
                     s = self.game()
                     card = card_instance(s, card_id, side, copy=copied)
@@ -41,7 +41,7 @@ class DrawPresentationTest(unittest.TestCase):
 
     def test_direct_generation_still_has_gain_event(self):
         s = self.game()
-        card = card_instance(s, 'PF01', 'a')
+        card = card_instance(s, 'NF01', 'a')
         s['sides']['a']['hand'] = []
         seq = s['event_seq']
         add_hand(s, 'a', card)
@@ -52,7 +52,7 @@ class DrawPresentationTest(unittest.TestCase):
     def test_hand_limit_draw_does_not_emit_fake_gain(self):
         s = self.game()
         s['sides']['a']['hand'] = [card_instance(s, 'P01', 'a') for _ in range(10)]
-        card = card_instance(s, 'PF01', 'a')
+        card = card_instance(s, 'NF01', 'a')
         s['sides']['a']['deck'] = [card]
         seq = s['event_seq']
         draw(s, 'a')

@@ -12,7 +12,7 @@ from app.modules.card_game.engine.duel_v2.state import front_debuff, hero
 class HarmonyPresentationTest(unittest.TestCase):
     def resolve(self, kind, existing=None):
         state = new_game(seed=9, first_side='a', skip_mulligan=True)
-        hero(state, 'a', 'zero')['harmony'] = 2
+        hero(state, 'a', 'zero')['harmony'] = 3
         if existing:
             front_debuff(state, 'b')[existing] = {'left': 2, 'by': 'a'}
             state['sides']['b']['front'] = 'zero'

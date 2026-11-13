@@ -166,7 +166,8 @@ class NewTestCharacters(unittest.TestCase):
         self.assertEqual(hero(s,'a','haiyue')['energy'],2)
         s=self.game();s['sides']['a']['front']='zero';hero(s,'a','zero')['harmony']=2
         s['sides']['b']['front']='zero';hero(s,'b','zero').update(base_attack=9,hp=30,max_hp=30)
-        hero(s,'a','haiyue').update(awakened=True,ultimate_turns=1)
+        hero(s,'a','haiyue').update(awakened=True,ultimate_turns=2)
+        s['sides']['a']['star_trigger_turn']=s['turn']
         p=preview(s,'a',{'type':'attack','character_id':'haiyue'})
         self.assertFalse(p['will_switch']);self.assertEqual(p['counter'],0)
         self.assertEqual(p['入场'], '不入场')
@@ -177,31 +178,21 @@ class NewTestCharacters(unittest.TestCase):
         self.assertEqual(hero(s,'a','zero')['harmony'],2)
         self.assertEqual(hero(s,'a','haiyue')['hp'],4)
 
-    def test_haiyue_ultimate_expires_at_this_turn_end(self):
+    def test_haiyue_ultimate_lasts_two_own_turns_and_does_not_grant_remote(self):
+        from app.modules.card_game.engine.duel_v2.flow import begin_turn
         s = self.game()
         hero(s, 'a', 'haiyue')['energy'] = 6
-        hero(s, 'a', 'xiaozhi').update(awakened=True, ultimate_turns=2)
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'haiyue'})
-        self.assertTrue(hero(s, 'a', 'haiyue')['awakened'])
         for board in (observe(s, 'a'), capture_public_board(s)):
             h = next(h for h in board['sides']['a']['characters'] if h['id'] == 'haiyue')
-            self.assertEqual(h['ultimate_expires'], 'turn_end')
-        # Persistence must retain the effect during the same turn.
+            self.assertEqual(h['ultimate_expires'], 'turn_start')
+            self.assertEqual(h['ultimate_turns'], 2)
         s = self.attack(json.loads(json.dumps(s)), 'haiyue')
+        self.assertTrue(any(e['type']=='enter' and e.get('actor')=='a:haiyue' for e in s['events']))
+        begin_turn(s, 'a')
         self.assertTrue(hero(s, 'a', 'haiyue')['awakened'])
-        s = apply_action(s, 'a', {'type': 'end_turn'})
-        self.assertEqual(s['active_side'], 'b')
+        begin_turn(s, 'a')
         self.assertFalse(hero(s, 'a', 'haiyue')['awakened'])
-        self.assertEqual(hero(s, 'a', 'haiyue')['ultimate_turns'], 0)
-        self.assertTrue(hero(s, 'a', 'xiaozhi')['awakened'])
-        # The following own turn no longer bypasses entry or retaliation.
-        s = apply_action(s, 'b', {'type': 'end_turn'})
-        s['sides']['b']['front'] = 'zero'
-        start = s['event_seq']
-        s = self.attack(s, 'haiyue')
-        events = [e for e in s['events'] if e['seq'] > start]
-        self.assertTrue(any(e['type'] == 'enter' and e.get('actor') == 'a:haiyue' for e in events))
-        self.assertEqual(next(e['counter'] for e in events if e['type'] == 'attack'), 2)
 
     def test_wangri_fuge_equips_four_attack_four_health(self):
         from app.modules.card_game.engine.duel_v2.state import attack_value

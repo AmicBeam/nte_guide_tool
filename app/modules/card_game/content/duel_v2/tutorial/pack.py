@@ -545,7 +545,7 @@ _L06_STEPS = [
 
 _L07_STEPS = [
     _ack('l07_intro', '环合',
-         '主角的异能：使用战斗牌后，充满自己的环合值。环合满 2 后，下一名出战的队友可以消耗它，发动入场环合。光+灵是创生。',
+         '主角的异能：使用战斗牌后，充满自己的环合值。环合满 3 后，下一名出战的队友可以消耗它，发动入场环合。光+灵是创生。',
          ['character:a:tutorial_protagonist', 'hand:a-1']),
     _act('l07_play', '打出战斗牌',
          '这一回合有 2 点行动力。先打出主角的战斗牌：她会额外出击，并且环合加满。',
@@ -554,21 +554,21 @@ _L07_STEPS = [
          cue='把这一张战斗牌拖到对战区', primary='拖动卡牌',
          arrow={'from': 'hand:a-1', 'to': 'play_area'}),
     _act('l07_mint', '切换薄荷',
-         '还剩 1 点。把薄荷拖进战斗区，消耗主角的满环合。光+灵会创生：先造成 1 点伤害，再由薄荷出击。',
+         '还剩 1 点。把薄荷拖进战斗区，消耗主角的满环合。光+灵触发创生：先造成 1 点伤害，并获得持续 2 个己方回合的创生层；出击还会触发每层本回合首次的 1 点追加伤害。',
          ['character:a:tutorial_bohe', 'play_area'],
          [{'type': 'attack', 'character_id': 'tutorial_bohe'}],
          cue='按住薄荷，并拖动到对战区', primary='拖动薄荷',
          arrow={'from': 'character:a:tutorial_bohe', 'to': 'play_area'}),
     _ack('l07_full', '薄荷环合满了',
-         '薄荷开局就有 1 点环合。主动进攻后再 +1，这一回合结束时她已经满环合。',
+         '薄荷开局预置 2 点环合。普通出击消耗 1 点行动力，获得 1 点基础环合值，达到上限 3 点。',
          ['character:a:tutorial_bohe']),
     _act('l07_end', '结束回合',
-         '结束回合。下一回合开始时，看满环合会怎么显示。',
+         '结束回合。下一回合开始时，最近行动且满槽的来源仍用蓝色虚线显示。',
          ['end_turn'], [{'type': 'end_turn'}],
          cue='点击「结束回合」', primary='结束回合', click='end_turn',
          opponent=[{'type': 'end_turn'}]),
     _ack('l07_style', '满环合',
-         '回合开始时，满环合的异能者会这样显示。薄荷还在备战区，满环合仍保留。',
+         '蓝色虚线表示最近使用卡牌或普通出击且环合已满的异能者。薄荷返回备战区不清资源，也不会额外创建旧式继承机会。',
          ['character:a:tutorial_bohe', 'bench:a']),
     _act('l07_harvest', '环合收割',
          '再让主角出场，消耗薄荷的满环合，再次触发创生。',
@@ -604,7 +604,7 @@ _L09_STEPS = [
 
 _L10_STEPS = [
     _ack('l10_intro', '响应',
-         '牌面写着响应的牌，会在写明的时机自动打出，仍要支付行动力。响应战斗牌是作为反击方进入，不会重新出击，也不拿基础环合和能量。',
+         '牌面写着响应的牌，会在写明的时机自动打出，仍要支付行动力。响应战斗牌是作为反击方进入，不会重新出击；按实际行动力消耗获得基础环合值，反击不获得基础能量。',
          ['hand:a-1']),
     _act('l10_setup', '先占前排',
          '先让主角出击占住前排，并留下 1 点行动力给响应。先攻第一回合只有 1 点，所以这一关你是后手，开局有 2 点。',
@@ -673,7 +673,7 @@ _L13_STEPS = [
          [{'type': 'ultimate', 'character_id': 'tutorial_bohe'}], cue='点击薄荷的终结按钮',
          click='ultimate:a:tutorial_bohe'),
     _ack('l13_done', '后续阶段',
-         '两次终结已用完，行动力仍为 2。白热化效果会叠加：第 13 回合起能量上限降低 1 点、环合上限降为 1 点；第 20 回合起，回合开始时随机从己方弃牌堆回收 1 张可构筑卡牌，行动力刷新为 3 点；已有资源超过新上限时也会降到新上限。记得留意左侧预告。本关到这里结束。',
+         '两次终结已用完，行动力仍为 2。白热化效果会叠加：第 13 回合起能量上限降低 1 点，环合上限保持 3 点；第 20 回合起，回合开始时随机从己方弃牌堆回收 1 张可构筑卡牌，行动力刷新为 3 点；已有资源超过新上限时也会降到新上限。记得留意左侧预告。本关到这里结束。',
          ['ultimate_count', 'ap:a', 'escalation'], primary='完成本关', finish=True),
 ]
 
@@ -748,10 +748,10 @@ SCENARIOS = {
         flags=_flags(
             hide=['energy', 'ultimate', 'deck', 'mulligan', 'form'],
             disable_hand=False, disable_harmony_gain=False,
-            disable_harmony_trigger=False, disable_passives=False),
+            disable_harmony_trigger=False, disable_passives=False, player_hp=20),
         extra_ap={'a': 1},
         hand_a=['tutorial_z03'],
-        stats={'tutorial_bohe': {'harmony': 1}}),
+        stats={'tutorial_bohe': {'harmony': 2}}),
     'tutorial_l08_energy': _scene(
         'tutorial_l08_energy', '第七关 终结', 7, _L08_STEPS,
         flags=_flags(

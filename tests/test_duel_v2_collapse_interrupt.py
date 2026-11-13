@@ -37,6 +37,14 @@ def resources(s):
             for side, team in s['sides'].items() for cid, h in team['characters'].items()}
 
 
+def paid_resources(before, *actors):
+    expected = dict(before)
+    for actor in actors:
+        harmony, energy = expected[actor]
+        expected[actor] = (min(3, harmony + 1), energy)
+    return expected
+
+
 class CollapseInterruptTest(unittest.TestCase):
     def test_lake_interrupts_anhunqu_before_damage_passive_and_resources(self):
         s = game()
@@ -53,7 +61,7 @@ class CollapseInterruptTest(unittest.TestCase):
         self.assertTrue(collapsed(hero(after, 'a', 'anhunqu')))
         self.assertEqual(hero(after, 'b', 'dafutier')['hp'], 4)
         self.assertEqual(hero(after, 'a', 'anhunqu')['hp'], 5)
-        self.assertEqual(resources(after), before)
+        self.assertEqual(resources(after), paid_resources(before, ('a','anhunqu'), ('b','dafutier')))
         self.assertEqual(after['sides']['a']['ap'], 9)
         self.assertFalse(after['sides']['a']['normal_attack_available'])
         self.assertEqual(after['sides']['b']['ap'], 9)
@@ -89,43 +97,40 @@ class CollapseInterruptTest(unittest.TestCase):
         after = apply_action(s, 'a', action)
         self.assertEqual(hero(after, 'b', 'dafutier')['hp'], 5)
         self.assertEqual(hero(after, 'a', 'nanali')['hp'], 5)
-        self.assertEqual(resources(after), before)
+        self.assertEqual(resources(after), paid_resources(before, ('a','nanali'), ('b','dafutier')))
         self.assertEqual(after['sides']['a']['ap'], 9)
         self.assertEqual([c['card_id'] for c in after['sides']['a']['discard']], ['N03'])
         self.assertFalse(any(e['type'] in ('attack', 'followup') for e in after['events'] if e['seq'] > seq))
         self.assertIsNone(after['operation'])
 
-    def test_weapon_interrupts_normal_and_ranged_attacks(self):
+    def test_weapon_collapses_after_normal_and_ranged_sorties(self):
+        # F08 is an after-sortie effect; it does not interrupt a completed hit.
         for cid, ranged in (('anhunqu', False), ('haiyue', True)):
             with self.subTest(cid=cid):
                 s = game(); hero(s, 'b', 'dafutier')['shape'] = 'F08'
-                h = hero(s, 'a', cid); h['flags']['collapse_count'] = 2
-                h['awakened'] = ranged
-                before = resources(s); seq = s['event_seq']
-                action = dict(type='attack', character_id=cid)
-                preview = next(row['preview'] for row in observe(s, 'a')['legal_actions']
-                               if row['action'] == action)
-                self.assertNotIn('attack', preview)
-                self.assertEqual(preview['自身生命变化'], 0)
-                after = apply_action(s, 'a', action)
-                self.assertTrue(collapsed(hero(after, 'a', cid)))
-                self.assertEqual(hero(after, 'b', 'dafutier')['hp'], 5)
-                self.assertEqual(resources(after), before)
-                self.assertEqual(after['sides']['a']['front'], None if ranged else cid)
-                self.assertFalse(any(e['type'] == 'attack' for e in after['events'] if e['seq'] > seq))
+                hero(s, 'a', cid)['flags']['collapse_count'] = 2
+                if ranged:
+                    s['sides']['a']['star_trigger_turn'] = s['turn']
+                seq=s['event_seq'];action=dict(type='attack',character_id=cid)
+                after=apply_action(s,'a',action)
+                self.assertTrue(collapsed(hero(after,'a',cid)))
+                self.assertEqual(hero(after,'b','dafutier')['hp'],2 if ranged else 3)
+                self.assertEqual(hero(after,'a',cid)['harmony'],1)
+                self.assertEqual(hero(after,'a',cid)['energy'],2)
+                self.assertEqual(after['sides']['a']['front'],None if ranged else cid)
+                self.assertEqual(sum(e['type']=='attack' for e in after['events'] if e['seq']>seq),1)
 
-    def test_interrupted_sync_does_not_borrow_support_followup(self):
-        s = game(); hero(s, 'b', 'dafutier')['shape'] = 'F08'
-        hero(s, 'a', 'lingke')['flags']['collapse_count'] = 2
-        # A borrowed ally's completion hook requires an actual resolved hit.
+    def test_post_sortie_weapon_keeps_resolved_sync_and_borrowed_callback(self):
+        s=game();hero(s,'b','dafutier')['shape']='F08'
+        hero(s,'a','lingke')['flags']['collapse_count']=2
         from app.modules.card_game.content.duel_v2.characters.anhunqu import Anhunqu
-        action = give(s, 'K05'); action['target_id'] = 'a:anhunqu'
-        with patch.object(Anhunqu, 'on_support_resolved', create=True) as borrowed:
-            after = apply_action(s, 'a', action)
-            borrowed.assert_not_called()
-        self.assertTrue(collapsed(hero(after, 'a', 'lingke')))
-        self.assertEqual(hero(after, 'b', 'dafutier')['hp'], 5)
-        self.assertFalse(any(e['type'] == 'attack' for e in after['events']))
+        action=give(s,'K05');action['target_id']='a:anhunqu'
+        with patch.object(Anhunqu,'on_support_resolved',create=True) as borrowed:
+            after=apply_action(s,'a',action)
+            borrowed.assert_called_once()
+        self.assertTrue(collapsed(hero(after,'a','lingke')))
+        self.assertEqual(hero(after,'b','dafutier')['hp'],1)
+        self.assertEqual(sum(e['type']=='attack' for e in after['events']),1)
 
     def test_any_pre_damage_timing_can_interrupt_without_card_specific_checks(self):
         from app.modules.card_game.engine.events import GameEvent
@@ -142,7 +147,7 @@ class CollapseInterruptTest(unittest.TestCase):
                 self.assertTrue(collapsed(hero(after, 'a', 'anhunqu')))
                 self.assertEqual(hero(after, 'b', 'dafutier')['hp'], 5)
                 self.assertEqual(hero(after, 'a', 'anhunqu')['hp'], 5)
-                self.assertEqual(resources(after), before)
+                self.assertEqual(resources(after), paid_resources(before, ('a','anhunqu')))
                 self.assertFalse(any(e['type'] == 'attack' for e in after['events']))
                 self.assertEqual(sum('攻击被打断' in e['text'] for e in after['events']), 1)
 
@@ -174,7 +179,7 @@ class CollapseInterruptTest(unittest.TestCase):
         finish_operation(s)
         self.assertEqual(s['sides']['b']['hp'], 28)
         self.assertEqual(len([e for e in s['events'] if e['type'] == 'attack']), 1)
-        self.assertEqual(hero(s, 'a', 'anhunqu')['harmony'], 1)
+        self.assertEqual(hero(s, 'a', 'anhunqu')['harmony'], 0)
         self.assertEqual(hero(s, 'a', 'anhunqu')['energy'], 2)
 
 

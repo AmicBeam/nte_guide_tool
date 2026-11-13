@@ -31,13 +31,13 @@ def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=
     selected = {s: validate_deck(deepcopy(decks[s] if decks else STARTER_DECK)) for s in SIDES}
     first_side = first_side or SIDES[Random(seed).randrange(2)]
     from .presentation import capture_public_board
-    state = {'rules_version': 'duel_v2', 'design_version': 'V2.5', 'version': 0,
+    state = {'rules_version': 'duel_v2', 'design_version': 'V2.6', 'version': 0,
              'phase': 'mulligan', 'active_side': first_side, 'first_side': first_side,
              'turn': 0, 'winner': None, 'reason': None, 'rng': seed, 'next_instance': 0,
              'event_seq': 0, 'events': [], 'pending_choice': None, 'operation': None,
              'mulligan_done': [], 'current_action_id': 'setup', 'current_action_version': 0,
              'combat_group': 0, 'sides': {}, 'escalation_enabled': bool(escalation),
-             'harmony_residue_version': 1}
+             'harmony_residue_version': 2}
     for side in SIDES:
         order = list(selected[side]['character_ids'])
         state['sides'][side] = PlayerEntity({
@@ -180,6 +180,8 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None,
     c = operation(state, side, card['character_id'], card, target_id)
     c.operation['option_id'] = option.get('id')
     c.operation['ap_paid'] = ap_paid
+    from .harmony import pay_harmony
+    pay_harmony(c, ap_paid)
     fire(c, GameEvent.V2_CARD_USED, actor_id=card['character_id'], card=card)
     if form_bonus and not finished(state):
         draw(state, side, 1)
@@ -629,7 +631,7 @@ def begin_turn(state, side):
         actor = team.pop('extra_genesis_actor', None)
         if actor and alive(state, side, actor):
             EffectContext(state, side, actor, {'side': side}).history(
-                '回合开始，结算「星月夜」留下的追加创生。')
+                '回合开始，结算伊洛伊异能留下的不占上限【创生】。')
             resolve_genesis(EffectContext(state, side, actor, {'side': side, 'actor': actor}),
                             arm_delay=False)
     other_side = other(side)
@@ -783,6 +785,9 @@ def end_turn(state, side):
         return
     from .continuous import tick_owner_end
     tick_owner_end(state, side)
+    from .genesis import tick_layers
+    if not finished(state):
+        tick_layers(state, side)
     if finished(state):
         return
     _expire_collapse(state, side)
@@ -859,40 +864,26 @@ def finish_operation(state):
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
     gain_energy = not flags.get('disable_energy_gain')
-    gain_harmony = not flags.get('disable_harmony_gain') and not op.get('skip_combat_harmony')
-    if attackers and (gain_energy or gain_harmony):
+    if attackers and gain_energy:
         share_side = attackers[0][0]
         before = {}
         for ally_id in team_order(state, share_side):
-            if not alive(state, share_side, ally_id):
-                continue
-            h = hero(state, share_side, ally_id)
-            before[ally_id] = {'harmony': h['harmony'], 'energy': h['energy']}
-            if gain_energy:
+            if alive(state, share_side, ally_id):
+                h = hero(state, share_side, ally_id)
+                before[ally_id] = {'harmony': h['harmony'], 'energy': h['energy']}
                 energy(state, share_side, ally_id, 1)
         for ps, pc in attackers:
             h = hero(state, ps, pc)
-            extra = 0
-            kit = KITS.get(pc)
-            hook = getattr(kit, 'combat_harmony_extra', None) if kit else None
-            if hook and gain_harmony:
-                extra = int(hook(EffectContext(state, ps, pc, op)) or 0)
-            snap = before.get(pc) or {'harmony': 0, 'energy': 0}
-            if gain_harmony:
-                h['harmony'] = min(harmony_cap(state), h['harmony'] + 1 + extra)
-            if gain_energy:
-                energy(state, ps, pc, 1)
-            dh, de = h['harmony'] - snap['harmony'], h['energy'] - snap['energy']
-            if gain_harmony and gain_energy:
-                text = f"{h['name']}战斗积累：自己的环合 +{dh}、能量 +{de}；全队存活异能者分享能量 +1。"
-            elif gain_harmony:
-                text = f"{h['name']}战斗积累：自己的环合 +{dh}。"
-            else:
-                text = f"{h['name']}战斗积累：自己的能量 +{de}；全队存活异能者分享能量 +1。"
-            log(state, text, 'resource', side=ps, source=pc, actor=f'{ps}:{pc}', target=f'{ps}:{pc}',
-                harmony_delta=dh, energy_delta=de,
-                before=snap, after={'harmony': h['harmony'], 'energy': h['energy']})
+            snap = before.get(pc) or {'harmony': h['harmony'], 'energy': 0}
+            energy(state, ps, pc, 1)
+            de = h['energy'] - snap['energy']
+            log(state, f"{h['name']}战斗积累：自己的能量 +{de}；全队存活异能者分享能量 +1。",
+                'resource', side=ps, source=pc, actor=f'{ps}:{pc}', target=f'{ps}:{pc}',
+                harmony_delta=0, energy_delta=de, before=snap,
+                after={'harmony': h['harmony'], 'energy': h['energy']})
     fire(c, GameEvent.V2_OPERATION_RESOURCES_RESOLVED, actor_only=True)
+    from .harmony import finish_harmony_action
+    finish_harmony_action(c)
     from .modifiers import clear, entities
     for _, holder in entities(state):
         clear(holder, 'operation_end')
@@ -1087,6 +1078,9 @@ def apply_owned_action(state, side, action):
         if candidate.get('target_id'):
             c.operation['target_id'] = candidate['target_id']
         c.operation['normal_attack'] = True
+        c.operation['ap_paid'] = payment['ap']
+        from .harmony import pay_harmony
+        pay_harmony(c, payment['ap'])
         fire(c, 'pay_normal_attack', actor_only=True, payment=payment)
         c.sortie(bonus=payment.get('bonus', 0))
         if result['phase'] != 'choice':

@@ -47,7 +47,7 @@ python scripts/refresh_guide_data.py
 python scripts/refresh_guide_data.py --transport curl
 ```
 
-现有刷新脚本从聚合接口读取条目结构，再从 NTEData 读取技能参数与伤害等原始配置；聚合快照不能作为已核实最新数据的依据，更新字段须按最新 NTEData 的实际引用逐项核对；默认通过已登录的 `gh` 只读获取技能与等级经验表，也可传 `--ntedata-dir /path/to/tables` 使用本地 `DT_GameplayAbilityTipsData.json`、`DT_SkillDamageData.json` 与 `DT_CharacterUpgradeDataTable.json`。所有联网仅发生在显式刷新阶段。
+现有刷新脚本从聚合接口读取条目结构，再从 NTEData 读取技能参数与伤害等原始配置；聚合快照不能作为已核实最新数据的依据，更新字段须按最新 NTEData 的实际引用逐项核对；默认通过已登录的 `gh` 只读获取技能与等级经验表，也可传 `--ntedata-dir /path/to/tables` 使用本地 `DT_GameplayAbilityTipsData.json`、`DT_SkillDamageData.json`、`DT_GameplayAbilityCostData.json` 与 `DT_CharacterUpgradeDataTable.json`。所有联网仅发生在显式刷新阶段。
 
 仅更新轨外之境可执行 `python scripts/refresh_guide_data.py --challenges-only --transport curl`，保留角色、弧盘与其他目录字段；全部环线校验成功后原子替换，缺少既有赛期时拒绝更新。赛期日历只调整日期，不覆盖环线名称。常规刷新和仅环线刷新均按赛期表的 `BuffID` 读取当前共鸣名称与正文，避免远端详情尚未更新时覆盖新效果；`--ntedata-dir` 支持完整目录或扁平目录下的 `AbyssCloneSeasonDataTable.json` 与 `DT_AbyssCloneBuffConfig.json`，缺少关联或正文时中止刷新并保留旧快照。怪物数值同时按关卡表→半场／波次怪物池→独立属性包读取当前生命、攻击、防御、倾陷及抗性，拒绝缺失引用、阵容／等级不匹配和未支持的成长修正；本地表还需 `AbyssCloneLevelDataTable.json`、`DT_AbyssMonsterPool.json` 与 `DT_MonsterPackData.json`。霜寒终点站玛门、墨菲克斯单只生命均为4,930,440，第11站囿巢鸟、桀桀熊均为4,564,128。
 
@@ -142,6 +142,8 @@ python scripts/refresh_guide_data.py --transport curl
 验证：`.venv/bin/python -m unittest tests.test_guide_challenges tests.test_guide_challenge_schedule tests.test_guide tests.test_module_routes -v`；浏览器检查共鸣、关卡筛选、贴图、吞噬标记、默认折叠与展开，以及窄屏布局。
 
 技能招式说明与技能／被动正文统一使用16px字号，倍率与命中数据表保持独立字号。
+
+技能参数通过明确的 `SkillCostName` 引用读取终结能量消耗，与技能倍率及命中明细一起刷新；缺失引用或无效消耗会中止导入，不填成0。曳尔沐极轨终结消耗100点能量，在网页、JSON、Markdown与CLI的等级读取中一致展示。都市技能尚无正文时保留缺失说明。验证：`tests.test_guide_energy_costs`。
 
 轨外之境目录在每次请求时按系统当前时间判断限时环线：北京时间开始日05:00（含）至结束日05:00（不含）高亮卡片边缘。常驻、日期缺失、尚未开始和已结束的环线不高亮；判断不缓存，刷新页面即可按新时间更新。验证包含05:00切换边界和不同时区的等价时刻。
 

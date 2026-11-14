@@ -3,11 +3,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 import json
+import math
 from pathlib import Path
 import re
 import subprocess
 
-TABLES = ('DT_GameplayAbilityTipsData', 'DT_SkillDamageData')
+TABLES = ('DT_GameplayAbilityTipsData', 'DT_SkillDamageData', 'DT_GameplayAbilityCostData')
 LACRIMOSA_FORMS = Path(__file__).resolve().parents[1] / 'app/modules/guide/data/lacrimosa_forms.json'
 LACRIMOSA_FORM_ROW = 'GA_Lacrimosa_Skill_stolen_damage'
 
@@ -126,6 +127,25 @@ def enrich_ability(ability, tables):
     if tips is None and ability.get('param_rows'):
         raise ValueError(f'Missing skill tips: {ability["id"]}')
     tips = tips or {}
+    costs = tables.get('DT_GameplayAbilityCostData')
+    if costs is not None:
+        for parameter in tips.get('GALevelUpArray') or []:
+            identifier = (parameter.get('LevelUpData') or {}).get('SkillCostName')
+            if not identifier or identifier == 'None':
+                continue
+            value = costs[identifier]['GACost']
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+                raise ValueError(f'Invalid skill energy cost: {identifier}')
+            key = parameter['DescValue']['Key']
+            rows = ability.setdefault('param_rows', [])
+            levels = max((len(row.get('values') or []) for row in rows), default=1)
+            row = next((row for row in rows if row['key'] == key), None)
+            if row is None:
+                row = {'key': key}
+                rows.append(row)
+            row.update(label=display_text(parameter['Desc']), values=[
+                display_text(parameter['DescValue']).format(f'{value:g}')
+            ] * max(1, levels))
     bindings = {}
     for parameter in tips.get('GALevelUpArray') or []:
         key = (parameter.get('DescValue') or {}).get('Key')
@@ -158,6 +178,8 @@ def enrich_ability(ability, tables):
     if ability['id'] == 'GA_Lacrimosa_Skill':
         ability['param_rows'].append(stolen_damage_row(damages))
     phases = ability.get('phases') or []
+    if not phases and not ability.get('param_rows'):
+        return
     groups = [{'name': p['name'], 'description': p.get('desc'), 'param_rows': []} for p in phases]
     shared = {'name': '共用与其他参数', 'description': None, 'param_rows': []}
     for row in ability.get('param_rows') or []:

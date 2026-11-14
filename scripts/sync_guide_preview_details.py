@@ -61,7 +61,11 @@ def build(directory, character_id, prefix):
         for row in ability['param_rows']:
             if len(row['values']) == 1:
                 row['values'] *= max_level
-        enrich_ability(ability, {'DT_GameplayAbilityTipsData': tips, 'DT_SkillDamageData': damage})
+        tables = {'DT_GameplayAbilityTipsData': tips, 'DT_SkillDamageData': damage}
+        if any(p.get('LevelUpData', {}).get('SkillCostName') not in (None, '', 'None')
+               for p in raw['GALevelUpArray']):
+            tables['DT_GameplayAbilityCostData'] = table('DT_GameplayAbilityCostData')
+        enrich_ability(ability, tables)
         abilities.append(ability)
     awaken, resonance = [], []
     for raw in table(character_id + 'AwakenEffect')[character_id]['AwakenEffectStructList']:

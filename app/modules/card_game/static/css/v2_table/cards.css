@@ -15,10 +15,6 @@
   pointer-events: none;
 }
 
-.v2-character-card.legal {
-  box-shadow: 0 0 0 calc(1px * var(--table-layout-scale, 1)) rgba(88, 216, 210, 0.28);
-}
-
 .v2-character-card.harmony-source {
   outline: calc(2px * var(--table-layout-scale, 1)) dashed #59b9ff;
   outline-offset: calc(8px * var(--table-layout-scale, 1));
@@ -442,10 +438,6 @@
 
 .v2-hand-card.v2-hand-group-start {
   margin-left: calc(14px * var(--table-layout-scale, 1));
-}
-
-.v2-hand-card.legal {
-  box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow, rgba(88, 216, 210, 0.28)), 0 0 0 calc(1px * var(--table-layout-scale, 1)) rgba(88, 216, 210, 0.72);
 }
 
 .v2-hand-card.legal.is-instant,

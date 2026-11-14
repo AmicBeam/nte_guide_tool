@@ -147,6 +147,9 @@ class HybridJointUpdateTest(unittest.TestCase):
                 self.assertEqual(receipt['before'][key] == receipt['after'][key], key not in keys)
                 if key not in keys:
                     old = rt.model(source, key); frozen = rt.model(receipt['models'], key)
+                    for extension in ('.npz','.json'):
+                        self.assertEqual((source/(key+extension)).read_bytes(),
+                                         (Path(receipt['models'])/(key+extension)).read_bytes())
                     for name in old.weights:
                         np.testing.assert_array_equal(old.weights[name], frozen.weights[name])
 

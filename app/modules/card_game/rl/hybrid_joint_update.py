@@ -275,6 +275,7 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
     if time.time() >= deadline:
         raise TimeoutError('Joint update export deadline')
     models = output/'models'
+    models.mkdir(parents=True, exist_ok=True)
     for key in ROSTER:
         prior = rt.model(source_bank,key)
         if any(not torch.isfinite(t).all() for t in nets[key].state_dict().values()):
@@ -288,6 +289,14 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
                 raise ValueError('Each learner must change both policy and terminal-value arrays')
         elif changed:
             raise ValueError('Frozen model arrays changed during scoped joint update')
+        else:
+            # Re-serializing identical arrays can change ZIP member timestamps
+            # and therefore the NPZ identity. Preserve frozen numerical files
+            # and their manifests byte-for-byte, including their old origin.
+            import shutil
+            for extension in ('.npz', '.json'):
+                shutil.copyfile(Path(source_bank)/(key+extension),models/(key+extension))
+            continue
         rt.export(nets[key],models,key,prior.serving_deck,dict(prior.manifest['origin'],
             hybrid_joint_update=key in learners,frozen_during_scoped_update=key not in learners,
             quality_approved=False,automatic_serving_approval=False))
@@ -336,7 +345,8 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
     if time.time() >= deadline:
         raise TimeoutError('Joint checkpoint deadline')
     return dict(models=str(models.resolve()),health=health,numeric=numeric,before=before,after=after,
-                source_transition=source_transition,restore_checks=restore_checks)
+                source_transition=source_transition,restore_checks=restore_checks,
+                frozen_keys=[key for key in ROSTER if key not in learners])
 
 
 def run_joint_update(source_bank, jobs, games, output, config, *, deadline, prior_stage=None,

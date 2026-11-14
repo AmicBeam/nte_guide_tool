@@ -18,6 +18,8 @@
 
 公平适应可显式设置 `policy_batches_per_pass`，将每次完整新策略行通行均分为固定数量的非空批次（差至多1行），保留全部行与1／4／8通行次数；必须关闭旧回放，满足行数、单批上界和复用上界，否则拒绝。每队实际策略更新数与额外价值更新数分别保存，原／候选仍须达到相同预声明总优化步数。子集续训的价值重绑只接受对应学习头的当前独立报告，其他模型连价值参数也不能改变。相关检查另见 `tests.test_duel_v2_outcome_learning`。
 
+联合更新对冻结模型直接复制原数字文件及清单，张量、文件SHA与原身份都保持不变；不重新压缩相同数组或改写其训练来源。
+
 离线批量搜索基础位于 `rl/batched_duel` 和 `rl/batched_search`，提供 CPU arena、无损实体图 codec、设备存储与随机原语、每根预算、批量推理、协作 Gumbel 遍历和设备统计池，验证及后续五队 native/CUDA 对拍见[批量搜索后端](duel-v2-batched-search.md)。完整正式规则通过有界 CPU 驻留进程池执行，离线评测入口 `scripts/evaluate_duel_v2_batched.py` 合并跨局网络推理和 GPU 搜索统计，并保存实际动作、原始记录及公开回放。离线滚动窗口的`wall_clock`从搜索准入起计3秒，共享最多32次证明／树模拟预算，驻留等待与真实提交端到端延迟另报；网站从请求开始计时的协议不因此改变，迟到结果丢弃。五队规则、合法动作、观察编码和采样的设备执行尚未接通，不自动接入服务或训练。合成根或重复推理行不算真实对局容量验收。
 
 独立恢复研究组件：`residual_policy`／`residual_runtime` 管理正常幅度残差网络与数值版本；`preserved_policy` 保留三套旧策略，`recovery_runtime` 管理显式研究采集，`recovery_search` 管理自然WDL尺度对照，`recovery_checkpoint` 检查网络／Adam／RNG恢复；`policy_equivalence`、`search_stability`、`archive_diagnostics` 只做表示／目标／数值审计，`full_hand_diagnostic` 只对合成离线状态提供具名手牌权限，`offline_sources` 生成排除敏感文件的源码快照。它们不自动接入网站或正式长训；具体入口及CPU／CUDA验收见[策略学习恢复](duel-v2-policy-recovery.md)。

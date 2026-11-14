@@ -693,7 +693,7 @@
     const escalation = ctx.page.querySelector('#v2-escalation');
     if (escalation) {
       escalation.hidden = !progress;
-      escalation.textContent = progress ? progress.hint : '';
+      escalation.textContent = progress ? (progress.short_hint || progress.hint) : '';
       escalation.title = progress ? [progress.description, (progress.active || []).length ? '已生效：' + progress.active.join('；') : '尚未生效'].filter(Boolean).join('\n') : '';
     }
     const tutorial = game && game.tutorial;

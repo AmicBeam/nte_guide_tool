@@ -207,11 +207,12 @@ def victory(state):
 
 def upgrade_harmony_residue(state):
     """Old departure records are not evidence of an actual card/sortie action."""
-    if state.get('harmony_residue_version') != 2:
+    if state.get('harmony_residue_version') != 3:
         for team in state['sides'].values():
             team['last_front'] = None
             team['last_actor_entity_id'] = None
-        state['harmony_residue_version'] = 2
+            team['last_actor_turn'] = None
+        state['harmony_residue_version'] = 3
 
 
 def clear_harmony_source(state, side, cid):

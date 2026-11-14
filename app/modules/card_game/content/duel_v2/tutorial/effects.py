@@ -43,13 +43,11 @@ class TutorialProtagonist:
     text_name = '主角'
 
     @staticmethod
-    def after_card(c, *, actor_id, card, **_data):
-        if actor_id != c.cid or not card or card.get('type') != 'battle':
-            return
-        if c.character['hp'] <= 0:
-            return
+    def action_harmony_gain(c, current=0, *, actor_id, **_data):
+        if actor_id != c.cid or not c.card or c.card.get('type') != 'battle':
+            return None
         from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
-        c.character['harmony'] = harmony_cap(c.state)
+        return max(0, harmony_cap(c.state) - c.character['harmony'])
 
 
 @register

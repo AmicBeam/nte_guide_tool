@@ -78,17 +78,20 @@ def character_effect_markers(character, state=None, side=None):
     return markers
 
 
-def team_effect_markers(team):
+def team_effect_markers(team, state=None, side=None):
     from .modifiers import all_effects
     markers = [_marker('next_resistance', attribute + '抗性', '玩家下次受到该属性伤害',
                        f'{attribute}属性伤害抗性 {value:+d}', False, kind='debuff' if value < 0 else 'buff',
                        attribute=attribute)
                for attribute, value in (team.get('next_damage_resistance') or {}).items()]
-    for index, layer in enumerate(team.get('genesis_layers', []), 1):
-        markers.append(_marker('genesis_layer_' + str(layer['id']), '【创生】' + str(index),
+    from .genesis import public_beads
+    beads = public_beads(state, side) if state is not None else team.get('genesis_layers', [])
+    for layer in beads:
+        stacks = int(layer.get('stacks', 1))
+        markers.append(_marker('genesis_bead_' + str(layer['id']), '【创生】×' + str(stacks),
                                f"剩余 {layer['left']} 个己方回合",
-                               '每回合 1 次，己方异能者出击时造成 1 点伤害，前排优先。' +
-                               ('不占用层数上限。' if layer.get('uncapped') else ''), False))
+                               f'每回合 1 次，己方异能者出击时逐段造成 {stacks} 次 1 点伤害，前排优先。' +
+                               ('不占用普通珠上限。' if layer.get('uncapped') else ''), False))
     for e in all_effects(team):
         if e['property'] == 'damage.resistance' and e.get('visibility') == 'public':
             markers.append(_marker(e['effect_id'], e['label'],
@@ -103,6 +106,9 @@ def team_effect_markers(team):
         markers.append(_marker('skip_normal_attack', '普通出击减少', '下个己方回合', '普通出击机会 -1', False))
     if not team.get('extra_genesis_pending'):
         return markers
-    actor = (team.get('characters') or {}).get(team.get('extra_genesis_actor')) or {}
+    queue = team.get('extra_genesis_queue') or []
+    count = len(queue) or int(team.get('extra_genesis_pending') or 0)
+    actors = [item.get('actor') for item in queue] or [team.get('extra_genesis_actor')]
+    names = '、'.join(dict.fromkeys((team.get('characters') or {}).get(actor, {}).get('name', '') for actor in actors))
     return markers + [_marker('extra_genesis', '伊洛伊异能', '下个己方回合开始',
-                    '伊洛伊倒地后保留；原环合角色' + actor.get('name', '') + '须存活，再触发一次创生', False)]
+                    f'伊洛伊倒地后保留；原环合角色{names}须存活，分别结算 {count} 次额外创生', False)]

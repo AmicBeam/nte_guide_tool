@@ -22,7 +22,7 @@
 
 .v2-character-card.harmony-source {
   outline: calc(2px * var(--table-layout-scale, 1)) dashed #59b9ff;
-  outline-offset: calc(4px * var(--table-layout-scale, 1));
+  outline-offset: calc(8px * var(--table-layout-scale, 1));
 }
 
 .v2-character-card.harmony-ready {

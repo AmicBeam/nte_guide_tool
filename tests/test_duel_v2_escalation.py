@@ -13,6 +13,16 @@ from app.modules.card_game.engine.duel_v2.state import energy, card_instance
 
 
 class EscalationTest(unittest.TestCase):
+    def test_compact_hint_retains_next_stage_and_full_tooltip(self):
+        for turn, expected in ((5, '终结×2 · 回能+1'), (6, '能量上限-1'),
+                               (13, '回收1张 · 行动力3'), (20, '全部生效')):
+            with self.subTest(turn=turn):
+                progress = public_progress(self.game(turn))
+                self.assertIn('白热化', progress['short_hint'])
+                self.assertIn(expected, progress['short_hint'])
+                self.assertLessEqual(len(progress['short_hint'].splitlines()), 3)
+                self.assertIn('全体己方可获能的存活异能者', progress['description'])
+
     def game(self, turn=1, **kwargs):
         deck = next(d for d in STARTER_DECKS if d['id'] == 'weave-rush')
         s = new_game(seed=31, decks={'a': deck, 'b': deck}, first_side='a', skip_mulligan=True, **kwargs)

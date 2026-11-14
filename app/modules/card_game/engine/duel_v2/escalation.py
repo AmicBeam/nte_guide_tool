@@ -46,8 +46,14 @@ def public_progress(state):
     turn = int(state.get('turn', 0))
     active = [text for start, text in STAGES if turn >= start]
     upcoming = next(((start, text) for start, text in STAGES if turn < start), None)
+    short_effects = ('终结×2 · 回能+1', '能量上限-1', '回收1张 · 行动力3')
+    stage = len(active)
+    title = '白热化' + ('', 'Ⅰ', 'Ⅱ', 'Ⅲ')[stage]
+    short_hint = (f'{title}\n{upcoming[0] - turn}回合后\n{short_effects[stage]}'
+                  if upcoming else f'{title}\n全部生效')
     return {
         'stage': len(active), 'active': active,
+        'short_hint': short_hint,
         'hint': f'{upcoming[0] - turn}回合后，{upcoming[1]}' if upcoming else '白热化：全部阶段已生效',
         'description': '；'.join(text for _, text in STAGES),
     }

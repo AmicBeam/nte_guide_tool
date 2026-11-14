@@ -54,7 +54,7 @@ class CollapseHarmonyTest(unittest.TestCase):
         self.assertFalse(harmony_marks(s, 'a')['available'])
         self.assertEqual(hero(s, 'a', 'nanali')['harmony'], 3)
 
-    def test_natural_expiry_reenables_unchanged_source(self):
+    def test_natural_expiry_in_new_turn_requires_fresh_source_action(self):
         for benched in (False, True):
             with self.subTest(benched=benched):
                 s = self.game()
@@ -65,7 +65,10 @@ class CollapseHarmonyTest(unittest.TestCase):
                 # Reach the applier's next turn end without entering another esper.
                 begin_turn(s, 'b')
                 s = apply_action(s, 'b', dict(type='end_turn'))
-                self.assertTrue(harmony_marks(s, 'a')['available'])
+                self.assertFalse(harmony_marks(s, 'a')['available'])
+                card=card_instance(s,'N01','a');s['sides']['a']['hand']=[card]
+                s=apply_action(s,'a',dict(type='play_card',card_id=card['instance_id']))
+                self.assertTrue(harmony_marks(s,'a')['available'])
                 s = apply_action(s, 'a', dict(type='attack', character_id='zero'))
                 self.assertEqual(hero(s, 'a', 'nanali')['harmony'], 0)
 

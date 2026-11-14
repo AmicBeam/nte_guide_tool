@@ -328,10 +328,14 @@ C07 条件触发取出一张真实卡牌后调用 `resolve_release`，结束后�
 
 通用修正属性 rule.normal_attack_instant 允许全队按 shared instant 付款。normal_attack_payment 优先提供 ap=0、normal=false、resource=instant，仍遵守封锁、召唤物和角色禁止出击的规则。统一付款阶段消费 used.instant，普通出击次数不变。P07 赋予该属性至当前己方回合结束，P08 设置 used.instant=false，仅恢复一次、不累计。占卜检视取至少 2，底牌效果不受形态限制；公开投影仍隐藏候选。
 
-## 行动力环合与分层创生协议
+## 行动力环合与创生珠协议
 
-新状态 design_version=V2.6，harmony_residue_version=2。last_front 兼容字段现在记录最近成功用牌／普通出击的角色，last_actor_entity_id 校验实体身份；旧版本退下记录不迁移为新行动证据。环合上限固定 3，付款通过可改写 action_harmony_gain 决策一次入账，操作结束只按旧规则分配能量。
+状态的 harmony_residue_version=3。last_front 兼容字段记录本回合最近成功用牌／普通出击角色，last_actor_entity_id 与 last_actor_turn 校验身份和回合；回合开始／结束清除来源，响应不建立跨回合来源。旧跨回合来源记录不作为新行动证据。环合上限固定 3，付款由 action_harmony_gain 改写并一次入账；零战斗牌在此处补满，操作结束不再补环合。
 
-双方公开 genesis_layers 每项包含 id、left、used_turn、uncapped、source_entity_id；每层独立 2 个己方回合，每个全局回合至多追加一次。观察、公开棋盘与回放 patch 共用这些字段，不包括隐藏手牌、牌序或随机状态。层的来源实体为公开身份，不作为学习特征编号。policy_state 同步层、黯星触发回合、真红首次攻击及九原首次全体创生计次；旧训练编码不因此宣称已支持新机制。
+兼容字段 genesis_layers 现在是一组珠。每项含 id、stacks（1／2）、left、used_turn、uncapped、source_entity_id：普通上限 3 珠，每珠单独 2 回合计时、每回合首次出击按 stacks 各结算 1 点。九原不再改珠数或上限，只将新珠 stacks 设为 2；伊洛伊额外珠可超过普通上限。实时旧层记录按相同来源、剩余时限与使用计次成组规范化，公开观察不修改输入，操作前使用同一规范化结果；历史公开回放不重写。
 
-通用时机补充 V2_HARMONY_TRIGGERED（含提供者／发动者）、V2_HARMONY_APPLIED（实际施加）、V2_SURPLUS_ENERGY（实际回能）、V2_ALLIED_DAMAGE（带伤害类型及效果原因）、V2_COUNTER_RESOLVED（反击完成）与 V2_GENESIS_SEGMENT（每段创生前）。环合来源／各层计次均随 JSON 保存，选择续步不重新付款。黑羽环合占卜使用现有可序列化延后队列与占卜选择，不再生成 PF01。
+extra_genesis_queue 按触发顺序保存每次伊洛伊额外创生的 actor 与 actor_entity_id，兼容 extra_genesis_pending 数量和 extra_genesis_actor 首项。下个己方回合开始逐项验证实体、存活并施加 1 珠，不递归排队，来源伊洛伊倒地不取消队列；旧布尔等待字段兼容为一项。
+
+观察、policy_state、公开棋盘与回放 patch 同步珠、待触发队列、来源蓝框及当前计次，不包含隐藏牌序或随机状态。白热化增加 short_hint，网页优先显示简写，hint／description 保留完整说明。新机制不自动适配旧训练编码或授权旧权重。
+
+通用时机包括 V2_HARMONY_TRIGGERED、V2_HARMONY_APPLIED、V2_SURPLUS_ENERGY、V2_ALLIED_DAMAGE、V2_COUNTER_RESOLVED 与 V2_GENESIS_SEGMENT；内容私有效果留在角色包。黑羽环合占卜沿用可序列化延后队列，不再生成 PF01。

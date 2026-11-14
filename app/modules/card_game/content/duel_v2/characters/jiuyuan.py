@@ -61,12 +61,8 @@ class Jiuyuan:
     }
 
     @staticmethod
-    def genesis_layer_count(c, current=1, **_data):
-        return int(current) * 2
-
-    @staticmethod
-    def genesis_layer_cap(c, current=3, **_data):
-        return max(6, int(current))
+    def genesis_bead_stacks(c, current=1, **_data):
+        return 2
 
     @staticmethod
     def card_description(c, current, card):

@@ -17,8 +17,10 @@ PAIRS = {frozenset(('光', '灵')): '创生', frozenset(('光', '相')): '延滞
 def harmony_previous(state, side, cid):
     """Most recent card user / ordinary sortie actor, independent of position."""
     team = state['sides'][side]
-    previous = team.get('last_front') if state.get('harmony_residue_version') == 2 else None
+    previous = team.get('last_front') if state.get('harmony_residue_version') == 3 else None
     if not previous or previous == cid:
+        return None
+    if team.get('last_actor_turn') is not None and team['last_actor_turn'] != state['turn']:
         return None
     if (team.get('last_actor_entity_id')
             and hero(state, side, previous).get('entity_id') != team['last_actor_entity_id']):

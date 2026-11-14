@@ -9,7 +9,7 @@ from app.modules.card_game.engine.duel_v2.presentation import capture_public_boa
 
 
 class HarmonyResidueTest(unittest.TestCase):
-    def game(self,harmony=1):
+    def game(self,harmony=2):
         s=new_game(seed=9,first_side='a',skip_mulligan=True,escalation=False)
         for t in s['sides'].values():t['hand']=[]
         s['sides']['a'].update(front='nanali',ap=10)
@@ -39,11 +39,25 @@ class HarmonyResidueTest(unittest.TestCase):
             self.assertFalse(harmony_marks(s,'a')['available'])
 
     def test_actual_source_survives_return_and_json(self):
-        s=self.family(self.game());move_out(s,'a','nanali');begin_turn(s,'a')
+        s=self.family(self.game());move_out(s,'a','nanali')
         self.assertEqual(s['sides']['a']['last_front'],'nanali')
         self.assertTrue(harmony_marks(s,'a')['available'])
         s=apply_action(json.loads(json.dumps(s)),'a',dict(type='attack',character_id='zero'))
         self.assertEqual(hero(s,'a','nanali')['harmony'],0)
+
+    def test_end_turn_clears_frame_and_next_own_turn_requires_a_fresh_action(self):
+        from app.modules.card_game.engine.duel_v2.flow import end_turn
+        s=self.family(self.game())
+        self.assertTrue(harmony_marks(s,'a')['available'])
+        end_turn(s,'a')
+        self.assertIsNone(s['sides']['a']['last_front'])
+        self.assertEqual(hero(s,'a','nanali')['harmony'],3)
+        self.assertFalse(harmony_marks(s,'a')['payer'])
+        end_turn(s,'b')
+        self.assertFalse(harmony_marks(s,'a')['available'])
+        self.assertEqual(hero(s,'a','nanali')['harmony'],3)
+        s=self.family(s)
+        self.assertTrue(harmony_marks(s,'a')['available'])
 
     def test_thirteenth_turn_does_not_lower_harmony_or_invent_source(self):
         s=self.game(2);s['escalation_enabled']=True;s['turn']=12;begin_turn(s,'a')
@@ -60,7 +74,7 @@ class HarmonyResidueTest(unittest.TestCase):
     def test_legacy_departure_record_is_not_an_action(self):
         s=self.game(3);s['harmony_residue_version']=1;s['sides']['a'].update(front=None,last_front='nanali')
         self.assertFalse(harmony_marks(s,'a')['available'])
-        begin_turn(s,'a');self.assertEqual(s['harmony_residue_version'],2)
+        begin_turn(s,'a');self.assertEqual(s['harmony_residue_version'],3)
         self.assertIsNone(s['sides']['a']['last_front'])
 
     def test_entity_mismatch_never_uses_same_template_as_source(self):

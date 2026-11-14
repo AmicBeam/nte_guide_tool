@@ -1,8 +1,8 @@
 # 异能对决模块
 
-当前环合规则为上限 3、实际行动力消耗等量的可改写基础获值、最近用牌／普通出击来源与外扩蓝色虚线；旧退下继承已移除。创生保存各层独立持续时间与每回合计次，并同步到公开投影和回放；角色效果及例外统一见[现行手册](../../../docs/everness-item-chain-card-design.md#当前环合与异能规则)。旧冻结高级模型不因规则变更自动重绑，仍须通过现行规则身份校验；本轮未训练或部署。训练专用复制规则不视为已适配本轮新机制。
+当前环合规则为上限 3、实际行动力消耗等量的可改写基础获值、本回合用牌／普通出击来源与外扩蓝色虚线，回合结束清除来源；旧退下继承已移除。创生普通最多 3 珠，每珠记录固定层数、独立持续时间与每回合计次；九原每珠 2 层，伊洛伊额外珠按触发次数排队并可超过普通上限，并同步到公开投影和回放；角色效果及例外统一见[现行手册](../../../docs/everness-item-chain-card-design.md#当前环合与异能规则)。旧冻结高级模型不因规则变更自动重绑，仍须通过现行规则身份校验；本轮未训练或部署。训练专用复制规则不视为已适配本轮新机制。
 
-本轮回归入口：`.venv/bin/python -m unittest tests.test_duel_v2_harmony_rework tests.test_duel_v2_catalog tests.test_duel_v2_tutorial tests.test_duel_v2_engine tests.test_duel_v2_zone_status tests.test_duel_v2_harmony_lifetime tests.test_duel_v2_escalation tests.test_duel_v2_presentation`。
+本轮回归入口：`.venv/bin/python -m unittest tests.test_duel_v2_harmony_rework tests.test_duel_v2_zero_harmony_timing tests.test_duel_v2_genesis_beads tests.test_duel_v2_catalog tests.test_duel_v2_tutorial tests.test_duel_v2_engine tests.test_duel_v2_zone_status tests.test_duel_v2_harmony_lifetime tests.test_duel_v2_escalation tests.test_duel_v2_presentation`。
 
 
 异能对决是仓库内的网页卡牌桌游，页面入口为 `/card-game`。登录后可构筑、查阅图鉴、进入单战场牌桌，并查看公开回放。默认主页、构筑、图鉴和牌桌使用四人轮替 V2；旧盖卡页面通过 `?legacy=1` 访问。

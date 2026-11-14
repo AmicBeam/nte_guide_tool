@@ -19,20 +19,28 @@ def pay_harmony(c, amount):
 
 
 def finish_harmony_action(c):
-    if not c.operation.get('tracks_harmony_source'):
+    if not c.operation.get('tracks_harmony_source') or c.state['active_side'] != c.side:
         return
     upgrade_harmony_residue(c.state)
     team = c.state['sides'][c.side]
     team['last_front'] = c.cid if alive(c.state, c.side, c.cid) else None
     team['last_actor_entity_id'] = c.entity_id if team['last_front'] else None
+    team['last_actor_turn'] = c.state['turn']
     log(c.state, '环合来源随行动更新。', 'effect', side=c.side,
         actor=f'{c.side}:{c.cid}', target=f'{c.side}:{c.cid}', present=False)
 
 
+def clear_turn_source(state, side):
+    team = state['sides'][side]
+    team.update(last_front=None, last_actor_entity_id=None, last_actor_turn=None)
+
+
 def source_id(state, side):
-    if state.get('harmony_residue_version') != 2:
+    if state.get('harmony_residue_version') != 3 or state['active_side'] != side:
         return None
     team = state['sides'][side]
+    if team.get('last_actor_turn') is not None and team['last_actor_turn'] != state['turn']:
+        return None
     cid = team.get('last_front')
     if not cid or not alive(state, side, cid) or collapsed(hero(state, side, cid)):
         return None

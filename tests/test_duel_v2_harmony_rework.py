@@ -106,13 +106,14 @@ class HarmonyReworkTest(unittest.TestCase):
         self.assertEqual([x['left'] for x in s['sides']['a']['genesis_layers']],[1,1])
         tick_layers(s,'a');self.assertEqual(s['sides']['a']['genesis_layers'],[])
 
-    def test_jiuyuan_double_layers_and_cap_six(self):
+    def test_jiuyuan_two_stacks_per_bead_keeps_three_ordinary_slots(self):
         s=self.game(('jiuyuan','zero','nanali','hathor'));c=operation(s,'a','zero')
         for _ in range(4):add_layers(c)
-        self.assertEqual(len(s['sides']['a']['genesis_layers']),6)
+        self.assertEqual(len(s['sides']['a']['genesis_layers']),3)
+        self.assertTrue(all(bead['stacks']==2 for bead in s['sides']['a']['genesis_layers']))
         add_layers(c,uncapped=True)
-        self.assertEqual(len(s['sides']['a']['genesis_layers']),8)
-        self.assertEqual(sum(not x['uncapped'] for x in s['sides']['a']['genesis_layers']),6)
+        self.assertEqual(len(s['sides']['a']['genesis_layers']),4)
+        self.assertEqual(sum(not x['uncapped'] for x in s['sides']['a']['genesis_layers']),3)
 
     def test_every_genesis_layer_can_return_surplus_energy_and_jingu(self):
         s=self.game(('xiaozhi','zero','nanali','hathor'));s['sides']['a']['front']='zero'

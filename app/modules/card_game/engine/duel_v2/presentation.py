@@ -94,14 +94,15 @@ def capture_public_board(state):
         team['life_locked'] = bool(source.get('life_locked'))
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
-        team['genesis_layers'] = deepcopy(source.get('genesis_layers', []))
+        from .genesis import public_beads
+        team['genesis_layers'] = public_beads(state, ps)
         team['insight_damage'] = 2 + int(source.get('insight_bonus', 0))
         team['insight_played'] = int(source.get('insight_played', 0))
         team['support_count'] = int(source.get('support_count', 0)) if source.get('support_turn') == state['turn'] else 0
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
         marks = harmony_marks(state, ps)
         team['harmony_available'] = marks['available']
-        team['effect_markers'] = team_effect_markers(source)
+        team['effect_markers'] = team_effect_markers(source, state, ps)
         team['hand_count'] = len(source['hand'])
         team['deck_count'] = len(source['deck'])
         pending = state.get('pending_choice')

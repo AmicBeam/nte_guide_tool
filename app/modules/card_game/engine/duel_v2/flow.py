@@ -37,7 +37,7 @@ def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=
              'event_seq': 0, 'events': [], 'pending_choice': None, 'operation': None,
              'mulligan_done': [], 'current_action_id': 'setup', 'current_action_version': 0,
              'combat_group': 0, 'sides': {}, 'escalation_enabled': bool(escalation),
-             'harmony_residue_version': 2}
+             'harmony_residue_version': 3}
     for side in SIDES:
         order = list(selected[side]['character_ids'])
         state['sides'][side] = PlayerEntity({
@@ -601,6 +601,8 @@ def begin_turn(state, side):
     for ps in SIDES:
         state['sides'][ps]['attacked_this_turn'] = []
     upgrade_harmony_residue(state)
+    from .harmony import clear_turn_source
+    clear_turn_source(state, side)
     team['harmony_damage'] = False
     team['genesis_damage_bonus'] = 0
     team['surplus'] = False
@@ -626,10 +628,19 @@ def begin_turn(state, side):
     fire(EffectContext(state, side, carrier, {'side': side}), 'on_turn_begin')
     if finished(state):
         return
-    if team.pop('extra_genesis_pending', False):
+    pending_genesis = team.pop('extra_genesis_pending', False)
+    extra_genesis = team.pop('extra_genesis_queue', [])
+    legacy_actor = team.pop('extra_genesis_actor', None)
+    if not extra_genesis and pending_genesis and legacy_actor:
+        extra_genesis = [{'actor': legacy_actor}]
+    for pending in extra_genesis:
+        if finished(state):
+            break
         from .combat import resolve_genesis
-        actor = team.pop('extra_genesis_actor', None)
-        if actor and alive(state, side, actor):
+        actor = pending.get('actor')
+        entity = pending.get('actor_entity_id')
+        if (actor and alive(state, side, actor)
+                and (not entity or hero(state, side, actor).get('entity_id') == entity)):
             EffectContext(state, side, actor, {'side': side}).history(
                 '回合开始，结算伊洛伊异能留下的不占上限【创生】。')
             resolve_genesis(EffectContext(state, side, actor, {'side': side, 'actor': actor}),
@@ -769,6 +780,8 @@ def _expire_collapse(state, side):
 
 def end_turn(state, side):
     team = state['sides'][side]
+    from .harmony import clear_turn_source
+    clear_turn_source(state, side)
     opponent = other(side)
     for cid in team_order(state, side):
         h = hero(state, side, cid)

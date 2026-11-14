@@ -75,13 +75,11 @@ class Zero:
     target_policies = {'Z01': 'ally_front'}
 
     @staticmethod
-    def after_card(c, *, actor_id, card):
-        if actor_id != c.cid or not card or card.get('type') != 'battle':
-            return
-        if c.character['hp'] <= 0:
-            return
+    def action_harmony_gain(c, current=0, *, actor_id, **_data):
+        if actor_id != c.cid or not c.card or c.card.get('type') != 'battle':
+            return None
         from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
-        c.grant_harmony(c.cid, harmony_cap(c.state), reason='零打出战斗牌，触发异能')
+        return max(0, harmony_cap(c.state) - c.character['harmony'])
 
     weapon_hooks = {
         'Z08': {'on_turn_end': _weapon_attack},

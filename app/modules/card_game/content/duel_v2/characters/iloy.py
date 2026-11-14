@@ -118,10 +118,14 @@ class Iloy:
         if c.character['hp'] <= 0:
             return
         team = c.state['sides'][c.side]
-        if team.get('extra_genesis_pending'):
-            return
-        team['extra_genesis_pending'] = True
-        team['extra_genesis_actor'] = entering or c.cid
+        queue = team.setdefault('extra_genesis_queue', [])
+        if not queue and team.get('extra_genesis_pending') and team.get('extra_genesis_actor'):
+            previous = team['extra_genesis_actor']
+            queue.append({'actor': previous, 'actor_entity_id': team['characters'].get(previous, {}).get('entity_id')})
+        actor = entering or c.cid
+        queue.append({'actor': actor, 'actor_entity_id': team['characters'].get(actor, {}).get('entity_id')})
+        team['extra_genesis_pending'] = len(queue)
+        team['extra_genesis_actor'] = queue[0]['actor']
         c.history('伊洛伊异能触发：下个己方回合开始时追加 1 次不占上限的【创生】。',
                   target_id=entering or c.cid)
 

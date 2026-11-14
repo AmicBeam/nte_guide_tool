@@ -250,7 +250,8 @@ def observe(state, side, after_seq=None, *, include_previews=True):
         team['max_hp'] = source.get('max_hp', 30)
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
-        team['genesis_layers'] = deepcopy(source.get('genesis_layers', []))
+        from .genesis import public_beads
+        team['genesis_layers'] = public_beads(state, ps)
         team['insight_damage'] = 2 + int(source.get('insight_bonus', 0))
         team['insight_played'] = int(source.get('insight_played', 0))
         team['support_count'] = int(source.get('support_count', 0)) if source.get('support_turn') == state['turn'] else 0
@@ -258,7 +259,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             team['visible_deck'] = [public_card(c, state, ps) for c in source['deck']]
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
         team['harmony_available'] = marks['available']
-        team['effect_markers'] = team_effect_markers(source)
+        team['effect_markers'] = team_effect_markers(source, state, ps)
         chars = []
         for cid in team_order(state, ps):
             h = source['characters'][cid]

@@ -3,7 +3,7 @@ from copy import deepcopy
 from random import Random
 
 from app.modules.card_game.content.duel_v2 import CARDS
-from app.modules.card_game.content.duel_v2.characters.common import revive_character, set_shape
+from app.modules.card_game.content.duel_v2.characters.common import fill_harmony_on_battle_release, revive_character, set_shape
 from app.modules.card_game.content.duel_v2.registry import register, choice_continuation
 from app.modules.card_game.engine.duel_v2.deferred import enqueue
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
@@ -268,10 +268,9 @@ class Heiyu:
             _inspect_before_attack(c)
 
     @staticmethod
-    def after_card(c, *, actor_id, card):
-        if not in_witch(c) and actor_id == c.cid and card and card.get('type') == 'battle':
-            from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
-            c.grant_harmony(c.cid, harmony_cap(c.state), reason='黑羽使用战斗牌，触发异能')
+    def on_card_released(c, *, actor_id, card):
+        if not in_witch(c):
+            fill_harmony_on_battle_release(c, actor_id=actor_id, card=card)
 
     @staticmethod
     def stain_duration(c, current=1, **_data):

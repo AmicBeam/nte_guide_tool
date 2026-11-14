@@ -1,4 +1,4 @@
-from app.modules.card_game.content.duel_v2.characters.common import set_shape
+from app.modules.card_game.content.duel_v2.characters.common import fill_harmony_on_battle_release, set_shape
 from app.modules.card_game.content.duel_v2.registry import register
 
 
@@ -75,12 +75,7 @@ class Zero:
     }
     target_policies = {'Z01': 'ally_front'}
 
-    @staticmethod
-    def action_harmony_gain(c, current=0, *, actor_id, **_data):
-        if actor_id != c.cid or not c.card or c.card.get('type') != 'battle':
-            return None
-        from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
-        return max(0, harmony_cap(c.state) - c.character['harmony'])
+    on_card_released = staticmethod(fill_harmony_on_battle_release)
 
     weapon_hooks = {
         'Z08': {'on_turn_end': _weapon_attack},

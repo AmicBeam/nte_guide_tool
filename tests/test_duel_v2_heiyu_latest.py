@@ -39,7 +39,7 @@ class HeiyuLatestTest(unittest.TestCase):
             self.assertEqual(len(hits),1)
             self.assertEqual(hits[0]['attack'],amount)
             self.assertEqual(s['sides']['b']['hp'],100-amount)
-            self.assertEqual(hero(s,'a','heiyu')['harmony'],1)
+            self.assertEqual(hero(s,'a','heiyu')['harmony'],1 if magical else 3)
             self.assertEqual(len([c for c in s['sides']['a']['discard'] if c['card_id']=='P01']),1)
 
     def test_p04_waits_until_original_attack_then_releases_in_both_forms(self):
@@ -49,5 +49,5 @@ class HeiyuLatestTest(unittest.TestCase):
             self.assertEqual([e['attack'] for e in hits],amounts)
             release=next(e for e in s['events'] if e['type']=='play' and e.get('release_only'))
             self.assertLess(hits[0]['seq'],release['seq'])
-            self.assertEqual(hero(s,'a','heiyu')['harmony'],1)
+            self.assertEqual(hero(s,'a','heiyu')['harmony'],1 if magical else 3)
             self.assertEqual(len([c for c in s['sides']['a']['discard'] if c['card_id']=='P04']),1)

@@ -190,3 +190,13 @@ def settle_nightmare_on(character, layers=1) -> int:
     else:
         flags.pop('nightmare', None)
     return take
+
+
+def fill_harmony_on_battle_release(c, *, actor_id, card, **_data):
+    if actor_id != c.cid or not card or card.get('type') != 'battle':
+        return
+    from app.modules.card_game.engine.duel_v2.tutorial import tutorial_flags
+    if tutorial_flags(c.state).get('disable_harmony_gain'):
+        return
+    from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
+    c.grant_harmony(c.cid, harmony_cap(c.state), reason=f'{c.character["name"]}释放战斗牌，触发异能')

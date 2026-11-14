@@ -1,4 +1,4 @@
-"""Zero overrides the paid-use gain; combat never grants a second refill."""
+"""Zero fills harmony on battle release; combat never grants a second refill."""
 import unittest
 from unittest.mock import patch
 
@@ -22,23 +22,24 @@ class ZeroHarmonyTimingTest(unittest.TestCase):
         state['sides']['a']['hand'].append(card)
         return apply_action(state, 'a', {'type': 'play_card', 'card_id': card['instance_id']})
 
-    def test_full_before_use_callbacks_and_before_attack_with_one_gain(self):
+    def test_paid_base_gain_precedes_use_and_release_fills_before_attack(self):
         state = self.game()
         observed = []
         original = flow.fire
         def used(context, event, **data):
-            if event == GameEvent.V2_CARD_USED:
-                observed.append(context.character['harmony'])
-            return original(context, event, **data)
+            result = original(context, event, **data)
+            if event in (GameEvent.V2_CARD_USED, GameEvent.V2_CARD_RELEASED):
+                observed.append((event, context.character['harmony']))
+            return result
         cursor = state['event_seq']
         with patch.object(flow, 'fire', side_effect=used):
             state = self.play(state)
-        self.assertEqual(observed, [3])
+        self.assertEqual(observed, [(GameEvent.V2_CARD_USED, 1), (GameEvent.V2_CARD_RELEASED, 3)])
         events = [event for event in state['events'] if event['seq'] > cursor]
         gains = [event for event in events if event.get('source') == 'zero'
                  and event.get('after', {}).get('harmony') != event.get('before', {}).get('harmony')]
-        self.assertEqual(len(gains), 1)
-        self.assertEqual(gains[0]['after']['harmony'], 3)
+        self.assertEqual(len(gains), 2)
+        self.assertEqual(gains[-1]['after']['harmony'], 3)
         self.assertLess(gains[0]['seq'], next(event['seq'] for event in events if event['type'] == 'attack'))
         self.assertEqual(hero(state, 'a', 'zero')['harmony'], 3)
 
@@ -66,10 +67,12 @@ class ZeroHarmonyTimingTest(unittest.TestCase):
         state = self.play(state, 'Z02')
         self.assertEqual(hero(state, 'a', 'zero')['harmony'], 2)
 
-    def test_direct_release_does_not_fabricate_a_card_use_refill(self):
+    def test_direct_release_refills_without_payment_or_source(self):
         state = self.game()
         flow.resolve_release(state, 'a', card_instance(state, 'Z03', 'a'))
-        self.assertEqual(hero(state, 'a', 'zero')['harmony'], 0)
+        self.assertEqual(hero(state, 'a', 'zero')['harmony'], 3)
+        self.assertIsNone(state['sides']['a']['last_front'])
+        self.assertEqual(state['sides']['a']['ap'], 10)
 
     def test_lethal_counter_keeps_the_resource_gained_before_combat(self):
         state = self.game()

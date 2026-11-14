@@ -45,7 +45,7 @@ class AutoReleaseTest(unittest.TestCase):
                 actor['hp'] = 0
                 with patch.object(KITS['zero'], 'on_card_used', staticmethod(used), create=True), \
                      patch.object(KITS['zero'], 'on_card_released', staticmethod(released), create=True), \
-                     patch.object(KITS['zero'], 'after_card', staticmethod(used)):
+                     patch.object(KITS['zero'], 'after_card', staticmethod(used), create=True):
                     knockdowns(s)
                 self.assertEqual(calls, [('release', 'canhong', 'C07', 0)])
                 self.assertIs(s['operation'], parent)

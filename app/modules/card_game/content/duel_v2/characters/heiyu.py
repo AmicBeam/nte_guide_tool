@@ -82,6 +82,12 @@ def start_inspection(c, *, after=None, min_bottom=0):
     if finished(c.state) or not alive(c.state, c.side, c.cid):
         return
     team = c.state['sides'][c.side]
+    if len(team['deck']) < 2:
+        if after == 'draw':
+            c.draw(1)
+        elif after == 'sortie':
+            c.sortie()
+        return
     team['heiyu_divinations'] = int(team.get('heiyu_divinations') or 0) + 1
     if after:
         c.operation['heiyu_after_divination'] = after
@@ -108,8 +114,27 @@ def _resume_inspection(c):
     elif after == 'sortie':
         c.sortie()
     elif c.operation.get('pending_sortie') is not None:
+        if _inspect_before_attack(c):
+            return
         from app.modules.card_game.engine.duel_v2.combat import resume_sortie
-        resume_sortie(c)
+        attacker = c.for_character(c.side, c.operation['actor'])
+        if c.operation.pop('heiyu_stacked_immune', False):
+            _immune(attacker)
+        resume_sortie(attacker)
+
+
+def _inspect_before_attack(c):
+    if c.state['phase'] == 'choice':
+        return False
+    queue = c.state.get('deferred_actions', [])
+    for action in list(queue):
+        if (action.get('kind') == 'heiyu_harmony_divination'
+                and action.get('entity_id') == c.entity_id):
+            queue.remove(action)
+            start_inspection(c)
+            if c.state['phase'] == 'choice':
+                return True
+    return False
 
 
 def apply_divination_benefit(c, card, *, witch=False):
@@ -118,14 +143,20 @@ def apply_divination_benefit(c, card, *, witch=False):
     _reveal(c, card)
     card_id = card['card_id']
     if card_id == 'P01':
-        if witch:
+        if c.operation.get('pending_sortie') is not None:
+            # Stack the released frame/effect on the actual enclosing attacker.
+            face = Heiyu.hand_card(c, card, card)
             _detach(c, card)
+            from app.modules.card_game.engine.duel_v2.presentation import public_card
+            log(c.state, '黑羽释放「叛逃者」，将效果叠加至原攻击。', 'play',
+                side=c.side, actor=f'{c.side}:{c.cid}', card=public_card(face, c.state, c.side),
+                release_only=True, present=False)
             discard(c.state, c.side, card)
-            add_effect(c.character, 'heiyu.divination_attack', 'attack.hit', 1,
-                       source_entity_id=c.entity_id, source_key=card['entity_id'],
-                       clear_on=('battle', 'operation_end', 'down'), consume_on='attack',
-                       show_marker=False, label='叛逃者')
-            _immune(c)
+            from app.modules.card_game.content.duel_v2.registry import fire
+            from app.modules.card_game.engine.events import GameEvent
+            fire(c, GameEvent.V2_CARD_RELEASED, actor_id=c.cid, card=face)
+            c.operation['card_bonus'] = int(c.operation.get('card_bonus', 0)) + int(face.get('attack', 0))
+            c.operation['heiyu_stacked_immune'] = True
         else:
             _release(c, card)
     elif card_id == 'P02':
@@ -135,13 +166,10 @@ def apply_divination_benefit(c, card, *, witch=False):
     elif card_id == 'P03':
         c.draw(1)
     elif card_id == 'P04':
-        if witch:
-            _detach(c, card)
-            discard(c.state, c.side, card)
-            enqueue(c, 'heiyu_release_after_attack')
-            c.state['deferred_actions'][-1]['card'] = card
-        else:
-            _release(c, card)
+        # Keep the physical card out of the deck until the original operation ends.
+        _detach(c, card)
+        enqueue(c, 'heiyu_release_after_attack')
+        c.state['deferred_actions'][-1]['card'] = card
     elif card_id == 'P05':
         _detach(c, card)
         add_hand(c.state, c.side, card, reveal=True)
@@ -235,6 +263,11 @@ class Heiyu:
             enqueue(c, 'heiyu_harmony_divination')
 
     @staticmethod
+    def on_sortie_ready(c, response=False, **_data):
+        if not response:
+            _inspect_before_attack(c)
+
+    @staticmethod
     def after_card(c, *, actor_id, card):
         if not in_witch(c) and actor_id == c.cid and card and card.get('type') == 'battle':
             from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
@@ -319,6 +352,8 @@ class Heiyu:
         for field in ('name', 'type', 'description', 'cost', 'effect_id', 'instant', 'attack', 'shield', 'hp'):
             if field in spec:
                 result[field] = spec[field]
+        if in_witch(c) and result.get('type') == 'battle':
+            result['attack'] = int(result.get('attack', 0)) + 1
         return result
 
     @staticmethod

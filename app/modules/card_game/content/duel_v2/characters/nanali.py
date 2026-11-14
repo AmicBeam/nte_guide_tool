@@ -26,9 +26,6 @@ def _n03(c):
 
 
 def _n04(c):
-    team = c.state['sides'][c.side]
-    team['genesis_damage_bonus'] = int(team.get('genesis_damage_bonus') or 0) + 1
-    c.history('「不是闯祸精」生效：本回合己方创生伤害 +1。')
     c.sortie()
 
 
@@ -84,10 +81,19 @@ class Nanali:
 
     @staticmethod
     def card_description(c, current, card):
+        if card.get('card_id') == 'N04':
+            count = int(c.state['sides'][c.side].get('genesis_weave_damage', 0)) // 10
+            return current.removesuffix('（当前为0）') + f'（当前为{count}）'
         if card.get('card_id') == 'N07':
             count = int(c.state['sides'][c.side].get(Nanali.seed_play_key) or 0)
             return current.removesuffix('（当前为0）') + f'（当前为{count}）'
         return current
+
+    @staticmethod
+    def battle_frame(c, attack, shield):
+        if c.card and c.card.get('card_id') == 'N04':
+            attack += int(c.state['sides'][c.side].get('genesis_weave_damage', 0)) // 10
+        return attack, shield
 
     @staticmethod
     def makes_instant(state, side, card):

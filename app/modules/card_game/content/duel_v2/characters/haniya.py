@@ -98,6 +98,11 @@ class Haniya:
         gain_aura(c, 1)
 
     @staticmethod
+    def on_allied_damage(c, damage_kind=None, amount=0, **_data):
+        if damage_kind == 'star' and amount > 0:
+            gain_aura(c, 1)
+
+    @staticmethod
     def on_card_used(c, actor_id, card):
         if card.get('type') == 'battle' and c.character.get('shape') == 'V08':
             _apply_attack_aura(c, actor_id, bool(c.state.get('_response_intercept')))

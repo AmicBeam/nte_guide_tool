@@ -88,10 +88,6 @@ class Adler:
     target_policies = {'D01': 'living_enemy', 'D03': 'other_living_ally'}
 
     @staticmethod
-    def panel_attack(c, current=None, **_data):
-        return int(c.character.get('shield') or 0)
-
-    @staticmethod
     def on_turn_begin(c):
         amount = 3 if burn_present(c.state) else 2
         shield(c.state, c.side, c.cid, amount, reason='阿德勒的异能')
@@ -141,7 +137,7 @@ class Adler:
         options = []
         if not any(effect.get('definition_id') == 'adler.all_resist' for effect in h.get('effects') or []):
             options.append('resist')
-        if int(flags.get('collapse_max') or 5) > 4:
+        if int(flags.get('collapse_max') or 3) > 2:
             options.append('collapse')
         if not any(effect.get('definition_id') == 'adler.attack_cut' for effect in h.get('effects') or []):
             options.append('attack')
@@ -154,7 +150,7 @@ class Adler:
                        clear_on=('down',))
             c.history(f"浊燃获得层数，「正心」触发：{h['name']}全属性抗性 -1。", target_side=enemy, target_id=pick)
         elif choice == 'collapse':
-            flags['collapse_max'] = 4
+            flags['collapse_max'] = 2
             c.history(f"浊燃获得层数，「正心」触发：{h['name']}倾陷值上限 -1。", target_side=enemy, target_id=pick)
         else:
             add_effect(h, 'adler.attack_cut', 'attack.panel', -1, stacking='replace',

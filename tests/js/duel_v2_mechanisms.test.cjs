@@ -58,7 +58,7 @@ test('solitary resolves from passive and R06 without portrait or owner in its re
   assert.equal(api.referencedCards({name:hero.name,description:hero.passive})[0].id,'mechanism-solitary');
   const mechanism=api.referencedCards(r06)[0];
   assert.equal(mechanism.name,'独行');
-  assert.match(mechanism.description,/回复真红的全部生命/);
+  assert.match(mechanism.description,/真红获得 4 点护盾/);
   const source=fs.readFileSync('app/modules/card_game/static/js/v2_table/interaction.js','utf8');
   const renderer=source.slice(source.indexOf('    function hoverCardMarkup('),source.indexOf('    function hoverCharacterMarkup('));
   const context=vm.createContext({V2:api,render:null});

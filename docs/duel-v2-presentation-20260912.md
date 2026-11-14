@@ -11,6 +11,12 @@
 - `legal_actions[]` 增加 `interaction`，action 本体不变。
 - `GET /api/duel-v2/state?after_seq=` 只过滤演出 events。
 
+## 当前显示补充
+
+角色公开字段 `collapse_border_cut` 由后端计算为 0–100 的百分比：从上向下移除白色粗框，初始 0、倾陷 100，原细框保留。实时观察与公开 board 使用同一计算并进入 patch。`genesis_weave_damage` 为己方实际创生／覆纹累计伤害，用于 N04 动态牌面。可接环合的角色只复用 `harmony_ready` 外发光，不增加绿色边框或动画协议。
+
+历史弹窗使用公开事件的 `card`／`item.card` 缩略图，悬浮、焦点或点击复用已有大卡预览；不把缩略图标记为可打出的手牌，不从日志推断隐藏牌。
+
 ## presentation
 
 - 黑羽公开占卜牌使用 `reveal.card_source=deck`，双方和回放均播放牌库揭牌；两种形态的占卜揭牌均为 `response=false`，不播放「响应」大字；随后释放同一实体的 `play` 仅更新局面与历史（`present=false`），不再重复揭牌。不根据隐藏牌库推测触发。

@@ -188,12 +188,12 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None,
     _resolve_card_effect(c)
 
 
-def resolve_release(state, side, card, target_id=None, *, present=True):
+def resolve_release(state, side, card, target_id=None, *, present=True, response=False):
     """Release a physical card without paying or dispatching card-use triggers."""
     from .presentation import public_card
     log(state, f"{hero(state, side, card['character_id'])['name']}自动释放「{card['name']}」。",
         'play', side=side, source=card['character_id'], actor=f"{side}:{card['character_id']}",
-        card=public_card(card, state, side), release_only=True, response=False, present=present)
+        card=public_card(card, state, side), release_only=True, response=response, present=present)
     c = operation(state, side, card['character_id'], card, target_id)
     options = card.get('play_options') or [{}]
     c.operation.update(release_only=True, ap_paid=0, option_id=options[0].get('id'))
@@ -305,6 +305,10 @@ def targets(state, side, card):
     if policy == 'ally_esper':
         return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
                 if not hero(state, side, cid).get('summoned')]
+    if policy == 'other_living_ally_esper':
+        return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
+                if cid != card['character_id'] and alive(state, side, cid)
+                and not hero(state, side, cid).get('summoned')]
     if policy == 'other_living_ally':
         return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
                 if cid != card['character_id'] and alive(state, side, cid)]

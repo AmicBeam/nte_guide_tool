@@ -144,16 +144,16 @@ class HarmonyReworkTest(unittest.TestCase):
         self.assertEqual(len(follow),1)
         self.assertEqual((follow[0]['amount'],follow[0]['target']),(2,'a:zero'))
 
-    def test_jiuyuan_ultimate_waits_and_sweeps_first_segment_only(self):
+    def test_jiuyuan_ultimate_waits_and_liquidates_first_segment_only(self):
         s=self.game(('jiuyuan','zero','nanali','hathor'));hero(s,'a','jiuyuan')['energy']=5
         hp={cid:hero(s,'b',cid)['hp'] for cid in s['sides']['b']['characters']}
         hero(s,'b','hathor')['flags']['pact']=True
         s=apply_action(s,'a',dict(type='ultimate',character_id='jiuyuan'))
         self.assertEqual(hp,{cid:hero(s,'b',cid)['hp'] for cid in hp})
         resolve_genesis(operation(s,'a','zero'))
-        self.assertEqual(hero(s,'b','hathor')['hp'],hp['hathor']-3)
+        self.assertEqual(hero(s,'b','hathor')['hp'],hp['hathor']-2)
         self.assertFalse(hero(s,'b','hathor')['flags'].get('pact'))
-        self.assertEqual(hero(s,'b','zero')['hp'],hp['zero']-1)
+        self.assertEqual(hero(s,'b','zero')['hp'],hp['zero'])
         before=hero(s,'b','zero')['hp'];resolve_genesis(operation(s,'a','zero'))
         self.assertEqual(hero(s,'b','zero')['hp'],before)
 
@@ -217,12 +217,12 @@ class HarmonyReworkTest(unittest.TestCase):
     def test_zhenhong_first_attack_and_solitary_damage_not_sortie(self):
         from app.modules.card_game.content.duel_v2.registry import fire
         from app.modules.card_game.engine.events import GameEvent
-        s=self.game(('zhenhong','zero','nanali','hathor'));self.assertEqual(hero(s,'a','zhenhong')['harmony'],0)
+        s=self.game(('zhenhong','zero','nanali','hathor'));self.assertEqual(hero(s,'a','zhenhong')['harmony'],2)
         s=self.attack(s,'zhenhong');self.assertEqual(hero(s,'a','zhenhong')['harmony'],3)
-        self.assertEqual(s['sides']['b']['hp'],96)
-        s=self.attack(s,'zhenhong');self.assertEqual(s['sides']['b']['hp'],94)
+        self.assertEqual(s['sides']['b']['hp'],98)
+        s=self.attack(s,'zhenhong');self.assertEqual(s['sides']['b']['hp'],96)
         c=operation(s,'a','zero');fire(c,GameEvent.V2_SURPLUS);finish_operation(s)
-        self.assertEqual(s['sides']['b']['hp'],92)
+        self.assertEqual(s['sides']['b']['hp'],94)
         self.assertEqual(s['sides']['a']['front'],'zhenhong')
         self.assertEqual(s['sides']['a']['last_front'],'zhenhong')
 

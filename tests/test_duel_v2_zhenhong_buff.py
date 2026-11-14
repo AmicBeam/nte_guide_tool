@@ -24,7 +24,7 @@ class ZhenhongBuffTest(unittest.TestCase):
     def protect(self, state, side='a'):
         fire(EffectContext(state, side, 'zhenhong', {'side': side}), 'on_surplus', actor_only=True)
 
-    def test_surplus_attack_stacks_and_expires_with_damage_limit_preserving_other_buffs(self):
+    def test_surplus_once_each_turn_and_expires_with_damage_limit_preserving_other_buffs(self):
         from app.modules.card_game.engine.duel_v2.state import add_atk_buff, attack_value
         s = self.game()
         h = hero(s, 'a', 'zhenhong')
@@ -34,14 +34,14 @@ class ZhenhongBuffTest(unittest.TestCase):
         self.protect(s)
         s['deferred_actions'] = []
         move_out(s, 'a', 'zhenhong')
-        self.assertEqual(attack_value(h, s, 'a'), base + 2)
+        self.assertEqual(attack_value(h, s, 'a'), base + 1)
         s = clone_state(json.loads(json.dumps(s)))
         h = hero(s, 'a', 'zhenhong')
         begin_turn(s, 'b')
-        self.assertEqual(attack_value(h, s, 'a'), base + 2)
+        self.assertEqual(attack_value(h, s, 'a'), base + 1)
         self.protect(s)  # Opponent-turn trigger has the same next-own-turn expiry.
         s['deferred_actions'] = []
-        self.assertEqual(attack_value(h, s, 'a'), base + 3)
+        self.assertEqual(attack_value(h, s, 'a'), base + 2)
         opening, seq = capture_public_board(s), s['event_seq']
         s['_public_board'] = deepcopy(opening)
         begin_turn(s, 'a')
@@ -80,7 +80,7 @@ class ZhenhongBuffTest(unittest.TestCase):
                     self.assertEqual([c['card_id'] for c in team['hand']], [wanted])
                     self.assertEqual(team['deck'], [c for c in before if c['card_id'] != wanted])
                     attacks = [e for e in s['events'] if e['type'] == 'attack']
-                    self.assertEqual(attacks[-1]['amount'], {'R02': 1, 'R03': 2, 'R04': 3}[key] + 2)
+                    self.assertEqual(attacks[-1]['amount'], {'R02': 2, 'R03': 2, 'R04': 3}[key])
                     if surplus:
                         held = self.hold(s, key)
                         s['sides']['a']['ap'] = 0
@@ -117,7 +117,7 @@ class ZhenhongBuffTest(unittest.TestCase):
             s = self.play(s, 'RF01')
             self.assertEqual(s['sides']['a']['hand'][0]['card_id'], 'I03')
             attacks = [e for e in s['events'] if e['type'] == 'attack']
-            self.assertEqual(attacks[-1]['amount'], 8)
+            self.assertEqual(attacks[-1]['amount'], 6)
             self.assertEqual(hero(s, 'a', 'zhenhong')['shield'], 4)
         s = self.game()
         s['sides']['a']['deck'] = []
@@ -167,6 +167,7 @@ class ZhenhongBuffTest(unittest.TestCase):
     def test_limit_expires_before_own_start_damage_but_not_enemy_start(self):
         s = self.game()
         self.protect(s)
+        hero(s, 'a', 'zhenhong')['shield'] = 0  # Isolate the lifetime of the limit.
         s['deferred_actions'] = []
         s['sides']['a']['front'] = 'zhenhong'
         hero(s, 'b', 'yi').update(shape='I07', beast_fangs=6, awakened=True, ultimate_turns=2)
@@ -188,6 +189,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         from app.modules.card_game.engine.duel_v2.state import knockdowns
         s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
         self.protect(s, 'b')
+        hero(s, 'b', 'zhenhong')['shield'] = 0  # Isolate uncapped penetration.
         s['deferred_actions'] = []
         s['sides']['b']['front'] = 'zhenhong'
         hero(s, 'a', 'bohe')['base_attack'] = 20
@@ -197,6 +199,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         # A lethal capped hit still uses the pre-hit life for overkill.
         s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
         self.protect(s, 'b')
+        hero(s, 'b', 'zhenhong')['shield'] = 0  # Isolate uncapped penetration.
         s['deferred_actions'] = []
         s['sides']['b']['front'] = 'zhenhong'
         hero(s, 'a', 'bohe')['base_attack'] = 20
@@ -276,7 +279,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zhenhong'})
         self.assertEqual(s['sides']['a']['front'], 'zhenhong')
         self.assertEqual(hero(s, 'a', 'jiuyuan')['harmony'], 2)
-        self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 0)
+        self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 2)
         self.assertTrue(s['sides']['a']['normal_attack_available'])
         self.assertEqual(s['sides']['a']['ap'], before)
         self.assertEqual(s['sides']['b']['hp'], 100)

@@ -159,6 +159,13 @@
     }
 
     function payloadFromNode(node) {
+      if (node.hasAttribute('data-log-seq')) {
+        const event = ((ctx.game && ctx.game.events) || []).find(function (item) {
+          return String(item.seq) === node.getAttribute('data-log-seq');
+        });
+        const card = event && (event.card || (event.item && event.item.card));
+        return card && !card.hidden ? { kind: 'card', card: card } : null;
+      }
       if (!node || !node.getAttribute) {
         return null;
       }
@@ -895,26 +902,33 @@
 
     page.addEventListener('pointerover', function (event) {
       if (event.pointerType === 'touch' || ctx.dragState || ctx.busy) return;
-      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      const source = event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
       if (!source || source.classList.contains('v2-hidden-card')) return;
       const payload = payloadFromNode(source);
       if (payload) showHoverPreview(payload, source, { pointerType: event.pointerType || 'mouse' });
     });
     page.addEventListener('pointerout', function (event) {
-      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      const source = event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
       if (!source) return;
       if (source.contains(event.relatedTarget)) return;
       hideHoverPreview();
     });
     page.addEventListener('focusin', function (event) {
-      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      const source = event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
       const payload = source ? payloadFromNode(source) : null;
       if (payload) showHoverPreview(payload, source, { pointerType: 'keyboard' });
     });
     page.addEventListener('focusout', function (event) {
-      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      const source = event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
       if (!source || source.contains(event.relatedTarget)) return;
       hideHoverPreview();
+    });
+
+    page.addEventListener('click', function (event) {
+      const logCard = event.target.closest('[data-log-seq]');
+      if (!logCard) return;
+      const payload = payloadFromNode(logCard);
+      if (payload) showHoverPreview(payload, logCard, { pinned: true, pointerType: 'touch' });
     });
 
     page.addEventListener('click', function (event) {
@@ -1036,7 +1050,7 @@
     });
     document.addEventListener('pointerdown', function (event) {
       if (!cardPreview.classList.contains('is-pinned') && !cardPreview.classList.contains('is-touch')) return;
-      if (event.target.closest('#v2-card-preview') || event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card')) return;
+      if (event.target.closest('#v2-card-preview') || event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card')) return;
       hideHoverPreview({ force: true });
     });
 

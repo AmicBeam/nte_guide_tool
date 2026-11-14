@@ -1,5 +1,9 @@
 # 异能对决模块
 
+可接环合的角色复用现有状态向外发光；黑羽魔女形态的战斗牌 +1 攻在手牌面板可见，占卜要求牌库至少 2 张，叛逃者叠加原攻击，坏骨头在原攻击后释放。
+
+当前公开角色包含哈尼娅（共 18 名）。倾陷基础上限 3，白色角色包围盒按累计比例从上向下消退；历史弹窗以小图与悬浮大卡展示公开卡牌，早雾图鉴补充紫框鬼郎丸。当前卡效回归：`.venv/bin/python -m unittest tests.test_duel_v2_latest_card_adjustments`。
+
 当前环合规则为上限 3、实际行动力消耗等量的可改写基础获值、本回合用牌／普通出击来源与外扩蓝色虚线，回合结束清除来源；旧退下继承已移除。创生普通最多 3 珠，每珠记录固定层数、独立持续时间与每回合计次；九原每珠 2 层，伊洛伊额外珠按触发次数排队并可超过普通上限，并同步到公开投影和回放；角色效果及例外统一见[现行手册](../../../docs/everness-item-chain-card-design.md#当前环合与异能规则)。旧冻结高级模型不因规则变更自动重绑，仍须通过现行规则身份校验；本轮未训练或部署。训练专用复制规则不视为已适配本轮新机制。
 
 本轮回归入口：`.venv/bin/python -m unittest tests.test_duel_v2_harmony_rework tests.test_duel_v2_zero_harmony_timing tests.test_duel_v2_genesis_beads tests.test_duel_v2_catalog tests.test_duel_v2_tutorial tests.test_duel_v2_engine tests.test_duel_v2_zone_status tests.test_duel_v2_harmony_lifetime tests.test_duel_v2_escalation tests.test_duel_v2_presentation`。

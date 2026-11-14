@@ -15,20 +15,20 @@ class ZhenhongInitialHarmonyTest(unittest.TestCase):
         deck=next(d for d in STARTER_DECKS if d['id']=='zhenhong')
         return new_game(seed=911,first_side=first,skip_mulligan=skip,escalation=False,decks={'a':deck,'b':deck})
 
-    def test_both_positions_start_without_free_harmony(self):
+    def test_both_positions_start_with_two_harmony(self):
         for first in ('a','b'):
             for skip in (False,True):
                 with self.subTest(first=first,skip=skip):
                     s=self.game(first,skip)
                     for side in ('a','b'):
-                        self.assertEqual(hero(s,side,'zhenhong')['harmony'],0)
+                        self.assertEqual(hero(s,side,'zhenhong')['harmony'],2)
                         self.assertTrue(all(h['harmony']==0 for cid,h in s['sides'][side]['characters'].items() if cid!='zhenhong'))
                         self.assertIsNone(s['sides'][side]['front'])
                         self.assertIsNone(s['sides'][side]['last_front'])
                     for viewer in ('a','b'):
                         v=observe(s,viewer,include_previews=False)
                         for side in ('a','b'):
-                            self.assertEqual(next(h for h in v['sides'][side]['characters'] if h['id']=='zhenhong')['harmony'],0)
+                            self.assertEqual(next(h for h in v['sides'][side]['characters'] if h['id']=='zhenhong')['harmony'],2)
 
     def test_json_and_revival_do_not_regrant_spent_opening_harmony(self):
         s=self.game();hero(s,'a','zhenhong')['harmony']=0
@@ -51,7 +51,7 @@ class ZhenhongInitialHarmonyTest(unittest.TestCase):
         s=apply_action(s,'a',dict(type='attack',character_id='iloy'))
         self.assertEqual(s['sides']['a']['ap'],0)
         self.assertEqual(hero(s,'a','zhenhong')['harmony'],0)
-        self.assertEqual(hero(s,'a','zhenhong')['surplus_passive_triggers'],2)
+        self.assertEqual(hero(s,'a','zhenhong')['surplus_passive_triggers'],1)
         self.assertEqual(damage_limit(s,'a','zhenhong'),1)
 
     def test_starting_resource_does_not_allow_benched_payer(self):

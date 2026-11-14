@@ -709,7 +709,7 @@
     if (data.collapse) {
       bits.push('倾陷');
     } else if (data.collapse_count) {
-      bits.push('倾陷 ' + data.collapse_count + '/' + (data.collapse_max == null ? 5 : data.collapse_max));
+      bits.push('倾陷 ' + data.collapse_count + '/' + (data.collapse_max == null ? 3 : data.collapse_max));
     }
     if (Number(data.down_turns) > 0) {
       bits.push('倒地 ' + data.down_turns);

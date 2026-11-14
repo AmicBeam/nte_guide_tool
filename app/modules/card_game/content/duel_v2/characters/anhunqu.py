@@ -129,6 +129,10 @@ class Anhunqu:
     def on_dissonance(c, enemy=None, target_id=None, **_data):
         if not enemy:
             return
-        front = c.state['sides'][enemy].get('front')
-        if front and alive(c.state, enemy, front):
-            damage(c.state, enemy, front, 1, source=f'{c.side}:{c.cid}', reason='【失谐】强化')
+        from app.modules.card_game.engine.duel_v2.state import knockdowns, team_order
+        for cid in list(team_order(c.state, enemy)):
+            target = hero(c.state, enemy, cid)
+            if alive(c.state, enemy, cid) and not target.get('summoned') and collapsed(target):
+                target['hp'] = 0
+                c.history(f'【失谐】强化：消灭{target["name"]}。', target_side=enemy, target_id=cid)
+        knockdowns(c.state)

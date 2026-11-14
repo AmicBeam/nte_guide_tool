@@ -142,6 +142,31 @@ class Xiaozhi:
             change_jingu(c, 1, '【盈蓄】回能，小吱触发异能')
 
     @staticmethod
+    def on_surplus(c, **_data):
+        team = c.state['sides'][c.side]
+        for zone in ('hand', 'deck'):
+            card = next((card for card in team[zone] if card.get('card_id') == 'Q06'), None)
+            if card is None:
+                continue
+            team[zone].remove(card)
+            from app.modules.card_game.engine.duel_v2.flow import resolve_release
+            parent = c.state.get('operation')
+            phase, pending = c.state['phase'], c.state.get('pending_choice')
+            draining = c.state.get('_draining_actions')
+            c.state['_draining_actions'] = True
+            try:
+                resolve_release(c.state, c.side, card, response=True)
+            finally:
+                c.state['operation'] = parent
+                if not finished(c.state):
+                    c.state['phase'], c.state['pending_choice'] = phase, pending
+                if draining is None:
+                    c.state.pop('_draining_actions', None)
+                else:
+                    c.state['_draining_actions'] = draining
+            break
+
+    @staticmethod
     def on_ultimate(c):
         # Refreshing a live ultimate settles its old loan before lending again.
         if c.character.get('jingu_loan'):

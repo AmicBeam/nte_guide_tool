@@ -395,7 +395,7 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual((attack_value(n), n['hp'], n['max_hp']), (3, 7, 7))
         s = self.game()
         s = self.play(s, 'N04')
-        self.assertEqual(hero(s, 'a', 'nanali')['shield'], 2)
+        self.assertEqual(hero(s, 'a', 'nanali')['shield'], 0)
 
     def test_n08_scales_battle_frame_with_family(self):
         s = self.game()
@@ -405,7 +405,7 @@ class DuelV2EngineTest(unittest.TestCase):
         s = self.play(s, 'N07')
         s['sides']['a']['ap'] = 1
         s = self.play(s, 'N04')
-        self.assertEqual(hero(s, 'a', 'nanali')['shield'], 3)
+        self.assertEqual(hero(s, 'a', 'nanali')['shield'], 1)
 
     def test_n01_full_health_and_downed_boundaries(self):
         for front in (None, 'nanali'):
@@ -450,7 +450,7 @@ class DuelV2EngineTest(unittest.TestCase):
     def test_n05_form_attack_and_once_heal(self):
         s = self.game()
         s = self.play(s, 'N04')
-        self.assertEqual(hero(s, 'a', 'nanali')['shield'], 2)
+        self.assertEqual(hero(s, 'a', 'nanali')['shield'], 0)
 
     def test_simultaneous_knockdown_keeps_resources_revive_three_starts(self):
         s = self.game()
@@ -1009,6 +1009,8 @@ class DuelV2EngineTest(unittest.TestCase):
                         s['sides'][side]['characters'][dummy] = new_character(dummy)
                         s['sides'][side]['order'].append(dummy)
                     hero(s, side, dummy).update(hp=0, down_turns=3)
+                if cid == 'B03':
+                    s['sides']['a']['front'] = 'baicang'
                 if cid == 'X01':
                     from app.modules.card_game.engine.duel_v2.temporal import save_turn_start
                     save_turn_start(s, 'a')
@@ -1129,15 +1131,14 @@ class DuelV2EngineTest(unittest.TestCase):
         self.assertEqual(hero(s, 'a', 'baicang')['hp'], 1)
         self.assertTrue(any(item['card_id'] == 'B05' for item in s['sides']['a']['discard']))
 
-    def test_baicang_burn_can_become_infinite(self):
+    def test_baicang_swap_does_not_make_burn_infinite(self):
         from app.modules.card_game.engine.duel_v2.state import front_debuff
         s = self.rush_game()
-        s['sides']['b']['front'] = 'zero'
+        s['sides']['a']['front'] = 'baicang'
         front_debuff(s, 'b')['burn'] = {'left': 1, 'by': 'a'}
-        s = self.play(s, 'B03')
-        self.assertTrue(front_debuff(s, 'b')['burn'].get('infinite'))
-        s = self.next_own_turn(s)
-        self.assertTrue(front_debuff(s, 'b').get('burn', {}).get('infinite'))
+        s = self.play(s, 'B03', target='a:bohe')
+        self.assertEqual(s['sides']['a']['front'], 'bohe')
+        self.assertFalse(front_debuff(s, 'b')['burn'].get('infinite'))
 
     def test_bohe_overflow_ignore_shield_and_auto_attack(self):
         s = self.rush_game()

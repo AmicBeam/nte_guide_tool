@@ -92,22 +92,22 @@ class DafutierTest(unittest.TestCase):
         force_collapse(s, 'b', 'canhong', by='a')
         self.assertEqual(len(tokens(s)), 1)
 
-    def test_both_dissonance_paths_stack_twice_and_survive_down_json_revival(self):
+    def test_both_dissonance_paths_do_not_stack_and_survive_down_json_revival(self):
         s = game()
         s['sides']['b']['front'] = 'zero'
         apply_burn(s, 'b', by='a', source_cid='dafutier')
         resolve_harmony_effect(context(s), '黯星')
-        self.assertEqual(collapse_max(hero(s, 'b', 'zero')), 4)
+        self.assertEqual(collapse_max(hero(s, 'b', 'zero')), 2)
         apply_burn(s, 'b', by='a', source_cid='dafutier')
         resolve_harmony_effect(context(s), '黯星')
-        self.assertEqual(collapse_max(hero(s, 'b', 'zero')), 3)
-        self.assertEqual(hero(s, 'a', 'dafutier')['dissonance_layers'], 2)
+        self.assertEqual(collapse_max(hero(s, 'b', 'zero')), 2)
+        self.assertEqual(hero(s, 'a', 'dafutier')['dissonance_layers'], 1)
         hero(s, 'b', 'zero')['hp'] = 0
         knockdowns(s)
         s = json.loads(json.dumps(s))
         revive_character(context(s), 'b', 'zero')
-        self.assertEqual(collapse_max(hero(s, 'b', 'zero')), 3)
-        self.assertEqual(collapse_max(hero(s, 'a', 'zero')), 5)
+        self.assertEqual(collapse_max(hero(s, 'b', 'zero')), 2)
+        self.assertEqual(collapse_max(hero(s, 'a', 'zero')), 3)
 
     def test_dissonance_without_front_reduces_downed_targets_too(self):
         s = game()
@@ -115,8 +115,8 @@ class DafutierTest(unittest.TestCase):
         knockdowns(s)
         resolve_harmony_effect(context(s), '黯星')
         apply_burn(s, 'b', by='a', source_cid='dafutier')
-        self.assertEqual(collapse_max(hero(s, 'b', 'zero')), 4)
-        self.assertEqual(collapse_max(hero(s, 'b', 'haiyue')), 4)
+        self.assertEqual(collapse_max(hero(s, 'b', 'zero')), 2)
+        self.assertEqual(collapse_max(hero(s, 'b', 'haiyue')), 2)
 
     def test_lowering_limit_immediately_collapses_existing_full_meter(self):
         s = game()
@@ -140,24 +140,24 @@ class DafutierTest(unittest.TestCase):
 
     def test_creations_cannot_recover_current_resolving_instance(self):
         s = game(); s['sides']['a']['deck'] = []; s['sides']['a']['discard'] = []
-        add_collapse(s, 'b', 'zero', 4, by='a')
+        add_collapse(s, 'b', 'zero', 2, by='a')
         s = play(s, 'F03', 'b:zero')
         self.assertEqual([c['card_id'] for c in s['sides']['a']['hand']], ['FF01'])
         self.assertEqual([c['card_id'] for c in s['sides']['a']['discard']], ['F03'])
 
     def test_creations_keeps_ally_target_and_recovery_separate_from_insight(self):
         s = game(); s['sides']['a']['deck'] = [card_instance(s, 'F03', 'a')]
-        add_collapse(s, 'a', 'zero', 4, by='a')
+        add_collapse(s, 'a', 'zero', 2, by='a')
         s = play(s, 'F03', 'a:zero')
         self.assertTrue(collapsed(hero(s, 'a', 'zero')))
         self.assertEqual(len(tokens(s)), 0)
         self.assertEqual([c['card_id'] for c in s['sides']['a']['hand']], ['F03'])
 
-    def test_user_october9_creations_adds_two_and_collapses_at_five(self):
+    def test_creations_adds_one_and_collapses_at_three(self):
         for side in ('a', 'b'):
             with self.subTest(side=side):
                 s = play(game(), 'F03', f'{side}:zero')
-                self.assertEqual(hero(s, side, 'zero')['flags']['collapse_count'], 2)
+                self.assertEqual(hero(s, side, 'zero')['flags']['collapse_count'], 1)
                 self.assertFalse(collapsed(hero(s, side, 'zero')))
                 add_collapse(s, side, 'zero', 1, by='a')
                 s = play(s, 'F03', f'{side}:zero')
@@ -187,11 +187,11 @@ class DafutierTest(unittest.TestCase):
 
     def test_lake_manual_and_auto_response_targets_attacker_including_own_front(self):
         s = play(game(), 'F06', 'b:haiyue')
-        self.assertEqual(hero(s, 'b', 'haiyue')['flags']['collapse_count'], 4)
+        self.assertEqual(hero(s, 'b', 'haiyue')['flags']['collapse_count'], 2)
         s = game(); s['sides']['b']['front'] = 'dafutier'
         give(s, 'F06', 'b')
         s = apply_action(s, 'a', dict(type='attack', character_id='zero'))
-        self.assertEqual(hero(s, 'a', 'zero')['flags']['collapse_count'], 4)
+        self.assertEqual(hero(s, 'a', 'zero')['flags']['collapse_count'], 2)
         self.assertEqual(s['sides']['b']['ap'], 19)
         self.assertFalse(any(c['card_id'] == 'F06' for c in s['sides']['b']['hand']))
 
@@ -207,7 +207,7 @@ class DafutierTest(unittest.TestCase):
         s = play(game(), 'F08')
         s = apply_action(s, 'a', dict(type='end_turn'))
         s = apply_action(s, 'b', dict(type='attack', character_id='zero'))
-        self.assertEqual(hero(s, 'b', 'zero')['flags']['collapse_count'], 3)
+        self.assertEqual(hero(s, 'b', 'zero')['flags']['collapse_count'], 2)
         self.assertEqual(hero(s, 'a', 'dafutier')['hp'], 6)
 
     def test_black_weapon_triggers_on_ranged_sortie_but_not_counter(self):
@@ -217,7 +217,7 @@ class DafutierTest(unittest.TestCase):
         hero(s, 'b', 'haiyue')['energy'] = 6
         s = apply_action(s, 'b', dict(type='ultimate', character_id='haiyue'))
         s = apply_action(s, 'b', dict(type='attack', character_id='haiyue'))
-        self.assertEqual(hero(s, 'b', 'haiyue')['flags']['collapse_count'], 3)
+        self.assertEqual(hero(s, 'b', 'haiyue')['flags']['collapse_count'], 2)
         self.assertIsNone(s['sides']['b']['front'])
         self.assertEqual(hero(s, 'a', 'zero')['hp'], 37)
 
@@ -259,7 +259,7 @@ class DafutierTest(unittest.TestCase):
         attacks = [e for e in events if e['type'] == 'attack' and e.get('actor') == 'b:zero']
         self.assertEqual(len(attacks), 2)
         self.assertEqual(hero(s, 'a', 'zero')['hp'], 36)
-        self.assertEqual(hero(s, 'b', 'zero')['flags']['collapse_count'], 3)
+        self.assertEqual(hero(s, 'b', 'zero')['flags']['collapse_count'], 2)
         collapse = next(e for e in events if e['type'] == 'collapse')
         self.assertGreater(collapse['seq'], attacks[-1]['seq'])
 
@@ -288,7 +288,7 @@ class DafutierTest(unittest.TestCase):
         self.assertEqual(hero(s, 'a', 'zero')['hp'], 40)
         self.assertTrue(collapsed(hero(s, 'b', 'zero')))
         self.assertFalse(any(e['type'] == 'attack' for e in events))
-        self.assertEqual([e['amount'] for e in events if e['type'] == 'collapse' and 'amount' in e], [4])
+        self.assertEqual([e['amount'] for e in events if e['type'] == 'collapse' and 'amount' in e], [2])
 
     def test_black_weapon_cannot_trigger_if_holder_dies_during_sortie(self):
         s = play(game(), 'F08')
@@ -306,7 +306,8 @@ class DafutierTest(unittest.TestCase):
             s = play(s, 'F01')
             hit = next(e for e in reversed(s['events']) if e['type'] == 'attack')
             self.assertEqual(hit['attack'], attack)
-            self.assertEqual(hero(s, 'b', 'zero')['flags']['collapse_count'], meter)
+            self.assertEqual(hero(s, 'b', 'zero')['flags']['collapse_count'], meter if meter < 3 else 0)
+            self.assertEqual(collapsed(hero(s, 'b', 'zero')), meter >= 3)
             self.assertEqual(hero(s, 'a', 'dafutier')['shield'], 1)
 
     def test_eye_without_support_has_base_frame_and_no_extra_meter(self):
@@ -370,7 +371,7 @@ class DafutierTest(unittest.TestCase):
         knockdowns(s)
         for view in (observe(s, 'a', include_previews=False), capture_public_board(s)):
             target = next(h for h in view['sides']['b']['characters'] if h['id'] == 'zero')
-            self.assertEqual(target['collapse_max'], 4)
+            self.assertEqual(target['collapse_max'], 2)
             marker = next(m for m in target['effect_markers'] if m['id'] == 'collapse_reduction')
             self.assertFalse(marker['clears_on_down'])
         revive_character(context(s), 'a', 'dafutier')
@@ -387,7 +388,7 @@ class DafutierTest(unittest.TestCase):
     def test_hidden_increases_all_enemy_meters_and_stacks_insight_damage(self):
         s = play(game(), 'F04'); s = play(s, 'F04')
         self.assertEqual(s['sides']['a']['insight_bonus'], 2)
-        self.assertTrue(all(hero(s, 'b', cid)['flags']['collapse_count'] == 4 for cid in s['sides']['b']['order']))
+        self.assertTrue(all(hero(s, 'b', cid)['flags']['collapse_count'] == 2 for cid in s['sides']['b']['order']))
         force_collapse(s, 'b', 'zero', by='a')
         s = play(s, 'FF01', 'b:zero')
         self.assertEqual(hero(s, 'b', 'zero')['hp'], 36)

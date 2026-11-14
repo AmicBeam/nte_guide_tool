@@ -1,5 +1,7 @@
 # 四人轮替 V2 实现契约
 
+当前公开投影增加 `collapse_border_cut`（倾陷白框消退百分比）及阵营 `genesis_weave_damage`（本局实际创生／覆纹伤害）；实时与回放均由后端输出。B03 使用 `other_living_ally_esper` 目标策略，仅选择其他存活己方异能者。黑羽出击占卜使用既有 `pending_sortie` 恢复，不新增动作类型。
+
 状态：2026-09-09 V2 引擎与网页已接入，功能验收见 [验收记录](duel-v2-acceptance.md)。业务规则唯一真源为 [完整手册](everness-item-chain-card-design.md) V2.4；本文件只冻结并行实现、网页与 RL 的接口，不替换规则。**本轮不得运行强化学习训练或自我对弈训练。**
 
 ## 本轮实现分工

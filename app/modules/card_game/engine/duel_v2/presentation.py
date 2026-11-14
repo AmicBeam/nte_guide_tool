@@ -92,6 +92,7 @@ def capture_public_board(state):
         if 'entity_id' in source:
             team['entity_id'] = source['entity_id']
         team['life_locked'] = bool(source.get('life_locked'))
+        team['genesis_weave_damage'] = int(source.get('genesis_weave_damage', 0))
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
         from .genesis import public_beads
@@ -149,6 +150,7 @@ def capture_public_board(state):
                 'awakened': hero['awakened'],
                 'ultimate_turns': hero.get('ultimate_turns', 0),
                 'ultimate_expires': ultimate_spec(cid)['expires'],
+                'collapse_border_cut': duel_state.collapse_border_cut(hero),
                 'down_turns': hero['down_turns'],
                 'growth': hero.get('growth', 0),
                 'family': hero.get('family', 0),
@@ -462,7 +464,7 @@ def interaction_for_action(state, side, action):
         if hint == 'form':
             return {'kind': 'form', 'actor_id': actor, 'target_ids': [actor] if actor else []}
         policy = TARGET_POLICIES.get(card.get('card_id'))
-        if policy == 'other_living_ally':
+        if policy in ('other_living_ally', 'other_living_ally_esper'):
             target = _normalize_entity(None, action.get('target_id'))
             return {'kind': 'target', 'actor_id': actor, 'target_ids': [target] if target else []}
         if policy == 'enemy_front':

@@ -66,12 +66,12 @@ class SurplusReworkTest(unittest.TestCase):
         s['sides']['b']['front']='yi';hero(s,'b','yi').update(hp=60,max_hp=60)
         seq=s['event_seq'];s=apply_action(s,'a',dict(type='attack',character_id='jiuyuan'))
         h=hero(s,'a','zhenhong');events=[e for e in s['events'] if e['seq']>seq]
-        self.assertEqual(compatibility_flags(h)['atk_buff'],3)
-        self.assertEqual(h['surplus_passive_triggers'],3)
-        self.assertEqual((h['harmony'],h['energy']),(0,0))
+        self.assertEqual(compatibility_flags(h)['atk_buff'],1)
+        self.assertEqual(h['surplus_passive_triggers'],1)
+        self.assertEqual((h['harmony'],h['energy']),(2,0))
         self.assertEqual([e['actor'] for e in events if e['type']=='attack'],['a:jiuyuan'])
         solitary=[e for e in events if e['type']=='damage' and e.get('source')=='a:zhenhong']
-        self.assertEqual(len(solitary),3)
+        self.assertEqual(len(solitary),1)
         self.assertTrue(all(e['amount']==2 for e in solitary))
         self.assertEqual(s['sides']['a']['front'],'zhenhong')
 
@@ -82,7 +82,7 @@ class SurplusReworkTest(unittest.TestCase):
         h=hero(s,'a','zhenhong')
         self.assertEqual(h['surplus_passive_triggers'],1)
         self.assertEqual(compatibility_flags(h)['atk_buff'],1)
-        self.assertEqual((h['harmony'],h['energy']),(0,0))
+        self.assertEqual((h['harmony'],h['energy']),(2,0))
         self.assertEqual(s['sides']['a']['front'],'zhenhong')
         self.assertFalse(s.get('deferred_actions'))
 
@@ -103,12 +103,12 @@ class SurplusReworkTest(unittest.TestCase):
         self.assertIsNone(s['sides']['a']['front'])
 
     def test_typed_battles_pay_ap_and_use_reduced_attack(self):
-        for key, surplus, amount in [('R02',False,1),('R02',True,1),('R03',True,2),('R04',True,3)]:
+        for key, surplus, amount in [('R02',False,2),('R02',True,2),('R03',True,2),('R04',True,3)]:
             with self.subTest(key=key,surplus=surplus):
                 s=self.game();s['sides']['a']['surplus']=surplus
                 s['sides']['a']['ap']=1
                 s=self.play(s,key)
-                self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],amount+2)
+                self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],amount)
                 self.assertFalse(s['sides']['a']['used'].get('instant'))
                 self.assertEqual(s['sides']['a']['ap'],0)
 
@@ -118,13 +118,13 @@ class SurplusReworkTest(unittest.TestCase):
         h.update(hp=5,down_turns=0)
         s=self.play(s,'R06');h=hero(s,'a','zhenhong')
         self.assertEqual(h['shield'],3)
-        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],7)
+        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],5)
         self.assertEqual(h['surplus_passive_triggers'],3)
 
     def test_downed_response_discards_only_owned_cards_and_retains_other_cards(self):
         s=self.game();self.hold(s,'R05');self.hold(s,'R02');other=self.hold(s,'I01')
         count=len(s['sides']['a']['deck']);damage(s,'a','zhenhong',99)
-        self.assertEqual(len(s['sides']['a']['deck']),count-1)
+        self.assertEqual(len(s['sides']['a']['deck']),count-2)
         self.assertIn(other,s['sides']['a']['hand'])
         self.assertEqual({c['card_id'] for c in s['sides']['a']['discard']},{'R05','R02'})
         self.assertEqual(hero(s,'a','zhenhong')['down_turns'],3)
@@ -160,7 +160,7 @@ class SurplusReworkTest(unittest.TestCase):
         self.assertEqual(hero(s,'a','zhenhong')['ultimate_turns'],1)
         before=s['sides']['b']['hp'];seq=s['event_seq']
         begin_turn(s,'a');h=hero(s,'a','zhenhong')
-        self.assertEqual((h.get('extra_attacks',0),h['energy'],h['harmony']),(0,0,0))
+        self.assertEqual((h.get('extra_attacks',0),h['energy'],h['harmony']),(0,0,2))
         self.assertEqual(s['sides']['b']['hp'],before-3)
         self.assertFalse(any(e['type']=='attack' for e in s['events'] if e['seq']>seq))
         self.assertFalse(h['awakened']);self.assertIsNone(s['sides']['a']['front'])
@@ -201,7 +201,7 @@ class SurplusReworkTest(unittest.TestCase):
         self.assertEqual((h['hp'],h['max_hp']),(8,8))
         s=apply_action(s,'a',dict(type='attack',character_id='zhenhong'));h=hero(s,'a','zhenhong')
         self.assertEqual((h['intimidation'],h['harmony']),(0,3))
-        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],6)
+        self.assertEqual([e for e in s['events'] if e['type']=='attack'][-1]['amount'],4)
 
     def test_fangs_pause_before_decrement_and_survive_death(self):
         s=self.game();self.delay(s);s=self.play(s,'I01')
@@ -261,8 +261,8 @@ class SurplusReworkTest(unittest.TestCase):
         h=hero(s,'a','jiuyuan');h['energy']=5;hero(s,'b','yi')['flags']['pact']=True
         s=apply_action(s,'a',dict(type='ultimate',character_id='jiuyuan'))
         c=operation(s,'a','jiuyuan');resolve_genesis(c);finish_operation(s)
-        self.assertEqual(hero(s,'b','yi')['hp'],1) # 1 base + (2+1) pact
-        self.assertEqual(hero(s,'b','zhenhong')['hp'],5) # only base 1
+        self.assertEqual(hero(s,'b','yi')['hp'],2) # (2+1) pact; no all-target base hit
+        self.assertEqual(hero(s,'b','zhenhong')['hp'],6) # unmarked target is unaffected
 
     def test_skip_normal_attack_expires_next_opponent_turn_only(self):
         s=self.game();c=self.hold(s,'I05');self.assertNotIn(c['instance_id'],[a.get('card_id') for a in legal_actions(s,'a')])
@@ -395,7 +395,7 @@ class SurplusReworkTest(unittest.TestCase):
         before=deepcopy(s);v=observe(s,'a')
         action=next(a for a in v['legal_actions'] if a['action'].get('card_id')==c['instance_id'])
         self.assertEqual(action['interaction']['actor_id'],'a:zhenhong')
-        self.assertEqual(action['preview']['attack'],8)
+        self.assertEqual(action['preview']['attack'],6)
         self.assertEqual(s,before)
 
     def test_down_response_waits_for_nested_response_to_finish(self):
@@ -406,7 +406,7 @@ class SurplusReworkTest(unittest.TestCase):
         s['_response_lock']=False
         for side,cid in s.pop('_pending_down_responses'):
             trigger_responses(s,side,'self_downed',target_id=cid)
-        self.assertEqual(len(s['sides']['a']['hand']),1)
+        self.assertEqual(len(s['sides']['a']['hand']),2)
 
     def test_player_defeat_stops_downed_response(self):
         s=self.game();card=self.hold(s,'R05');self.hold(s,'R03')

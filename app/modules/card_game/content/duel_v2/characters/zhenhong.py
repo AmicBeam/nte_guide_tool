@@ -30,7 +30,7 @@ def _redraw(c):
     for card in cards:
         team['hand'].remove(card)
         discard(c.state, c.side, card)
-    c.draw(len(cards))
+    c.draw(len(cards) + 1)
 
 
 def _shape(c):
@@ -46,8 +46,18 @@ def _hand_changed(c):
                                          for card in c.state['sides'][c.side]['hand']])
 
 
+def _weapon_surplus(c, **_data):
+    foe = other(c.side)
+    for cid in team_order(c.state, foe):
+        if finished(c.state):
+            break
+        if alive(c.state, foe, cid) and not hero(c.state, foe, cid).get('summoned'):
+            damage(c.state, foe, cid, 2, source=f'{c.side}:{c.cid}', reason='「地海高校生」触发')
+
+
 @register
 class Zhenhong:
+    weapon_hooks = {'R07': {'on_surplus': _weapon_surplus}}
     id = 'zhenhong'
     text_name = '真红'
     effects = {'R01': _draw_team, 'R02': _battle, 'R03': _battle, 'R04': _battle,
@@ -55,17 +65,16 @@ class Zhenhong:
                'RF01': _battle}
 
     @staticmethod
-    def before_attack_damage(c, attacker_id=None, **_data):
-        if attacker_id != c.cid or c.character.get('first_attack_rewarded'):
-            return
-        c.character['first_attack_rewarded'] = True
-        c.operation['first_bonus'] = int(c.operation.get('first_bonus') or 0) + 2
-        c.grant_harmony(c.cid, 2, reason='本局真红首次攻击')
+    def on_game_start(c):
+        c.grant_harmony(c.cid, 2, reason='开局异能')
 
     @staticmethod
     def on_surplus(c, **_data):
         if finished(c.state) or not alive(c.state, c.side, c.cid):
             return
+        if c.character.get('surplus_passive_turn') == c.state['turn']:
+            return
+        c.character['surplus_passive_turn'] = c.state['turn']
         # User tabletop mechanism 「独行」, 2026-10-07. Count the trigger,
         # even if the queued attack later becomes invalid.
         c.character['surplus_passive_triggers'] = int(c.character.get('surplus_passive_triggers', 0)) + 1
@@ -78,18 +87,10 @@ class Zhenhong:
                    source_entity_id=c.entity_id, source_key='passive', label='真红伤害限制', show_marker=False,
                    stacking='refresh', expiry=deadline(c.state, c.side, 1, 'turn_start'))
         c.history('己方触发盈蓄，真红触发「独行」：直到下个己方回合开始时攻击 +1，单次至多受到 1 点伤害，将额外造成 2 点伤害。')
-        c.heal(c.character['max_hp'], reason='「独行」触发')
+        c.shield(4, reason='「独行」触发')
         if finished(c.state):
             return
         enqueue(c, 'surplus')
-        if c.character.get('shape') == 'R07':
-            foe = other(c.side)
-            for cid in team_order(c.state, foe):
-                if finished(c.state):
-                    break
-                if alive(c.state, foe, cid) and not hero(c.state, foe, cid).get('summoned'):
-                    damage(c.state, foe, cid, 2, source=f'{c.side}:{c.cid}', reason='「地海高校生」触发')
-
     @staticmethod
     def on_deferred_action(c, action):
         if action.get('kind') != 'surplus':

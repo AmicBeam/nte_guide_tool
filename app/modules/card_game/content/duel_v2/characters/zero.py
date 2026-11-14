@@ -8,6 +8,7 @@ def _z01(c):
     if cid:
         h = hero(c.state, c.side, cid)
         heal(c.state, c.side, cid, max(0, h['max_hp'] - h['hp']))
+    c.draw(1)
 
 
 def _z02(c):

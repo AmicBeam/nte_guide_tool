@@ -306,7 +306,7 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertEqual(attack_value(hero(s, 'a', 'canhong'), s, 'a'), attack)
 
     def test_canhong_initial_harmony_is_visible_for_both_sides_before_mulligan(self):
-        # The initial 2 harmony is a user-authored tabletop rule (2026-10-07).
+        # The initial 3 harmony is a user-authored tabletop rule (2026-10-07).
         deck = _deck(('anhunqu', 'canhong', 'zaowu', 'adler'), ('A', 'C', 'S', 'D'))
         for first in ('a', 'b'):
             with self.subTest(first=first):
@@ -315,12 +315,12 @@ class ContinuousCastTest(unittest.TestCase):
                 for side in ('a', 'b'):
                     for cid in deck['character_ids']:
                         h = hero(s, side, cid)
-                        self.assertEqual(h['harmony'], 2 if cid == 'canhong' else 0)
+                        self.assertEqual(h['harmony'], 3 if cid == 'canhong' else 0)
                         self.assertEqual(h['energy'], 0)
                     public = observe(s, side)['sides'][side]['characters']
-                    self.assertEqual(next(h for h in public if h['id'] == 'canhong')['harmony'], 2)
+                    self.assertEqual(next(h for h in public if h['id'] == 'canhong')['harmony'], 3)
                     opening = s['_public_board']['sides'][side]['characters']
-                    self.assertEqual(next(h for h in opening if h['id'] == 'canhong')['harmony'], 2)
+                    self.assertEqual(next(h for h in opening if h['id'] == 'canhong')['harmony'], 3)
 
     def test_canhong_burn_can_stack_three_times_in_one_turn_without_attack_growth(self):
         s = self.game()
@@ -347,7 +347,7 @@ class ContinuousCastTest(unittest.TestCase):
     def test_canhong_initial_harmony_pays_for_first_replacement_and_does_not_refill(self):
         s = self.game()
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'canhong'})
-        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 2)
+        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 3)
         self.assertNotIn('burn', front_debuff(s, 'b'))  # No partner on first entry.
         s = self.play(s, 'AF01')
         self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 0)
@@ -359,12 +359,12 @@ class ContinuousCastTest(unittest.TestCase):
         s = clone_state(json.loads(json.dumps(s)))
         s = self.play(s, 'C08')
         h = hero(s, 'a', 'canhong')
-        self.assertEqual(h['harmony'], 0)
+        self.assertEqual(h['harmony'], 1)
         h['hp'] = 0
         knockdowns(s)
         s = self.play(s, 'C07')
         h = hero(s, 'a', 'canhong')
-        self.assertEqual(h['harmony'], 0)
+        self.assertEqual(h['harmony'], 1)
         attack = attack_value(h, s, 'a')
         apply_dot(s, 'b', 'venom', by='a', source_cid='canhong', stacks=1)
         self.assertEqual(attack_value(h, s, 'a'), attack)
@@ -372,19 +372,19 @@ class ContinuousCastTest(unittest.TestCase):
     def test_canhong_existing_harmony_survives_json_and_revival(self):
         s = clone_state(json.loads(json.dumps(self.game())))
         h = hero(s, 'a', 'canhong')
-        self.assertEqual(h['harmony'], 2)
+        self.assertEqual(h['harmony'], 3)
         h['hp'] = 0
         knockdowns(s)
-        self.assertEqual(h['harmony'], 2)
+        self.assertEqual(h['harmony'], 3)
         s = self.play(s, 'C07')
-        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 2)
+        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 3)
 
     def test_copied_canhong_neither_grants_initial_harmony_nor_dot_attack(self):
         ours = _deck(('anhunqu', 'zero', 'zaowu', 'adler'), ('A', 'Z', 'S', 'D'))
         theirs = _deck(('nanali', 'canhong', 'iloy', 'jiuyuan'), ('N', 'C', 'Y', 'J'))
         s = new_game(seed=3, first_side='a', skip_mulligan=True, decks={'a': ours, 'b': theirs})
         s = self.play(s, 'A01', target='b:canhong')
-        self.assertEqual(hero(s, 'a', 'anhunqu')['harmony'], 0)
+        self.assertEqual(hero(s, 'a', 'anhunqu')['harmony'], 1)
         for kind in ('etch', 'venom'):
             apply_dot(s, 'b', kind, by='a', source_cid='anhunqu', stacks=1)
             for side, cid in (('a', 'anhunqu'), ('b', 'canhong')):
@@ -541,12 +541,12 @@ class ContinuousCastTest(unittest.TestCase):
         end_turn(s, 'a')
         self.assertNotIn('collapse', hero(s, 'b', 'zero').get('flags') or {})
 
-    def test_adler_attack_matches_shield(self):
+    def test_adler_attack_is_one_independent_of_shield(self):
         s = self.game()
         end_turn(s, 'a')
         adler = hero(s, 'b', 'adler')
         from app.modules.card_game.engine.duel_v2.state import attack_value
-        self.assertEqual(attack_value(adler, s, 'b'), adler['shield'])
+        self.assertEqual(attack_value(adler, s, 'b'), 1)
         self.assertEqual(adler['shield'], 2)
 
     def test_adler_ultimate_strips_all_enemy_shields_and_guard_ticks_twice(self):

@@ -139,11 +139,11 @@ class NewTestCharacters(unittest.TestCase):
         self.assertEqual(hero(s,'a','xiaozhi')['jingu'],2)
         self.assertTrue(s['sides']['a']['used']['instant'])
 
-    def test_surplus_gate_and_energy_fill(self):
+    def test_unconditional_energy_fill(self):
         s=self.game();card=card_instance(s,'Q06','a');s['sides']['a']['hand']=[card]
         action={'type':'play_card','card_id':card['instance_id']}
-        self.assertNotIn(action,legal_actions(s,'a'))
-        s['sides']['a']['surplus']=True;s=apply_action(s,'a',action)
+        self.assertIn(action,legal_actions(s,'a'))
+        s=apply_action(s,'a',action)
         self.assertEqual(hero(s,'a','xiaozhi')['energy'],5)
 
     def test_jingu_weapon_damage_and_free_extra_attack(self):
@@ -167,7 +167,7 @@ class NewTestCharacters(unittest.TestCase):
         s=self.game();s['sides']['a']['front']='zero';hero(s,'a','zero')['harmony']=2
         s['sides']['b']['front']='zero';hero(s,'b','zero').update(base_attack=9,hp=30,max_hp=30)
         hero(s,'a','haiyue').update(awakened=True,ultimate_turns=2)
-        s['sides']['a']['star_trigger_turn']=s['turn']
+        s['sides']['b']['front_debuff']['star']={'left':2,'by':'a','source_cid':'haiyue'}
         p=preview(s,'a',{'type':'attack','character_id':'haiyue'})
         self.assertFalse(p['will_switch']);self.assertEqual(p['counter'],0)
         self.assertEqual(p['入场'], '不入场')

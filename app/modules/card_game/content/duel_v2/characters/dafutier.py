@@ -35,18 +35,18 @@ def _target_collapse(c, amount):
 
 
 def _creations(c):
-    _target_collapse(c, 2)
+    _target_collapse(c, 1)
 
 
 def _lake(c):
-    _target_collapse(c, 4)
+    _target_collapse(c, 2)
 
 
 def _hidden(c):
     foe = other(c.side)
     for cid in list(team_order(c.state, foe)):
         if not hero(c.state, foe, cid).get('summoned'):
-            add_collapse(c.state, foe, cid, 2, by=c.side)
+            add_collapse(c.state, foe, cid, 1, by=c.side)
     team = c.state['sides'][c.side]
     team['insight_bonus'] = int(team.get('insight_bonus', 0)) + 1
     c.history(f"「于隐匿中」：本局「洞察」的伤害 +1（当前为 {_insight_damage(c)}）。")
@@ -87,7 +87,7 @@ def _insight(c):
 
 def _black_weapon(c, attacker_side, attacker_id, **_data):
     if attacker_side == other(c.side) and not hero(c.state, attacker_side, attacker_id).get('summoned'):
-        add_collapse(c.state, attacker_side, attacker_id, 3, by=c.side)
+        add_collapse(c.state, attacker_side, attacker_id, 2, by=c.side)
 
 
 @register
@@ -128,15 +128,15 @@ class Dafutier:
         if enemy != other(c.side):
             return
         layers = int(c.character.get('dissonance_layers', 0))
-        if layers >= 2:
+        if layers >= 1:
             return
-        c.character['dissonance_layers'] = layers + 1
+        c.character['dissonance_layers'] = 1
         for cid in list(team_order(c.state, enemy)):
             target = hero(c.state, enemy, cid)
             if target.get('summoned'):
                 continue
-            target.setdefault('collapse_reductions', {})[c.entity_id] = layers + 1
-        c.history(f"【失谐】强化：所有对方异能者的倾陷值上限永久 -1（已叠加 {layers + 1}/2 层）。")
+            target.setdefault('collapse_reductions', {})[c.entity_id] = 1
+        c.history('【失谐】强化：所有对方异能者的倾陷值上限永久 -1，不可叠加。')
         for cid in list(team_order(c.state, enemy)):
             if not hero(c.state, enemy, cid).get('summoned'):
                 add_collapse(c.state, enemy, cid, 0, by=c.side)

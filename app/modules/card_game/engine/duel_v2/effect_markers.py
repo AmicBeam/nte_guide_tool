@@ -17,7 +17,8 @@ def _resistance_attribute(effect):
 
 def character_effect_markers(character, state=None, side=None):
     permanent = []
-    reduction = sum(int(n) for n in (character.get('collapse_reductions') or {}).values())
+    from .state import collapse_reduction
+    reduction = collapse_reduction(character)
     if reduction:
         permanent.append(_marker('collapse_reduction', '失谐强化', '本局永久',
                                  f'倾陷值上限 -{reduction}', clears_on_down=False, kind='debuff'))

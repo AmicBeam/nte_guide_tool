@@ -68,7 +68,8 @@
     "adler",
     "heiyu",
     "dafutier",
-    "lingke"
+    "lingke",
+    "haniya"
   ],
   "characters": [
     {
@@ -117,7 +118,7 @@
       "avatar": "/static/kongmu/images/characters/player_zhenhong_256.webp",
       "portrait": "/static/images/characters/portrait/真红.webp",
       "role": "盈蓄追加攻击与战斗牌成长",
-      "passive": "本局首次真红的攻击额外造成 2 点伤害，并获得 2 点环合值。己方触发盈蓄后，若真红存活，则触发「独行」。真红不在前排时，不能获得能量。",
+      "passive": "初始具有 2 点环合值。每回合 1 次，己方触发【盈蓄】后，若真红存活，则触发「独行」。真红不在前排时，不能获得能量。",
       "awakened_passive": "将真红移入战斗区。真红不能获得能量，不会在己方回合开始时自动返回备战区。己方全部手牌均视为真红•「升腾之赤」，持续 2 个己方回合。持续时间自然结束时，对所有对方角色造成 3 点伤害。真红倒地或被换下时提前结束，不触发这次伤害。",
       "everness_id": 1076,
       "ultimate": {
@@ -129,7 +130,7 @@
         {
           "id": "mechanism-solitary",
           "name": "独行",
-          "description": "回复真红的全部生命。直到下个己方回合开始时，真红攻击 +1，单次至多受到 1 点伤害。当前操作完成后，真红进入战斗区，额外造成 2 点伤害，前排优先。"
+          "description": "真红获得 4 点护盾。直到下个己方回合开始时，真红攻击 +1，单次至多受到 1 点伤害。当前操作完成后，真红进入战斗区，额外造成 2 点伤害，前排优先。"
         }
       ]
     },
@@ -141,7 +142,7 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/小吱.webp",
       "portrait": "/static/images/characters/portrait/小吱.webp",
-      "passive": "拥有个人资源「金谷」，初始 0 点。己方回合开始时及小吱对对方玩家造成伤害时，获得 1 点金谷。金谷可以为负，倒地时保留。小吱的战斗牌为覆写攻击而非叠加。【盈蓄】回能时，额外获得 1 点金谷。",
+      "passive": "拥有个人资源「金谷」，初始 0 点。己方回合开始时，或小吱对对方玩家造成伤害时，或【盈蓄】回能时，获得 1 点金谷。金谷可以为负，倒地时保留。小吱的战斗牌为覆写攻击而非叠加。",
       "awakened_passive": "获得 3 点金谷。己方手牌随机标注金谷 -1/0/+1，出牌结算后生效。己方回合开始时刷新。持续 2 个己方回合；结束时扣除 3 点金谷并清除标注。",
       "everness_id": 1073,
       "ultimate": {
@@ -194,7 +195,7 @@
       "avatar": "/static/images/characters/avatar/九原.webp",
       "portrait": "/static/images/characters/portrait/九原.webp",
       "passive": "【创生】强化：施加的【创生】每珠为 2 层，普通珠上限仍为 3 珠。创生对异能者造成伤害时，附着枚约。",
-      "awakened_passive": "每回合首次造成创生伤害时，对全体对方角色造成该次创生伤害；对附着枚约的目标额外造成 2 点伤害，并消耗枚约。持续 2 个己方回合。",
+      "awakened_passive": "每回合首次造成【创生】伤害时，对附着枚约的对方异能者额外造成 2 点伤害，消耗枚约，每消耗 1 枚为九原回复 2 点能量。持续 2 个己方回合。",
       "everness_id": 1055,
       "role": "创生强化与枚约",
       "ultimate": {
@@ -224,7 +225,7 @@
         {
           "id": "lingke-sync",
           "name": "同频合击",
-          "description": "灵可存活时，由效果发起指定属性的单方面追加攻击，视为援护技，不产生基础环合值和能量。借用其他异能者的属性时，也触发其自身的援护技效果。命中前使目标对应属性抗性 -1，同属性减抗不可叠加，持续到下个己方回合开始时。"
+          "description": "灵可存活时，由效果发起指定属性的单方面追加攻击，视为援护技，不产生基础能量。借用其他异能者的属性时，也触发其自身的援护技效果。命中前使目标对应属性抗性 -1，同属性减抗不可叠加，持续到下个己方回合开始时。"
         }
       ]
     },
@@ -308,7 +309,7 @@
       "avatar": "/static/images/characters/avatar/安魂曲.webp",
       "portrait": "/static/images/characters/portrait/安魂曲.webp",
       "role": "噩梦与失谐强化",
-      "passive": "安魂曲的攻击施加 1 层持续伤害「噩梦」。【失谐】强化：触发时，对对方前排造成 1 点伤害。",
+      "passive": "安魂曲的攻击施加 1 层持续伤害「噩梦」。【失谐】强化：触发时，消灭所有处于倾陷状态的对方异能者。",
       "awakened_passive": "施加 3 层「噩梦」。",
       "everness_id": 1004,
       "ultimate": {
@@ -331,7 +332,7 @@
       "max_hp": 5,
       "avatar": "/static/images/characters/avatar/达芙蒂尔.webp",
       "portrait": "/static/images/characters/portrait/达芙蒂尔.webp",
-      "passive": "每回合 1 次，当你使对方异能者进入倾陷时，获得 1 张「洞察」。【失谐】强化：对方所有异能者的倾陷值上限永久 -1，至多叠加 2 层。",
+      "passive": "每回合 1 次，当你使对方异能者进入倾陷时，获得 1 张「洞察」。【失谐】强化：对方所有异能者的倾陷值上限永久 -1，不可叠加。",
       "awakened_passive": "达芙蒂尔发动援护技后，额外造成 2 点伤害。前排优先。持续 2 个己方回合。",
       "everness_id": "1054",
       "faction": "伊波恩古董店",
@@ -350,7 +351,7 @@
       "avatar": "/static/images/characters/avatar/残虹.png",
       "portrait": "/static/images/characters/portrait/残虹.webp",
       "role": "浊燃叠层、幻境与持续伤害",
-      "passive": "初始具有 2 点环合值。【浊燃】强化：重复触发时可叠层，上限 3 层。残虹使用战斗牌时，进入 3 个己方回合的「幻境」。",
+      "passive": "初始具有 3 点环合值。【浊燃】强化：重复触发时可叠层，上限 3 层。残虹使用战斗牌时，进入 3 个己方回合的「幻境」。",
       "awakened_passive": "施加 5 层「鸩火」。",
       "everness_id": 1036,
       "ultimate": {
@@ -390,7 +391,16 @@
         "kind": "status",
         "turns": 2
       },
-      "faction": "伊波恩古董店"
+      "faction": "伊波恩古董店",
+      "mechanisms": [
+        {
+          "id": "mechanism-gulang",
+          "name": "鬼郎丸",
+          "summoned": true,
+          "portrait": "/static/images/characters/portrait/鬼郎丸.webp",
+          "description": "召唤物，初始攻击 0、生命 4。早雾异能生效时，每有 1 种己方已施加的持续伤害，攻击 +1。吞噬黑胶唱片、好狗狗的项圈或气味奇怪的液体，受到伤害时触发对应效果。倒地或离开战斗区时消失。"
+        }
+      ]
     },
     {
       "id": "baicang",
@@ -414,12 +424,12 @@
       "id": "adler",
       "name": "阿德勒",
       "attribute": "咒",
-      "attack": 0,
+      "attack": 1,
       "max_hp": 5,
       "avatar": "/static/images/characters/avatar/阿德勒.webp",
       "portrait": "/static/images/characters/portrait/阿德勒.webp",
       "role": "护盾即攻击，诛恶护持",
-      "passive": "己方回合开始时，阿德勒获得 2 点护盾；若已有【浊燃】，改为 3 点。阿德勒的攻击力等同于其护盾值。",
+      "passive": "己方回合开始时，阿德勒获得 2 点护盾；若已有【浊燃】，改为 3 点。",
       "awakened_passive": "施加「诛恶护持」，持续 2 个己方回合。移除所有对方角色的护盾。",
       "everness_id": 1033,
       "ultimate": {
@@ -442,7 +452,7 @@
       "max_hp": 4,
       "avatar": "/static/images/characters/avatar/海月.webp",
       "portrait": "/static/images/characters/portrait/海月.webp",
-      "passive": "海月攻击后返回备战区。己方触发【黯星】的回合，海月改为在备战区远程出击。",
+      "passive": "海月攻击后返回备战区。己方施加的【黯星】存在期间，海月改为在备战区远程出击。",
       "awakened_passive": "海月远程出击的伤害 +2，持续 2 个己方回合。",
       "everness_id": 1070,
       "ultimate": {
@@ -461,7 +471,7 @@
       "portrait": "/static/images/characters/portrait/哈尼娅.webp",
       "everness_id": 1020,
       "faction": "斯特利速递",
-      "passive": "拥有个人资源「主角光环」，初始 0 点，上限 6 点，倒地时保留。己方回合开始时获得 1 点。己方异能者普通出击时，消耗全部主角光环，每点使本次战斗攻击 +1。",
+      "passive": "拥有个人资源「主角光环」，初始 0 点，上限 6 点，倒地时保留。己方回合开始时或己方【黯星】造成伤害时获得 1 点。己方异能者普通出击时，消耗全部主角光环，每点使本次战斗攻击 +1。",
       "awakened_passive": "获得的主角光环数量翻倍，持续 2 个己方回合。",
       "ultimate": {
         "kind": "status",
@@ -479,7 +489,7 @@
       "role": "占卜与救世魔女",
       "everness_id": 1042,
       "faction": "尤克阿什庭",
-      "passive": "己方触发【浸染】或【黯星】时，执行「占卜」；「救世魔女」状态下也生效。黑羽使用战斗牌后，充满自己的环合值。【浸染】强化：己方施加的浸染持续时间翻倍。【黯星】强化：己方施加的黯星结束时，额外施加 1 次黯星；额外施加的黯星不会再次触发此效果。",
+      "passive": "己方触发【浸染】或【黯星】时，执行「占卜」。黑羽使用战斗牌后，充满自己的环合值。【浸染】强化：己方施加的浸染持续时间翻倍。【黯星】强化：己方施加的黯星结束时，额外施加 1 次黯星；额外施加的黯星不会再次触发此效果。",
       "awakened_passive": "全体己方异能者攻击 +1，持续 2 个己方回合，不可叠加。黑羽进入「救世魔女」状态，持续 2 个己方回合。可退出该状态。",
       "ultimate": {
         "kind": "status",
@@ -493,7 +503,7 @@
             "占卜",
             "占卜效果"
           ],
-          "description": "检视牌库顶等同于当前存活己方异能者数量的牌，至少检视 2 张，牌库不足时按实际牌数。将这些牌以任意顺序放回牌库顶或牌库底。置于牌库底的牌具有占卜效果时，按置底顺序逐张公开并结算。"
+          "description": "牌库至少有 2 张牌时才能触发。检视牌库顶等同于当前存活己方异能者数量的牌，至少检视 2 张。将这些牌以任意顺序放回牌库顶或牌库底。置于牌库底的牌具有占卜效果时，按置底顺序逐张公开并结算。"
         },
         {
           "id": "mechanism-witch",
@@ -502,7 +512,7 @@
             "救世魔女",
             "魔女效果"
           ],
-          "description": "黑羽环合强化外的异能暂停生效；触发【浸染】或【黯星】时仍执行「占卜」。持续期间可手动退出该状态。"
+          "description": "黑羽的战斗牌攻击修正 +1，使用时不再充满环合值。持续期间可手动退出该状态。"
         }
       ],
       "energy_max": 5
@@ -570,7 +580,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "本回合己方创生伤害 +1。",
+      "description": "本局己方每造成 10 点【创生】或【覆纹】伤害，本次战斗额外 +1 攻击。（当前为0）",
       "effect_id": "N04",
       "source": {
         "character_id": 1010,
@@ -578,8 +588,8 @@
         "index": 4
       },
       "starter_copies": 2,
-      "shield": 2,
-      "attack": 0
+      "shield": 0,
+      "attack": 2
     },
     {
       "id": "N05",
@@ -699,7 +709,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "本回合触发盈蓄才能打出。回复己方前排全部生命。",
+      "description": "本回合触发盈蓄才能打出。回复己方前排全部生命，并抽 1 张牌。",
       "effect_id": "Z01",
       "source": {
         "character_id": 1051,
@@ -956,7 +966,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "造成 1 点伤害。前排优先。重复 X 次。X 为本局己方对对方玩家造成的创生伤害次数。",
+      "description": "造成 1 点伤害。前排优先。重复 X 次。X 为本局己方对对方玩家造成的创生伤害次数。（当前为0）",
       "effect_id": "J06",
       "source": {
         "character_id": 1055,
@@ -1855,8 +1865,8 @@
       "terminal": false,
       "description": "抽 1 张战术牌。",
       "starter_copies": 2,
-      "shield": 2,
-      "attack": -1
+      "shield": 0,
+      "attack": 0
     },
     {
       "id": "R03",
@@ -1901,7 +1911,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。弃置全部真红手牌，抽等量的牌。响应：真红倒地后，自动使用。",
+      "description": "瞬发。弃置全部真红手牌，抽其数量 +1 的牌。响应：真红倒地后，自动使用。",
       "effect_id": "R05",
       "source": {
         "character_id": 1076,
@@ -2421,7 +2431,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "己方回合开始时，薄荷自动出击。此次攻击不会获得环合值和能量。",
+      "description": "己方回合开始时，薄荷自动出击。此次攻击不会获得能量。",
       "effect_id": "M08",
       "source": {
         "character_id": 1019,
@@ -2485,8 +2495,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "require": "own_burn",
-      "description": "存在己方施加的浊燃时才能打出。使该浊燃剩余时间变为无限。",
+      "description": "白藏位于战斗区时才能打出。选择 1 名其他己方存活异能者，将其移入战斗区，替换白藏；造成等同于白藏已损生命值的伤害，前排优先。",
       "effect_id": "B03",
       "source": {
         "character_id": 1023,
@@ -2751,7 +2760,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。本回合触发过盈蓄才能打出。使小吱充满能量。",
+      "description": "使小吱充满能量。响应：当触发【盈蓄】时，从牌库或手牌自动释放本牌。",
       "effect_id": "Q06",
       "source": {
         "character_id": 1073,
@@ -2761,8 +2770,7 @@
         "rules_source": "user_tabletop_2026-09-18"
       },
       "starter_copies": 0,
-      "instant": true,
-      "require": "surplus"
+      "response": "surplus_release"
     },
     {
       "id": "Q07",
@@ -2895,7 +2903,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "选择 1 名对方备战区的存活异能者。本次战斗改为单方面攻击该目标。",
+      "description": "选择 1 名对方备战区的存活异能者。本次战斗改为远程攻击该目标。",
       "effect_id": "U04",
       "source": {
         "character_id": 1070,
@@ -3671,7 +3679,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。使 1 名异能者的倾陷值 +2。每当你使异能者进入倾陷，将 1 张本牌从牌库或弃牌堆加入手牌。",
+      "description": "瞬发。使 1 名异能者的倾陷值 +1。每当你使异能者进入倾陷，将 1 张本牌从牌库或弃牌堆加入手牌。",
       "effect_id": "F03",
       "source": {
         "character_id": "1054",
@@ -3688,7 +3696,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "所有对方异能者的倾陷值 +2。本局「洞察」的伤害 +1。",
+      "description": "所有对方异能者的倾陷值 +1。本局「洞察」的伤害 +1。",
       "effect_id": "F04",
       "source": {
         "character_id": "1054",
@@ -3720,7 +3728,7 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "使 1 名对方异能者的倾陷值 +4。响应：己方前排被攻击时，自动对攻击方使用。",
+      "description": "使 1 名对方异能者的倾陷值 +2。响应：己方前排被攻击时，自动对攻击方使用。",
       "effect_id": "F06",
       "source": {
         "character_id": "1054",
@@ -3753,7 +3761,7 @@
       "type": "form",
       "cost": 1,
       "terminal": false,
-      "description": "每当对方异能者出击后，使其倾陷值 +3。",
+      "description": "每当对方异能者出击后，使其倾陷值 +2。",
       "effect_id": "F08",
       "source": {
         "character_id": "1054",
@@ -3789,7 +3797,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "免疫战斗伤害。\n【占卜效果】释放本牌。若处于「救世魔女」状态，叠加至原攻击。",
+      "description": "免疫战斗伤害。\n【占卜效果】释放本牌。将本牌的效果叠加至原攻击。",
       "effect_id": "P01",
       "source": {
         "character_id": 1042,
@@ -3841,7 +3849,7 @@
       "type": "battle",
       "cost": 1,
       "terminal": false,
-      "description": "【占卜效果】释放本牌。若处于「救世魔女」状态，在原攻击结束后释放。",
+      "description": "【占卜效果】释放本牌。在原攻击结束后释放。",
       "effect_id": "P04",
       "source": {
         "character_id": 1042,

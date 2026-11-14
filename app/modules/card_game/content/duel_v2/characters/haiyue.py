@@ -14,7 +14,7 @@ def _u03(c):
 
 
 def _u04(c):
-    c.sortie(target=tuple(c.operation['target_id'].split(':', 1)), no_counter=True)
+    c.sortie(target=tuple(c.operation['target_id'].split(':', 1)), stay_bench=True, no_counter=True)
 
 
 @register
@@ -34,7 +34,9 @@ class Haiyue:
 
     @staticmethod
     def sortie_from_bench(c, current=False):
-        return bool(c.state['sides'][c.side].get('star_trigger_turn') == c.state['turn'])
+        from app.modules.card_game.engine.duel_v2.state import front_debuff
+        star = front_debuff(c.state, other(c.side)).get('star') or {}
+        return bool(star and star.get('by') == c.side)
 
     @staticmethod
     def on_harmony_applied(c, kind=None, **_data):

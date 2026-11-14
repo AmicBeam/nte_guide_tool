@@ -25,7 +25,7 @@ class ZhenhongHarmonyTest(unittest.TestCase):
             with self.subTest(battle=battle):
                 s = fixtures.SurplusReworkTest().game()
                 c = operation(s, 'a', 'zhenhong'); enqueue(c, 'surplus'); finish_operation(s)
-                self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 0)
+                self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 2)
                 if battle:
                     card = card_instance(s, 'R02', 'a'); s['sides']['a']['hand'].append(card)
                     action = dict(type='play_card', card_id=card['instance_id'])

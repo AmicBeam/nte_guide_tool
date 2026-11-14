@@ -121,7 +121,7 @@ class Canhong:
     @staticmethod
     def on_game_start(c):
         # User-authored tabletop rule (2026-10-07), granted only during setup.
-        c.grant_harmony(c.cid, 2, reason='对局开始，残虹的异能')
+        c.grant_harmony(c.cid, 3, reason='对局开始，残虹的异能')
 
     @staticmethod
     def on_ultimate(c):

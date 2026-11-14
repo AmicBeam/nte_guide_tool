@@ -68,6 +68,7 @@
     node.removeAttribute('data-drop-role');
     node.classList.toggle('legal', Boolean(options.canAttack || options.canAwaken || options.canTarget));
     node.classList.toggle('down', Number(data.down_turns) > 0);
+    node.classList.toggle('is-summoned', Boolean(data.summoned));
     const damageImmune = Boolean(data.damage_immune && !options.placeholder && !data.down_turns && data.hp > 0);
     const damageLimited = Boolean(typeof data.damage_limit === 'number' && data.damage_limit >= 0 &&
       !options.placeholder && !data.down_turns && data.hp > 0);
@@ -184,7 +185,9 @@
       '<g class="v2-collapse-orbit"><path d="M50 5l3 7 7 1-6 5 2 8-6-4-6 4 2-8-6-5 7-1z"/>' +
       '<path d="M82 63l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>' +
       '<path d="M18 63l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></g></svg>' : '';
-    node.innerHTML = collapseHalo + protectionFrames +
+    const collapseFrame = !options.placeholder && typeof data.collapse_border_cut === 'number'
+      ? '<span class="v2-collapse-frame" style="--collapse-frame-cut:' + data.collapse_border_cut + '%" aria-hidden="true"></span>' : '';
+    node.innerHTML = collapseFrame + collapseHalo + protectionFrames +
       '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + (data.summoned && !portrait ? '<div class="v2-summon-art" aria-label="召唤物">⌛</div>' : V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar')) +
       vitalsHtml + (mobileCard ? '' : actions.join('')) + '</div>' +
       '<div class="v2-character-panel">' +
@@ -662,9 +665,12 @@
         if (!text) {
           return '';
         }
-        const desc = TABLE.historyDescription(event);
-        const extra = desc && desc !== text ? V2.cardDescriptionHtml(desc, '', 'subtle') : '';
-        return '<div class="v2-log-item"><div>' + V2.escapeHtml(text) + '</div>' + extra + '</div>';
+        const card = event.card || (event.item && event.item.card);
+        const visible = card && !card.hidden;
+        const portrait = visible && (card.portrait || card.avatar || V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'portrait'));
+        const thumb = visible ? '<button type="button" class="v2-log-card" data-log-seq="' + V2.escapeAttr(event.seq) + '" aria-label="查看' + V2.escapeAttr(card.name || '卡牌') + '">' +
+          V2.imageMarkup(portrait, card.name || '卡牌', 'v2-log-card-art') + '<span>' + V2.escapeHtml(card.name || '') + '</span></button>' : '';
+        return '<div class="v2-log-item">' + thumb + '<div>' + V2.escapeHtml(text) + '</div></div>';
       }).filter(Boolean).join('');
     } else if (logs.length) {
       html = logs.filter(function (line) { return !/^「.*」进入弃牌堆[。！!]?$/u.test(String(line)); }).slice(-40).map(function (line) {

@@ -469,6 +469,10 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         loss = 0
     target['hp'] = max(floor, target['hp'] - loss)
     after = {'hp': target['hp'], 'shield': target['shield']}
+    if kind in ('genesis', 'overlay') and src_side in SIDES and src_side != side:
+        dealt = absorbed + max(0, min(before['hp'], before['hp'] - after['hp']))
+        team = state['sides'][src_side]
+        team['genesis_weave_damage'] = int(team.get('genesis_weave_damage', 0)) + dealt
     # Public, team-wide history: count each positive genesis hit on the opposing
     # player that reduces life. Flowers and equipment hits are distinct.
     if (kind == 'genesis' and not esper and src_side in SIDES and src_side != side
@@ -571,8 +575,19 @@ def reduce_max_hp(state, side, cid, amount, *, source=None, settle=True, group_i
 
 def collapse_max(character):
     """Temporary limits and permanent, entity-scoped reductions compose."""
-    base = int((character.get('flags') or {}).get('collapse_max') or 5)
-    return max(1, base - sum(int(n) for n in (character.get('collapse_reductions') or {}).values()))
+    base = int((character.get('flags') or {}).get('collapse_max') or 3)
+    return max(1, base - collapse_reduction(character))
+
+
+def collapse_reduction(character):
+    return min(1, sum(int(n) for n in (character.get('collapse_reductions') or {}).values()))
+
+
+def collapse_border_cut(character):
+    if collapsed(character):
+        return 100
+    count = int((character.get('flags') or {}).get('collapse_count', 0))
+    return min(100, max(0, count / collapse_max(character) * 100))
 
 
 def force_collapse(state, side, cid, *, by=None):

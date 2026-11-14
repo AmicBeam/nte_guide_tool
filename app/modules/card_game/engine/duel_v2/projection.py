@@ -248,6 +248,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                 'extra_flower', 'front_debuff') if k in source}
         team['life_locked'] = bool(source.get('life_locked'))
         team['max_hp'] = source.get('max_hp', 30)
+        team['genesis_weave_damage'] = int(source.get('genesis_weave_damage', 0))
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
         from .genesis import public_beads
@@ -286,6 +287,8 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             c['equipment'] = public_equipment(h)
             c['effects'] = public_effects(h)
             c['attack_breakdown'] = attack_value(h, state, ps, explain=True)
+            from .state import collapse_border_cut
+            c['collapse_border_cut'] = collapse_border_cut(h)
             c.update(ultimate_expires=ultimate_spec(cid)['expires'], attack=c['attack_breakdown']['value'], shape=(form or {}).get('name') if form else None,
                      shape_id=h['shape'], shape_description=(form or {}).get('description') if form else None,
                      harmony_max=harmony_cap(state), energy_max=energy_cap(state, h), gaze=h.get('gaze', 0), dream=h.get('dream', 0),

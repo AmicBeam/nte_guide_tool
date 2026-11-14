@@ -363,3 +363,6 @@ body:has(.v2-codex-page) .shell {
   .v2-codex-hero { grid-template-columns: 88px minmax(0, 1fr); }
   .v2-codex-hero-art { height: 120px; }
 }
+
+.v2-codex-card.is-summoned { border: 2px solid #b69cf5; background: #251f38; }
+.v2-codex-summon-art { float: right; width: 80px; height: 100px; object-fit: cover; object-position: top; border-radius: 6px; }

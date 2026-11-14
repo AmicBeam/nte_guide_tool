@@ -68,39 +68,37 @@ class Jiuyuan:
     def card_description(c, current, card):
         if card['card_id'] == 'J06':
             count = int(c.state['sides'][c.side].get('genesis_player_hits', 0))
-            return f'{current}（X为{count}）'
+            return current.removesuffix('（当前为0）') + f'（当前为{count}）'
         return current
 
     @staticmethod
     def on_ultimate(c):
-        c.history('发动终结：每回合首次创生伤害对全体对方角色结算，并清算枚约，持续 2 个己方回合。')
+        c.history('发动终结：每回合首次创生伤害清算枚约，每消耗 1 枚回复 2 点能量，持续 2 个己方回合。')
 
     @staticmethod
     def on_genesis_segment(c, **_data):
-        c.operation.pop('jiuyuan_genesis_sweep', None)
-
-    @staticmethod
-    def genesis_sweep_targets(c, current=None, **_data):
+        c.operation.pop('jiuyuan_liquidated', None)
         if (not c.character.get('awakened')
                 or c.character.get('genesis_sweep_turn') == c.state['turn']):
-            return None
+            return
         c.character['genesis_sweep_turn'] = c.state['turn']
-        c.operation['jiuyuan_genesis_sweep'] = c.entity_id
-        foe = other(c.side)
-        return [(foe, cid) for cid in c.state['sides'][foe]['characters'] if alive(c.state, foe, cid)] + [(foe, PLAYER_ID)]
-
-    @staticmethod
-    def genesis_hit_amount(c, current=1, target_side=None, target_id=None, **_data):
-        if c.operation.get('jiuyuan_genesis_sweep') != c.entity_id or not is_esper(target_id):
-            return None
-        flags = hero(c.state, target_side, target_id).setdefault('flags', {})
-        if not flags.pop('pact', None):
-            return None
         from app.modules.card_game.content.duel_v2.registry import tally
-        c.history('九原的终结消耗枚约，本次伤害 +2。', target_side=target_side, target_id=target_id)
-        if c.character.get('shape') == 'J07':
-            c.energy(1, reason='「使命必达」触发')
-        return int(current) + 2 + tally(c, 'attachment_damage_bonus')
+        foe = other(c.side)
+        consumed = c.operation['jiuyuan_liquidated'] = []
+        for cid in list(c.state['sides'][foe]['characters']):
+            if not alive(c.state, foe, cid):
+                continue
+            target = hero(c.state, foe, cid)
+            if not target.setdefault('flags', {}).pop('pact', None):
+                continue
+            consumed.append(target['entity_id'])
+            damage(c.state, foe, cid, 2 + tally(c, 'attachment_damage_bonus'),
+                   source=f'{c.side}:{c.cid}', kind='pact', reason='九原终结清算枚约')
+            c.energy(2, reason='九原终结消耗枚约')
+            if c.character.get('shape') == 'J07':
+                c.energy(1, reason='「使命必达」触发')
+            if finished(c.state):
+                break
 
     @staticmethod
     def on_genesis_damage(c, target=None, damage_dealt=False, **_data):
@@ -110,7 +108,7 @@ class Jiuyuan:
         if is_esper(cid) and not alive(c.state, side, cid):
             return
         if (damage_dealt and is_esper(cid)
-                and c.operation.get('jiuyuan_genesis_sweep') != c.entity_id):
+                and hero(c.state, side, cid)['entity_id'] not in c.operation.get('jiuyuan_liquidated', [])):
             c.attach_pact(side, cid)
         if c.character.get('shape') == 'J08':
             damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='创生造成伤害，「自律时间」触发')

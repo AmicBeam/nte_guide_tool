@@ -15,12 +15,18 @@ def _b02(c):
 
 
 def _b03(c):
-    zone = front_debuff(c.state, other(c.side))
-    burn = zone.get('burn')
-    if burn and burn.get('by') == c.side:
-        burn['infinite'] = True
-        log(c.state, '己方施加的浊燃变为无限。', 'harmony', side=c.side, source=c.cid,
-            actor=f'{c.side}:{c.cid}')
+    from app.modules.card_game.engine.duel_v2.combat import enter
+    from app.modules.card_game.content.duel_v2.registry import fire
+    from app.modules.card_game.engine.events import GameEvent
+    missing = max(0, int(c.character['max_hp']) - int(c.character['hp']))
+    target_side, target_id = c.operation['target_id'].split(':', 1)
+    team = c.state['sides'][c.side]
+    team.update(last_front=c.cid, last_actor_entity_id=c.entity_id, last_actor_turn=c.state['turn'])
+    incoming = c.for_character(target_side, target_id)
+    enter(incoming, as_support=True)
+    if c.operation.get('support'):
+        fire(incoming, GameEvent.V2_SUPPORT_RESOLVED, actor_only=True, actor_id=target_id)
+    c.hit_front(missing)
 
 
 def _b04(c):
@@ -58,6 +64,13 @@ class Baicang:
         'B01': _b01, 'B02': _b02, 'B03': _b03, 'B04': _b04,
         'B05': _b05, 'B06': _b06, 'B07': set_shape, 'B08': _b08,
     }
+    target_policies = {'B03': 'other_living_ally_esper'}
+
+    @staticmethod
+    def can_play(c, current=True, card=None, **_data):
+        if (card or {}).get('card_id') == 'B03':
+            return bool(current and c.state['sides'][c.side]['front'] == c.cid)
+        return None
 
     @staticmethod
     def on_damage_taken(c, amount=0, source=None, **_data):

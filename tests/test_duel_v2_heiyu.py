@@ -104,9 +104,9 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(s['sides']['a']['heiyu_divinations'], 1)
         s = confirm(clone_state(json.loads(json.dumps(s))), 'P01')
         self.assertEqual(s['phase'], 'playing')
-        self.assertEqual(s['sides']['b']['hp'], 100)
+        self.assertEqual(s['sides']['b']['hp'], 93)
         s = apply_action(s, 'a', dict(type='attack', character_id='heiyu'))
-        self.assertEqual(s['sides']['b']['hp'], 95)
+        self.assertEqual(s['sides']['b']['hp'], 88)
         self.assertEqual(hero(s, 'a', 'heiyu')['harmony'], 1)
         self.assertEqual(s['sides']['a']['heiyu_divinations'], 1)
         before = observe(s, 'a')['sides']['a']
@@ -121,7 +121,7 @@ class HeiyuTest(unittest.TestCase):
         s = confirm(harmony_inspection(s), 'P04')
         self.assertEqual(s['phase'], 'playing')
         self.assertEqual(s['sides']['a']['heiyu_divinations'], 1)
-        self.assertEqual(s['sides']['b']['hp'], 95)
+        self.assertEqual(s['sides']['b']['hp'], 94)
         self.assertEqual(len([e for e in s['events'] if e['type']=='attack' and e.get('actor')=='a:heiyu']), 1)
         self.assertEqual(s['sides']['a']['ap'], 10)
         self.assertEqual(hero(s, 'a', 'heiyu')['harmony'], 0)
@@ -192,7 +192,7 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(s['phase'], 'playing')
         self.assertFalse(s['sides']['a'].get('heiyu_divinations'))
         self.assertEqual(s['sides']['a']['front'], 'heiyu')
-        self.assertEqual(s['sides']['b']['hp'], 96)
+        self.assertEqual(s['sides']['b']['hp'], 95)
         self.assertEqual(s['sides']['a']['ap'], 9)
 
     def test_p03_empty_draw_ends_game_before_choice_or_sortie(self):
@@ -212,11 +212,12 @@ class HeiyuTest(unittest.TestCase):
                 for cid in TEAM[1:]: hero(s, 'a', cid).update(hp=0, down_turns=3)
                 cards = top(s, ['Z01', 'Z02', 'Z03'][:size])
                 s = harmony_inspection(s)
-                if size:
+                if size >= 2:
                     self.assertEqual(len(s['pending_choice']['cards']), min(size, 2))
                     self.assertEqual(s['pending_choice']['snapshot_n'], 2)
                 else:
                     self.assertEqual(s['phase'], 'playing')
+                    self.assertFalse(s['sides']['a'].get('heiyu_divinations'))
 
     def test_p03_bottom_effect_draws_once_and_keeps_unrevealed_cards_private(self):
         for magical in (False, True):

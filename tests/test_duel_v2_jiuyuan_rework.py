@@ -150,7 +150,7 @@ class JiuyuanReworkTest(unittest.TestCase):
         self.assertTrue(all(e['amount'] == 1 for e in hits))
         self.assertEqual(s['sides']['b']['hp'], 98)
         self.assertEqual(s['sides']['a']['genesis_player_hits'], 5)
-        self.assertTrue(any('（X为5）' in e.get('card', {}).get('description', '') for e in s['events'] if e['seq'] > seq))
+        self.assertTrue(any('（当前为5）' in e.get('card', {}).get('description', '') for e in s['events'] if e['seq'] > seq))
 
     def test_j06_stops_at_victory_and_has_no_six_hit_cap(self):
         s = self.game(); s['sides']['a']['genesis_player_hits'] = 9
@@ -170,9 +170,9 @@ class JiuyuanReworkTest(unittest.TestCase):
         s = json.loads(json.dumps(s))
         view = observe(s, 'a', include_previews=False)
         shown = next(c for c in view['sides']['a']['hand'] if c.get('card_id') == 'J06')
-        self.assertTrue(shown['description'].endswith('（X为1）'))
+        self.assertTrue(shown['description'].endswith('（当前为1）'))
         self.assertEqual(card['description'], baseline['description'])
-        self.assertNotIn('（X为', CARDS['J06']['description'])
+        self.assertTrue(CARDS['J06']['description'].endswith('（当前为0）'))
         self.assertEqual(view['policy_state']['sides']['a']['genesis_player_hits'], 1)
         hidden = observe(s, 'b', include_previews=False)['sides']['a']['hand']
         self.assertTrue(all(c.get('hidden') for c in hidden))

@@ -376,5 +376,3 @@ body:has(.v2-codex-page) .shell {
 .v2-codex-summon-art { position: absolute; inset: 0; pointer-events: none; }
 .v2-codex-summon-art img { width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0.4; }
 .v2-codex-summon-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, #251f3820, #171324c9); }
-
-.v2-codex-kind { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }

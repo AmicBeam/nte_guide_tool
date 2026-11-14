@@ -245,6 +245,8 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
                 or rr.learning_keys(previous['config']) != rr.learning_keys(config)
                 or previous['config'].get('learning_rate',.0003) != config.get('learning_rate',.0003)
                 or previous['config'].get('seed',0) != config.get('seed',0)
+                or previous['config'].get('policy_batch_size',128) != config.get('policy_batch_size',128)
+                or previous['config'].get('value_batch_size',128) != config.get('value_batch_size',128)
                 or previous['config'].get('episode_pool_limit',128) != config.get('episode_pool_limit',128)
                 or any(p.max_row_reuse != config.get('max_row_reuse',8) for p in pools.values())):
             raise ValueError('Prior joint state source, deadline or reuse contract changed')

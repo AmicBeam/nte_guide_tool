@@ -703,7 +703,8 @@ class ValueFitReady(RuntimeError):
         super().__init__('Value calibration collection is ready for fitting: '+str(folder))
 
 
-def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadline,*,seed_offset=0):
+def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadline,*,seed_offset=0,
+               keys=None):
     """Separate value training, selection, and heldout; policy arrays are frozen."""
     entered=time.monotonic()
     import numpy as np
@@ -713,6 +714,11 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
     if type(checkpoint_enabled)is not bool:raise TypeError('Explicit value-fit checkpoint boolean required')
     if seed_offset not in (0,6000):raise ValueError('Declared disjoint value seed slot required')
     protocol = value_calibration_protocol(config)
+    selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
+    if set(nets) != set(selected):
+        raise ValueError('Value calibration networks must match the explicit selected keys')
+    if set(selected) != set(ROSTER) and checkpoint_enabled:
+        raise ValueError('Scoped value fitting requires a fresh once-only stage; persistent seven-head fit is separate')
     process_seconds=config.get('value_fit_process_seconds')
     process_stop=None
     if process_seconds is not None:
@@ -734,6 +740,15 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
     full = protocol['full_tower']
     folder = Path(folder); before = {k: {n: t.detach().clone() for n, t in net.state_dict().items()
                                        if not n.startswith(('wdl.', 'value_net.'))} for k, net in nets.items()}
+    if set(selected) != set(ROSTER):
+        import shutil
+        (folder/'models').mkdir(parents=True, exist_ok=True)
+        for key in set(ROSTER) - set(selected):
+            for extension in ('.json', '.npz'):
+                target = folder/'models'/(key+extension)
+                if target.exists():
+                    raise ValueError('Scoped value calibration requires a new frozen-bank output')
+                shutil.copyfile(Path(models)/(key+extension), target)
     if not checkpoint_enabled and any((folder/name).exists()for name in
             ('value-fit-start.json','value-fit-checkpoint.json','value-precheck-complete.json')):
         raise ValueError('Persistent value-fit evidence cannot be bypassed by disabling its checkpoint')
@@ -851,7 +866,7 @@ def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadli
         raise ValueError('Incomplete/orphan value-precheck report cannot be regenerated or overwritten')
     held = collect(pool, check_jobs(folder / 'models',
                    config['seeds']['selection']+cycle*10000+1000+seed_offset), folder / 'heldout')
-    policies = {k: rt.model(folder / 'models', k) for k in ROSTER}
+    policies = {k: rt.model(folder / 'models', k) for k in selected}
     if checkpoint_enabled:
         if _value_fit_bank_hash(folder/'models')!=fit_marker['models']:
             raise ValueError('Frozen heldout changed the selected value bank')
@@ -1035,6 +1050,11 @@ def update_batch(nets, opts, pools, jobs, games, rng, config, deadline, out):
     from .episode_replay import dump_episode
     health = {}; rows_by_key = {}
     selected = learning_keys(config)
+    policy_batch_size = config.get('policy_batch_size', 128)
+    value_batch_size = config.get('value_batch_size', 128)
+    for size in (policy_batch_size, value_batch_size):
+        if type(size) is not int or not 1 <= size <= 8192:
+            raise ValueError('Joint minibatch sizes must be integers in 1..8192')
     if any(job['policies'][s][1] not in selected for job in jobs for s in job['train_sides']):
         raise ValueError('Frozen opponent cannot contribute learning rows')
     for pool in pools.values(): pool.begin_fresh_batch()
@@ -1047,20 +1067,23 @@ def update_batch(nets, opts, pools, jobs, games, rng, config, deadline, out):
         stats = []; pool = pools[key]
         rows_by_key[key] = [r for job,g in zip(jobs,games) for r in g['rows']
                             if r['key']==key and r['side'] in job['train_sides']]
-        for rows,refs,sampling in pool.policy_pass_batches(rng,passes=config['policy_passes'],deadline=deadline):
+        for rows,refs,sampling in pool.policy_pass_batches(rng,passes=config['policy_passes'],
+                batch_size=policy_batch_size,deadline=deadline):
             metric = rt.update(nets[key],opts[key],rows)
             stats.append(dict(metric, refs=refs, sampling=sampling))
         values = [r for job,g in zip(jobs,games) for r in g['value_rows']
                   if r['key']==key and r['side'] in job['train_sides'] and r['value_actor']==0]
-        for start in range(0,len(values),128):
+        value_updates = 0
+        for start in range(0,len(values),value_batch_size):
             if time.time() >= deadline: raise TimeoutError('Update deadline')
-            rt.update(nets[key],opts[key],values[start:start+128],value_only=True)
+            rt.update(nets[key],opts[key],values[start:start+value_batch_size],value_only=True)
+            value_updates += 1
         cov = pool.coverage_report()
         health[key] = dict(finite=bool(stats) and all(math.isfinite(m[n]) for m in stats for n in ('policy_loss','value_loss')),
                            gradient=all(any(m['policy_gradient_norms'].get(prefix,0)>0 for m in stats)
                                         for prefix in ('state_net','cand_net','score')),
                            coverage=cov['first_use_coverage'],policy_rows=cov['fresh_policy_rows'],
-                           updates=len(stats),value_rows=len(values))
+                           updates=len(stats),value_updates=value_updates,value_rows=len(values))
         write(Path(out) / f'{key}-updates.json',stats)
     return health, rows_by_key
 

@@ -22,7 +22,8 @@ def _allowed_source(name):
             or name.startswith(('scripts/','tests/')) and path.suffix=='.py'
             or name.startswith('docs/duel-v2') and path.suffix=='.md'
             or name=='docs/everness-item-chain-card-design.md'
-            or name in ('AGENTS.md','README.md','requirements.txt','requirements-rl.txt','requirements-ai.txt'))
+            or name in ('AGENTS.md','README.md','app/modules/card_game/README.md',
+                        'requirements.txt','requirements-rl.txt','requirements-ai.txt'))
 
 
 def snapshot_revision(root,output,revision,extra=()):
@@ -111,7 +112,8 @@ def snapshot(root, output, extra=()):
                      or name.startswith(('scripts/', 'tests/')) and path.suffix == '.py'
                      or name.startswith('docs/duel-v2') and path.suffix == '.md'
                      or name == 'docs/everness-item-chain-card-design.md'
-                     or name in ('AGENTS.md', 'README.md', 'requirements.txt', 'requirements-rl.txt', 'requirements-ai.txt'))
+                     or name in ('AGENTS.md', 'README.md', 'app/modules/card_game/README.md',
+                                 'requirements.txt', 'requirements-rl.txt', 'requirements-ai.txt'))
         if not is_source or not path.is_file() or path.is_symlink() or root not in path.resolve().parents:
             continue
         chosen.append(name)

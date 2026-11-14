@@ -47,6 +47,11 @@ class FrozenSourceSnapshotTest(unittest.TestCase):
             root=Path(temp)/'isolated';root.mkdir();(root/'scripts').mkdir()
             data=b'print("task source")\n';(root/'scripts/check.py').write_bytes(data)
             declared={'scripts/check.py':dict(bytes=len(data),sha256=sha256(data).hexdigest())}
+            readme = root/'app/modules/card_game/README.md'
+            readme.parent.mkdir(parents=True)
+            readme.write_bytes(b'# Training module\n')
+            declared['app/modules/card_game/README.md'] = dict(
+                bytes=readme.stat().st_size, sha256=sha256(readme.read_bytes()).hexdigest())
             (root/'source-manifest.json').write_text(json.dumps(declared))
             out=Path(temp)/'nested/output'
             self.assertEqual(snapshot(root,out),declared)

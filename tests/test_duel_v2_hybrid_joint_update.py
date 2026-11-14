@@ -132,6 +132,7 @@ class HybridJointUpdateTest(unittest.TestCase):
             source, jobs, games, config = self.fixture(root)
             keys = ('starter', 'murk', 'zhenhong')
             config['learning_keys'] = list(keys)
+            config.update(policy_passes=4, policy_batch_size=8192, value_batch_size=8192)
             selected = [(j, g) for j, g in zip(jobs, games)
                         if j['policies']['a'][1] in keys]
             jobs, games = map(list, zip(*selected))
@@ -139,12 +140,39 @@ class HybridJointUpdateTest(unittest.TestCase):
                 deadline=time.time()+60, contract='controlled-scoped-update')
             self.assertEqual(set(receipt['health']), set(keys))
             self.assertEqual(set(receipt['restore_checks']), set(keys))
+            for key in keys:
+                self.assertEqual(receipt['health'][key]['updates'], 4)
+                self.assertEqual(receipt['health'][key]['value_updates'], 1)
             for key in ROSTER:
                 self.assertEqual(receipt['before'][key] == receipt['after'][key], key not in keys)
                 if key not in keys:
                     old = rt.model(source, key); frozen = rt.model(receipt['models'], key)
                     for name in old.weights:
                         np.testing.assert_array_equal(old.weights[name], frozen.weights[name])
+
+    def test_scoped_value_preparation_preserves_nonselected_bank(self):
+        from unittest.mock import patch
+        from app.modules.card_game.rl import seven_round as rr
+        from app.modules.card_game.rl.seven_lineup import identity
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder); source, jobs, games, config = self.fixture(root)
+            keys = ('starter', 'murk', 'zhenhong')
+            nets, decks, origins = {}, {}, {}
+            for key in keys:
+                nets[key], decks[key], origins[key] = rt.restore(source, key)
+            def controlled_collect(pool, planned, output):
+                return games
+            config.update(rule_hash=identity(), value_replicas=1,
+                          value_check_replicas=1, value_passes=1,
+                          seeds=dict(adaptation=100, selection=100000))
+            with patch.object(rr, 'collect', side_effect=controlled_collect):
+                target, report = rr.warm_value(None, nets, plan()['builds'], origins,
+                    source, root/'value', config, 1, time.time()+60, keys=keys)
+            self.assertEqual(set(report['metrics']), set(keys))
+            # Synthetic low-count rows never become a qualified real preflight.
+            self.assertFalse(report['passed'])
+            for key in set(ROSTER)-set(keys):
+                self.assertEqual(rt.model(source,key).version, rt.model(target,key).version)
 
     def test_failed_gradient_gate_records_failed_and_refuses_rerun(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -378,7 +378,7 @@
       usePortrait: true,
       canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: frontId })),
       canAwaken: Boolean(ultimate),
-      ultimateLabel: ultimate && ultimate.action.type === 'exit_ultimate' ? (ultimate.label || '退出救世魔女') : '终结',
+      ultimateLabel: ultimate && ultimate.action.type === 'exit_ultimate' ? (ultimate.label || '退出') : '终结',
       records: frontId === 'xun' ? ((state && state.records) || []) : null,
     });
     slot.appendChild(node);
@@ -425,7 +425,7 @@
         usePortrait: true,
         canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: character.id })),
         canAwaken: Boolean(ultimate),
-        ultimateLabel: ultimate && ultimate.action.type === 'exit_ultimate' ? (ultimate.label || '退出救世魔女') : '终结',
+        ultimateLabel: ultimate && ultimate.action.type === 'exit_ultimate' ? (ultimate.label || '退出') : '终结',
         placeholder: false,
         records: character.id === 'xun' ? ((state && state.records) || []) : null,
       });

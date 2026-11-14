@@ -294,7 +294,7 @@ class Heiyu:
 
     @staticmethod
     def exit_ultimate_label(c, current=None, **_data):
-        return '退出救世魔女'
+        return '退出'
 
     @staticmethod
     def on_deferred_action(c, action):

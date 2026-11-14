@@ -16,7 +16,8 @@ INDEX = np.asarray([[[all_features().index(f'{k}:{s}:{c}') for k in FIELDS] for 
 CATEGORIES = ((0,9),(1,len(SEATS)+1),(2,len(CARD_IDS)+1),(3,3),(4,len(SEATS)+1))
 DIM = sum(n for _,n in CATEGORIES) + CAND_DIM-5 + 2*len(FIELDS)
 FRONT_INDEX = all_features().index('front:1')
-BATTLE_CARDS = np.asarray([False]+[CARDS[cid]['type']=='battle' for cid in CARD_IDS])
+BATTLE_CARDS = np.asarray([False]+[False if cid == 'PF01' and cid not in CARDS
+                                  else CARDS[cid]['type']=='battle' for cid in CARD_IDS])
 
 
 def context_targets_numpy(x,c):

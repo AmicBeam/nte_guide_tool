@@ -8,7 +8,8 @@ from . import seven_lineup as current, seven_grounded as grounded, seven_runtime
 
 
 def migrate_seven(directory, key, build, output, *, source_snapshot,
-                  expected_sha256, expected_manifest_sha256, device='cuda'):
+                  expected_sha256, expected_manifest_sha256, device='cuda',
+                  expand_named_observation=False):
     """Fresh research migration from an authenticated, same-layout seven model.
 
     Rule changes require fresh preparation/preflight; no previous readiness,
@@ -47,36 +48,68 @@ def migrate_seven(directory, key, build, output, *, source_snapshot,
         historical_seven.update(data(module/'rl'/name))
     root = Path(directory); manifest_path=root/(key+'.json'); path=root/(key+'.npz')
     m=json.loads(manifest_path.read_text(encoding='utf8'))
+    features = m.get('features')
+    target_features = current.all_features()
+    expanded = bool(expand_named_observation and isinstance(features, list)
+                    and len(features) < len(target_features)
+                    and target_features[:len(features)] == features)
     if (sha256(manifest_path.read_bytes()).hexdigest()!=expected_manifest_sha256
             or sha256(path.read_bytes()).hexdigest()!=expected_sha256 or m.get('sha256')!=expected_sha256
             or m.get('rule_hash')!=historical_seven.hexdigest() or m.get('schema')!=SCHEMA
             or m.get('deck')!=key or m.get('reward_mode')!='terminal_wdl_only'
             or m.get('automatic_serving_approval') is not False
-            or m.get('features')!=current.all_features() or m.get('candidates')!=current.candidate_names()
+            or (features != target_features and not expanded) or m.get('candidates')!=current.candidate_names()
             or m.get('grounded_features')!=grounded.transformed_names()
             or build_identity(m['build'])!=build_identity(build)
             or m.get('architecture_sha256')!=sha256(data(module/'rl/seven_policy.py')).hexdigest()
             or data(module/'rl/seven_policy.py')!=Path(rt.architecture.__file__).read_bytes()
-            or data(module/'rl/seven_grounded.py')!=Path(grounded.__file__).read_bytes()):
+            or (data(module/'rl/seven_grounded.py')!=Path(grounded.__file__).read_bytes() and not expanded)):
         raise ValueError('Authenticated same-layout seven-model migration required')
     net=rt.create_network(key,m['hidden'],device,legacy=bool(m.get('source_identity')))
     expected=net.state_dict()
     with np.load(path,allow_pickle=False) as saved:
         if set(saved.files)!=set(expected):raise ValueError('Seven source tensor set mismatch')
         arrays={name:saved[name].copy() for name in saved.files}
+    original_arrays = {name: value.copy() for name, value in arrays.items()}
+    if expanded:
+        # Append-only public columns are inactive until trained. InputNorm must
+        # exclude them as well as zeroing their projection, otherwise merely
+        # adding zeros changes the old mean/variance and every existing score.
+        for prefix in ('state_net', 'value_net'):
+            for suffix in ('active', 'weight', 'bias'):
+                name = prefix + '.0.' + suffix
+                if arrays[name].shape != (len(features),):
+                    raise ValueError('Historical named normalization shape mismatch')
+                value = np.zeros(tuple(expected[name].shape), dtype=arrays[name].dtype)
+                if suffix == 'weight':
+                    value.fill(1)
+                value[:len(features)] = arrays[name]
+                arrays[name] = value
+            name = prefix + '.1.weight'
+            if arrays[name].shape != (m['hidden'], len(features)):
+                raise ValueError('Historical named input projection shape mismatch')
+            value = np.zeros(tuple(expected[name].shape), dtype=arrays[name].dtype)
+            value[:, :len(features)] = arrays[name]
+            arrays[name] = value
     if any(w.shape!=tuple(expected[n].shape) or w.dtype!=expected[n].detach().cpu().numpy().dtype
            or not np.isfinite(w).all() for n,w in arrays.items()):
         raise ValueError('Seven source tensor shape/nonfinite mismatch')
     net.load_state_dict({n:torch.as_tensor(w,device=device) for n,w in arrays.items()})
     origin=dict(m['origin'],research_migration=dict(source=str(root),source_sha256=expected_sha256,
         source_manifest_sha256=expected_manifest_sha256,source_rule_hash=m['rule_hash'],
-        authenticated_source_files=checked,all_numeric_arrays_preserved=True,
+        authenticated_source_files=checked,all_numeric_arrays_preserved=not expanded,
+        named_observation_expansion=target_features[len(features):] if expanded else [],
         prior_ready_adopted=False,prior_quality_adopted=False,optimizer_reset=True,experience_reset=True))
     rt.export(net,output,key,build,origin)
     policy=rt.model(output,key)
     if any(w.dtype!=policy.weights[n].dtype or w.tobytes()!=policy.weights[n].tobytes()
            for n,w in arrays.items()):
         raise ValueError('Research migration changed seven source arrays')
+    for name, old_array in original_arrays.items():
+        new_array = policy.weights[name]
+        prefix = new_array[tuple(slice(0, size) for size in old_array.shape)]
+        if not np.array_equal(prefix, old_array):
+            raise ValueError('Named migration changed an existing numerical column')
     return net,origin
 
 

@@ -142,7 +142,7 @@ def _determinize_transition(state,viewer,seed):
     for hero,h in team['characters'].items():
         if h.get('summoned'):continue
         if hero not in SEATS:raise ValueError('Unencoded recovery hero')
-        kit=[cid for cid in CARD_IDS if CARDS[cid]['character_id']==hero and not CARDS[cid].get('derived')]
+        kit=[cid for cid in CARD_IDS if cid in CARDS and CARDS[cid]['character_id']==hero and not CARDS[cid].get('derived')]
         bonus=sum(n for cid,n in copies.items() if CARDS[cid]['character_id']==hero)
         counts={cid:original[cid] for cid in kit};caps={cid:2+copies.get(cid,0) for cid in kit}
         n=8+bonus-sum(counts.values())

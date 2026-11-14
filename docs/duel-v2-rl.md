@@ -10,6 +10,10 @@
 
 ## 文件与边界
 
+七队研究编码追加当前环合来源、创生珠的层数／剩余时间／本回合计次、伊洛伊有序追加队列、创生／覆纹累计伤害及真红／九原每回合计次。珠按等价状态计数，不截断额外珠；追加队列保留至多64项的完整顺序，超限明确拒绝，不编码实体编号。历史谕石仅保留原数值列，不恢复卡池；无关公开角色不自动改变七队数值布局。旧模型可显式使用 `migrate_seven(..., expand_named_observation=True)` 迁入追加列：保留旧列及数值、冻结旧归一化范围、将新投影置零并保留可学习输入，再重新核对实际分数／WDL、CUDA与恢复；不继承旧规则或价值批准。
+
+显式授权的混合联合学习允许通过 `learning_keys` 限定七队中的学习子集。输入银行与恢复文件仍完整保留七队，只有选中策略接收样本、更新及下一步Adam核验，其余策略和价值张量逐项不变。恢复不得改变学习名单；价值准备、辅助模型、独立选择和候选配牌验收仍须另行完成。验证：`tests.test_duel_v2_harmony_observation`、`tests.test_duel_v2_seven_migration`、`tests.test_duel_v2_hybrid_joint_update`。
+
 离线批量搜索基础位于 `rl/batched_duel` 和 `rl/batched_search`，提供 CPU arena、无损实体图 codec、设备存储与随机原语、每根预算、批量推理、协作 Gumbel 遍历和设备统计池，验证及后续五队 native/CUDA 对拍见[批量搜索后端](duel-v2-batched-search.md)。完整正式规则通过有界 CPU 驻留进程池执行，离线评测入口 `scripts/evaluate_duel_v2_batched.py` 合并跨局网络推理和 GPU 搜索统计，并保存实际动作、原始记录及公开回放。离线滚动窗口的`wall_clock`从搜索准入起计3秒，共享最多32次证明／树模拟预算，驻留等待与真实提交端到端延迟另报；网站从请求开始计时的协议不因此改变，迟到结果丢弃。五队规则、合法动作、观察编码和采样的设备执行尚未接通，不自动接入服务或训练。合成根或重复推理行不算真实对局容量验收。
 
 独立恢复研究组件：`residual_policy`／`residual_runtime` 管理正常幅度残差网络与数值版本；`preserved_policy` 保留三套旧策略，`recovery_runtime` 管理显式研究采集，`recovery_search` 管理自然WDL尺度对照，`recovery_checkpoint` 检查网络／Adam／RNG恢复；`policy_equivalence`、`search_stability`、`archive_diagnostics` 只做表示／目标／数值审计，`full_hand_diagnostic` 只对合成离线状态提供具名手牌权限，`offline_sources` 生成排除敏感文件的源码快照。它们不自动接入网站或正式长训；具体入口及CPU／CUDA验收见[策略学习恢复](duel-v2-policy-recovery.md)。

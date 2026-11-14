@@ -126,6 +126,26 @@ class HybridJointUpdateTest(unittest.TestCase):
                         deadline=time.time()+60,contract='controlled')
                 self.assertEqual(list(output.iterdir()),[output/'joint-status.json'])
 
+    def test_three_selected_learners_leave_other_numeric_arrays_frozen(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source, jobs, games, config = self.fixture(root)
+            keys = ('starter', 'murk', 'zhenhong')
+            config['learning_keys'] = list(keys)
+            selected = [(j, g) for j, g in zip(jobs, games)
+                        if j['policies']['a'][1] in keys]
+            jobs, games = map(list, zip(*selected))
+            receipt = stage._run_once(source, jobs, games, root/'scoped', config,
+                deadline=time.time()+60, contract='controlled-scoped-update')
+            self.assertEqual(set(receipt['health']), set(keys))
+            self.assertEqual(set(receipt['restore_checks']), set(keys))
+            for key in ROSTER:
+                self.assertEqual(receipt['before'][key] == receipt['after'][key], key not in keys)
+                if key not in keys:
+                    old = rt.model(source, key); frozen = rt.model(receipt['models'], key)
+                    for name in old.weights:
+                        np.testing.assert_array_equal(old.weights[name], frozen.weights[name])
+
     def test_failed_gradient_gate_records_failed_and_refuses_rerun(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

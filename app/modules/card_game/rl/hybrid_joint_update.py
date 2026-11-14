@@ -106,8 +106,7 @@ def _validate_policy_row(row, step, trace, job):
 
 
 def _validate(source, jobs, games, config, *, model_loader=None):
-    if set(rr.learning_keys(config)) != set(ROSTER):
-        raise ValueError('Joint update requires all seven learners')
+    learners = set(rr.learning_keys(config))
     if config.get('policy_passes') not in (1,4,8):
         raise ValueError('policy_passes must be 1, 4 or 8')
     if type(config.get('max_row_reuse',8)) is not int or config.get('max_row_reuse',8) < 1:
@@ -120,7 +119,7 @@ def _validate(source, jobs, games, config, *, model_loader=None):
         raise ValueError('Distinct complete job/game batch required')
     from .seven_covered_value import load_scope
     scopes = {}
-    counts = {k: 0 for k in ROSTER}
+    counts = {k: 0 for k in learners}
     for job, game in zip(jobs, games):
         if (job.get('training') is not True or job.get('pure') is True
                 or job.get('simulations',32) != 32 or job.get('gumbel_candidates',16) != 16
@@ -153,6 +152,8 @@ def _validate(source, jobs, games, config, *, model_loader=None):
             raise ValueError('Both observer value prefixes required')
         for side in job['train_sides']:
             key = job['policies'][side][1]
+            if key not in learners:
+                raise ValueError('Frozen opponent cannot contribute learning rows')
             if key not in source or source[key].version != policies[side].version:
                 raise ValueError('Learner source differs from collected source')
         for step, row in enumerate(game['rows']):
@@ -241,6 +242,7 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
         if (previous['config']['hard_deadline'] != config['hard_deadline']
                 or previous['config']['train_until'] != config['train_until']
                 or previous['config']['policy_passes'] != config['policy_passes']
+                or rr.learning_keys(previous['config']) != rr.learning_keys(config)
                 or previous['config'].get('learning_rate',.0003) != config.get('learning_rate',.0003)
                 or previous['config'].get('seed',0) != config.get('seed',0)
                 or previous['config'].get('episode_pool_limit',128) != config.get('episode_pool_limit',128)
@@ -249,7 +251,8 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
         source_transition = _rebind_value_source(nets,opts,previous,source_bank,main_value_report)
     before = {k:rt.model(source_bank,k).version for k in ROSTER}
     health, rows = rr.update_batch(nets,opts,pools,jobs,games,rng,config,deadline,output)
-    for key in ROSTER:
+    learners = rr.learning_keys(config)
+    for key in learners:
         value_gradients = {prefix: math.sqrt(sum(float(p.grad.detach().norm())**2
             for name,p in nets[key].named_parameters() if name.startswith(prefix) and p.grad is not None))
             for prefix in ('value_net','wdl')}
@@ -258,9 +261,9 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
             raise ValueError('Positive finite terminal-value gradients required for every learner')
         if health[key]['policy_rows'] != len(rows[key]):
             raise ValueError('Fresh policy rows were dropped from the replay pool')
-    if set(health) != set(ROSTER) or any(not h['finite'] or not h['gradient'] or
+    if set(health) != set(learners) or any(not h['finite'] or not h['gradient'] or
             h['coverage'] != 1 or h['policy_rows'] < 1 or h['value_rows'] < 1 for h in health.values()):
-        raise ValueError('All-seven finite positive-gradient full fresh coverage required')
+        raise ValueError('Every selected learner requires finite positive-gradient full fresh coverage')
     if time.time() >= deadline:
         raise TimeoutError('Joint update export deadline')
     models = output/'models'
@@ -270,15 +273,19 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
             raise ValueError('Nonfinite joint model tensor')
         changed = [name for name,tensor in nets[key].state_dict().items()
                    if not torch.equal(tensor.detach().cpu(),torch.as_tensor(prior.weights[name].copy()))]
-        health[key]['changed_policy_arrays'] = [n for n in changed if not n.startswith(('value_net.','wdl.'))]
-        health[key]['changed_value_arrays'] = [n for n in changed if n.startswith(('value_net.','wdl.'))]
-        if not health[key]['changed_policy_arrays'] or not health[key]['changed_value_arrays']:
-            raise ValueError('Each learner must change both policy and terminal-value arrays')
+        if key in learners:
+            health[key]['changed_policy_arrays'] = [n for n in changed if not n.startswith(('value_net.','wdl.'))]
+            health[key]['changed_value_arrays'] = [n for n in changed if n.startswith(('value_net.','wdl.'))]
+            if not health[key]['changed_policy_arrays'] or not health[key]['changed_value_arrays']:
+                raise ValueError('Each learner must change both policy and terminal-value arrays')
+        elif changed:
+            raise ValueError('Frozen model arrays changed during scoped joint update')
         rt.export(nets[key],models,key,prior.serving_deck,dict(prior.manifest['origin'],
-            hybrid_joint_update=True,quality_approved=False,automatic_serving_approval=False))
-    numeric = rr.numeric_check(nets,models,rows,device)
+            hybrid_joint_update=key in learners,frozen_during_scoped_update=key not in learners,
+            quality_approved=False,automatic_serving_approval=False))
+    numeric = rr.numeric_check({k:nets[k] for k in learners},models,rows,device)
     after = {k:rt.model(models,k).version for k in ROSTER}
-    if any(before[k] == after[k] for k in ROSTER):
+    if any(before[k] == after[k] for k in learners):
         raise ValueError('Every learner must change actual model arrays')
     rr.save_round(output,nets,opts,pools,models,rng,config,1,source_bank,False)
     # Verify on disposable copies while the original live optimizer is still
@@ -290,7 +297,7 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
     torch_rng = torch.get_rng_state()
     cuda_rng = torch.cuda.get_rng_state_all() if torch.cuda.is_initialized() else None
     try:
-        for key in ROSTER:
+        for key in learners:
             if time.time() >= deadline:
                 raise TimeoutError('Joint next-Adam verification deadline')
             copied,copied_opt,data = restore(Path(pointer['folder'])/(key+'.pt'),

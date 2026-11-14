@@ -15,7 +15,11 @@ SEATS = (*old.SEATS, 'zhenhong', 'yi', *murk.SEATS, 'heiyu', 'dafutier', 'lingke
 SEAT_INDEX = {v: i for i, v in enumerate(SEATS)}
 CARD_IDS = (*old.CARD_IDS, *(f'{p}{i:02}' for p in ('R', 'I') for i in range(1, 9)), 'RF01', *murk.CARD_IDS)
 from ..content.duel_v2 import CARDS, PUBLIC_CHARACTER_IDS
-CARD_IDS += tuple(sorted(cid for cid,card in CARDS.items() if card['character_id'] in PUBLIC_CHARACTER_IDS and cid not in CARD_IDS))
+# Keep the historical seven-team layout stable when unrelated public characters
+# are released or an obsolete generated card leaves the live catalog. PF01 is
+# a reserved numeric identity only; no current build or rule can generate it.
+CARD_IDS += tuple(sorted({cid for cid,card in CARDS.items()
+                         if card['character_id'] in SEATS and cid not in CARD_IDS} | {'PF01'}))
 CARD_INDEX = {v: i for i, v in enumerate(CARD_IDS)}
 CANDIDATE_CONTEXT = ('copy', 'expires_in', 'derived_override', 'antique_investment')
 CAND_DIM = 11 + 2*len(CARD_IDS) + len(old.OPTION_IDS) + 4 + len(CANDIDATE_CONTEXT)
@@ -119,6 +123,69 @@ NEW_SIDE = ('max_hp', 'insight_damage', 'insight_played', 'support_count', 'heiy
 NEW_CHAR = ('collapse_max', 'chain_count', 'chain_actor', 'insight_used', 'mimic_actor')
 ATTRIBUTES = ('光', '暗', '灵', '魂', '相', '咒')
 CHOICES = ('inspect_top','discard','enemy_hand','kit','kit_multi','heiyu_divination','hand_deck_placement','hand_redraw')
+GENESIS_BINS = tuple((uncapped, stacks, left, used) for uncapped in (False, True)
+                     for stacks in (1, 2) for left in (1, 2) for used in (False, True))
+GENESIS_QUEUE_SLOTS = 64
+
+
+def harmony_feature_names():
+    names = []
+    for side in (0, 1):
+        names += [f'harmony3:{side}:damage']
+        names += [f'harmony3:{side}:bead:{int(u)}:{s}:{left}:{int(used)}'
+                  for u, s, left, used in GENESIS_BINS]
+        names += [f'harmony3:{side}:queue:{slot}:{cid}'
+                  for slot in range(GENESIS_QUEUE_SLOTS) for cid in SEATS]
+        names += [f'harmony3:{side}:queue_valid:{slot}' for slot in range(GENESIS_QUEUE_SLOTS)]
+        names += [f'harmony3:{side}:{cid}:{field}' for cid in SEATS
+                  for field in ('source', 'surplus_used', 'sweep_used')]
+    return names
+
+
+def encode_harmony(view):
+    """Encode public beads and ordered continuations, never raw entity numbers.
+
+    Beads with equal lifetime, stacks and availability are interchangeable:
+    sortie damage uses the attacking entity rather than the bead creator.
+    Continuation order is preserved; capacity overflow is an explicit error.
+    """
+    side = view['viewer_side']; result = []
+    for side in (side, 'b' if side == 'a' else 'a'):
+        team = view['sides'][side]
+        meta = view['policy_state']['sides'][side]
+        heroes = {h['id']: h for h in team['characters']}
+        bins = np.zeros(len(GENESIS_BINS), dtype=np.float32)
+        for bead in meta.get('genesis_layers') or []:
+            key = (bool(bead.get('uncapped')), bead['stacks'], bead['left'],
+                   bead.get('used_turn') == view['turn'])
+            if key not in GENESIS_BINS:
+                raise ValueError('Unsupported public genesis bead state')
+            bins[GENESIS_BINS.index(key)] += .1
+        result += [float(team.get('genesis_weave_damage') or 0) / 10]
+        result += bins.tolist()
+        queue = meta.get('extra_genesis_queue')
+        if queue is None:
+            queue = [dict(actor=meta.get('extra_genesis_actor'))] * int(meta.get('extra_genesis_pending') or 0)
+        if len(queue) > GENESIS_QUEUE_SLOTS:
+            raise ValueError('Genesis continuation queue exceeds observation capacity')
+        order = np.zeros((GENESIS_QUEUE_SLOTS, len(SEATS)), dtype=np.float32)
+        valid = np.zeros(GENESIS_QUEUE_SLOTS, dtype=np.float32)
+        for slot, entry in enumerate(queue):
+            cid = entry.get('actor')
+            if cid not in SEAT_INDEX:
+                raise ValueError('Unknown public genesis continuation actor')
+            order[slot, SEAT_INDEX[cid]] = 1
+            hero = heroes.get(cid, {})
+            valid[slot] = float(hero.get('hp', 0) > 0 and
+                (not entry.get('actor_entity_id') or entry['actor_entity_id'] == hero.get('entity_id')))
+        result += order.ravel().tolist() + valid.tolist()
+        for cid in SEATS:
+            hero = heroes.get(cid, {})
+            state = meta['characters'].get(cid) or {}
+            result += [float(bool(hero.get('harmony_source'))),
+                       float(state.get('surplus_passive_turn', -1) == view['turn']),
+                       float(state.get('genesis_sweep_turn', -1) == view['turn'])]
+    return result
 ORDER_FIELDS = tuple(f'order:{zone}:{slot}:{cid}' for zone in ('top','bottom')
                      for slot in range(ORDER_SLOTS) for cid in CARD_IDS)
 SELECT_FIELDS = tuple(f'select:{cid}' for cid in CARD_IDS)
@@ -137,7 +204,7 @@ def all_features():
         f'seven:resistance:{s}:{attr}' for s in (0,1) for attr in ATTRIBUTES] + [
         f'seven:resistance:{s}:{cid}:{attr}' for s in (0,1) for cid in SEATS for attr in ATTRIBUTES] + [
         f'seven:choice:{kind}' for kind in CHOICES] + [
-        f'seven:choice_card:{cid}' for cid in CARD_IDS]
+        f'seven:choice_card:{cid}' for cid in CARD_IDS] + harmony_feature_names()
 
 
 def encode(view, actions):
@@ -197,6 +264,7 @@ def encode(view, actions):
     counts=np.zeros(len(CARD_IDS),dtype=np.float32)
     for item in choices.values():counts[CARD_INDEX[item['card_id']]]+=.5
     fields += counts.tolist()
+    fields += encode_harmony(view)
     result=np.concatenate((x,np.asarray(fields,dtype=np.float32)))
     if result.shape!=(len(all_features()),) or not np.isfinite(result).all():raise ValueError('Invalid seven-team observation')
     return result,np.concatenate((c,extra),axis=1)

@@ -32,7 +32,7 @@ def _n04(c):
 def _n05(c):
     from app.modules.card_game.engine.duel_v2.state import damage
     side, cid = c.operation['target_id'].split(':', 1)
-    amount = 4 + (2 if c.character.get('shape') == 'N08' else 0)
+    amount = 3 + (2 if c.character.get('shape') == 'N08' else 0)
     damage(c.state, side, cid, amount, source=f'{c.side}:{c.cid}', kind='followup',
            reason='「小弟遍天下」的追击伤害')
 

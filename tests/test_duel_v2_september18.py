@@ -70,7 +70,7 @@ class September18RulesTest(unittest.TestCase):
         self.assertEqual(s['sides']['a']['genesis_damage_bonus'],0)
 
     def test_n05_targets_enemy_bench_and_is_followup(self):
-        for weapon,expected in ((None,4),('N08',6)):
+        for weapon,expected in ((None,3),('N08',5)):
             s=scenario();action=give(s,'a','N05')
             self.assertFalse(any(a['type']=='play_card' and a.get('card_id')==action['card_id'] for a in legal_actions(s)))
             s['sides']['a']['harmony_damage']=True;hero(s,'a','nanali')['shape']=weapon

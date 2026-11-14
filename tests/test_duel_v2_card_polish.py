@@ -12,7 +12,7 @@ from app.modules.card_game.engine.duel_v2.summons import summon_front
 
 
 class CardPolishTest(unittest.TestCase):
-    def test_n05_first_instant_is_free_but_keeps_condition_and_target(self):
+    def test_n05_pays_one_without_using_instant_and_keeps_condition_and_target(self):
         s = continuous.ContinuousCastTest().game()
         team = s['sides']['a']
         team['ap'] = 0
@@ -21,13 +21,15 @@ class CardPolishTest(unittest.TestCase):
         action = dict(type='play_card', card_id=held['instance_id'], target_id='b:zero')
         self.assertNotIn(action, legal_actions(s, 'a'))
         team['harmony_damage'] = True
+        self.assertNotIn(action, legal_actions(s, 'a'))
+        team['ap'] = 1
         self.assertIn(action, legal_actions(s, 'a'))
+        before = hero(s, 'b', 'zero')['hp']
         s = apply_action(s, 'a', action)
+        self.assertEqual(hero(s, 'b', 'zero')['hp'], before - 3)
         self.assertEqual(s['sides']['a']['ap'], 0)
-        self.assertTrue(s['sides']['a']['used']['instant'])
-        held = card_instance(s, 'N05', 'a')
-        s['sides']['a']['hand'] = [held]
-        self.assertFalse(any(a.get('card_id') == held['instance_id'] for a in legal_actions(s, 'a')))
+        self.assertFalse(s['sides']['a']['used'].get('instant'))
+        self.assertFalse(CARDS['N05'].get('instant'))
 
     def test_all_response_wording_names_automatic_use_without_generic_battle_text(self):
         for card in CARDS.values():

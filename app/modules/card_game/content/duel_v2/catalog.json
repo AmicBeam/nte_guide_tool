@@ -604,10 +604,9 @@
       "type": "tactic",
       "cost": 1,
       "terminal": false,
-      "description": "瞬发。本回合造成过环合伤害才能打出。对 1 名对方异能者造成 4 点追击伤害。",
+      "description": "本回合造成过环合伤害才能打出。对 1 名对方异能者造成 3 点追击伤害。",
       "starter_copies": 0,
-      "require": "harmony_damage",
-      "instant": true
+      "require": "harmony_damage"
     },
     {
       "id": "N06",

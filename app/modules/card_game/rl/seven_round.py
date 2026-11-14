@@ -1068,7 +1068,9 @@ def update_batch(nets, opts, pools, jobs, games, rng, config, deadline, out):
         rows_by_key[key] = [r for job,g in zip(jobs,games) for r in g['rows']
                             if r['key']==key and r['side'] in job['train_sides']]
         for rows,refs,sampling in pool.policy_pass_batches(rng,passes=config['policy_passes'],
-                batch_size=policy_batch_size,deadline=deadline):
+                batch_size=policy_batch_size,deadline=deadline,
+                batches_per_pass=config.get('policy_batches_per_pass'),
+                include_old_replay=config.get('include_old_replay',True)):
             metric = rt.update(nets[key],opts[key],rows)
             stats.append(dict(metric, refs=refs, sampling=sampling))
         values = [r for job,g in zip(jobs,games) for r in g['value_rows']

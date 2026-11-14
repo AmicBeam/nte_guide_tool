@@ -178,11 +178,14 @@ def _validate(source, jobs, games, config, *, model_loader=None):
     return scopes
 
 
-def _rebind_value_source(nets, opts, previous, source_bank, report):
+def _rebind_value_source(nets, opts, previous, source_bank, report, *, learners=None):
     """Carry policy Adam across the standard, qualified full-value recalibration."""
     import torch
     prior = {k:rt.model(previous['models'],k) for k in ROSTER}
     current = {k:rt.model(source_bank,k) for k in ROSTER}
+    learners = set(ROSTER if learners is None else learners)
+    if not learners or not learners <= set(ROSTER):
+        raise ValueError('Known explicit value-rebind learners required')
     changed_bank = (Path(previous['models']).resolve() != Path(source_bank).resolve()
                     or any(prior[k].version != current[k].version for k in ROSTER))
     result = dict(previous_joint_bank=str(Path(previous['models']).resolve()),
@@ -195,15 +198,15 @@ def _rebind_value_source(nets, opts, previous, source_bank, report):
     # tensors remain bit-exact, including buffers within the value tower.
     allowed = {}
     for key in ROSTER:
-        allowed[key] = {name for name,_ in nets[key].named_parameters()
-                        if name.startswith(('wdl.','value_net.'))}
+        allowed[key] = ({name for name,_ in nets[key].named_parameters()
+                        if name.startswith(('wdl.','value_net.'))} if key in learners else set())
         old, new = prior[key].weights, current[key].weights
         if set(old) != set(new) or prior[key].serving_deck != current[key].serving_deck:
             raise ValueError('Recalibration changed model schema or fixed build')
         if any(not np.array_equal(old[n],new[n]) for n in old if n not in allowed[key]):
             raise ValueError('Value recalibration changed policy, legacy tensors or normalization masks')
     if changed_bank:
-        if not rt.value_precheck_ok(report,current):
+        if not rt.value_precheck_ok(report,{key:current[key] for key in learners}):
             raise ValueError('Qualified main value report bound to recalibrated source required')
         with torch.no_grad():
             for key in ROSTER:
@@ -247,10 +250,13 @@ def _execute_update(source_bank, jobs, games, output, config, *, deadline, prior
                 or previous['config'].get('seed',0) != config.get('seed',0)
                 or previous['config'].get('policy_batch_size',128) != config.get('policy_batch_size',128)
                 or previous['config'].get('value_batch_size',128) != config.get('value_batch_size',128)
+                or previous['config'].get('policy_batches_per_pass') != config.get('policy_batches_per_pass')
+                or previous['config'].get('include_old_replay',True) != config.get('include_old_replay',True)
                 or previous['config'].get('episode_pool_limit',128) != config.get('episode_pool_limit',128)
                 or any(p.max_row_reuse != config.get('max_row_reuse',8) for p in pools.values())):
             raise ValueError('Prior joint state source, deadline or reuse contract changed')
-        source_transition = _rebind_value_source(nets,opts,previous,source_bank,main_value_report)
+        source_transition = _rebind_value_source(nets,opts,previous,source_bank,main_value_report,
+                                                learners=rr.learning_keys(config))
     before = {k:rt.model(source_bank,k).version for k in ROSTER}
     health, rows = rr.update_batch(nets,opts,pools,jobs,games,rng,config,deadline,output)
     learners = rr.learning_keys(config)

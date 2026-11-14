@@ -11,6 +11,25 @@ class EpisodeTest(unittest.TestCase):
     def data(self,z=1):
         return dict(rows=[dict(x=np.zeros(2),c=np.zeros((2,2)),pi=np.array([.2,.8]),side='a',step=0,z=z)])
 
+    def test_equal_step_adaptation_covers_unequal_complete_row_counts(self):
+        for count in (9,17):
+            pool=EpisodePool(max_row_reuse=4)
+            pool.add('complete-game',dict(rows=[dict(self.data()['rows'][0],step=i) for i in range(count)]))
+            batches=list(pool.policy_pass_batches(np.random.default_rng(7),passes=4,
+                batches_per_pass=8,include_old_replay=False))
+            self.assertEqual(len(batches),32)
+            self.assertEqual(sum(len(rows) for rows,_,_ in batches),count*4)
+            self.assertEqual(set(pool.row_uses.values()),{4})
+            self.assertEqual(pool.coverage_report()['first_use_coverage'],1)
+
+    def test_fixed_adaptation_batches_reject_missing_rows_and_old_replay(self):
+        pool=EpisodePool();pool.add('complete-game',self.data())
+        with self.assertRaisesRegex(ValueError,'Fresh rows'):
+            list(pool.policy_pass_batches(np.random.default_rng(7),passes=4,
+                batches_per_pass=8,include_old_replay=False))
+        with self.assertRaisesRegex(ValueError,'old replay'):
+            list(pool.policy_pass_batches(np.random.default_rng(7),passes=4,batches_per_pass=1))
+
     def test_sampling_weights_correct_mixture_and_duplicates_rejected(self):
         pool=EpisodePool()
         for i in range(8):pool.add(str(i),self.data(1 if i==0 else -1))

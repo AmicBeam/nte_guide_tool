@@ -174,6 +174,32 @@ class HybridJointUpdateTest(unittest.TestCase):
             for key in set(ROSTER)-set(keys):
                 self.assertEqual(rt.model(source,key).version, rt.model(target,key).version)
 
+    def test_scoped_value_rebind_accepts_three_head_report_and_rejects_frozen_value_changes(self):
+        from app.modules.card_game.rl.seven_lineup import identity
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);source,_,_,_=self.fixture(root)
+            keys=('starter','murk','zhenhong');nets={};opts={};bank=root/'calibrated'
+            for key in ROSTER:
+                nets[key],build,origin=rt.restore(source,key)
+                opts[key]=torch.optim.Adam(nets[key].parameters())
+                calibrated,_,_=rt.restore(source,key)
+                if key in keys:
+                    with torch.no_grad():calibrated.wdl.bias.add_(.01)
+                rt.export(calibrated,bank,key,build,origin)
+            # Controlled report tests binding only, never real calibration quality.
+            report=dict(schema='seven_value_precheck_v1',complete=True,passed=True,heldout=True,
+                rule_hash=identity(),models={k:rt.model(bank,k).version for k in keys},
+                metrics={k:dict(normal_games=8,brier=.5,log_loss=.5) for k in keys})
+            stage._rebind_value_source(nets,opts,dict(models=str(source)),bank,report,learners=keys)
+            for key in set(ROSTER)-set(keys):
+                for name,tensor in nets[key].state_dict().items():
+                    np.testing.assert_array_equal(tensor.numpy(),rt.model(source,key).weights[name])
+            key='weave-rush';changed,build,origin=rt.restore(bank,key)
+            with torch.no_grad():changed.wdl.bias.add_(.1)
+            rt.export(changed,bank,key,build,origin)
+            with self.assertRaisesRegex(ValueError,'policy, legacy tensors or normalization masks'):
+                stage._rebind_value_source(nets,opts,dict(models=str(source)),bank,report,learners=keys)
+
     def test_failed_gradient_gate_records_failed_and_refuses_rerun(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

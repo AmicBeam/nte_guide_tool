@@ -133,7 +133,7 @@
         '<p>终结：' + V2.cardDescriptionMarkup(found.awakened_passive || '尚未提供') + '</p>',
       ];
       if (found.shape_description) {
-        lines.push('<p>弧盘：' + V2.escapeHtml(found.shape_description) + '</p>');
+        lines.push('<p>' + V2.escapeHtml(found.shape || '武备') + '：' + V2.escapeHtml(found.shape_description) + '</p>');
       }
       if (Array.isArray(found.effect_markers) && found.effect_markers.length) {
         lines.push('<section class="v2-effect-details"><h3>额外效果</h3>' + found.effect_markers.map(function (marker) {

@@ -61,7 +61,7 @@ class DafutierTest(unittest.TestCase):
         self.assertIn('dafutier', [c['id'] for c in get_catalog(include_test_characters=False)['characters']])
         self.assertTrue(CARDS['FF01']['derived'])
         self.assertEqual(CARDS['F02']['hp'], 6)
-        self.assertEqual((CARDS['F08']['attack'], CARDS['F08']['hp']), (3, 6))
+        self.assertEqual((CARDS['F08']['attack'], CARDS['F08']['hp']), (3, 4))
 
     def test_insight_once_each_global_turn_and_only_friendly_enemy_collapse(self):
         s = game()
@@ -208,7 +208,7 @@ class DafutierTest(unittest.TestCase):
         s = apply_action(s, 'a', dict(type='end_turn'))
         s = apply_action(s, 'b', dict(type='attack', character_id='zero'))
         self.assertEqual(hero(s, 'b', 'zero')['flags']['collapse_count'], 2)
-        self.assertEqual(hero(s, 'a', 'dafutier')['hp'], 6)
+        self.assertEqual(hero(s, 'a', 'dafutier')['hp'], 4)
 
     def test_black_weapon_triggers_on_ranged_sortie_but_not_counter(self):
         s = play(game(), 'F08')

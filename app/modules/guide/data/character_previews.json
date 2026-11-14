@@ -60,5 +60,18 @@
         }
       ]
     }
+  },
+  {
+    "id": "preview-nitsa",
+    "name": "妮夏",
+    "aliases": [
+      "Nitsa"
+    ],
+    "element_name": "魂",
+    "rarity": 5,
+    "assets": {
+      "avatar": "/static/guide/character-previews/nitsa-avatar.webp"
+    },
+    "preview_image": "/static/guide/character-previews/nitsa.webp"
   }
 ]

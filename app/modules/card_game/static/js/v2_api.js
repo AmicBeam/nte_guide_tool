@@ -511,8 +511,8 @@
       return '';
     }
     const parts = [];
-    if (card.type === 'form') {
-      if (Number(card.attack) > 0) {
+    if (card.type === 'form' || card.summoned) {
+      if (Number(card.attack) > 0 || (card.summoned && Number.isFinite(Number(card.attack)))) {
         parts.push('攻击 ' + card.attack);
       }
       if (Number(card.hp) > 0) {
@@ -587,8 +587,8 @@
       return '';
     }
     const parts = [];
-    if (card.type === 'form') {
-      if (Number(card.attack) > 0) {
+    if (card.type === 'form' || card.summoned) {
+      if (Number(card.attack) > 0 || (card.summoned && Number.isFinite(Number(card.attack)))) {
         parts.push(statBadge('atk', String(card.attack), '攻击 ' + card.attack));
       }
       if (Number(card.hp) > 0) {

@@ -92,13 +92,13 @@ async function bootstrapCodex() {
       '<section class="v2-codex-cards">' + displayed.map(function (card) {
         return (
           '<article class="v2-codex-card' + (card.type === 'mechanism' ? ' is-mechanism' : '') + (card.summoned ? ' is-summoned' : '') + '"' + (card.tooltip ? ' title="' + V2.escapeAttr(card.tooltip) + '"' : '') + (V2.cardTypeToken(card.type) ? ' data-card-type="' + V2.escapeAttr(V2.cardTypeToken(card.type)) + '"' : '') + '>' +
+            (card.summoned ? '<div class="v2-codex-summon-art" aria-hidden="true">' + V2.imageMarkup(card.portrait, '', 'v2-portrait') + '</div>' : '') +
             '<div class="v2-stat-row">' +
-              V2.cardTypeChip(card.type, card.terminal) +
+              (card.summoned ? '<span class="v2-codex-kind">' + V2.cardTypeChip(card.type, card.terminal) + '<span class="v2-chip">召唤物</span></span>' : V2.cardTypeChip(card.type, card.terminal)) +
               V2.cardDerivedChip(card) +
               V2.cardCostBadge(card) +
               V2.cardFrameStat(card) +
             '</div>' +
-            (card.summoned ? '<span class="v2-chip">召唤物</span>' + V2.imageMarkup(card.portrait, card.name, 'v2-codex-summon-art') : '') +
             '<h3>' + V2.escapeHtml(card.name) + '</h3>' +
             V2.cardDescriptionHtml(card.description, '效果尚未提供。') +
           '</article>'

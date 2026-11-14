@@ -233,7 +233,8 @@ class HarmonyReworkTest(unittest.TestCase):
         self.assertFalse(s['sides']['a'].get('heiyu_divinations'))
         for witch in (False,True):
             t=self.game(('heiyu','zero','nanali','hathor'));hero(t,'a','heiyu')['awakened']=witch
-            resolve_harmony_effect(operation(t,'a','zero'),'浸染');finish_operation(t)
+            from app.modules.card_game.engine.duel_v2.combat import apply_enter_harmony
+            apply_enter_harmony(operation(t,'a','zero'),None,'浸染',pay=False,as_support=False);finish_operation(t)
             self.assertEqual(t['phase'],'choice')
             self.assertEqual(t['pending_choice']['actor'],'heiyu')
             restored=json.loads(json.dumps(t));action=next(a for a in legal_actions(restored,'a') if a['type']=='choose_deck_order' and not a['bottom_card_ids'])

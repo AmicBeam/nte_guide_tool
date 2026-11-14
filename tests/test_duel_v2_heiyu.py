@@ -43,9 +43,9 @@ def top(s, ids):
 
 def harmony_inspection(s):
     from app.modules.card_game.engine.duel_v2.flow import operation, finish_operation
-    from app.modules.card_game.engine.duel_v2.combat import resolve_harmony_effect
+    from app.modules.card_game.engine.duel_v2.combat import apply_enter_harmony
     s = clone_state(s)
-    resolve_harmony_effect(operation(s, 'a', 'heiyu'), '浸染')
+    apply_enter_harmony(operation(s, 'a', 'heiyu'), None, '浸染', pay=False, as_support=False)
     finish_operation(s)
     return s
 

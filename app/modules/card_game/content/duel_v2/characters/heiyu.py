@@ -258,7 +258,7 @@ class Heiyu:
     weapon_hooks = {'P07': {'combat_overflow': _penetrate}}
 
     @staticmethod
-    def on_harmony_applied(c, kind=None, **_data):
+    def on_harmony_triggered(c, kind=None, **_data):
         if kind in ('浸染', '黯星'):
             enqueue(c, 'heiyu_harmony_divination')
 

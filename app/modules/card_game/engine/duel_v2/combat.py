@@ -158,6 +158,8 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
     else:
         log(s, f"{c.character['name']}入场，不消耗环合值，触发{kind}。", 'harmony',
             side=side, source=cid, actor=f'{side}:{cid}', target=f'{side}:{payer_id or cid}', harmony_kind=kind)
+    if kind == '黯星':
+        team['dark_star_count'] = int(team.get('dark_star_count', 0)) + 1
     fire(c, GameEvent.V2_HARMONY_TRIGGERED, kind=kind, entering=cid, payer=payer_id)
     resolve_harmony_effect(c, kind)
     if not finished(s) and alive(s, side, cid):
@@ -166,9 +168,7 @@ def apply_enter_harmony(c, payer_id, kind, *, as_support=True, pay=True):
 
 def apply_dark_star(c, *, renewals=None):
     s, side, cid = c.state, c.side, c.cid
-    team = s['sides'][side]
     enemy, target = front_target(s, side)
-    team['dark_star_count'] = int(team.get('dark_star_count', 0)) + 1
     zone = front_debuff(s, enemy)
     had_burn = bool(zone.get('burn'))
     zone['star'] = {'left': 2, 'by': side, 'source_cid': cid,

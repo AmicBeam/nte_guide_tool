@@ -115,6 +115,11 @@ def card_cost(state, side, card):
     base = min(int(state['sides'][side]['ap']), int(limit)) if limit else int(card.get('cost') or 0)
     if card.get('free_if_surplus') and state['sides'][side].get('surplus'):
         base = 0
+    for cid in (card.get('character_id'), card.get('original_character_id')):
+        free = getattr(KITS.get(cid), 'makes_card_free', None)
+        if free and free(state, side, card):
+            base = 0
+            break
     from .modifiers import evaluate
     return max(0, int(evaluate(state, side, hero(state, side, card['character_id']),
                               'card.cost', base, query={'card': card})['value']))

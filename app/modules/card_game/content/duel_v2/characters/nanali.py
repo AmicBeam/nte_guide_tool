@@ -96,6 +96,10 @@ class Nanali:
         return attack, shield
 
     @staticmethod
+    def makes_card_free(state, side, card):
+        return card.get('card_id') == 'NF01' and int(state.get('turn') or 0) >= 11
+
+    @staticmethod
     def makes_instant(state, side, card):
         if card.get('card_id') != 'NF01':
             return False

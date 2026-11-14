@@ -1321,12 +1321,12 @@
 .v2-effect-icon .v2-effect-attribute { width: 70%; height: 100%; object-fit: contain; margin-right: auto; }
 .v2-effect-icon.is-resistance svg { position: absolute; right: -2px; bottom: -2px; width: 55%; height: 75%; filter: drop-shadow(0 1px 1px #000); }
 
-/* The white frame is eroded from the top by the backend's collapse fraction. */
+/* The green frame is eroded from the top by the backend's collapse fraction. */
 .v2-collapse-frame {
   position: absolute;
   inset: 0;
   z-index: 6;
-  border: calc(2px * var(--table-layout-scale, 1)) solid #fff;
+  border: calc(2px * var(--table-layout-scale, 1)) solid #88c99b;
   border-radius: inherit;
   clip-path: inset(var(--collapse-frame-cut, 0%) 0 0 0);
   pointer-events: none;

@@ -73,5 +73,18 @@
       "avatar": "/static/guide/character-previews/nitsa-avatar.webp"
     },
     "preview_image": "/static/guide/character-previews/nitsa.webp"
+  },
+  {
+    "id": "preview-ellie",
+    "name": "绘莉",
+    "aliases": [
+      "Ellie"
+    ],
+    "element_name": "咒",
+    "rarity": 5,
+    "assets": {
+      "avatar": "/static/guide/character-previews/ellie-avatar.webp"
+    },
+    "preview_image": "/static/guide/character-previews/ellie.webp"
   }
 ]

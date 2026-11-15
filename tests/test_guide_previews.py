@@ -22,7 +22,8 @@ class GuidePreviewTest(unittest.TestCase):
 
     def test_discovery_filters_and_local_assets(self):
         for identifier, name, element in [('preview-exe', 'Exe', '暗'), ('preview-nitsa', '妮夏', '魂'),
-                                          ('preview-nitsa', 'Nitsa', '魂')]:
+                                          ('preview-nitsa', 'Nitsa', '魂'),
+                                          ('preview-ellie', '绘莉', '咒'), ('preview-ellie', 'Ellie', '咒')]:
             rows = self.client.get('/api/guide/characters?q=' + name + '&element=' + element + '&rarity=5').json['items']
             row = next(row for row in rows if row['id'] == identifier)
             self.assertEqual(row['status'], 'preview')
@@ -30,11 +31,11 @@ class GuidePreviewTest(unittest.TestCase):
                 with self.client.get(asset) as response:
                     self.assertEqual(response.status_code, 200)
         html = self.client.get('/guide').text
-        self.assertEqual(html.count('class="guide-preview-badge"'), 2)
+        self.assertEqual(html.count('class="guide-preview-badge"'), 3)
         self.assertEqual(len(service.catalog()['characters']), 26)
 
     def test_detail_is_preview_only_and_readable_in_public_formats(self):
-        for identifier in ('preview-exe', 'preview-nitsa'):
+        for identifier in ('preview-exe', 'preview-nitsa', 'preview-ellie'):
             path = '/guide/characters/' + identifier
             html = self.client.get(path).text
             self.assertIn('class="guide-preview-hero', html)
@@ -52,7 +53,7 @@ class GuidePreviewTest(unittest.TestCase):
             self.assertEqual(self.client.get(path + '.md').status_code, 200)
             overview = self.client.get('/api/guide/characters/' + identifier + '?section=overview').json['data']
             expected = {'id', 'name', 'status', 'preview_image', 'materials', 'release_at', 'content_released'}
-            if identifier == 'preview-nitsa':
+            if identifier != 'preview-exe':
                 expected -= {'materials', 'release_at', 'content_released'}
             self.assertEqual(set(overview), expected)
             self.assertEqual(self.client.get('/api/guide/characters/' + identifier + '?ability_id=missing').status_code, 404)

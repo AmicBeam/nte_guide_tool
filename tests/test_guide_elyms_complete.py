@@ -54,7 +54,7 @@ class ElymsCharacterModulesTest(unittest.TestCase):
         self.assertNotIn('预告', html)
         card = next(c for c in self.client.get('/api/guide/characters?q=曳尔沐').json['items'] if c['id']=='1090')
         self.assertNotEqual(card.get('status'), 'preview')
-        self.assertEqual(self.client.get('/guide').text.count('class="guide-preview-badge"'), 2)
+        self.assertEqual(self.client.get('/guide').text.count('class="guide-preview-badge"'), 3)
 
     def test_real_attributes_skills_costs_equipment_and_explicit_affinity_state(self):
         record = service.detail('characters', '1090')

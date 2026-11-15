@@ -27,23 +27,24 @@ from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
 
 _CACHE = {}
 _LOCK = threading.RLock()
-PRESETS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke')
+PRESETS = ('starter', 'murk', 'zhenhong')
 RANDOM_PRESETS = PRESETS
-UNTRAINED_STRATEGIES = {'collapse': '黑羽卡牌已调整，倾陷预组高级人机暂不开放，请先使用普通人机。'}
-PENDING_PRESETS = frozenset(('collapse', 'lingke'))
+UNTRAINED_STRATEGIES = {key: '该高级人机暂不开放，当前仅开放创生、浊燃和真红。'
+                        for key in ('weave-rush', 'quick-rush', 'collapse', 'lingke')}
+PENDING_PRESETS = frozenset(PRESETS)
 
 
 def preset(deck_id):
+    if deck_id in UNTRAINED_STRATEGIES:
+        raise RuleValidationError(UNTRAINED_STRATEGIES[deck_id])
     if deck_id not in PRESETS:
         raise RuleValidationError('高级人机策略不存在。')
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
 
 
 def strategy_suspended(key):
-    """The newer explicit adoption supersedes the old collapse pause only here."""
-    from .seven_model import RELEASE, ADOPTED
-    return key in UNTRAINED_STRATEGIES and not (
-        key in ADOPTED and (Path(config.DUEL_AI_MODEL_DIR).resolve() / RELEASE).is_dir())
+    """Availability is explicit and cannot be reopened by old model files."""
+    return key in UNTRAINED_STRATEGIES
 
 
 def pending_strategy_options():
@@ -266,7 +267,7 @@ def load_model(deck_id):
     from .seven_model import RELEASE as SEVEN_RELEASE, ADOPTED, load_serving_model
     seven = configured / SEVEN_RELEASE
     root = recovery if recovery.is_dir() else (ARCHIVE if deck_id in EXPERIMENTAL else configured)
-    if deck_id in ADOPTED and seven.is_dir():
+    if deck_id in ADOPTED:
         root = seven
     if deck_id in PENDING_PRESETS and not all((root / f'{deck_id}{suffix}').is_file() for suffix in ('.json', '.npz')):
         raise RuleValidationError(f'{preset(deck_id)["name"]}高级人机尚待训练与模型验收，请先使用普通人机。')

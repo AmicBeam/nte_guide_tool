@@ -20,9 +20,7 @@ class CollapseAdvancedPauseTest(RoomFlowTestCase):
             for suffix in ('.json', '.npz'):
                 (Path(directory) / ('collapse' + suffix)).write_bytes(b'present')
             with patch.dict(self.model._CACHE, {(str(Path(directory)), 'collapse'): object()}):
-                option = next(o for o in self.model.pending_strategy_options() if o['id'] == 'collapse')
-                self.assertTrue(option['pending'])
-                self.assertIn('黑羽卡牌', option['unavailable_reason'])
+                self.assertNotIn('collapse', {o['id'] for o in self.model.pending_strategy_options()})
                 with self.assertRaisesRegex(self.model.RuleValidationError, '暂不开放'):
                     self.model.load_model('collapse')
             response = self.client.post('/api/duel-v2/start', json={'mode': 'advanced', 'ai_deck': 'collapse'},

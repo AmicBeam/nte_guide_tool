@@ -9,8 +9,8 @@ from app.modules.card_game.rl.seven_runtime import SevenModel
 from app.modules.card_game.rl.phase_runtime import PhaseModel
 from app.modules.card_game.rl.phase_policy import SCHEMA as PHASE_SCHEMA
 
-RELEASE = 'seven-20261024'
-ADOPTED = frozenset(('starter', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke'))
+RELEASE = 'seven-20261115'
+ADOPTED = frozenset(('starter', 'murk', 'zhenhong'))
 SCHEMA = seven_policy.SCHEMA
 SCHEMAS = (SCHEMA, PHASE_SCHEMA)
 
@@ -55,6 +55,11 @@ class _ServingAuthorization:
         build = validate_deck(deck)
         if deck_uses_test_characters(build):
             raise ValueError('高级人机仅支持公开角色构筑。')
+        unsupported = [cid for cid in build['character_ids'] if cid not in seven_lineup.SEATS]
+        if unsupported:
+            from app.modules.card_game.content.duel_v2 import CHARACTERS
+            names = '、'.join(CHARACTERS[cid]['name'] for cid in unsupported)
+            raise ValueError(f'当前高级人机暂不支持{names}，请先使用普通人机。')
         return self.capability
 
 

@@ -77,3 +77,15 @@ _DECKS = {'requiem': {'id': 'requiem',
 
 def test_character_deck(preset_id):
     return deepcopy(_DECKS[preset_id])
+
+
+def make_role_deck(character_ids, *, name='测试构筑'):
+    """A legal explicit roster fixture, independent of historical preset names."""
+    from app.modules.card_game.content.duel_v2 import CARDS, validate_deck
+    cards = []
+    for character_id in character_ids:
+        pool = sorted(cid for cid, card in CARDS.items()
+                      if card['character_id'] == character_id and not card.get('derived'))
+        cards.extend(cid for cid in pool[:4] for _ in range(2))
+    return validate_deck(dict(id='fixture-roles', name=name,
+                              character_ids=list(character_ids), card_ids=cards))

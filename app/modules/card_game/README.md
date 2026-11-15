@@ -6,7 +6,7 @@
 
 零与基础形态黑羽在释放战斗牌时充满环合值，包含直接释放，先于卡框和攻击；支付阶段仅按实际费用获值。
 
-当前环合规则为上限 3、实际行动力消耗等量的可改写基础获值、本回合用牌／普通出击来源与外扩蓝色虚线，回合结束清除来源；旧退下继承已移除。创生普通最多 3 珠，每珠记录固定层数、独立持续时间与每回合计次；九原每珠 2 层，伊洛伊额外珠按触发次数排队并可超过普通上限，并同步到公开投影和回放；角色效果及例外统一见[现行手册](../../../docs/everness-item-chain-card-design.md#当前环合与异能规则)。旧冻结高级模型不因规则变更自动重绑，仍须通过现行规则身份校验；本轮未训练或部署。训练专用复制规则不视为已适配本轮新机制。
+当前环合规则为上限 3、实际行动力消耗等量的可改写基础获值、本回合用牌／普通出击来源与外扩蓝色虚线，回合结束清除来源；旧退下继承已移除。创生普通最多 3 珠，每珠记录固定层数、独立持续时间与每回合计次；九原每珠 2 层，伊洛伊额外珠按触发次数排队并可超过普通上限，并同步到公开投影和回放；角色效果及例外统一见[现行手册](../../../docs/everness-item-chain-card-design.md#当前环合与异能规则)。旧冻结高级模型不因规则变更自动重绑，仍须通过现行规则身份校验；训练专用复制规则不视为已适配本轮新机制。
 
 本轮回归入口：`.venv/bin/python -m unittest tests.test_duel_v2_harmony_rework tests.test_duel_v2_zero_harmony_timing tests.test_duel_v2_genesis_beads tests.test_duel_v2_catalog tests.test_duel_v2_tutorial tests.test_duel_v2_engine tests.test_duel_v2_zone_status tests.test_duel_v2_harmony_lifetime tests.test_duel_v2_escalation tests.test_duel_v2_presentation`。
 
@@ -35,11 +35,11 @@ NumPy／PyTorch 的 Mctx 算法适配可显式选择 `q_scale=mctx_default`，�
 
 大厅预组列表、牌桌与回放统一显示「高级人机」，不展示「实验性」标签。内部模型的 `experimental` 标记与强度验收状态仍保留；显示名称不影响模型选择、配牌、搜索预算或可用性校验。
 
-创生、小吱、真红、浊燃、倾陷使用 `engine/ai/models/seven-20261024/` 的冻结 NumPy 导出；覆纹继续使用 `recovery-20261007` 原权重；灵可也已接入 `seven-20261024`，使用确认集退步前保留的 initial 模型与固定32张配牌。新导出由 `seven_model.py` 校验独立的用户采用绑定、当前规则、原始清单、权重、配牌、张量与嵌入旧策略；研究模型的未批准标记不修改。用户指定采用不等同于统计强度验收通过。
+高级人机当前仅开放创生、浊燃、真红，指定入口与随机池使用同一范围；覆纹、小吱、倾陷、灵可保留为普通人机预组。三队采用 `engine/ai/models/seven-20261115/` 的选定 NumPy 数值与各自32张配牌。`seven_model.py` 校验独立的用户采用绑定、当前规则、原始清单、权重、配牌、张量与嵌入旧策略；研究模型的未批准标记不修改。浊燃选定策略沿用基线，创生和真红选定策略已更新；用户指定采用不等同于统计强度验收通过。
 
-新模型沿用网站逐操作 3 秒／最多 32 次模拟、16 根候选、H3、natural-WDL 的公开信息集搜索。网站只使用 CPU NumPy 推理，不导入 Torch、不训练，也不声称采用离线训练的完整搜索预算。旧房间权重或构筑版本变化须重新开局。倾陷的旧暂停仅在存在新采用版本时解除；缺失、损坏或规则不匹配的采用文件拒绝开局，不回退旧权重。随机高级对手只从成功校验的模型中选择。
+新模型沿用网站逐操作 3 秒／最多 32 次模拟、16 根候选、H3、natural-WDL 的公开信息集搜索。网站只使用 CPU NumPy 推理，不导入 Torch、不训练，也不声称采用离线训练的完整搜索预算。旧房间权重或构筑版本变化须重新开局。缺失、损坏或规则不匹配的当前采用文件拒绝开局，整个当前目录缺失也不回退旧权重。随机高级对手只从三队中成功校验的模型选择。玩家可使用模型观察支持的公开角色自组；当前哈尼娅尚未进入该模型观察，在建房前明确拒绝。
 
-`models/` 只维护实际服务使用的数值导出与绑定；训练检查点、优化器、诊断、对局和单轮报告继续保存在 `artifacts/rl-evals/`。回归：`.venv/bin/python -m unittest tests.test_duel_v2_seven_serving tests.test_duel_v2_recovery_serving tests.test_duel_v2_collapse_advanced_pause tests.test_duel_v2_serving_search tests.test_duel_v2_advanced_ai tests.test_duel_v2_ai_step`。下文旧日期的服务接入与暂停记录为历史状态，以本节及当前加载器为准。
+`models/` 只维护实际服务使用的数值导出与绑定；训练检查点、优化器、诊断、对局和单轮报告继续保存在 `artifacts/rl-evals/`。回归：`.venv/bin/python -m unittest tests.test_duel_v2_seven_serving tests.test_duel_v2_collapse_advanced_pause tests.test_duel_v2_serving_search tests.test_duel_v2_advanced_ai tests.test_duel_v2_ai_step`。下文旧日期的服务接入与暂停记录为历史状态，以本节及当前加载器为准。
 
 ## 文档入口
 

@@ -13,8 +13,8 @@ import numpy as np
 
 from tests.test_solo_room_flow import RoomFlowTestCase
 
-ROOT = Path(__file__).resolve().parents[1] / 'app/modules/card_game/engine/ai/models/seven-20261024'
-KEYS = ('starter', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke')
+ROOT = Path(__file__).resolve().parents[1] / 'app/modules/card_game/engine/ai/models/seven-20261115'
+KEYS = ('starter', 'murk', 'zhenhong')
 
 
 class SevenServingTest(unittest.TestCase):
@@ -94,27 +94,45 @@ class SevenServingTest(unittest.TestCase):
                 ai.load_model('murk')
         self.assertIs(ai.load_model('murk'), original)
 
-    def test_preserved_weave_and_initial_lingke(self):
+    def test_only_selected_three_are_available(self):
         from app.modules.card_game.engine.ai import advanced_model as ai
-        self.assertEqual(ai.load_model('weave-rush').version,
-                         '29a25b318f0319bd96bb3eaa27e21df669cacbb43c1bf0f9e07e1e7e783833d1')
+        self.assertEqual(set(ai.PRESETS), set(KEYS))
+        self.assertEqual(set(ai.RANDOM_PRESETS), set(KEYS))
         options = {o['id']: o for o in ai.pending_strategy_options()}
-        self.assertFalse(options['collapse']['pending'])
-        self.assertFalse(options['lingke']['pending'])
-        self.assertEqual(ai.load_model('lingke').version,
-                         '61c013ae08e981ff300deb307613bea23ad55fa40857f2d03ff7f093d6649015')
+        self.assertEqual(set(options), set(KEYS))
+        self.assertTrue(all(not o['pending'] for o in options.values()))
+        for key in ('weave-rush', 'quick-rush', 'collapse', 'lingke'):
+            with self.subTest(key=key), self.assertRaises(ai.RuleValidationError):
+                ai.load_model(key)
 
-    def test_missing_lingke_export_stays_unavailable(self):
+    def test_missing_current_release_stays_unavailable(self):
         from app.modules.card_game.engine.ai import advanced_model as ai
+        from app.modules.card_game.engine.ai import recovery_model
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / ROOT.name
             root.mkdir()
             shutil.copyfile(ROOT / 'serving.json', root / 'serving.json')
             with patch.object(ai.config, 'DUEL_AI_MODEL_DIR', tmp):
                 options = {o['id']: o for o in ai.pending_strategy_options()}
-                self.assertTrue(options['lingke']['pending'])
+                self.assertTrue(options['murk']['pending'])
                 with self.assertRaises(ai.RuleValidationError):
-                    ai.load_model('lingke')
+                    ai.load_model('murk')
+        with tempfile.TemporaryDirectory() as tmp:
+            legacy = Path(tmp) / recovery_model.RELEASE
+            legacy.mkdir()
+            for name in ('serving.json', 'murk.json', 'murk.npz'):
+                (legacy / name).write_bytes(b'legacy-present')
+            with patch.object(ai.config, 'DUEL_AI_MODEL_DIR', tmp), patch.object(
+                    recovery_model, 'RecoveryServingModel', side_effect=AssertionError('legacy fallback')):
+                with self.assertRaises(ai.RuleValidationError):
+                    ai.load_model('murk')
+
+    def test_unencoded_public_character_is_rejected_before_play(self):
+        from app.modules.card_game.engine.ai.advanced_model import load_model
+        from tests.duel_v2_test_decks import make_role_deck
+        deck = make_role_deck(['haniya', 'nanali', 'zero', 'iloy'])
+        with self.assertRaisesRegex(ValueError, '哈尼娅'):
+            load_model('starter').validate_human(deck)
 
     def test_fresh_process_cpu_only(self):
         subprocess.run([sys.executable, '-c',
@@ -139,3 +157,35 @@ class SevenServingRoomTest(RoomFlowTestCase):
                 self.assertEqual(game['ai_profile']['build_sha256'], model.serving_build_sha256)
                 self.assertTrue(game['ai_profile']['experimental'])
                 self._post('/api/duel-v2/leave', token=token)
+
+    def test_closed_teams_reject_direct_start_and_menu_keeps_solo_presets(self):
+        from html.parser import HTMLParser
+        import importlib
+        ai = importlib.import_module('app.modules.card_game.engine.ai.advanced_model')
+        repo = importlib.import_module('app.modules.card_game.engine.application.v2_repository')
+        token = self._issue_login_and_get_token('three-team-scope')
+        player = self.dao_module.get_or_create_player('three-team-scope')[0]
+        closed = ('weave-rush', 'quick-rush', 'collapse', 'lingke')
+        for key in closed:
+            with self.subTest(key=key), patch.dict(ai._CACHE, {(str(ROOT), key): object()}):
+                response = self.client.post('/api/duel-v2/start', json={'mode': 'advanced', 'ai_deck': key},
+                                            headers={'Authorization': 'Bearer ' + token})
+                self.assertEqual(response.status_code, 400)
+                self.assertIsNone(repo.current_room(player))
+        catalog = self._get('/api/duel-v2/catalog', token=token)
+        self.assertEqual({p['id'] for p in catalog['advanced_pending_presets']}, set(KEYS))
+        self.assertTrue(set(closed) <= {p['id'] for p in catalog['starter_decks']})
+        class Menu(HTMLParser):
+            active = False
+            values = []
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if tag == 'select': self.active = attrs.get('id') == 'v2-ai-deck'
+                if tag == 'option' and self.active: self.values.append(attrs['value'])
+            def handle_endtag(self, tag):
+                if tag == 'select': self.active = False
+        menu = Menu();menu.feed(self.client.get('/card-game').get_data(as_text=True))
+        self.assertEqual(menu.values, ['random', *KEYS])
+        normal = self._post('/api/duel-v2/start', {'mode': 'solo', 'ai_deck': 'weave-rush'}, token=token)
+        self.assertEqual(normal['room']['mode'], 'solo')
+        self._post('/api/duel-v2/leave', token=token)

@@ -116,7 +116,7 @@ async function bootstrapHome() {
       const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
       const playerDeck = saved || starter;
       buildSummary.textContent = '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」';
-      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。高级人机使用训练后的策略进行对战；可用预组以列表为准，尚未接入模型的预组暂不开放。';
+      aiDeckHint.textContent = '使用当前保存的构筑对战，支持除哈尼娅外的公开角色。当前开放创生、浊燃和真红。';
       return;
     }
     if (selectedMode === 'solo') {

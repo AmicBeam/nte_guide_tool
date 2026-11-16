@@ -674,6 +674,60 @@
         "alpha": "preserved",
         "encoder": "cwebp"
       }
+    },
+    {
+      "character": "曳尔沐",
+      "character_id": "1090",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1090_1",
+      "fashion_name": "千年虫之谜",
+      "output": "app/static/images/characters/costume/Fashion_1090_1.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "output_sha256": "8f3d8581fda962c878f13aecb1c9074bd562dde059748c51d2a15da5b25de245",
+      "bytes": 194394,
+      "card_ids": [
+        "MU06"
+      ]
+    },
+    {
+      "character": "曳尔沐",
+      "character_id": "1090",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1090_2",
+      "fashion_name": "花海追想",
+      "output": "app/static/images/characters/costume/Fashion_1090_2.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "output_sha256": "a53a4c166becd6b73d02d18d2af8892e3eabb6deea74fb47780747f2b0fab0b4",
+      "bytes": 230092,
+      "card_ids": [
+        "MU07"
+      ]
+    },
+    {
+      "character": "曳尔沐",
+      "character_id": "1090",
+      "purpose": "costume",
+      "fashion_id": "Fashion_1090_nighty",
+      "fashion_name": "微风精灵",
+      "output": "app/static/images/characters/costume/Fashion_1090_nighty.webp",
+      "aliases": [],
+      "size": [
+        1024,
+        1024
+      ],
+      "output_sha256": "d768f35c6957c451e975c0491fce48ebf486315ab83776c3eceeb2f68c373a5f",
+      "bytes": 126130,
+      "card_ids": [
+        "MU08"
+      ]
     }
   ],
   "default_portraits": "Restored to pre-task files per user request: keep existing character scale and head alignment. Not migrated in this batch.",

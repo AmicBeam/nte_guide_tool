@@ -63,6 +63,16 @@ for (const side of ['a','b']) {
  }
 }
 const hand=table.handCardHtml({character_id:'nanali',name:'测试',type:'form',id:'N08'},{legal:true});
+const elyms={id:'elyms',name:'曳尔沐',portrait:'/elyms-default.webp',hp:5,max_hp:5,signal_level:0};
+for (const side of ['a','b']) {
+ for (const [shape,expected,down] of [['MU06','Fashion_1090_1.webp',0],['MU07','Fashion_1090_2.webp',0],['MU08','Fashion_1090_nighty.webp',0],[null,'/elyms-default.webp',0],['MU08','/elyms-default.webp',3]]) {
+  const state=JSON.parse(JSON.stringify({...elyms,shape_id:shape,down_turns:down}));
+  table.fillCharacterCard(node,state,{side,usePortrait:true});
+  assert.ok(node.innerHTML.includes(expected));
+  if (shape && !down) {image.onerror();assert.equal(image.src,'/elyms-default.webp');}
+ }
+}
+assert.equal(api.battlePortrait({...elyms,shape_id:'P08'}),'/elyms-default.webp');
 assert.ok(!hand.includes('Fashion_'));
 assert.ok(!table.handCardHtml({character_id:'nanali',hidden:true}).includes('Fashion_'));
 // Every selected fashion belongs to its card owner and exists; also covers test-only characters.

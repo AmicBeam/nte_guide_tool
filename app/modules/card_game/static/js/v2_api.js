@@ -50,8 +50,11 @@
     V07: { characterId: 'haniya', fashion: 'Fashion_1020_1' },
     P07: { characterId: 'heiyu', fashion: 'Fashion_1042_1' },
     P08: { characterId: 'heiyu', fashion: 'Fashion_1042_nighty' },
+    MU06: { characterId: 'elyms', fashion: 'Fashion_1090_1' },
+    MU07: { characterId: 'elyms', fashion: 'Fashion_1090_2' },
+    MU08: { characterId: 'elyms', fashion: 'Fashion_1090_nighty' },
   };
-  const CHARACTER_IMAGE_VERSION = 'heiyu-costume-v10';
+  const CHARACTER_IMAGE_VERSION = 'elyms-costume-v11';
 
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.

@@ -88,6 +88,8 @@ class Zhenhong:
                    stacking='refresh', expiry=deadline(c.state, c.side, 1, 'turn_start'))
         c.history('己方触发盈蓄，真红触发「独行」：直到下个己方回合开始时攻击 +1，单次至多受到 1 点伤害，将额外造成 2 点伤害。')
         c.shield(4, reason='「独行」触发')
+        for cid in team_order(c.state, c.side):
+            c.for_character(c.side, cid).energy(1, reason='「独行」触发')
         if finished(c.state):
             return
         enqueue(c, 'surplus')

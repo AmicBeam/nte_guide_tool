@@ -60,9 +60,9 @@ class Nanali:
     on_turn_begin = staticmethod(on_first_turn_seed)
     @staticmethod
     def on_harmony_triggered(c, kind=None, entering=None, payer=None, **_data):
-        if kind == '创生' and c.cid in (entering, payer):
+        if kind in ('创生', '覆纹') and c.cid in (entering, payer):
             from app.modules.card_game.content.duel_v2.characters.common import grant_seed
-            grant_seed(c, reason='娜娜莉参与触发【创生】')
+            grant_seed(c, reason=f'娜娜莉参与触发【{kind}】')
 
     @staticmethod
     def combat_followup_ultimate(c, current=0):

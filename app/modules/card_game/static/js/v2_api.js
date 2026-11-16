@@ -531,6 +531,11 @@
   }
 
   function statIconSvg(kind) {
+    if (kind === 'signal-0' || kind === 'signal-1' || kind === 'signal-2') {
+      const middle = kind !== 'signal-0' ? '<path d="M3.7 8Q8 4.7 12.3 8"/>' : '';
+      const outer = kind === 'signal-2' ? '<path d="M1.4 5.6Q8 .7 14.6 5.6"/>' : '';
+      return '<svg class="v2-stat-icon" data-signal-level="' + kind.slice(-1) + '" viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">' + outer + middle + '<path d="M5.8 10.5Q8 8.5 10.2 10.5"/></g><circle cx="8" cy="13.5" r="1.1" fill="currentColor"/></svg>';
+    }
     if (kind === 'fang') {
       return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 2h5c1 5-1 9-4 12L2 2zm7 0h5l-1 12c-3-3-5-7-4-12z"/></svg>';
     }

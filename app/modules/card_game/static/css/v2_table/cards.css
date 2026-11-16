@@ -1236,6 +1236,7 @@
 
 /* Personal gold resource, directly above the attack value in both card sizes. */
 .v2-attack-stack { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.v2-combat-stat.is-signal { color: #89d9ed; }
 .v2-combat-stat.is-aura { color: #65bdff; }
 .v2-combat-stat.is-jingu { color: #ffda55; }
 

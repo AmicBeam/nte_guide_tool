@@ -123,7 +123,7 @@ def capture_public_board(state):
             attack_breakdown = duel_state.attack_value(hero, state, ps, explain=True)
             characters.append({
                 'id': cid,
-                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'lingke_chain', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura') if k in hero},
+                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'lingke_chain', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura', 'signal_level') if k in hero},
                 **({'passive': summon_passive(hero), 'awakened_passive': hero.get('awakened_passive', ''),
                     'flavor': hero.get('flavor', '')} if hero.get('summoned') else {}),
                 'entity_id': hero.get('entity_id'),

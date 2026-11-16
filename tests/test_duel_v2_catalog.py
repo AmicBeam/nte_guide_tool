@@ -259,7 +259,7 @@ class DuelV2CatalogTest(unittest.TestCase):
         for character_id in CATALOG_ORDER:
             owned = [card_id for card_id, card in named.items() if card['character_id'] == character_id]
             card_07, card_08 = CARDS[owned[6]], CARDS[owned[7]]
-            self.assertEqual(card_08['source']['type'], 'fashion' if card_08['id'] in COSTUME_SOURCES or character_id == 'heiyu'
+            self.assertEqual(card_08['source']['type'], 'fashion' if card_08['id'] in COSTUME_SOURCES or character_id in ('heiyu', 'elyms')
                              else 'ability' if character_id in ('yi', 'adler') else 'arc', character_id)
             for card in (card_07, card_08):
                 if card['id'] in COSTUME_SOURCES:
@@ -267,7 +267,7 @@ class DuelV2CatalogTest(unittest.TestCase):
                     self.assertEqual(card['name'], source['fashion_name'].removeprefix('「').removesuffix('」'))
                     self.assertEqual(card['source']['fashion_id'], source['fashion_id'])
                     self.assertEqual(card['source']['index'], int(card['id'][-2:]))
-            if card_07['id'] in COSTUME_SOURCES or character_id == 'heiyu':
+            if card_07['id'] in COSTUME_SOURCES or character_id in ('heiyu', 'elyms'):
                 self.assertEqual(card_07['source']['type'], 'fashion', character_id)
             elif character_id == 'zero':
                 self.assertEqual(card_07['source']['type'], 'arc', character_id)

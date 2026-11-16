@@ -183,6 +183,38 @@ def apply_dark_star(c, *, renewals=None):
         fire(c, GameEvent.V2_DISSONANCE, enemy=enemy, target_id=target)
 
 
+def apply_delay(c, *, renewals=None):
+    s, side, cid = c.state, c.side, c.cid
+    team = s['sides'][side]
+    enemy, _target = front_target(s, side)
+    duration = int(decide(c, 'delay_duration', 1) or 1)
+    slow = int(decide(c, 'delay_slow', 1) or 0)
+    old = front_debuff(s, enemy).get('delay') or {}
+    front_debuff(s, enemy)['delay'] = {
+        'left': max(int(old.get('left', 0)), duration),
+        'tick_side': side, 'slow': slow,
+        'slow_turn': old.get('slow_turn', s['turn']) if old else s['turn'],
+        'by': side,
+    }
+    count = max(0, int(decide(c, 'delay_renewals', 0) or 0)) if renewals is None else max(0, int(renewals))
+    if count:
+        front_debuff(s, enemy)['delay'].update(renewals=count, source_cid=cid, source_entity_id=c.entity_id)
+    log(s, f"对方战斗区获得延滞（{duration} 回合）。", 'harmony',
+        side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
+    from .state import record_delay_turn
+    record_delay_turn(s, side)
+    hits = tally(c, 'delay_hits') + int(team.get('extra_delay'))
+    team['extra_delay'] = False
+    for _ in range(hits):
+        if finished(s):
+            break
+        delay_target = front_target(s, side)
+        from .presentation import next_group_id
+        damage(s, *delay_target, 1, source=f'{side}:{cid}', kind='delay',
+               group_id=next_group_id(s))
+        fire(c, 'on_delay_hit', target=delay_target)
+
+
 def resolve_harmony_effect(c, kind):
     """Apply an effect without fabricating entry, payment or support events."""
     s, side, cid, op = c.state, c.side, c.cid, c.operation
@@ -191,29 +223,7 @@ def resolve_harmony_effect(c, kind):
     if kind == '创生':
         resolve_genesis(c)
     elif kind == '延滞':
-        duration = int(decide(c, 'delay_duration', 1) or 1)
-        slow = int(decide(c, 'delay_slow', 1) or 0)
-        old = front_debuff(s, enemy).get('delay') or {}
-        front_debuff(s, enemy)['delay'] = {
-            'left': max(int(old.get('left', 0)), duration),
-            'tick_side': side, 'slow': slow,
-            'slow_turn': old.get('slow_turn', s['turn']) if old else s['turn'],
-            'by': side,
-        }
-        log(s, f"对方战斗区获得延滞（{duration} 回合）。", 'harmony',
-            side=side, source=cid, actor=f'{side}:{cid}', target=f'{enemy}:front', present=False)
-        from .state import record_delay_turn
-        record_delay_turn(s, side)
-        hits = tally(c, 'delay_hits') + int(team.get('extra_delay'))
-        team['extra_delay'] = False
-        for _ in range(hits):
-            if finished(s):
-                break
-            delay_target = front_target(s, side)
-            from .presentation import next_group_id
-            damage(s, *delay_target, 1, source=f'{side}:{cid}', kind='delay',
-                   group_id=next_group_id(s))
-            fire(c, 'on_delay_hit', target=delay_target)
+        apply_delay(c)
     elif kind == '浊燃':
         from .continuous import apply_burn
         apply_burn(s, enemy, by=side, source_cid=cid)

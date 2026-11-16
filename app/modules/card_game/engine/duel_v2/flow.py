@@ -756,6 +756,14 @@ def tick_front_debuff(state, side):
             status['left'] = max(0, int(status['left']) - 1)
             if not status['left']:
                 zone.pop('delay', None)
+                if int(status.get('renewals') or 0) > 0 and not finished(state):
+                    from .combat import apply_delay
+                    by = status.get('by') or side
+                    source = status.get('source_cid')
+                    owner = state['sides'][by]['characters'].get(source)
+                    if owner and owner.get('entity_id') == status.get('source_entity_id'):
+                        apply_delay(EffectContext(state, by, source, {'side': by, 'actor': source}),
+                                    renewals=int(status['renewals']) - 1)
         log(state, '延滞倒计时保持。' if paused else '延滞倒计时更新。', 'countdown',
             side=target_side, actor=f'{target_side}:front', target=f'{target_side}:front')
 

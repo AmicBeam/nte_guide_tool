@@ -169,6 +169,29 @@
       }
     },
     {
+      "id": "elyms",
+      "name": "曳尔沐",
+      "attribute": "光",
+      "attack": 2,
+      "max_hp": 5,
+      "avatar": "/static/images/characters/avatar/曳尔沐.webp",
+      "portrait": "/static/images/characters/portrait/曳尔沐.webp",
+      "passive": "拥有个人资源「信号强度」。【延滞】强化：延滞结束后，额外施加 1 次延滞；额外施加不会再次触发此效果。【盈蓄】强化：触发时，随机使 1 名对方角色的光属性抗性 -1，持续到下个己方回合开始时，不可叠加。",
+      "awakened_passive": "将信号强度重置为低信号。每降低 1 级信号，全体己方异能者攻击 +1，持续 2 个己方回合。不可叠加。",
+      "everness_id": 1090,
+      "ultimate": {
+        "kind": "instant"
+      },
+      "faction": "异象管理局禁制机动队六队",
+      "mechanisms": [
+        {
+          "id": "mechanism-signal",
+          "name": "信号强度",
+          "description": "初始为低信号，依次为低信号、中信号、高信号，最高为高信号。普通换下与倒地保留。卡牌的信号条件与条件不满足时回满环合值、提升信号的效果尚未接入。"
+        }
+      ]
+    },
+    {
       "id": "nanali",
       "name": "娜娜莉",
       "attribute": "灵",
@@ -3954,6 +3977,146 @@
       "starter_copies": 2,
       "attack": 3,
       "hp": 6
+    },
+    {
+      "id": "MU01",
+      "character_id": "elyms",
+      "name": "404 遥望一座孤岛",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "effect_id": "MU01",
+      "source": {
+        "character_id": 1090,
+        "type": "awaken",
+        "index": 1
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "MU02",
+      "character_id": "elyms",
+      "name": "200 节点彼此相连",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "effect_id": "MU02",
+      "source": {
+        "character_id": 1090,
+        "type": "awaken",
+        "index": 2
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "MU03",
+      "character_id": "elyms",
+      "name": "504 访问响应超时",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "effect_id": "MU03",
+      "source": {
+        "character_id": 1090,
+        "type": "awaken",
+        "index": 3
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "MU04",
+      "character_id": "elyms",
+      "name": "302 祈愿重新定向",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "effect_id": "MU04",
+      "source": {
+        "character_id": 1090,
+        "type": "awaken",
+        "index": 4
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "MU05",
+      "character_id": "elyms",
+      "name": "304 今日一如往昔",
+      "type": "tactic",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "effect_id": "MU05",
+      "source": {
+        "character_id": 1090,
+        "type": "awaken",
+        "index": 5
+      },
+      "starter_copies": 0
+    },
+    {
+      "id": "MU06",
+      "character_id": "elyms",
+      "name": "千年虫之谜",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "effect_id": "MU06",
+      "source": {
+        "character_id": 1090,
+        "type": "fashion",
+        "index": 6,
+        "fashion_id": "Fashion_1090_1",
+        "fashion_name": "千年虫之谜"
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 5
+    },
+    {
+      "id": "MU07",
+      "character_id": "elyms",
+      "name": "花海追想",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "effect_id": "MU07",
+      "source": {
+        "character_id": 1090,
+        "type": "fashion",
+        "index": 7,
+        "fashion_id": "Fashion_1090_2",
+        "fashion_name": "花海追想"
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 5
+    },
+    {
+      "id": "MU08",
+      "character_id": "elyms",
+      "name": "微风精灵",
+      "type": "form",
+      "cost": 1,
+      "terminal": false,
+      "description": "",
+      "effect_id": "MU08",
+      "source": {
+        "character_id": 1090,
+        "type": "fashion",
+        "index": 8,
+        "fashion_id": "Fashion_1090_nighty",
+        "fashion_name": "微风精灵"
+      },
+      "starter_copies": 0,
+      "attack": 2,
+      "hp": 5
     }
   ],
   "starter_decks": [

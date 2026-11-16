@@ -95,17 +95,20 @@
     const hp = (data.hp == null ? '-' : data.hp) + '/' + (data.max_hp == null ? '-' : data.max_hp);
     const shield = Number(data.shield) || 0;
     function combatStat(kind, shown, title) {
+      const value = '<em>' + V2.escapeHtml(String(shown)) + '</em>';
+      const icon = V2.statIconSvg(kind === 'signal' ? 'signal-' + data.signal_level : kind);
       return '<span class="v2-combat-stat is-' + kind + '" title="' + V2.escapeAttr(title) + '">' +
-        V2.statIconSvg(kind) + '<em>' + V2.escapeHtml(String(shown)) + '</em></span>';
+        (kind === 'signal' ? value + icon : icon + value) + '</span>';
     }
     const jinguHtml = data.jingu == null ? '' : combatStat('jingu', data.jingu, '金谷 ' + data.jingu + '（可为负，倒地保留）');
     const auraHtml = data.protagonist_aura == null ? '' : combatStat('aura', data.protagonist_aura, '主角光环 ' + data.protagonist_aura + '/6（倒地保留）');
+    const signalHtml = data.signal_level == null ? '' : combatStat('signal', ['低', '中', '高'][data.signal_level] || '低', '信号强度：' + (['低信号', '中信号', '高信号'][data.signal_level] || '低信号'));
     const fangHtml = Number(data.beast_fangs) > 0 ? combatStat('fang', data.beast_fangs, '兽牙影刺：剩余 ' + data.beast_fangs + ' 个己方回合') : '';
     const vitalsHtml = options.usePortrait
       ? ('<div class="v2-portrait-vitals">' +
           (shield > 0 ? combatStat('shield', shield, '护盾 ' + shield) : '') +
           '<div class="v2-portrait-vitals-row">' +
-            '<span class="v2-attack-stack">' + jinguHtml + auraHtml + fangHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' +
+            '<span class="v2-attack-stack">' + jinguHtml + auraHtml + signalHtml + fangHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' +
             combatStat('hp', hp, '生命 ' + hp) +
           '</div></div>')
       : '';
@@ -119,7 +122,7 @@
     const resourceHtml = (hideHarmony ? '' : resourceLabel('环合', '环', String(data.harmony || 0) + '/' + (data.harmony_max == null ? 2 : data.harmony_max), 'harmony')) +
       (hideEnergy ? '' : resourceLabel(data.resource_name || '能量', data.resource_name ? '时' : '能', energyNow + '/' + energyMax, 'energy'));
     const stats = compact ? [
-      { html: '<span class="v2-attack-stack">' + jinguHtml + auraHtml + fangHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' },
+      { html: '<span class="v2-attack-stack">' + jinguHtml + auraHtml + signalHtml + fangHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' },
       { html: combatStat('hp', hp, '生命 ' + hp) },
       { html: combatStat('shield', shield, '护盾 ' + shield) },
     ] : [];
@@ -165,7 +168,7 @@
     if (options.canAwaken) {
       actions.push('<button class="v2-awaken-btn" type="button" data-ultimate-id="' + V2.escapeAttr(data.id) + '">' + V2.escapeHtml(options.ultimateLabel || '终结') + '</button>');
     }
-    const panelSig = [attack, hp, shield, data.harmony, energyNow, energyMax, data.awakened ? 1 : 0, data.jingu, data.protagonist_aura, data.beast_fangs].join('|');
+    const panelSig = [attack, hp, shield, data.harmony, energyNow, energyMax, data.awakened ? 1 : 0, data.jingu, data.protagonist_aura, data.beast_fangs, data.signal_level].join('|');
     const prevPanel = node.getAttribute('data-pop-sig');
     node.setAttribute('data-pop-sig', panelSig);
     const protectedAlive = !options.placeholder && !data.down_turns && data.hp > 0;
@@ -216,7 +219,7 @@
     if (prevPanel && prevPanel !== panelSig) {
       const previous = prevPanel.split('|');
       const current = panelSig.split('|');
-      [['.is-atk', 0], ['.is-hp', 1], ['.is-shield', 2], ['.harmony', 3], ['.energy', 4], ['.is-jingu', 7], ['.is-aura', 8], ['.is-fang', 9]].forEach(function (stat) {
+      [['.is-atk', 0], ['.is-hp', 1], ['.is-shield', 2], ['.harmony', 3], ['.energy', 4], ['.is-jingu', 7], ['.is-aura', 8], ['.is-fang', 9], ['.is-signal', 10]].forEach(function (stat) {
         if (previous[stat[1]] === current[stat[1]]) return;
         node.querySelectorAll(stat[0]).forEach(function (badge) {
           badge.classList.add('v2-stat-pop');

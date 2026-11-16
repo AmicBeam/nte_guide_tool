@@ -587,8 +587,10 @@ class DuelV2ApiTest(RoomFlowTestCase):
         for token in (self.a, invited):
             catalog = self._get('/api/duel-v2/catalog', token=token)
             names = {item['name'] for item in catalog['characters']}
-            self.assertEqual(names, {'娜娜莉', '零', '九原', '伊洛伊', '薄荷', '白藏', '小吱', '海月', '真红', '翳', '安魂曲', '残虹', '早雾', '阿德勒', '黑羽', '达芙蒂尔', '灵可'})
+            self.assertEqual(names, {'娜娜莉', '零', '九原', '伊洛伊', '薄荷', '白藏', '小吱', '海月', '真红', '翳', '安魂曲', '残虹', '早雾', '阿德勒', '黑羽', '达芙蒂尔', '灵可', '哈尼娅'})
             self.assertNotIn('浔', names)
+            self.assertNotIn('曳尔沐', names)
+            self.assertFalse(any(card['character_id'] == 'elyms' for card in catalog['cards']))
             self.assertEqual([item['name'] for item in catalog['starter_decks']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '倾陷预组', '灵可预组'])
             self.assertEqual([item['name'] for item in catalog['saved_builds']], ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '倾陷预组', '灵可预组'])
 
@@ -597,14 +599,16 @@ class DuelV2ApiTest(RoomFlowTestCase):
         self._set_test_whitelist('duel-v2-tester')
         catalog = self._get('/api/duel-v2/catalog', token=token)
         names = {item['name'] for item in catalog['characters']}
-        self.assertEqual(len(catalog['characters']), 21)
+        self.assertEqual(len(catalog['characters']), 22)
+        self.assertIn('曳尔沐', names)
         self.assertIn('浔', names)
         self.assertIn('残虹', names)
         self.assertIn('阿德勒', names)
         self.assertIn('薄荷', names)
         self.assertIn('白藏', names)
         self.assertIn('黑羽', names)
-        self.assertEqual(len(catalog['cards']), 175)
+        self.assertEqual(len(catalog['cards']), 182)
+        self.assertEqual(len([c for c in catalog['cards'] if c['character_id'] == 'elyms']), 8)
         self.assertEqual(
             [item['name'] for item in catalog['starter_decks']],
             ['创生预组', '覆纹预组', '小吱预组', '真红预组', '浊燃预组', '倾陷预组', '灵可预组'],

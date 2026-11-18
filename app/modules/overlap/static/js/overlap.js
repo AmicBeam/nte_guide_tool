@@ -110,7 +110,7 @@
                 ...selected.rows.flatMap((row) => row.timeline.flatMap((step, index) => step.action === action.name && index > 0 ? [row.timeline[index-1].action] : [])),
             ])];
             const entryLabel = action.can_start ? '可作为起手' : predecessors.length ? `需从 ${predecessors.join('、')} 衔接` : '衔接来源待补';
-            const successors = action.successors.map((edge) => `${edge.to}${edge.automatic ? '（自动）' : ''}${edge.can_preinput === false ? '（仅顺接，不支持合轴）' : ''}${edge.requires_previous ? `（${edge.requires_previous.join('/')}插重击后）` : ''}`).join('、') || '尚无后续记录';
+            const successors = action.successors.map((edge) => `${edge.to}${edge.automatic ? '（自动）' : ''}${edge.can_preinput === false ? '（仅顺接，不支持预输入）' : ''}${edge.requires_previous ? `（${edge.requires_previous.join('/')}插重击后）` : ''}`).join('、') || '尚无后续记录';
             const points = action.switch_points.map((point) => `${point.label || point.id} ${seconds(point.after_seconds)}`).join('；');
             const preinputs = action.successors.filter((edge) => edge.can_preinput !== false && !edge.automatic);
             const preinputText = !preinputs.length ? '无后续预输入合轴记录'

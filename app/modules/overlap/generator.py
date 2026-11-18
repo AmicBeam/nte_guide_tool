@@ -76,12 +76,12 @@ def build_graph(actions, rule):
             if next_name in by_name:
                 edges[name].append({'from': name, 'to': next_name,
                                     'source': '动作目录连续段；按完整动作顺接'})
-            elif kind == 'a' and int(index) > 1 and rule.get('basic_chain_restart_source'):
+            elif kind == 'a' and int(index) > 1 and (rule.get('basic_chain_restart') or rule.get('basic_chain_restart_source')):
                 opener = f'{prefix}a1{suffix}'
                 if all(f'{prefix}a{i}{suffix}' in by_name for i in range(1, int(index))):
                     edges[name].append({'from': name, 'to': opener, 'can_preinput': False,
                                         'basic_chain_restart': True,
-                                        'source': rule['basic_chain_restart_source']})
+                                        'source': rule.get('basic_chain_restart_source', '普攻末段完整释放后可接回a1')})
     for edge in rule.get('transitions', []):
         if edge.get('from') not in by_name or edge.get('to') not in by_name:
             raise ValueError(f'衔接引用不存在的动作：{edge}')
@@ -419,9 +419,9 @@ def generate(characters, actions, rules):
         for action in current:
             override = override_map.get(action['name'], {})
             recovery = number(override.get('recovery_seconds', 0))
-            if recovery and (not override.get('source') or duration(action) is None
+            if recovery and (duration(action) is None
                              or abs(recovery * 1000 - round(recovery * 1000)) > 1e-6):
-                raise ValueError('恢复后摇须有source、已知动作时长且精确到毫秒')
+                raise ValueError('恢复后摇须有已知动作时长且精确到毫秒')
             action['recovery_seconds'] = recovery
             action['recovery_source'] = override.get('source', '')
             if 'locks_foreground_switch' in override:

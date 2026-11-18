@@ -218353,13 +218353,4098 @@
         "switch_points": 0,
         "missing_duration": 0
       }
+    },
+    {
+      "id": "char_exe",
+      "name": "Exe",
+      "element": "暗",
+      "avatar": "/static/images/characters/avatar/Exe-square.webp",
+      "actions": [
+        {
+          "name": "a1",
+          "action_id": "action_exe_a1",
+          "type": "普攻",
+          "duration_seconds": 0.6,
+          "switch_points": [
+            {
+              "id": "normal",
+              "after_seconds": 0.2,
+              "label": "正常切人",
+              "source": "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
+            }
+          ],
+          "recovery_seconds": 0.0,
+          "preinput_seconds": 0.4,
+          "successors": [
+            {
+              "from": "a1",
+              "to": "a2",
+              "can_preinput": true,
+              "source": ""
+            }
+          ],
+          "gaps": [],
+          "can_background_override": false,
+          "locks_foreground_switch": false,
+          "can_start": true,
+          "preinput_forbidden": false,
+          "source": "仓库当前动作数据",
+          "conditions": {
+            "cooldown_ticks": 0,
+            "energy_cost": 0,
+            "personal_resource_cost": {}
+          }
+        },
+        {
+          "name": "a2",
+          "action_id": "action_exe_a2",
+          "type": "普攻",
+          "duration_seconds": 0.6,
+          "switch_points": [
+            {
+              "id": "normal",
+              "after_seconds": 0.2,
+              "label": "正常切人",
+              "source": "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
+            }
+          ],
+          "recovery_seconds": 0.0,
+          "preinput_seconds": 0.4,
+          "successors": [
+            {
+              "from": "a2",
+              "to": "a3",
+              "can_preinput": false,
+              "source": ""
+            }
+          ],
+          "gaps": [],
+          "can_background_override": true,
+          "locks_foreground_switch": false,
+          "can_start": false,
+          "preinput_forbidden": false,
+          "source": "仓库当前动作数据",
+          "conditions": {
+            "cooldown_ticks": 0,
+            "energy_cost": 0,
+            "personal_resource_cost": {}
+          }
+        },
+        {
+          "name": "a3",
+          "action_id": "action_exe_a3",
+          "type": "普攻",
+          "duration_seconds": 0.7,
+          "switch_points": [
+            {
+              "id": "normal",
+              "after_seconds": 0.2,
+              "label": "正常切人",
+              "source": "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
+            }
+          ],
+          "recovery_seconds": 0.0,
+          "preinput_seconds": 0.4,
+          "successors": [
+            {
+              "from": "a3",
+              "to": "a4",
+              "can_preinput": true,
+              "source": ""
+            }
+          ],
+          "gaps": [],
+          "can_background_override": true,
+          "locks_foreground_switch": false,
+          "can_start": false,
+          "preinput_forbidden": false,
+          "source": "仓库当前动作数据",
+          "conditions": {
+            "cooldown_ticks": 0,
+            "energy_cost": 0,
+            "personal_resource_cost": {}
+          }
+        },
+        {
+          "name": "a4",
+          "action_id": "action_exe_a4",
+          "type": "普攻",
+          "duration_seconds": 1.3,
+          "switch_points": [
+            {
+              "id": "normal",
+              "after_seconds": 0.2,
+              "label": "正常切人",
+              "source": "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
+            }
+          ],
+          "recovery_seconds": 0.5,
+          "preinput_seconds": 0.4,
+          "successors": [
+            {
+              "from": "a4",
+              "to": "a5",
+              "can_preinput": false,
+              "source": ""
+            }
+          ],
+          "gaps": [],
+          "can_background_override": true,
+          "locks_foreground_switch": false,
+          "can_start": false,
+          "preinput_forbidden": false,
+          "source": "仓库当前动作数据",
+          "conditions": {
+            "cooldown_ticks": 0,
+            "energy_cost": 0,
+            "personal_resource_cost": {}
+          }
+        },
+        {
+          "name": "a5",
+          "action_id": "action_exe_a5",
+          "type": "普攻",
+          "duration_seconds": 0.8,
+          "switch_points": [
+            {
+              "id": "normal",
+              "after_seconds": 0.2,
+              "label": "正常切人",
+              "source": "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
+            }
+          ],
+          "recovery_seconds": 0.0,
+          "preinput_seconds": 0.4,
+          "successors": [
+            {
+              "from": "a5",
+              "to": "a1",
+              "can_preinput": false,
+              "basic_chain_restart": true,
+              "source": "普攻末段完整释放后可接回a1"
+            }
+          ],
+          "gaps": [],
+          "can_background_override": true,
+          "locks_foreground_switch": false,
+          "can_start": false,
+          "preinput_forbidden": false,
+          "source": "仓库当前动作数据",
+          "conditions": {
+            "cooldown_ticks": 0,
+            "energy_cost": 0,
+            "personal_resource_cost": {}
+          }
+        }
+      ],
+      "rows": [
+        {
+          "id": "bc71c8de850b477e",
+          "actions": [
+            "a1",
+            "a2"
+          ],
+          "original_actions": [
+            "a1",
+            "a2"
+          ],
+          "kind": "连招",
+          "switch_method": "full",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "a1 → a2",
+          "switch_label": "完整释放",
+          "foreground_seconds": 1.2,
+          "switch_seconds": 1.2,
+          "foreground_intervals": [
+            [
+              0,
+              1.2
+            ]
+          ],
+          "release_end_seconds": 1.2,
+          "background_seconds": 0,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 1.453,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.210833,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 7.855,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 6.545833,
+          "energy_gain": 5.667,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 5.667,
+          "energy_rate": 4.7225,
+          "stagger": 0.948,
+          "stagger_rate": 0.79,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.2,
+              "duration_seconds": 1.2
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "266adc2c6ff74565",
+          "actions": [
+            "a1",
+            "a2"
+          ],
+          "original_actions": [
+            "a1",
+            "a2"
+          ],
+          "kind": "合轴",
+          "switch_method": "preinput",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            0
+          ],
+          "operation": "a1预a2",
+          "switch_label": "预输入合轴",
+          "foreground_seconds": 0.4,
+          "switch_seconds": 0.4,
+          "foreground_intervals": [
+            [
+              0,
+              0.4
+            ]
+          ],
+          "release_end_seconds": 1.2,
+          "background_seconds": 0.8,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 1.453,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 3.6325,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 7.855,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 19.6375,
+          "energy_gain": 5.667,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 5.667,
+          "energy_rate": 14.1675,
+          "stagger": 0.948,
+          "stagger_rate": 2.37,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [
+            "用户2026-10-12：动作开始后0.4秒预输入即可切人，完成当前和下一动作。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.4,
+              "duration_seconds": 0.4
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "adeae49dd72e09d2",
+          "actions": [
+            "a1",
+            "a2"
+          ],
+          "original_actions": [
+            "a1",
+            "a2"
+          ],
+          "kind": "合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "a1 → a2",
+          "switch_label": "正常切人",
+          "foreground_seconds": 0.8,
+          "switch_seconds": 0.8,
+          "foreground_intervals": [
+            [
+              0,
+              0.8
+            ]
+          ],
+          "release_end_seconds": 1.2,
+          "background_seconds": 0.4,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 1.453,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.81625,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 7.855,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 9.81875,
+          "energy_gain": 5.667,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 5.667,
+          "energy_rate": 7.08375,
+          "stagger": 0.948,
+          "stagger_rate": 1.185,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 0.8,
+              "duration_seconds": 0.8
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "4c67e601444f5a9d",
+          "actions": [
+            "a1",
+            "a2",
+            "a3"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3"
+          ],
+          "kind": "连招",
+          "switch_method": "full",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "a1 → a2 → a3",
+          "switch_label": "完整释放",
+          "foreground_seconds": 1.9,
+          "switch_seconds": 1.9,
+          "foreground_intervals": [
+            [
+              0,
+              1.9
+            ]
+          ],
+          "release_end_seconds": 1.9,
+          "background_seconds": 0,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 2.5,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.315789,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 13.519,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 7.115263,
+          "energy_gain": 9.753,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 9.753,
+          "energy_rate": 5.133158,
+          "stagger": 1.632,
+          "stagger_rate": 0.858947,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.9,
+              "duration_seconds": 1.9
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "27266192cffe3180",
+          "actions": [
+            "a1",
+            "a2",
+            "a3"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3"
+          ],
+          "kind": "合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "a1 → a2 → a3",
+          "switch_label": "正常切人",
+          "foreground_seconds": 1.4,
+          "switch_seconds": 1.4,
+          "foreground_intervals": [
+            [
+              0,
+              1.4
+            ]
+          ],
+          "release_end_seconds": 1.9,
+          "background_seconds": 0.5,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 2.5,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.785714,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 13.519,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 9.656429,
+          "energy_gain": 9.753,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 9.753,
+          "energy_rate": 6.966429,
+          "stagger": 1.632,
+          "stagger_rate": 1.165714,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.4,
+              "duration_seconds": 1.4
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "36e2b0719e6b3f75",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4"
+          ],
+          "kind": "连招",
+          "switch_method": "full",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "a1 → a2 → a3 → a4",
+          "switch_label": "完整释放",
+          "foreground_seconds": 3.2,
+          "switch_seconds": 3.2,
+          "foreground_intervals": [
+            [
+              0,
+              3.2
+            ]
+          ],
+          "release_end_seconds": 3.2,
+          "background_seconds": 0,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.3,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 4.728,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.4775,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 25.563,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 7.988437,
+          "energy_gain": 18.443,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 18.443,
+          "energy_rate": 5.763437,
+          "stagger": 3.088,
+          "stagger_rate": 0.965,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.2,
+              "duration_seconds": 3.2
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "62442502392bed7b",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4"
+          ],
+          "kind": "合轴",
+          "switch_method": "preinput",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4",
+          "switch_label": "预输入合轴",
+          "foreground_seconds": 1.6,
+          "switch_seconds": 1.6,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ]
+          ],
+          "release_end_seconds": 3.2,
+          "background_seconds": 1.6,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.3,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 4.728,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 2.955,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 25.563,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 15.976875,
+          "energy_gain": 18.443,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 18.443,
+          "energy_rate": 11.526875,
+          "stagger": 3.088,
+          "stagger_rate": 1.93,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [
+            "用户2026-10-12：动作开始后0.4秒预输入即可切人，完成当前和下一动作。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "ce7ba4ecf5a1afa6",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4"
+          ],
+          "kind": "合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "a1 → a2 → a3 → a4",
+          "switch_label": "正常切人",
+          "foreground_seconds": 2.1,
+          "switch_seconds": 2.1,
+          "foreground_intervals": [
+            [
+              0,
+              2.1
+            ]
+          ],
+          "release_end_seconds": 3.2,
+          "background_seconds": 1.1,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.3,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 4.728,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 2.251429,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 25.563,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 12.172857,
+          "energy_gain": 18.443,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 18.443,
+          "energy_rate": 8.782381,
+          "stagger": 3.088,
+          "stagger_rate": 1.470476,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 2.1,
+              "duration_seconds": 2.1
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "fd8ec96ce895e66b",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "连招",
+          "switch_method": "full",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "a1 → a2 → a3 → a4 → a5",
+          "switch_label": "完整释放",
+          "foreground_seconds": 4.0,
+          "switch_seconds": 4.0,
+          "foreground_intervals": [
+            [
+              0,
+              4.0
+            ]
+          ],
+          "release_end_seconds": 4.0,
+          "background_seconds": 0,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.3,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.2,
+              "start_seconds": 3.2,
+              "end_seconds": 4.0,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.3785,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 7.44975,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 5.37425,
+          "stagger": 3.598,
+          "stagger_rate": 0.8995,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.0,
+              "duration_seconds": 4.0
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "fd8ec96ce895e66b-hold",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "打满",
+          "switch_method": "hold",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "a5打满",
+          "switch_label": "末段打满",
+          "foreground_seconds": 4.0,
+          "switch_seconds": null,
+          "foreground_intervals": [
+            [
+              0,
+              4.0
+            ]
+          ],
+          "release_end_seconds": 4.0,
+          "background_seconds": 0,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.3,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.2,
+              "start_seconds": 3.2,
+              "end_seconds": 4.0,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.3785,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 7.44975,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 5.37425,
+          "stagger": 3.598,
+          "stagger_rate": 0.8995,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 4.0,
+              "duration_seconds": 4.0
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": [],
+          "hold_reason": "cycle_to_start"
+        },
+        {
+          "id": "fd8ec96ce895e66b-hold-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "hold",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5打满",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 2.4,
+          "switch_seconds": null,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.2,
+              4.0
+            ]
+          ],
+          "release_end_seconds": 4.0,
+          "background_seconds": 1.6,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.3,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.2,
+              "start_seconds": 3.2,
+              "end_seconds": 4.0,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 2.2975,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 12.41625,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 8.957083,
+          "stagger": 3.598,
+          "stagger_rate": 1.499167,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.2,
+              "end_seconds": 4.0,
+              "duration_seconds": 0.8
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.6,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.2
+            }
+          ],
+          "hold_reason": "cycle_to_start",
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.2,
+            "duration_seconds": 1.6,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.2
+          }
+        },
+        {
+          "id": "fd6519ce63753e9b",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [],
+          "operation": "a1 → a2 → a3 → a4 → a5",
+          "switch_label": "正常切人",
+          "foreground_seconds": 3.4,
+          "switch_seconds": 3.4,
+          "foreground_intervals": [
+            [
+              0,
+              3.4
+            ]
+          ],
+          "release_end_seconds": 4.0,
+          "background_seconds": 0.6,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.3,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.2,
+              "start_seconds": 3.2,
+              "end_seconds": 4.0,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 1.621765,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 8.764412,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 6.322647,
+          "stagger": 3.598,
+          "stagger_rate": 1.058235,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 3.4,
+              "duration_seconds": 3.4
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": []
+        },
+        {
+          "id": "fd6519ce63753e9b-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5正常切人",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 1.8,
+          "switch_seconds": 3.4,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.2,
+              3.4
+            ]
+          ],
+          "release_end_seconds": 4.0,
+          "background_seconds": 2.2,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.3,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.2,
+              "start_seconds": 3.2,
+              "end_seconds": 4.0,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 3.063333,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 16.555,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 11.942778,
+          "stagger": 3.598,
+          "stagger_rate": 1.998889,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.2,
+              "end_seconds": 3.4,
+              "duration_seconds": 0.2
+            }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.2,
+              "duration_seconds": 1.6,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.2
+            }
+          ],
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.2,
+            "duration_seconds": 1.6,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.2
+          }
+        },
+        {
+          "id": "df6bc72511eeb7b2-hold-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "hold",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5打满",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 2.4,
+          "switch_seconds": null,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.3,
+              4.1
+            ]
+          ],
+          "release_end_seconds": 4.1,
+          "background_seconds": 1.7,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.3,
+              "duration_seconds": 1.4,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.1,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.3,
+              "start_seconds": 3.3,
+              "end_seconds": 4.1,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 2.2975,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 12.41625,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 8.957083,
+          "stagger": 3.598,
+          "stagger_rate": 1.499167,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.1秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.3,
+              "end_seconds": 4.1,
+              "duration_seconds": 0.8
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.3,
+              "duration_seconds": 1.7,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.3
+            }
+          ],
+          "hold_reason": "cycle_to_start",
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.3,
+            "duration_seconds": 1.7,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.3
+          }
+        },
+        {
+          "id": "cf7a48f7861af592-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5正常切人",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 1.8,
+          "switch_seconds": 3.5,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.3,
+              3.5
+            ]
+          ],
+          "release_end_seconds": 4.1,
+          "background_seconds": 2.3,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.3,
+              "duration_seconds": 1.4,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.1,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.3,
+              "start_seconds": 3.3,
+              "end_seconds": 4.1,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 3.063333,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 16.555,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 11.942778,
+          "stagger": 3.598,
+          "stagger_rate": 1.998889,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.1秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.3,
+              "end_seconds": 3.5,
+              "duration_seconds": 0.2
+            }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.3,
+              "duration_seconds": 1.7,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.3
+            }
+          ],
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.3,
+            "duration_seconds": 1.7,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.3
+          }
+        },
+        {
+          "id": "7279a9b6dd699739-hold-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "hold",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5打满",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 2.4,
+          "switch_seconds": null,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.4,
+              4.2
+            ]
+          ],
+          "release_end_seconds": 4.2,
+          "background_seconds": 1.8,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.4,
+              "duration_seconds": 1.5,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.2,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.4,
+              "start_seconds": 3.4,
+              "end_seconds": 4.2,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 2.2975,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 12.41625,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 8.957083,
+          "stagger": 3.598,
+          "stagger_rate": 1.499167,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.2秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.4,
+              "end_seconds": 4.2,
+              "duration_seconds": 0.8
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.4,
+              "duration_seconds": 1.8,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.4
+            }
+          ],
+          "hold_reason": "cycle_to_start",
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.4,
+            "duration_seconds": 1.8,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.4
+          }
+        },
+        {
+          "id": "d742901cd1053b9f-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5正常切人",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 1.8,
+          "switch_seconds": 3.6,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.4,
+              3.6
+            ]
+          ],
+          "release_end_seconds": 4.2,
+          "background_seconds": 2.4,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.4,
+              "duration_seconds": 1.5,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.2,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.4,
+              "start_seconds": 3.4,
+              "end_seconds": 4.2,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 3.063333,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 16.555,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 11.942778,
+          "stagger": 3.598,
+          "stagger_rate": 1.998889,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.2秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.4,
+              "end_seconds": 3.6,
+              "duration_seconds": 0.2
+            }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.4,
+              "duration_seconds": 1.8,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.4
+            }
+          ],
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.4,
+            "duration_seconds": 1.8,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.4
+          }
+        },
+        {
+          "id": "9720d76058f81598-hold-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "hold",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5打满",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 2.4,
+          "switch_seconds": null,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.5,
+              4.3
+            ]
+          ],
+          "release_end_seconds": 4.3,
+          "background_seconds": 1.9,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.5,
+              "duration_seconds": 1.6,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.3,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.5,
+              "start_seconds": 3.5,
+              "end_seconds": 4.3,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 2.2975,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 12.41625,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 8.957083,
+          "stagger": 3.598,
+          "stagger_rate": 1.499167,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.3秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.5,
+              "end_seconds": 4.3,
+              "duration_seconds": 0.8
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.5,
+              "duration_seconds": 1.9,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.5
+            }
+          ],
+          "hold_reason": "cycle_to_start",
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.5,
+            "duration_seconds": 1.9,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.5
+          }
+        },
+        {
+          "id": "67298a4455302936-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5正常切人",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 1.8,
+          "switch_seconds": 3.7,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.5,
+              3.7
+            ]
+          ],
+          "release_end_seconds": 4.3,
+          "background_seconds": 2.5,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.5,
+              "duration_seconds": 1.6,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.3,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.5,
+              "start_seconds": 3.5,
+              "end_seconds": 4.3,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 3.063333,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 16.555,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 11.942778,
+          "stagger": 3.598,
+          "stagger_rate": 1.998889,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.3秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.5,
+              "end_seconds": 3.7,
+              "duration_seconds": 0.2
+            }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.5,
+              "duration_seconds": 1.9,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.5
+            }
+          ],
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.5,
+            "duration_seconds": 1.9,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.5
+          }
+        },
+        {
+          "id": "c089fd3d32351275-hold-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "hold",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5打满",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 2.4,
+          "switch_seconds": null,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.6,
+              4.4
+            ]
+          ],
+          "release_end_seconds": 4.4,
+          "background_seconds": 2.0,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.5999999999999996,
+              "duration_seconds": 1.7,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.4,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.5999999999999996,
+              "start_seconds": 3.5999999999999996,
+              "end_seconds": 4.3999999999999995,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 2.2975,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 12.41625,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 8.957083,
+          "stagger": 3.598,
+          "stagger_rate": 1.499167,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.4秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.6,
+              "end_seconds": 4.4,
+              "duration_seconds": 0.8
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.6,
+              "duration_seconds": 2.0,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.6
+            }
+          ],
+          "hold_reason": "cycle_to_start",
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.6,
+            "duration_seconds": 2.0,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.6
+          }
+        },
+        {
+          "id": "89f1d6f3209ecdfd-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5正常切人",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 1.8,
+          "switch_seconds": 3.8,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.6,
+              3.8
+            ]
+          ],
+          "release_end_seconds": 4.4,
+          "background_seconds": 2.6,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.5999999999999996,
+              "duration_seconds": 1.7,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.4,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.5999999999999996,
+              "start_seconds": 3.5999999999999996,
+              "end_seconds": 4.3999999999999995,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 3.063333,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 16.555,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 11.942778,
+          "stagger": 3.598,
+          "stagger_rate": 1.998889,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.4秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.6,
+              "end_seconds": 3.8,
+              "duration_seconds": 0.2
+            }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.6,
+              "duration_seconds": 2.0,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.6
+            }
+          ],
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.6,
+            "duration_seconds": 2.0,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.6
+          }
+        },
+        {
+          "id": "d12f46e221af56cc-hold-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "hold",
+          "ends_with_switch": false,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5打满",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 2.4,
+          "switch_seconds": null,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.7,
+              4.5
+            ]
+          ],
+          "release_end_seconds": 4.5,
+          "background_seconds": 2.1,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.7,
+              "duration_seconds": 1.8,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.5,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.7,
+              "start_seconds": 3.7,
+              "end_seconds": 4.5,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 2.2975,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 12.41625,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 8.957083,
+          "stagger": 3.598,
+          "stagger_rate": 1.499167,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.5秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.7,
+              "end_seconds": 4.5,
+              "duration_seconds": 0.8
+            }
+          ],
+          "requires_three_characters": false,
+          "three_character_segments": [],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.7,
+              "duration_seconds": 2.1,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.7
+            }
+          ],
+          "hold_reason": "cycle_to_start",
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.7,
+            "duration_seconds": 2.1,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.7
+          }
+        },
+        {
+          "id": "090211518ae5df18-return-4-preinput",
+          "actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "original_actions": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5"
+          ],
+          "kind": "分段合轴",
+          "switch_method": "normal",
+          "ends_with_switch": true,
+          "has_dodge": false,
+          "preinput_action_indices": [
+            2
+          ],
+          "operation": "a3预a4 / a5正常切人",
+          "switch_label": "衔接动作合轴",
+          "foreground_seconds": 1.8,
+          "switch_seconds": 3.9,
+          "foreground_intervals": [
+            [
+              0,
+              1.6
+            ],
+            [
+              3.7,
+              3.9
+            ]
+          ],
+          "release_end_seconds": 4.5,
+          "background_seconds": 2.7,
+          "timeline": [
+            {
+              "action": "a1",
+              "input_seconds": 0.0,
+              "start_seconds": 0.0,
+              "end_seconds": 0.6,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a2",
+              "input_seconds": 0.4,
+              "start_seconds": 0.6,
+              "end_seconds": 1.2,
+              "duration_seconds": 0.6,
+              "base_duration_seconds": 0.6,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a3",
+              "input_seconds": 1.2,
+              "start_seconds": 1.2,
+              "end_seconds": 1.9,
+              "duration_seconds": 0.7,
+              "base_duration_seconds": 0.7,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": true,
+              "terminal_switch": false
+            },
+            {
+              "action": "a4",
+              "input_seconds": 1.6,
+              "start_seconds": 1.9,
+              "end_seconds": 3.7,
+              "duration_seconds": 1.8,
+              "base_duration_seconds": 1.3,
+              "recovery_seconds": 0.5,
+              "recovery_used_seconds": 0.5,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "background",
+              "preinput": true,
+              "preinput_before_switch": false,
+              "terminal_switch": false
+            },
+            {
+              "action": "a5",
+              "input_seconds": 3.7,
+              "start_seconds": 3.7,
+              "end_seconds": 4.5,
+              "duration_seconds": 0.8,
+              "base_duration_seconds": 0.8,
+              "recovery_seconds": 0.0,
+              "recovery_used_seconds": 0,
+              "automatic": false,
+              "locks_foreground_switch": false,
+              "dodge_replaces": null,
+              "detached": false,
+              "placement": "foreground",
+              "preinput": false,
+              "preinput_before_switch": false,
+              "terminal_switch": true
+            }
+          ],
+          "multipliers": {
+            "atk": 5.514,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "multiplier_rates": {
+            "atk": 3.063333,
+            "hp": 0.0,
+            "def": 0.0,
+            "flat": 0.0
+          },
+          "harmony": 29.799,
+          "harmony_on_start": 0.0,
+          "harmony_rate": 16.555,
+          "energy_gain": 21.497,
+          "energy_return": 0.0,
+          "energy_cost": 0.0,
+          "energy_net": 21.497,
+          "energy_rate": 11.942778,
+          "stagger": 3.598,
+          "stagger_rate": 1.998889,
+          "personal_resources": {},
+          "status": "可计算",
+          "notes": [
+            "a4使用恢复后摇0.5秒，不增加伤害或资源"
+          ],
+          "sources": [
+            "用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。",
+            "",
+            "用户2026-10-12：切走后至少1.2秒才能切回，预输入尾段结束后可继续连段。"
+          ],
+          "foreground_segments": [
+            {
+              "number": 1,
+              "start_seconds": 0,
+              "end_seconds": 1.6,
+              "duration_seconds": 1.6
+            },
+            {
+              "number": 2,
+              "start_seconds": 3.7,
+              "end_seconds": 3.9,
+              "duration_seconds": 0.2
+            }
+          ],
+          "requires_three_characters": true,
+          "three_character_segments": [
+            2
+          ],
+          "overlap_windows": [
+            {
+              "number": 1,
+              "start_seconds": 1.6,
+              "end_seconds": 3.7,
+              "duration_seconds": 2.1,
+              "requires_return": true,
+              "after_action_index": 2,
+              "return_start_seconds": 2.8,
+              "return_end_seconds": 3.7
+            }
+          ],
+          "window_1": {
+            "start_seconds": 1.6,
+            "end_seconds": 3.7,
+            "duration_seconds": 2.1,
+            "return_start_seconds": 2.8,
+            "return_end_seconds": 3.7
+          }
+        }
+      ],
+      "dodge_preserves_combo": false,
+      "start_actions": [
+        "a1"
+      ],
+      "notes": [
+        "仅统计普通攻击a1–a5；闪避会重置普攻序列。",
+        "a1可预输入a2，a3可预输入a4；a2→a3及a4→a5须完整释放后衔接。",
+        "a4恢复后摇0.5秒，可在恢复窗口内接a5；不计数字残像、觉醒及评分带来的追加收益。"
+      ],
+      "coverage": {
+        "actions": 5,
+        "rows": 23,
+        "switch_points": 5,
+        "missing_duration": 0
+      }
     }
   ],
   "input_sha256": {
     "characters.json": "7df257cb976f448659fd0ca7d2652c9457456b8a8c3a0ba001be1160e4af91f2",
     "actions.json": "2c9435f4a2b92ce9c5f5cca8941ac43d95ce446adff90a0f3fb47aa8fefee173",
-    "rules.json": "1089d950962377295c03dfd082823ca297b6ea049d75847478b86aed2bba5c2b",
-    "generator.py": "1bfa06a2d8bad4986c4db83f0f55bf463b042c3c4a23084915426da2c364d5a7"
+    "rules.json": "503c2df3ff8eff6b6a8408c978429768373d529ee1fc6707f7eadda2f8d475a9",
+    "generator.py": "846fb4a0b1ff048501c9aa431fa56734ec5dc135e0e782c76151863617d56a27"
   },
   "basis": "1级裸动作收益；按前排占轴归一。未含配装、Buff、资源上限与队友分享；经验耗时用于试算。",
   "sources": [

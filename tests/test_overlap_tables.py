@@ -28,7 +28,7 @@ class OverlapTablesTest(unittest.TestCase):
     def test_recovery_catalog_defaults_and_sources(self):
         configured = {(c['name'], a['name']): a['recovery_seconds']
                       for c in self.payload['characters'] for a in c['actions'] if a['recovery_seconds']}
-        self.assertEqual(configured, {('安魂曲', 'a4远'): .5, ('黑羽', '魔a3'): .5})
+        self.assertEqual(configured, {('安魂曲', 'a4远'): .5, ('黑羽', '魔a3'): .5, ('Exe','a4'):.5})
         self.assertFalse(any('linger_seconds' in a for c in self.payload['characters'] for a in c['actions']))
 
     def test_recovery_slots_delay_continuation_without_extra_benefits(self):
@@ -76,9 +76,35 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertEqual(rows[0]['window_1']['duration_seconds'], 1.2)
 
     def test_scope_and_no_melee_requiem(self):
-        self.assertEqual([c['name'] for c in self.payload['characters']], ['安魂曲','残虹','黑羽','明音凛','曳尔沐'])
-        self.assertEqual({c['name'] for c in self.payload['characters']}, {'安魂曲', '残虹', '黑羽', '明音凛', '曳尔沐'})
+        self.assertEqual([c['name'] for c in self.payload['characters']], ['安魂曲','残虹','黑羽','明音凛','曳尔沐','Exe'])
+        self.assertEqual({c['name'] for c in self.payload['characters']}, {'安魂曲', '残虹', '黑羽', '明音凛', '曳尔沐', 'Exe'})
         self.assertEqual({a['name'] for a in self.character('安魂曲')['actions']}, {*(f'a{i}远' for i in range(1, 6)), 'e'})
+
+    def test_exe_basic_preinputs_recovery_and_full_damage(self):
+        c=self.character('Exe')
+        self.assertEqual(c['start_actions'],['a1'])
+        self.assertFalse(c['dodge_preserves_combo'])
+        self.assertEqual([a['name']for a in c['actions']],['a1','a2','a3','a4','a5'])
+        self.assertEqual([a['duration_seconds']for a in c['actions']],[.6,.6,.7,1.3,.8])
+        self.assertEqual([a['recovery_seconds']for a in c['actions']],[0,0,0,.5,0])
+        self.assertEqual([a['successors'][0]['can_preinput']for a in c['actions']],[True,False,True,False,False])
+        self.assertTrue(all(not r['has_dodge'] and r['original_actions'][0]=='a1'for r in c['rows']))
+        self.assertEqual({i for r in c['rows']for i in r['preinput_action_indices']},{0,2})
+        full=next(r for r in c['rows']if r['switch_method']=='full'and len(r['actions'])==5)
+        self.assertEqual(full['release_end_seconds'],4)
+        self.assertAlmostEqual(full['multipliers']['atk'],5.514)
+        self.assertFalse(full['personal_resources'])
+        rows=[r for r in c['rows']if r['operation']=='a3预a4 / a5打满']
+        self.assertEqual([r['timeline'][3]['recovery_used_seconds']for r in rows],[0,.1,.2,.3,.4,.5])
+        for row,extra in zip(rows,[0,.1,.2,.3,.4,.5]):
+            self.assertEqual(row['foreground_seconds'],2.4)
+            self.assertAlmostEqual(row['timeline'][4]['start_seconds'],3.2+extra)
+            self.assertAlmostEqual(row['release_end_seconds'],4+extra)
+            self.assertEqual(row['multipliers'],full['multipliers'])
+            self.assertEqual(row['harmony'],full['harmony'])
+            self.assertEqual(row['energy_gain'],full['energy_gain'])
+            self.assertEqual(row['stagger'],full['stagger'])
+        self.assertTrue(all(r['original_actions']==r['actions']for r in c['rows']))
 
     def test_elyms_a2_preinput_a3_starts_from_a1_and_preserves_whole_chain(self):
         character=self.character('曳尔沐')
@@ -194,7 +220,7 @@ class OverlapTablesTest(unittest.TestCase):
                 action = next(a for a in character['actions'] if a['name'] == terminal)
                 restart = next(e for e in action['successors'] if e['to'] == opener)
                 self.assertFalse(restart['can_preinput'])
-                self.assertIn('用户2026-10-12', restart['source'])
+                self.assertTrue(restart['basic_chain_restart'])
                 self.assertTrue(all(r['original_actions'].count(opener) <= 1 for r in character['rows']))
                 self.assertFalse(any((terminal, opener) in list(zip(r['original_actions'],r['original_actions'][1:]))
                                      for r in character['rows']))
@@ -574,7 +600,7 @@ class OverlapTablesTest(unittest.TestCase):
             self.assertIn('pair-no-foreground-idle', pair.get_data(as_text=True))
             response = client.get('/static/overlap/data/tables.json')
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(len(response.get_json()['characters']), 5)
+            self.assertEqual(len(response.get_json()['characters']), 6)
             response.close()
 
 

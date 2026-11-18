@@ -77,6 +77,23 @@ class WikiPrivateCliTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertNotIn(secret, output + error)
 
+    def test_reference_commands_can_send_preview_token_without_redirecting(self):
+        for args in (['list', 'characters'], ['search', 'Exe'],
+                     ['get', 'characters', '1074'], ['get', 'characters', '1074', '--format', 'markdown']):
+            response = unittest.mock.MagicMock()
+            response.__enter__.return_value = response
+            response.read.return_value = b'{"data": {}}'
+            response.headers.get_content_type.return_value = 'application/json'
+            with self.subTest(args=args), patch.dict(os.environ, {'NTE_GUIDE_TOKEN': 'synthetic-tester'}), patch.object(cli.urllib.request, 'build_opener') as opener:
+                opener.return_value.open.return_value = response
+                code, output, error = self.run_cli(args)
+                self.assertEqual(code, 0, error)
+                request = opener.return_value.open.call_args.args[0]
+                self.assertEqual(request.get_header('Authorization'), 'Bearer synthetic-tester')
+                with self.assertRaises(ValueError):
+                    opener.call_args.args[0].redirect_request(None, None, 302, '', {}, 'https://elsewhere.invalid')
+                self.assertNotIn('synthetic-tester', output + error)
+
     def test_filters_do_not_select_another_role_or_mutate_original(self):
         payload = {'data': [profile()]}
         with self.assertRaises(ValueError):

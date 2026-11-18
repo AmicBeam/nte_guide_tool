@@ -83,8 +83,8 @@ def main(argv=None):
     if args.timeout <= 0:
         parser.error('--timeout must be positive')
     query = {}
-    protected = args.command in ('me', 'axes', 'axis')
-    token = os.environ.get('NTE_GUIDE_TOKEN', '').strip() if protected else ''
+    token = os.environ.get('NTE_GUIDE_TOKEN', '').strip()
+    protected = bool(token) or args.command in ('me', 'axes', 'axis')
     needs_token = args.command == 'me' or (args.command == 'axes' and args.scope != 'public')
     if needs_token and not token:
         print('读取个人资料需要本站登录凭据 NTE_GUIDE_TOKEN；请先登录网站并同步游戏数据。', file=sys.stderr)
@@ -148,7 +148,7 @@ def main(argv=None):
         return 0
     except urllib.error.HTTPError as error:
         if protected:
-            print(f'HTTP {error.code}: 无法读取个人资料，请检查本站登录是否有效并确认已同步。', file=sys.stderr)
+            print(f'HTTP {error.code}: 无法读取资料，请检查本站登录及访问权限。', file=sys.stderr)
         else:
             print(f'HTTP {error.code}: {error.read().decode("utf-8", errors="replace")}', file=sys.stderr)
     except (OSError, ValueError) as error:

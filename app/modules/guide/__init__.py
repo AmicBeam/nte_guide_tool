@@ -24,6 +24,16 @@ blueprint.add_app_template_filter(service.equip_description, 'guide_equip_descri
 blueprint.add_app_template_filter(service.display_scalar, 'guide_scalar')
 
 
+@blueprint.before_request
+def reference_preview_access():
+    from flask import g
+    from app.dao import get_player_by_token
+    header = request.headers.get('Authorization', '')
+    token = header[7:].strip() if header.startswith('Bearer ') else ''
+    player = get_player_by_token(token) if token else None
+    g.guide_test_preview = bool(player and player.shaft_test_whitelisted)
+
+
 def kind_check(kind):
     if kind not in service.KINDS:
         raise LookupError('未知分类；可选 characters、arcs、foods、permanent、dungeons、challenges、endless、diyboss、beginner')

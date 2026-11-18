@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import math
 
+from flask import g, has_request_context
+
 BEIJING = timezone(timedelta(hours=8))
 AFTER_SKILL_FIELDS = {'abilities', 'awaken', 'resonance', 'nouns', 'equip_slots', 'affinity',
                       'aliases', 'experience', 'reference_details'}
@@ -53,7 +55,8 @@ def metadata(record, now=None):
     now = current_time() if now is None else now
     if now.tzinfo is None:
         raise ValueError('Server time must be timezone-aware')
-    return {'release_at': release.isoformat(), 'content_released': now >= release}
+    preview = has_request_context() and bool(g.get('guide_test_preview', False))
+    return {'release_at': release.isoformat(), 'content_released': now >= release or preview}
 
 
 def publication_states():

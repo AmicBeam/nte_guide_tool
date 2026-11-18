@@ -233,7 +233,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 ## CLI 个人资料与机器人配装图
 
-独立CLI新增 `me [--role-id <游戏账号ID>] [--character <角色ID>]`，通过 `NTE_GUIDE_TOKEN` 环境变量携带本站登录凭据，读取 `/api/guide/me/profiles` 后只在当前用户结果内筛选。返回 `{"data":[profile,...]}`，包括同步时间、角色当前练度与已装备弧盘／空幕卡带；没有有效凭据则失败，不通过仅提供账号ID的方式读取他人资料。私有请求拒绝重定向，错误不回显上游响应或凭据，公共 `list/search/get/schema` 不携带 token。
+独立CLI新增 `me [--role-id <游戏账号ID>] [--character <角色ID>]`，通过 `NTE_GUIDE_TOKEN` 环境变量携带本站登录凭据，读取 `/api/guide/me/profiles` 后只在当前用户结果内筛选。返回 `{"data":[profile,...]}`，包括同步时间、角色当前练度与已装备弧盘／空幕卡带；没有有效凭据则失败，不通过仅提供账号ID的方式读取他人资料。私有请求拒绝重定向，错误不回显上游响应或凭据，`list/search/get/schema` 在设置 `NTE_GUIDE_TOKEN` 时也携带凭据，可供测试用户提前读取角色资料；未设置时仍匿名访问。
 
 机器人可信运行时按当前消息事件的发送者QQ号读取本人已保存配装；只读 token 桥接和一图流绘图实现在 `qqbot_fairy` 仓库的 `src/plugins/`，随机器人代码发布，本站不再保留这两个副本。本站继续维护独立 CLI 与按网站用户隔离的鉴权 API，部署边界见 `plugins/README.md`。图片仅展示已同步快照，不推断基础技能等级或评分；不自动同步游戏，公共资料的离线刷新机制保持不变。
 
@@ -306,7 +306,7 @@ TapTap工具使用公开只读搜索与帖子接口，不读取用户登录Cooki
 
 `axes [--character <攻略ID／排轴ID／完整中文名>] [--scope public|mine|favorites] [--query <名称或备注>] [--sort new|dps|likes|favorites] [--page 1] [--limit 10]`查询在线轴；角色可重复至多4次，表示同时包含。默认公开范围，每页1–20条。`axis <ID> [--section all|summary|axis|result]`读取有权查看的队伍、配装、真实动作步骤和保存结果。返回预览链接与详情链接；保存DPS不代表当前引擎重算或实战结果。
 
-HTTP入口为`GET /api/guide/axes`（重复`character`参数）和`GET /api/guide/axes/<ID>`。私有与收藏范围须通过`NTE_GUIDE_TOKEN`携带本人本站登录态；提供token时拒绝重定向且错误不回显私有正文。原有公共`list/search/get/schema`仍不携带token。网页助手通过同一查询服务执行，避免模型等待服务进程对自身发起HTTP请求导致线程耗尽。
+HTTP入口为`GET /api/guide/axes`（重复`character`参数）和`GET /api/guide/axes/<ID>`。私有与收藏范围须通过`NTE_GUIDE_TOKEN`携带本人本站登录态；提供token时拒绝重定向且错误不回显私有正文。`list/search/get/schema`也可通过`NTE_GUIDE_TOKEN`读取测试权限下的角色资料；无凭据时仍匿名。网页助手通过同一查询服务执行，避免模型等待服务进程对自身发起HTTP请求导致线程耗尽。
 
 验证：`.venv/bin/python -m unittest tests.test_guide_chat tests.test_guide_bot_tools tests.test_guide_builds tests.test_module_routes -q`；`node --test tests/test_guide_chat_state.cjs`。还需真实模型验证工具调用和图片识别，真实TapTap验证搜索、正文和一图流；浏览器验证登录显示、桌面非模态操作、390px手机、跨页恢复、6小时边界、账号切换、图片上传与错误状态。
 
@@ -521,11 +521,13 @@ Markdown由服务端Mistune解析并转义原始HTML，链接和图片只允许�
 
 `data/character_releases.json`保存角色资料开放时间，使用带`+08:00`的完整日期。当前配置为曳尔沐（1090／char_elyms）2026-11-05 10:00、Exe（1074／char_exe／preview-exe）及其专属弧盘虚线彼方（fork_exe）2026-11-26 12:00，均为UTC+8。正式编号变化时同步维护身份映射；同名／已绑定别名可沿用已有窗口。未配置时间的既有角色维持原展示状态。
 
-`character_release.py`每次读取公开资料时比较服务器时刻，恰好达到时间即开放，不使用浏览器日期或账号权限作为判断条件。原始完整目录继续缓存；公开投影按请求生成，不修改缓存对象或缓存“是否已开放”的布尔值。修改时间配置后重启服务加载配置；自然到点不需要重启或重新导入数据。
+`character_release.py`每次读取公开资料时比较服务器时刻，恰好达到时间即开放，不使用浏览器日期作为判断条件；携带有效本站Bearer凭据且有测试权限（`shaft_test_whitelisted`）的用户可提前读取已有完整角色资料及关联弧盘效果。普通、受邀但无测试权限及匿名用户仍按时间开放。原始完整目录继续缓存；公开投影按请求生成，不修改缓存对象或缓存“是否已开放”的布尔值。修改时间配置后重启服务加载配置；自然到点不需要重启或重新导入数据。
 
-上线前保留角色身份、属性、标签、头像／立绘、材料概览和工具入口；从技能起的章节、目录、相关攻略与数值约定不进入角色详情HTML。网页中保留的材料仅为道具名称／图标，不包含技能名称、ID、等级和费用表。JSON、Markdown、窄字段读取、检索、页面过滤文本和助手`wiki_get/wiki_search`使用相同投影，直接读取隐藏章节返回404；账号页的技能／觉醒元数据也同步隐藏。接口返回`release_at`及`content_released`；动态Wiki响应使用`Cache-Control: no-store`，避免到点后仍使用旧状态。
+网页只读目录和详情通过`test_preview.js`携带浏览器已有登录凭据重新读取同页，服务端核验测试权限后才展示完整内容，不新增登录Cookie、不自动刷新含草稿的编辑器。CLI设置`NTE_GUIDE_TOKEN`可读取同样的JSON／Markdown与搜索结果；带凭据的请求拒绝重定向。权限按请求判断，不写入完整目录缓存。
 
-养成工具在上线前仅计算角色升级、突破与可选弧盘，不显示或计算技能养成；页面明确提示范围，计算结果带`skills_included=false`。一图流只使用已公开的身份／图片与作者自己的内容。玩家本人排轴、游戏快照继续遵循既有访问权限，不因Wiki正式目录或资料开放时间而提升权限；曳尔沐仍是排轴测试角色。助手每轮取得服务器公开状态，未公开时不得从记忆、历史答复或外部搜索补出受限角色资料。
+上线前对无测试权限的用户保留角色身份、属性、标签、头像／立绘、材料概览和工具入口；从技能起的章节、目录、相关攻略与数值约定不进入角色详情HTML。网页中保留的材料仅为道具名称／图标，不包含技能名称、ID、等级和费用表。JSON、Markdown、窄字段读取、检索、页面过滤文本和助手`wiki_get/wiki_search`使用相同投影，直接读取隐藏章节返回404；账号页的技能／觉醒元数据也同步隐藏。接口返回`release_at`及`content_released`；动态Wiki响应使用`Cache-Control: no-store`，避免到点后仍使用旧状态。
+
+无测试权限时，养成工具在上线前仅计算角色升级、突破与可选弧盘，不显示或计算技能养成；页面明确提示范围，计算结果带`skills_included=false`。一图流只使用已公开的身份／图片与作者自己的内容。玩家本人排轴、游戏快照继续遵循既有访问权限，不因Wiki正式目录或资料开放时间而提升权限；曳尔沐仍是排轴测试角色。助手每轮取得服务器公开状态，未公开时不得从记忆、历史答复或外部搜索补出受限角色资料。
 
 只读角色详情和目录通过`character_release.js`向服务器查询开放状态；查询间隔及临近开放的剩余时长由服务器提供，收到已开放状态才自动刷新。浏览器时区或手动调整本机日期不解锁数据；切回页面会立即复查。编辑器等含草稿的页面不自动刷新，后续请求仍按服务器时间读取。时间到点只解除已有资料的展示限制，不自动补造、下载或导入尚未录入的角色内容。
 

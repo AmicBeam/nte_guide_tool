@@ -24,6 +24,34 @@ class CharacterReleaseTest(unittest.TestCase):
     def clock(self,value):
         return patch.object(release,'current_time',return_value=datetime.fromisoformat(value))
 
+    def test_test_permission_previews_without_changing_public_cache_or_deadline(self):
+        from types import SimpleNamespace
+        users = {'tester': SimpleNamespace(shaft_test_whitelisted=True),
+                 'regular': SimpleNamespace(shaft_test_whitelisted=False)}
+        paths = ['/guide/characters/1074', '/api/guide/characters/1074',
+                 '/guide/characters/1074.md', '/api/guide/characters/1074?section=abilities',
+                 '/guide/arcs/fork_exe', '/api/guide/arcs/fork_exe?section=effect']
+        original = deepcopy(service.catalog())
+        with self.clock('2026-11-26T11:59:59+08:00'), patch('app.dao.get_player_by_token', side_effect=users.get):
+            for token, allowed in [('tester', True), ('regular', False), ('expired', False), ('', False)]:
+                headers = {'Authorization': 'Bearer ' + token} if token else {}
+                with self.subTest(token=token):
+                    state = self.client.get('/api/guide/characters/1074/release', headers=headers).json['data']
+                    self.assertEqual(state['content_released'], allowed)
+                    self.assertEqual(state['release_at'], '2026-11-26T12:00:00+08:00')
+                    for path in paths:
+                        response = self.client.get(path, headers=headers)
+                        self.assertEqual(response.status_code, 200 if allowed or '?section=' not in path else 404, path)
+                        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+                    page = self.client.get(paths[0], headers=headers).text
+                    self.assertEqual('id="section-abilities"' in page, allowed)
+                    self.assertIn('test_preview.js', page)
+                    api = self.client.get(paths[1], headers=headers).json['data']
+                    self.assertEqual('abilities' in api, allowed)
+                    # A privileged request must never make subsequent anonymous reads public.
+                    self.assertNotIn('abilities', self.client.get(paths[1]).json['data'])
+        self.assertEqual(service.catalog(), original)
+
     def test_before_release_preserves_header_but_redacts_all_later_sections(self):
         with self.clock('2026-11-05T09:59:59+08:00'):
             row=service.detail('characters','1090')

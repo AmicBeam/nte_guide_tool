@@ -1,5 +1,6 @@
 /* Display stored level values only; no combat or growth formulas. */
 'use strict';
+(() => {
 for (const group of document.querySelectorAll('[data-level-group]')) {
     const control = group.querySelector('[data-level-control]');
     const output = group.querySelector('[data-level-output]');
@@ -88,3 +89,5 @@ if (toc && tocToggle) {
     window.addEventListener('hashchange', updateCurrent);
     updateCurrent();
 }
+
+})();

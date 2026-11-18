@@ -4,6 +4,111 @@
   "supplemental_versions": ["1.3.9"],
   "generated_from": "https://static.nanoka.cc/nte/1.2/zh/weapon/{id}.json",
   "arcs": {
+    "arc_exe_dotted_horizon": {
+      "name": "虚线彼方",
+      "default_level": 1,
+      "available_levels": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "effect_name": "缥缈的执手同行",
+      "effect_description": "暴击伤害提高28%–40%，攻击力提高28%–56%；装备者每造成一次暗属性伤害，召唤物伤害提高2%–4%，最多10层，持续20秒，重复获得刷新持续时间。",
+      "levels": {
+        "1": {
+          "panel_modifiers": {
+            "crit_dmg": 0.76,
+            "atk_pct": 0.28
+          },
+          "element_dmg": {},
+          "effect_values": [
+            "28%",
+            "28%",
+            "2%",
+            "20"
+          ],
+          "buff_effects": {
+            "arc_exe_summon": {
+              "action_dmg": 0.02
+            }
+          }
+        },
+        "2": {
+          "panel_modifiers": {
+            "crit_dmg": 0.79,
+            "atk_pct": 0.35
+          },
+          "element_dmg": {},
+          "effect_values": [
+            "31%",
+            "35%",
+            "2.5%",
+            "20"
+          ],
+          "buff_effects": {
+            "arc_exe_summon": {
+              "action_dmg": 0.025
+            }
+          }
+        },
+        "3": {
+          "panel_modifiers": {
+            "crit_dmg": 0.82,
+            "atk_pct": 0.42
+          },
+          "element_dmg": {},
+          "effect_values": [
+            "34%",
+            "42%",
+            "3%",
+            "20"
+          ],
+          "buff_effects": {
+            "arc_exe_summon": {
+              "action_dmg": 0.03
+            }
+          }
+        },
+        "4": {
+          "panel_modifiers": {
+            "crit_dmg": 0.85,
+            "atk_pct": 0.49
+          },
+          "element_dmg": {},
+          "effect_values": [
+            "37%",
+            "49%",
+            "3.5%",
+            "20"
+          ],
+          "buff_effects": {
+            "arc_exe_summon": {
+              "action_dmg": 0.035
+            }
+          }
+        },
+        "5": {
+          "panel_modifiers": {
+            "crit_dmg": 0.88,
+            "atk_pct": 0.56
+          },
+          "element_dmg": {},
+          "effect_values": [
+            "40%",
+            "56%",
+            "4%",
+            "20"
+          ],
+          "buff_effects": {
+            "arc_exe_summon": {
+              "action_dmg": 0.04
+            }
+          }
+        }
+      }
+    },
     "arc_elyms_waiting_ringtone": {
       "name": "静候彩铃",
       "default_level": 1,

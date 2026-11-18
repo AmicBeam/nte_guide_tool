@@ -35,6 +35,7 @@ EXPECTED_CHARACTER_ADAPTATIONS = {
     '哈索尔': '等离子',
     '翳': '气态',
     '曳尔沐': '固态',
+    'Exe': '等离子',
 }
 
 

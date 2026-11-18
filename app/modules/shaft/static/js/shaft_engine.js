@@ -516,10 +516,13 @@
       : int(snapshot.skill_level_bonus);
     const effectiveLevel = Math.max(1, baseLevel + resonanceBonus);
     const referenceLevel = Math.max(1, int(action?.multiplier_level, 1));
+    const exact = asList(action?.atk_multipliers_by_level);
+    const exactRatio = exact.length && num(action?.multipliers?.atk) > 0
+      ? num(exact[Math.min(exact.length, effectiveLevel) - 1]) / num(action.multipliers.atk) : null;
     return {
       category,
       level: effectiveLevel,
-      multiplier: Math.pow(1.08, effectiveLevel - referenceLevel),
+      multiplier: exactRatio == null ? Math.pow(1.08, effectiveLevel - referenceLevel) : exactRatio,
     };
   }
 
@@ -1055,6 +1058,10 @@
     );
     return Object.assign({}, action, {
       multipliers: scaledMap(action.multipliers, damageRatio),
+      atk_multipliers_by_level: action.atk_multipliers_by_level && asList(action.ranked_resource_hits).length
+        ? action.atk_multipliers_by_level.map((_, level) => asList(action.ranked_resource_hits)
+          .slice(0, selectedHitCount).reduce((sum, hit) => sum + num(hit.atk_levels?.[level]), 0))
+        : action.atk_multipliers_by_level,
       multipliers_add_by_awakening_node: Object.fromEntries(
         Object.entries(action.multipliers_add_by_awakening_node || {})
           .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
@@ -2035,6 +2042,12 @@
     const dynamic = instance.rule?.dynamic_effects && typeof instance.rule.dynamic_effects === 'object'
       ? instance.rule.dynamic_effects
       : {};
+    const bands = dynamic.personal_resource_steps;
+    if (bands?.resource && bands.effect_key) {
+      const amount = num(context.personal_resources?.[bands.resource]);
+      const band = asList(bands.steps).filter((entry) => amount >= num(entry.min)).at(-1);
+      resolved[bands.effect_key] = num(resolved[bands.effect_key]) + num(band?.value);
+    }
     const negative = dynamic.negative_effect_count && typeof dynamic.negative_effect_count === 'object'
       ? dynamic.negative_effect_count
       : {};
@@ -2723,6 +2736,8 @@
       initialPersonalResourcesBySlot.set(slot, Object.assign({}, resources));
     });
     const buffRules = registeredBuffRules(teamPayload, catalog).concat(legacyBuffRules(axisPayload?.buff_rules));
+    const rankedResourceClocks = new Map();
+    const buffSourceStacks = new Map();
     const personalResourceStateEvents = [];
     const resourceStateBindings = Array.from(snapshots.values()).flatMap((snapshot) =>
       Object.entries(snapshot.character?.personal_resource_states || {}).map(([resource, states]) => ({
@@ -3099,6 +3114,7 @@
         active_buff_keys: activeAtTick.map((candidate) => String(candidate.definition_id || '')),
         active_periodic_action_ids: activePeriodicActionIds(tick),
         active_damage_sources: activeDamageSources(tick),
+        personal_resources: personalResources.get(snapshot.slot) || {},
       };
       const contributions = applicableBuffContributions(activeBuffs, syntheticStep, syntheticAction, snapshot, isBackground, context);
       contributions.forEach((contribution) => mergeMods(panelMods, contribution.effects));
@@ -4010,7 +4026,9 @@
         return Math.max(0, base * (1 + damageBonus) * critical * defense * resistance * finalMultiplier);
       }
       const sourceReaction = String(event.source_reaction || event.reaction || '');
-      const reactionAction = sourceReaction === '浊燃'
+      const reactionAction = ['创生', '创生复制体'].includes(sourceReaction)
+        ? {name: sourceReaction, action_type: '环合', damage_type: '环合', tags: ['召唤物']}
+        : sourceReaction === '浊燃'
         ? {
           name: '浊燃',
           action_type: '环合',
@@ -4115,7 +4133,7 @@
         reactionAction,
         snapshot,
         true,
-        {reaction: effect},
+        {reaction: effect, display_only: event._counted_in_total === false},
       );
     }
 
@@ -4159,7 +4177,7 @@
                 action_type: String(event.action_type || '周期伤害'),
                 damage_type: String(event.damage_type || event.action_type || '周期伤害'),
                 extra_tag: isDotDamage ? 'DOT' : '',
-                tags: [...(isDotDamage ? ['DOT'] : []), ...asList(event.tags)],
+                tags: [...(isDotDamage ? ['DOT'] : []), ...(['创生', '创生复制体'].includes(reactionName) ? ['召唤物'] : []), ...asList(event.tags)],
                 tags_by_awakening_node: event.tags_by_awakening_node,
                 hit_count: 1,
               };
@@ -4170,6 +4188,7 @@
                 periodicAction,
                 snapshot,
                 true,
+                {display_only: event._counted_in_total === false},
               ));
             }
           }
@@ -4561,6 +4580,19 @@
 
     initializePersonalResourceStates(options.loop_enabled ? -loopDurationTicks : 0);
     buffRules.forEach((rule) => {
+      const names = strSet(rule.stacking?.seed_from_arc_names);
+      if (!names.size) return;
+      const arcs = recordMap(catalog.arcs);
+      let stacks = 0;
+      teamPayload.forEach((member) => {
+        if (!names.has(String(arcs.get(member.arc_id)?.name || ''))) return;
+        const gain = Math.max(0, num(rule.stacking.max_stacks_per_source));
+        stacks += gain;
+        buffSourceStacks.set(`${rule.owner_slot}:${rule.id}:${int(member.slot)}`, gain);
+      });
+      if (stacks > 0) activateBuff(activeBuffs, rule, 0, stacks);
+    });
+    buffRules.forEach((rule) => {
       if (String(rule.trigger?.event || '') !== 'passive') return;
       const snapshot = snapshots.get(int(rule.owner_slot));
       if (!snapshot) return;
@@ -4602,7 +4634,74 @@
       return deadlineTick;
     }
 
+    function updateRankedResources(event, tick, step, action, snapshot, context) {
+      if (context.display_only === true) return;
+      snapshots.forEach((owner) => {
+        const model = owner.character?.ranked_resource_system;
+        if (!model) return;
+        const resources = personalResources.get(owner.slot);
+        const beforeResources = {...resources};
+        const ranks = asList(model.ranks).slice(0, hasAwakeningResonance(owner, 6) ? undefined : -1);
+        const rank = () => ranks.filter((entry) => num(resources[model.score_resource]) >= num(entry.threshold)).at(-1) || ranks[0];
+        const last = rankedResourceClocks.has(owner.slot) ? rankedResourceClocks.get(owner.slot) : Math.min(0, tick);
+        if (!hasAwakeningResonance(owner, 3)) {
+          for (let t = last + 1; t <= tick; t += 1) {
+            const scoreBeforeTick = num(resources[model.score_resource]);
+            resources[model.score_resource] = Math.max(0, num(resources[model.score_resource]) - num(rank().decay_per_second) / 10);
+            if (resources[model.score_resource] !== scoreBeforeTick) personalResourceStateEvents.push({
+              tick: t, slot: owner.slot, resource: model.score_resource, value: resources[model.score_resource],
+            });
+          }
+        }
+        rankedResourceClocks.set(owner.slot, Math.max(last, tick));
+        const addScore = (amount) => {
+          resources[model.score_resource] = Math.min(num(model.score_cap), num(resources[model.score_resource])
+            + amount * (hasAwakeningResonance(owner, 6) ? 1.5 : 1));
+        };
+        if (event === 'reaction_trigger') {
+          if (context.reaction?.reaction === model.promote_reaction
+            && [context.reaction.previous_slot, context.reaction.support_slot].map(Number).includes(owner.slot)) {
+            resources[model.score_resource] = Math.max(num(resources[model.score_resource]), num(model.promote_score));
+          }
+          addScore(num(model.reaction_score));
+        }
+        if (int(step.slot) !== owner.slot || event !== 'action_hit' || context.action_hit_timing === 'end') {
+          if (resources[model.score_resource] !== beforeResources[model.score_resource]) personalResourceStateEvents.push({tick, slot: owner.slot, resource: model.score_resource, value: resources[model.score_resource]});
+          return;
+        }
+        const count = actionHitCount(action);
+        const hits = asList(action.ranked_resource_hits).slice(0, count);
+        const empowered = activeBuffs.some((buff) => int(buff.owner_slot) === owner.slot
+          && buff.definition_id === model.empowered_buff_key && tick >= int(buff.start_tick) && tick < int(buff.end_tick));
+        const exportLimit = empowered ? int(action.ranked_export_limit_empowered) : int(action.ranked_export_limit);
+        let exported = 0;
+        hits.forEach((hit, index) => {
+          const before = num(resources[model.frame_resource]);
+          resources[model.frame_resource] = Math.min(num(model.frame_cap), before + num(hit.frames) * num(rank().frame_multiplier, 1));
+          const gain = resources[model.frame_resource] - before;
+          addScore(num(hit.score));
+          if (gain > 0 && hasAwakeningNode(owner, 6) && tick >= 0) healingEvents.push({
+            kind: 'triggered_heal', source: `${owner.character.name}·${model.frame_resource}回复`, tick, slot: owner.slot,
+            character_id: owner.character.id, character_name: owner.character.name,
+            healing: gain * num(model.heal_atk_per_frame) * num(context.current_atk, owner.stats.atk),
+          });
+          const mayExport = action.ranked_export_last_hit !== true || index === int(action.original_hit_count, count) - 1;
+          if (!mayExport || exported >= exportLimit) return;
+          const amount = Math.min(exportLimit - exported, Math.floor(num(resources[model.frame_resource]) / num(model.export_cost)));
+          if (amount <= 0) return;
+          resources[model.frame_resource] -= amount * num(model.export_cost);
+          resources[model.charge_resource] = Math.min(num(model.charge_cap), num(resources[model.charge_resource]) + amount);
+          exported += amount;
+          if (hasAwakeningNode(owner, 6)) addScore(amount * num(model.export_cost) * num(model.score_per_consumed_frame));
+        });
+        Object.keys(resources).forEach((resource) => {
+          if (resources[resource] !== beforeResources[resource]) personalResourceStateEvents.push({tick, slot: owner.slot, resource, value: resources[resource]});
+        });
+      });
+    }
+
     function triggerBuffsForEvent(event, triggerTick, step, action, snapshot, isBackground, extraContext = {}) {
+      updateRankedResources(event, triggerTick, step, action, snapshot, extraContext);
       const triggered = [];
       const dotLayerApplications = [];
       const decorateTriggeredSummary = (summary, runtimeRule, triggerEvent = event) => {
@@ -4856,8 +4955,21 @@
             triggerTick,
           );
         });
+        Object.entries(activation.reduce_action_cooldowns || {}).forEach(([actionId, reduction]) => {
+          const configured = actionsById.get(actionId);
+          const key = configured ? actionCooldownKey(ownerSlot, configured) : `${ownerSlot}:${actionId}`;
+          const deadline = num(cooldownUntil.get(key));
+          const floor = triggerTick + Math.max(0, int(activation.cooldown_floor_ticks));
+          if (deadline > floor) cooldownUntil.set(key, Math.max(floor, deadline - num(reduction) * Math.max(0, num(context.hit_count, 1))));
+        });
         const previousInstances = new Set(activeBuffs);
-        const stackGain = stackGainForRule(runtimeRule, context);
+        let stackGain = stackGainForRule(runtimeRule, context);
+        if (num(runtimeRule.stacking?.max_stacks_per_source) > 0) {
+          const key = `${ownerSlot}:${runtimeRule.id}:${context.source_slot}`;
+          const previous = num(buffSourceStacks.get(key));
+          stackGain = Math.min(stackGain, Math.max(0, num(runtimeRule.stacking.max_stacks_per_source) - previous));
+          buffSourceStacks.set(key, previous + stackGain);
+        }
         const stackingDefinitionId = String(runtimeRule.stacking?.key || runtimeRule.id || '');
         const previousStackCount = activeBuffs
           .filter((candidate) => (
@@ -5195,6 +5307,7 @@
         Object.keys(resources).forEach((key) => delete resources[key]);
         Object.assign(resources, initialPersonalResourcesBySlot.get(slot) || {});
       });
+      rankedResourceClocks.clear();
       initializePersonalResourceStates(0);
       personalResourceStateEvents.length = 0;
       const expiredPrimedReactionIds = new Set(
@@ -5616,6 +5729,7 @@
         ));
       }
       const slotResources = personalResources.get(slot) || {};
+      const trackedResourcesBeforeAction = {...slotResources};
       const consumedResources = {};
       Object.entries(resourceMap(action.personal_resource_threshold)).forEach(([key, threshold]) => {
         if ((slotResources[key] || 0) < threshold && action.personal_resource_threshold_warning === true) {
@@ -5656,6 +5770,11 @@
         const gainMultiplier = Math.max(0, 1 + num(personalResourceGainPct[key]));
         slotResources[key] = integerPersonalResourceValue(String(snapshot.character?.id || ''), key,
           Math.min(cap, (slotResources[key] || 0) + gain * gainMultiplier * actionMultiplier));
+      });
+      asList(snapshot.character?.timeline_personal_resources).forEach((resource) => {
+        if (num(slotResources[resource]) !== num(trackedResourcesBeforeAction[resource])) {
+          personalResourceStateEvents.push({tick: startTick, slot, resource, value: num(slotResources[resource])});
+        }
       });
       triggeredBuffs.forEach((summary) => {
         const instance = activeBuffs.find((buff) => (
@@ -5768,6 +5887,7 @@
           triggeredBuffs.push(...triggerBuffsForEvent('action_hit', startTick, step, action, snapshot, isBackground, {
             visual_trigger_tick: visualStartTick,
             expected_critical_hits: criticalHitsPerAction,
+            current_atk: calc.panel.atk,
             applied_enemy_debuffs: appliedEnemyDebuffs,
             enemy_debuffs: activeEnemyDebuffs(enemyDebuffs, buffTick),
           }));

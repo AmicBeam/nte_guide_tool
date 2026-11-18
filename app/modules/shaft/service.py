@@ -42,7 +42,7 @@ MAX_BUFF_RULES = 48
 MAX_BACKGROUND_ACTION_MULTIPLIER = 999
 VISIBILITIES = frozenset({'private', 'public'})
 MARKET_SORTS = frozenset({'dps', 'likes', 'favorites', 'new'})
-DEFAULT_UNPUBLISHED_CHARACTERS = {'char_elyms': '曳尔沐'}
+DEFAULT_UNPUBLISHED_CHARACTERS = {'char_elyms': '曳尔沐', 'char_exe': 'Exe'}
 HALF_OPEN_CHARACTERS = {}
 RELEASED_CHARACTERS = {
     'char_0846d632e0': '灵可',
@@ -733,6 +733,7 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
                 names.update(str(name) for name in values if str(name) not in hidden_personal_resources)
     for character_id, character in characters.items():
         personal_resource_names.setdefault(character_id, set()).update(character.get('personal_resource_states') or {})
+        personal_resource_names[character_id].update(character.get('timeline_personal_resources') or [])
     loop_initial_resources: dict[str, dict[str, Any]] = {}
     for member in team:
         character_id = str(member.get('character_id') or '')

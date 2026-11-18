@@ -864,6 +864,89 @@
     "source_row": 16
   },
   {
+    "id": "char_exe",
+    "name": "Exe",
+    "element": "暗",
+    "adaptation": "等离子",
+    "rarity": "S",
+    "level": 80,
+    "avatar": "/static/images/characters/avatar/Exe-square.webp",
+    "portrait": "/static/images/characters/portrait/Exe.webp",
+    "base_stats": {
+      "atk": 804,
+      "hp": 15271,
+      "def": 884
+    },
+    "modifiers": {
+      "crit_rate": 0.05,
+      "crit_dmg": 0.5
+    },
+    "energy_capacity": 120,
+    "initial_personal_resources": {
+      "帧数": 0,
+      "评分": 0,
+      "残像额度": 0
+    },
+    "timeline_personal_resources": [
+      "帧数",
+      "评分",
+      "残像额度"
+    ],
+    "ranked_resource_system": {
+      "frame_resource": "帧数",
+      "score_resource": "评分",
+      "charge_resource": "残像额度",
+      "frame_cap": 100.0,
+      "score_cap": 5000.0,
+      "charge_cap": 1000,
+      "export_cost": 10.0,
+      "promote_reaction": "黯星",
+      "promote_score": 500.0,
+      "reaction_score": 200.0,
+      "empowered_buff_key": "character_exe_equation",
+      "heal_atk_per_frame": 0.02,
+      "score_per_consumed_frame": 10.0,
+      "ranks": [
+        {
+          "label": "B",
+          "threshold": 0.0,
+          "frame_multiplier": 1.0,
+          "decay_per_second": 0.0
+        },
+        {
+          "label": "A",
+          "threshold": 100.0,
+          "frame_multiplier": 1.2,
+          "decay_per_second": 10.0
+        },
+        {
+          "label": "S",
+          "threshold": 300.0,
+          "frame_multiplier": 1.5,
+          "decay_per_second": 30.0
+        },
+        {
+          "label": "SS",
+          "threshold": 500.0,
+          "frame_multiplier": 1.8,
+          "decay_per_second": 100.0
+        },
+        {
+          "label": "SSS",
+          "threshold": 3000.0,
+          "frame_multiplier": 2.0,
+          "decay_per_second": 300.0
+        },
+        {
+          "label": "Ω",
+          "threshold": 5000.0,
+          "frame_multiplier": 3.0,
+          "decay_per_second": 0.0
+        }
+      ]
+    }
+  },
+  {
     "id": "char_caa6c2e5a8",
     "name": "法帝娅",
     "element": "魂",

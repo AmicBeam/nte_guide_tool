@@ -877,7 +877,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
 
         arc = next(arc for arc in catalog['arcs'] if arc['name'] == '远行者之声')
         plasma_arcs = [candidate for candidate in catalog['arcs'] if candidate['adaptation'] == '等离子']
-        self.assertEqual(plasma_arcs[0]['id'], arc['id'])
+        self.assertEqual(plasma_arcs[0]['id'], 'arc_exe_dotted_horizon')
         self.assertEqual(arc['adaptation'], '等离子')
         self.assertEqual(arc['base_atk'], 570)
         self.assertEqual(arc['modifiers']['crit_rate'], 0.24)

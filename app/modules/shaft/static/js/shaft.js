@@ -1188,7 +1188,7 @@
       : {};
     const cursorPersonalResources = {...personalResources};
     const character = getCharacterMap().get(memberBySlot(slotNumber)?.character_id) || {};
-    Object.keys(character.personal_resource_states || {}).forEach((name) => {
+    [...Object.keys(character.personal_resource_states || {}), ...(character.timeline_personal_resources || [])].forEach((name) => {
       const configured = state.axis?.options?.loop_enabled
         ? state.axis.options.loop_initial_resources?.[character.id]?.personal_resources?.[name] : 0;
       const emptyAxis = Array.isArray(state.axis?.steps) && state.axis.steps.length === 0;
@@ -1212,6 +1212,7 @@
       ? personalResources
       : {};
     const fixedNames = [...(TIMELINE_FIXED_PERSONAL_RESOURCES[String(character?.id || '')] || []),
+      ...(character?.timeline_personal_resources || []),
       ...Object.keys(character?.personal_resource_states || {})];
     const entries = fixedNames.map((name) => [name, Number(resources[name] || 0)]);
     const fixedNameSet = new Set(fixedNames);
@@ -1795,7 +1796,7 @@
       ...(state.catalog?.formula_constants?.hidden_personal_resources || []).map(String),
     ]);
     const character = getCharacterMap().get(characterId) || {};
-    const names = new Set(Object.keys(character.personal_resource_states || {}));
+    const names = new Set([...Object.keys(character.personal_resource_states || {}), ...(character.timeline_personal_resources || [])]);
     (state.catalog?.actions || [])
       .filter((action) => String(action?.character_id || '') === characterId)
       .forEach((action) => {

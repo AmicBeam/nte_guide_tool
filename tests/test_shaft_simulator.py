@@ -2969,7 +2969,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertAlmostEqual(action['stagger'], 0.186 * 35)
         self.assertEqual(action['personal_resource_cost'], {'臆想': 10})
         self.assertEqual(action['personal_resource_gain'], {})
-        self.assertEqual(action['tags'], ['蓄力', '蓄力重击', '重击'])
+        self.assertEqual(action['tags'], ['召唤物', '蓄力', '蓄力重击', '重击'])
 
         result = simulate_shaft_axis({
             'team': [{

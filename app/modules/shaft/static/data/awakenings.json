@@ -934,5 +934,47 @@
       "description": "在编队内且存活时，全队角色造成的伤害无视目标12%全属性抗性；e3末段命中且本次消耗错视幻觉时，额外造成每层168%攻击倍率光属性异能伤害（1级变轨技能，随技能等级换算）。",
       "implemented": true
     }
+  ],
+  "Exe": [
+    {
+      "title": "print 你好，我的世界",
+      "description": "Exe的「评分」等级为SS及以上时，获得20%暗属性增伤。",
+      "implemented": true
+    },
+    {
+      "title": "define X/Y",
+      "description": "Exe的「评分」等级为B/A/S/SS/SSS时，Exe分别可提升10%/12%/15%/20%/30%攻击力。",
+      "implemented": true
+    },
+    {
+      "title": "for 永远一起玩",
+      "description": "「变轨技能：数据穿透」可吸附范围内目标敌人，并降低目标15%的暗属性抗性，持续12秒。",
+      "implemented": true
+    },
+    {
+      "title": "kill 杀死进程",
+      "description": "场上召唤物造成的伤害增加10%，「数字残像」造成的伤害在此基础上额外增加30%。",
+      "implemented": true
+    },
+    {
+      "title": "null 空指针",
+      "description": "极轨终结的「方程构建」状态持续期间，「数字残像」会在消失时对范围内目标产生冲击，造成等同于15.4%*攻击力的额外伤害（倍率跟随普通攻击技能等级成长）。",
+      "implemented": true
+    },
+    {
+      "title": "log 驱动骸骨的代码",
+      "description": "每次获取「帧数」时，恢复此次获得的「帧数」点数*2%*攻击力的生命值；\r\n每次消耗「帧数」时，额外增加此次消耗的「帧数」点数*10点「评分」。",
+      "implemented": true
+    },
+    {
+      "title": "save 不曾想象的未来",
+      "description": "「普通攻击」、「变轨技能」和「极轨终结」的技能等级提升1级。充能效率提高25%。\r\n直至脱离本次战斗，「评分」不会下降。",
+      "implemented": true
+    },
+    {
+      "title": "load 不可证明的宝物",
+      "description": "「评分」提升效率提高50%，解锁「Ω评分」。处于「Ω评分」下，「觉醒：define X/Y」效果会更改为额外为Exe提供50%攻击力。\r\n极轨终结的「方程构建」期间，「普通攻击：纵深侵入」还可以斩杀血量低于10%的BOSS目标。\n当前排轴不模拟斩杀。",
+      "implemented": true
+    }
   ]
 }

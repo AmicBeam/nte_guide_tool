@@ -6626,5 +6626,615 @@
     "display": {
       "line": false
     }
+  },
+  {
+    "id": "character_exe_equation",
+    "name": "方程构建",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_exe_q"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_equation",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": true
+    }
+  },
+  {
+    "id": "character_exe_a",
+    "name": "print 你好，我的世界",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_a",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    },
+    "dynamic_effects": {
+      "personal_resource_steps": {
+        "resource": "评分",
+        "effect_key": "element_dmg_暗",
+        "steps": [
+          {
+            "min": 0,
+            "value": 0
+          },
+          {
+            "min": 500,
+            "value": 0.2
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "character_exe_b",
+    "name": "define X/Y",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_b",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    },
+    "dynamic_effects": {
+      "personal_resource_steps": {
+        "resource": "评分",
+        "effect_key": "atk_pct",
+        "steps": [
+          {
+            "min": 0,
+            "value": 0.1
+          },
+          {
+            "min": 100,
+            "value": 0.12
+          },
+          {
+            "min": 300,
+            "value": 0.15
+          },
+          {
+            "min": 500,
+            "value": 0.2
+          },
+          {
+            "min": 3000,
+            "value": 0.3
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "character_exe_b_omega",
+    "name": "define X/Y·Ω评分",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        },
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_b_omega",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    },
+    "dynamic_effects": {
+      "personal_resource_steps": {
+        "resource": "评分",
+        "effect_key": "atk_pct",
+        "steps": [
+          {
+            "min": 0,
+            "value": 0
+          },
+          {
+            "min": 5000,
+            "value": 0.2
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "character_exe_c",
+    "name": "for 永远一起玩",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_exe_e"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 120,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_c",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "res_down_暗": 0.15
+    },
+    "display": {
+      "line": true
+    }
+  },
+  {
+    "id": "character_exe_d_team",
+    "name": "kill 杀死进程·召唤物",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 4
+        }
+      ]
+    },
+    "target": {
+      "scope": "team",
+      "tags": [
+        "召唤物"
+      ]
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_d_team",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "action_dmg": 0.1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_exe_d_clone",
+    "name": "kill 杀死进程·数字残像",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 4
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "tags": [
+        "数字残像"
+      ]
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_d_clone",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "action_dmg": 0.3
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_exe_resonance3",
+    "name": "save 不曾想象的未来",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_resonance3",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "energy_recharge": 0.25
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_exe_overclock",
+    "name": "临时超频",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "team",
+        "tags": [
+          "召唤物"
+        ]
+      },
+      "conditions": [],
+      "periodic_damage": true
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_overclock",
+      "mode": "add_stack",
+      "max_stacks": 4,
+      "max_stacks_per_source": 2,
+      "stack_gain_from": "hit_count",
+      "seed_from_arc_names": [
+        "茶花会",
+        "海特洛的安宁"
+      ]
+    },
+    "effects": {
+      "all_dmg": 0.1
+    },
+    "display": {
+      "line": true
+    }
+  },
+  {
+    "id": "character_exe_cooldown",
+    "name": "数字残像·冷却缩减",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_exe_clone"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_cooldown",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": true
+    },
+    "activation": {
+      "reduce_action_cooldowns": {
+        "action_exe_e": 10
+      },
+      "cooldown_floor_ticks": 20
+    }
+  },
+  {
+    "id": "character_exe_e",
+    "name": "null 空指针",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_exe_clone"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        },
+        {
+          "type": "active_buff_key",
+          "key": "character_exe_equation"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_e",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": true
+    },
+    "triggered_damage": {
+      "action": {
+        "id": "action_exe_clone_boom",
+        "name": "数字残像·冲击",
+        "action_type": "普攻",
+        "damage_type": "普攻",
+        "skill_level_category": "basic",
+        "hit_count": 1,
+        "tags": [
+          "召唤物",
+          "数字残像"
+        ],
+        "multipliers": {
+          "atk": 0.154
+        },
+        "atk_multipliers_by_level": [
+          0.154,
+          0.166,
+          0.18,
+          0.194,
+          0.21,
+          0.226,
+          0.244,
+          0.264,
+          0.285,
+          0.308,
+          0.332,
+          0.359,
+          0.388
+        ],
+        "ranked_resource_hits": [
+          {
+            "frames": 0,
+            "score": 10
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "arc_exe_summon",
+    "name": "缥缈的执手同行",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_exe_dotted_horizon"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "elements": [
+          "暗"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "tags": [
+        "召唤物"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_exe_summon",
+      "mode": "add_stack",
+      "max_stacks": 10,
+      "stack_gain_from": "hit_count"
+    },
+    "effects": {
+      "action_dmg": 0.02
+    },
+    "display": {
+      "line": true
+    }
   }
 ]

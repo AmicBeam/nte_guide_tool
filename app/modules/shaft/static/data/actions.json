@@ -2547,7 +2547,8 @@
     "source_action_name": "5a副手",
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2593,7 +2594,8 @@
     "source_action_name": "5a副手",
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2639,7 +2641,8 @@
     "source_action_name": "5a副手",
     "hit_count": 2,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2685,7 +2688,8 @@
     "source_action_name": "5a副手",
     "hit_count": 3,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2731,7 +2735,8 @@
     "source_action_name": "5a副手",
     "hit_count": 2,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2909,7 +2914,8 @@
     "source_action_name": "3z副手",
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2955,7 +2961,8 @@
     "source_action_name": "3z副手",
     "hit_count": 3,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -3001,7 +3008,8 @@
     "source_action_name": "3z副手",
     "hit_count": 3,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -3087,7 +3095,8 @@
     "can_background_override": false,
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -3173,7 +3182,8 @@
     "can_background_override": false,
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -3259,7 +3269,8 @@
     "can_background_override": false,
     "hit_count": 5,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -5199,7 +5210,10 @@
     "personal_resource_gain": {},
     "source_row": 91,
     "can_background_override": false,
-    "hit_count": 3
+    "hit_count": 3,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_881b816d9f",
@@ -5242,12 +5256,18 @@
     "can_background_override": false,
     "hit_count": 1,
     "tags": [
-      "DOT"
+      "DOT",
+      "召唤物"
     ],
     "periodic_damage": {
       "interval_ticks": 15,
       "tick_count": 10,
-      "multipliers": {"atk": 0, "hp": 0, "def": 0.2, "flat": 0}
+      "multipliers": {
+        "atk": 0,
+        "hp": 0,
+        "def": 0.2,
+        "flat": 0
+      }
     }
   },
   {
@@ -5294,7 +5314,10 @@
     "source_row": 93,
     "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「万象澄寂」冷却时间为20秒。",
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 1,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_2635f721a8",
@@ -6804,7 +6827,10 @@
     "personal_resource_gain": {},
     "source_row": 124,
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 1,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_8cadfa76a4",
@@ -6845,7 +6871,10 @@
     "personal_resource_gain": {},
     "source_row": 125,
     "can_background_override": false,
-    "hit_count": 4
+    "hit_count": 4,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_3529c3d915",
@@ -7712,7 +7741,10 @@
     "source_formula": "{0}%+{1}%",
     "can_background_override": false,
     "sin_recovery": 100,
-    "hit_count": 2
+    "hit_count": 2,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_dbd682321e",
@@ -8359,7 +8391,12 @@
     "is_background_damage": false,
     "duration_seconds": 1.5,
     "duration_ticks": 15,
-    "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 2.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 3.9,
     "harmony": 0,
     "stagger": 2.5,
@@ -8368,11 +8405,17 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 10},
+    "personal_resource_gain": {
+      "臆想": 10
+    },
     "source_row": 42,
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["heal", "治疗"]
+    "tags": [
+      "heal",
+      "治疗",
+      "召唤物"
+    ]
   },
   {
     "id": "action_5ce7a08ca0",
@@ -8385,7 +8428,12 @@
     "is_background_damage": false,
     "duration_seconds": 0.3,
     "duration_ticks": 3,
-    "multipliers": {"atk": 0.76, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 0.76,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 2.431,
     "harmony": 4.048,
     "stagger": 0.484,
@@ -8394,12 +8442,17 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 2},
+    "personal_resource_gain": {
+      "臆想": 2
+    },
     "source_row": 442,
     "source_formula": "{0}% , 2",
     "source_action_name": "分工合作",
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 1,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_d3328cde94",
@@ -8412,7 +8465,12 @@
     "is_background_damage": false,
     "duration_seconds": 0.7,
     "duration_ticks": 7,
-    "multipliers": {"atk": 0.477, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 0.477,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 0.996,
     "harmony": 1.659,
     "stagger": 0.198,
@@ -8421,12 +8479,17 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 3},
+    "personal_resource_gain": {
+      "臆想": 3
+    },
     "source_row": 443,
     "source_formula": "{0}%*3 , 3",
     "source_action_name": "分工合作",
     "can_background_override": true,
-    "hit_count": 3
+    "hit_count": 3,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_ace58eb0ce",
@@ -8439,7 +8502,12 @@
     "is_background_damage": false,
     "duration_seconds": 0.7,
     "duration_ticks": 7,
-    "multipliers": {"atk": 0.824, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 0.824,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 0.642,
     "harmony": 1.069,
     "stagger": 0.128,
@@ -8448,12 +8516,17 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 3},
+    "personal_resource_gain": {
+      "臆想": 3
+    },
     "source_row": 444,
     "source_formula": "{0}%*8 , 3",
     "source_action_name": "分工合作",
     "can_background_override": true,
-    "hit_count": 8
+    "hit_count": 8,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_z1",
@@ -8466,7 +8539,12 @@
     "is_background_damage": false,
     "duration_seconds": 1.5,
     "duration_ticks": 15,
-    "multipliers": {"atk": 1.104, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 1.104,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 1.599,
     "harmony": 2.7,
     "stagger": 0.3,
@@ -8474,14 +8552,20 @@
     "self_modifiers": {},
     "cooldown_ticks": 0,
     "energy_cost": 0,
-    "personal_resource_cost": {"臆想": 20},
+    "personal_resource_cost": {
+      "臆想": 20
+    },
     "personal_resource_gain": {},
     "source_row": 0,
     "source_formula": "{0}%*3",
     "source_action_name": "白日梦一段",
     "can_background_override": false,
     "hit_count": 3,
-    "tags": ["蓄力", "重击"]
+    "tags": [
+      "蓄力",
+      "重击",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_lucid_dream",
@@ -8494,7 +8578,12 @@
     "is_background_damage": false,
     "duration_seconds": 7,
     "duration_ticks": 70,
-    "multipliers": {"atk": 8.295, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 8.295,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 26.81,
     "harmony": 7.0,
     "stagger": 6.51,
@@ -8502,14 +8591,20 @@
     "self_modifiers": {},
     "cooldown_ticks": 0,
     "energy_cost": 0,
-    "personal_resource_cost": {"臆想": 10},
+    "personal_resource_cost": {
+      "臆想": 10
+    },
     "personal_resource_gain": {},
     "source_row": 451,
     "source_formula": "{0}%*35",
     "source_action_name": "普通攻击：清明梦",
     "can_background_override": true,
     "hit_count": 35,
-    "tags": ["蓄力", "重击"]
+    "tags": [
+      "蓄力",
+      "重击",
+      "召唤物"
+    ]
   },
   {
     "id": "action_afea1e6fb2",
@@ -8522,7 +8617,12 @@
     "is_background_damage": false,
     "duration_seconds": 0.4,
     "duration_ticks": 4,
-    "multipliers": {"atk": 4.003, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 4.003,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 4.798,
     "harmony": 7.998,
     "stagger": 1.003,
@@ -8531,13 +8631,19 @@
     "cooldown_ticks": 120,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 16},
+    "personal_resource_gain": {
+      "臆想": 16
+    },
     "source_row": 454,
     "source_formula": "{0}%+{1}%*7+{2}%",
     "source_action_name": "未来自我连续性假设",
     "can_background_override": false,
     "hit_count": 9,
-    "tags": ["heal", "治疗"]
+    "tags": [
+      "heal",
+      "治疗",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_long_e",
@@ -8550,7 +8656,12 @@
     "is_background_damage": false,
     "duration_seconds": 0.4,
     "duration_ticks": 4,
-    "multipliers": {"atk": 4.003, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 4.003,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 4.798,
     "harmony": 7.998,
     "stagger": 1.003,
@@ -8559,13 +8670,20 @@
     "cooldown_ticks": 120,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 16},
+    "personal_resource_gain": {
+      "臆想": 16
+    },
     "source_row": 454,
     "source_formula": "{0}%+{1}%*7+{2}%",
     "source_action_name": "未来自我连续性假设（长按）",
     "can_background_override": false,
     "hit_count": 9,
-    "tags": ["heal", "治疗", "长按"]
+    "tags": [
+      "heal",
+      "治疗",
+      "长按",
+      "召唤物"
+    ]
   },
   {
     "id": "action_307ad00e8e",
@@ -8634,7 +8752,12 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 1.5, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 1.5,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8648,7 +8771,11 @@
     "required_awakening": 2,
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "被动"]
+    "tags": [
+      "协攻",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_requiem_a5_nightmare_heal",
@@ -8742,8 +8869,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 0.555, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 0.555,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8759,7 +8895,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_morpheus_2",
@@ -8772,8 +8913,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 2.08, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 1}},
+    "multipliers": {
+      "atk": 2.08,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 1
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8789,7 +8939,12 @@
     "source_formula": "{0}%*5",
     "can_background_override": false,
     "hit_count": 5,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_ikelos_1",
@@ -8802,8 +8957,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 0.892, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 0.892,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8819,7 +8983,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_ikelos_2",
@@ -8832,8 +9001,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 1.784, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 1.784,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8849,7 +9027,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_phantasus_1",
@@ -8862,8 +9045,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 0.942, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 0.942,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8879,7 +9071,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_phantasus_2",
@@ -8892,8 +9089,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 1.884, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 1.884,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8909,7 +9115,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_adler_karma_1",
@@ -9843,7 +10054,8 @@
     "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "tags": [
       "协同攻击",
-      "后台攻击"
+      "后台攻击",
+      "召唤物"
     ],
     "required_buff_key": "character_heiyu_assist_window",
     "required_buff_name": "失乐鸟（15秒、最多5次）",
@@ -11272,5 +11484,1627 @@
     "resonance_skill_level_bonus": false,
     "duration_implemented": true,
     "duration_estimated": true
+  },
+  {
+    "id": "action_exe_a1",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a1",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 0.537,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.537,
+      0.58,
+      0.626,
+      0.676,
+      0.731,
+      0.789,
+      0.852,
+      0.92,
+      0.994,
+      1.073,
+      1.159,
+      1.252,
+      1.352
+    ],
+    "energy_gain": 2.093,
+    "harmony": 2.901,
+    "stagger": 0.35,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 0,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.4,
+        "score": 5.0,
+        "atk_levels": [
+          0.537,
+          0.58,
+          0.626,
+          0.676,
+          0.731,
+          0.789,
+          0.852,
+          0.92,
+          0.994,
+          1.073,
+          1.159,
+          1.252,
+          1.352
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_a2",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a2",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 0.916,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.916,
+      0.99,
+      1.068,
+      1.154,
+      1.246,
+      1.346,
+      1.454,
+      1.57,
+      1.696,
+      1.832,
+      1.978,
+      2.136,
+      2.306
+    ],
+    "energy_gain": 3.574,
+    "harmony": 4.954,
+    "stagger": 0.598,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 2,
+    "display_order": 1,
+    "can_background_override": true,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.458,
+          0.495,
+          0.534,
+          0.577,
+          0.623,
+          0.673,
+          0.727,
+          0.785,
+          0.848,
+          0.916,
+          0.989,
+          1.068,
+          1.153
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.458,
+          0.495,
+          0.534,
+          0.577,
+          0.623,
+          0.673,
+          0.727,
+          0.785,
+          0.848,
+          0.916,
+          0.989,
+          1.068,
+          1.153
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_a3",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a3",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 1.047,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      1.047,
+      1.131,
+      1.221,
+      1.32,
+      1.425,
+      1.539,
+      1.662,
+      1.794,
+      1.938,
+      2.094,
+      2.259,
+      2.442,
+      2.637
+    ],
+    "energy_gain": 4.086,
+    "harmony": 5.664,
+    "stagger": 0.684,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 3,
+    "display_order": 2,
+    "can_background_override": true,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.349,
+          0.377,
+          0.407,
+          0.44,
+          0.475,
+          0.513,
+          0.554,
+          0.598,
+          0.646,
+          0.698,
+          0.753,
+          0.814,
+          0.879
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.349,
+          0.377,
+          0.407,
+          0.44,
+          0.475,
+          0.513,
+          0.554,
+          0.598,
+          0.646,
+          0.698,
+          0.753,
+          0.814,
+          0.879
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.349,
+          0.377,
+          0.407,
+          0.44,
+          0.475,
+          0.513,
+          0.554,
+          0.598,
+          0.646,
+          0.698,
+          0.753,
+          0.814,
+          0.879
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_a4",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a4",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 2.228,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      2.228,
+      2.406,
+      2.601,
+      2.805,
+      3.033,
+      3.273,
+      3.537,
+      3.819,
+      4.124,
+      4.456,
+      4.81,
+      5.197,
+      5.608
+    ],
+    "energy_gain": 8.69,
+    "harmony": 12.044,
+    "stagger": 1.456,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 7,
+    "display_order": 3,
+    "can_background_override": true,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.246,
+          0.266,
+          0.287,
+          0.31,
+          0.335,
+          0.361,
+          0.39,
+          0.422,
+          0.455,
+          0.492,
+          0.531,
+          0.574,
+          0.619
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.246,
+          0.266,
+          0.287,
+          0.31,
+          0.335,
+          0.361,
+          0.39,
+          0.422,
+          0.455,
+          0.492,
+          0.531,
+          0.574,
+          0.619
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.34,
+          0.367,
+          0.397,
+          0.428,
+          0.463,
+          0.5,
+          0.54,
+          0.583,
+          0.629,
+          0.68,
+          0.734,
+          0.793,
+          0.856
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.34,
+          0.367,
+          0.397,
+          0.428,
+          0.463,
+          0.5,
+          0.54,
+          0.583,
+          0.629,
+          0.68,
+          0.734,
+          0.793,
+          0.856
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.352,
+          0.38,
+          0.411,
+          0.443,
+          0.479,
+          0.517,
+          0.559,
+          0.603,
+          0.652,
+          0.704,
+          0.76,
+          0.821,
+          0.886
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.352,
+          0.38,
+          0.411,
+          0.443,
+          0.479,
+          0.517,
+          0.559,
+          0.603,
+          0.652,
+          0.704,
+          0.76,
+          0.821,
+          0.886
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.352,
+          0.38,
+          0.411,
+          0.443,
+          0.479,
+          0.517,
+          0.559,
+          0.603,
+          0.652,
+          0.704,
+          0.76,
+          0.821,
+          0.886
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_a5",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a5",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 0.786,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.786,
+      0.846,
+      0.918,
+      0.99,
+      1.068,
+      1.152,
+      1.248,
+      1.35,
+      1.452,
+      1.572,
+      1.698,
+      1.83,
+      1.98
+    ],
+    "energy_gain": 3.054,
+    "harmony": 4.236,
+    "stagger": 0.51,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 6,
+    "display_order": 4,
+    "can_background_override": true,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.131,
+          0.141,
+          0.153,
+          0.165,
+          0.178,
+          0.192,
+          0.208,
+          0.225,
+          0.242,
+          0.262,
+          0.283,
+          0.305,
+          0.33
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.131,
+          0.141,
+          0.153,
+          0.165,
+          0.178,
+          0.192,
+          0.208,
+          0.225,
+          0.242,
+          0.262,
+          0.283,
+          0.305,
+          0.33
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.131,
+          0.141,
+          0.153,
+          0.165,
+          0.178,
+          0.192,
+          0.208,
+          0.225,
+          0.242,
+          0.262,
+          0.283,
+          0.305,
+          0.33
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.131,
+          0.141,
+          0.153,
+          0.165,
+          0.178,
+          0.192,
+          0.208,
+          0.225,
+          0.242,
+          0.262,
+          0.283,
+          0.305,
+          0.33
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.131,
+          0.141,
+          0.153,
+          0.165,
+          0.178,
+          0.192,
+          0.208,
+          0.225,
+          0.242,
+          0.262,
+          0.283,
+          0.305,
+          0.33
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.131,
+          0.141,
+          0.153,
+          0.165,
+          0.178,
+          0.192,
+          0.208,
+          0.225,
+          0.242,
+          0.262,
+          0.283,
+          0.305,
+          0.33
+        ]
+      }
+    ],
+    "ranked_export_limit": 1,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": true
+  },
+  {
+    "id": "action_exe_z",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "z",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 1.032,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      1.032,
+      1.115,
+      1.204,
+      1.3,
+      1.404,
+      1.516,
+      1.638,
+      1.769,
+      1.91,
+      2.063,
+      2.228,
+      2.406,
+      2.599
+    ],
+    "energy_gain": 4.0,
+    "harmony": 5.6,
+    "stagger": 0.7,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 5,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 2.0,
+        "score": 100.0,
+        "atk_levels": [
+          1.032,
+          1.115,
+          1.204,
+          1.3,
+          1.404,
+          1.516,
+          1.638,
+          1.769,
+          1.91,
+          2.063,
+          2.228,
+          2.406,
+          2.599
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_air",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "下落",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "multipliers": {
+      "atk": 0.708,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.708,
+      0.765,
+      0.826,
+      0.892,
+      0.963,
+      1.04,
+      1.124,
+      1.213,
+      1.31,
+      1.415,
+      1.529,
+      1.651,
+      1.783
+    ],
+    "energy_gain": 2.3,
+    "harmony": 3.8,
+    "stagger": 0.5,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 6,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.5,
+        "score": 10.0,
+        "atk_levels": [
+          0.708,
+          0.765,
+          0.826,
+          0.892,
+          0.963,
+          1.04,
+          1.124,
+          1.213,
+          1.31,
+          1.415,
+          1.529,
+          1.651,
+          1.783
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_counter",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "闪反",
+    "action_type": "闪反",
+    "damage_type": "闪反",
+    "is_background_damage": false,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "multipliers": {
+      "atk": 0.809,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.809,
+      0.874,
+      0.944,
+      1.019,
+      1.101,
+      1.189,
+      1.284,
+      1.386,
+      1.497,
+      1.617,
+      1.747,
+      1.886,
+      2.037
+    ],
+    "energy_gain": 1.75,
+    "harmony": 2.9,
+    "stagger": 1.25,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 7,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 5.0,
+        "score": 150.0,
+        "atk_levels": [
+          0.809,
+          0.874,
+          0.944,
+          1.019,
+          1.101,
+          1.189,
+          1.284,
+          1.386,
+          1.497,
+          1.617,
+          1.747,
+          1.886,
+          2.037
+        ]
+      }
+    ],
+    "ranked_export_limit": 1,
+    "ranked_export_limit_empowered": 3,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_e",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "e",
+    "action_type": "E",
+    "damage_type": "E",
+    "is_background_damage": false,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "multipliers": {
+      "atk": 3.849,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      3.849,
+      4.158,
+      4.488,
+      4.848,
+      5.235,
+      5.655,
+      6.105,
+      6.597,
+      7.125,
+      7.695,
+      8.31,
+      8.973,
+      9.693
+    ],
+    "energy_gain": 5.601,
+    "harmony": 7.8,
+    "stagger": 0.9,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 150,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 6,
+    "display_order": 8,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.483,
+          0.522,
+          0.563,
+          0.608,
+          0.657,
+          0.71,
+          0.766,
+          0.828,
+          0.894,
+          0.966,
+          1.043,
+          1.126,
+          1.216
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.483,
+          0.522,
+          0.563,
+          0.608,
+          0.657,
+          0.71,
+          0.766,
+          0.828,
+          0.894,
+          0.966,
+          1.043,
+          1.126,
+          1.216
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.483,
+          0.522,
+          0.563,
+          0.608,
+          0.657,
+          0.71,
+          0.766,
+          0.828,
+          0.894,
+          0.966,
+          1.043,
+          1.126,
+          1.216
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.8,
+          0.864,
+          0.933,
+          1.008,
+          1.088,
+          1.175,
+          1.269,
+          1.371,
+          1.481,
+          1.599,
+          1.727,
+          1.865,
+          2.015
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.8,
+          0.864,
+          0.933,
+          1.008,
+          1.088,
+          1.175,
+          1.269,
+          1.371,
+          1.481,
+          1.599,
+          1.727,
+          1.865,
+          2.015
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.8,
+          0.864,
+          0.933,
+          1.008,
+          1.088,
+          1.175,
+          1.269,
+          1.371,
+          1.481,
+          1.599,
+          1.727,
+          1.865,
+          2.015
+        ]
+      }
+    ],
+    "ranked_export_limit": 5,
+    "ranked_export_limit_empowered": 10,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_q",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "q",
+    "action_type": "Q",
+    "damage_type": "Q",
+    "is_background_damage": false,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 7.7,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      7.7,
+      8.318,
+      8.979,
+      9.703,
+      10.477,
+      11.313,
+      12.224,
+      13.191,
+      14.252,
+      15.394,
+      16.623,
+      17.952,
+      19.387
+    ],
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 2.496,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 200,
+    "energy_cost": 120,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 19,
+    "display_order": 9,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.296,
+          0.32,
+          0.345,
+          0.373,
+          0.403,
+          0.435,
+          0.47,
+          0.507,
+          0.548,
+          0.592,
+          0.639,
+          0.69,
+          0.745
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.642,
+          0.693,
+          0.749,
+          0.809,
+          0.873,
+          0.943,
+          1.019,
+          1.1,
+          1.188,
+          1.283,
+          1.386,
+          1.497,
+          1.617
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.642,
+          0.693,
+          0.749,
+          0.809,
+          0.873,
+          0.943,
+          1.019,
+          1.1,
+          1.188,
+          1.283,
+          1.386,
+          1.497,
+          1.617
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.642,
+          0.693,
+          0.749,
+          0.809,
+          0.873,
+          0.943,
+          1.019,
+          1.1,
+          1.188,
+          1.283,
+          1.386,
+          1.497,
+          1.617
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.642,
+          0.693,
+          0.749,
+          0.809,
+          0.873,
+          0.943,
+          1.019,
+          1.1,
+          1.188,
+          1.283,
+          1.386,
+          1.497,
+          1.617
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.642,
+          0.693,
+          0.749,
+          0.809,
+          0.873,
+          0.943,
+          1.019,
+          1.1,
+          1.188,
+          1.283,
+          1.386,
+          1.497,
+          1.617
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.642,
+          0.693,
+          0.749,
+          0.809,
+          0.873,
+          0.943,
+          1.019,
+          1.1,
+          1.188,
+          1.283,
+          1.386,
+          1.497,
+          1.617
+        ]
+      }
+    ],
+    "ranked_export_limit": 10,
+    "ranked_export_limit_empowered": 10,
+    "ranked_export_last_hit": false,
+    "is_time_stop_zero": true
+  },
+  {
+    "id": "action_exe_support",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "援护",
+    "action_type": "援护",
+    "damage_type": "援护",
+    "is_background_damage": false,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "multipliers": {
+      "atk": 3.08,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      3.08,
+      3.327,
+      3.592,
+      3.88,
+      4.19,
+      4.526,
+      4.888,
+      5.279,
+      5.701,
+      6.158,
+      6.65,
+      7.181,
+      7.757
+    ],
+    "energy_gain": 5.0,
+    "harmony": 0.0,
+    "stagger": 2.5,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 3,
+    "display_order": 10,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 4.0,
+        "score": 100.0,
+        "atk_levels": [
+          0.308,
+          0.333,
+          0.359,
+          0.388,
+          0.419,
+          0.453,
+          0.489,
+          0.528,
+          0.57,
+          0.616,
+          0.665,
+          0.718,
+          0.776
+        ]
+      },
+      {
+        "frames": 4.0,
+        "score": 100.0,
+        "atk_levels": [
+          0.308,
+          0.333,
+          0.359,
+          0.388,
+          0.419,
+          0.453,
+          0.489,
+          0.528,
+          0.57,
+          0.616,
+          0.665,
+          0.718,
+          0.776
+        ]
+      },
+      {
+        "frames": 3.0,
+        "score": 100.0,
+        "atk_levels": [
+          2.464,
+          2.661,
+          2.874,
+          3.104,
+          3.352,
+          3.62,
+          3.91,
+          4.223,
+          4.561,
+          4.926,
+          5.32,
+          5.745,
+          6.205
+        ]
+      }
+    ],
+    "ranked_export_limit": 1,
+    "ranked_export_limit_empowered": 3,
+    "ranked_export_last_hit": false,
+    "resonance_skill_level_bonus": false
+  },
+  {
+    "id": "action_exe_clone",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "数字残像",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": true,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 0.924,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.924,
+      0.998,
+      1.078,
+      1.164,
+      1.257,
+      1.358,
+      1.466,
+      1.584,
+      1.71,
+      1.847,
+      1.995,
+      2.154,
+      2.327
+    ],
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 0.0,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {
+      "残像额度": 1
+    },
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 11,
+    "can_background_override": false,
+    "tags": [
+      "召唤物",
+      "数字残像"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 3.0,
+        "score": 50.0,
+        "atk_levels": [
+          0.924,
+          0.998,
+          1.078,
+          1.164,
+          1.257,
+          1.358,
+          1.466,
+          1.584,
+          1.71,
+          1.847,
+          1.995,
+          2.154,
+          2.327
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 0,
+    "ranked_export_last_hit": false
   }
 ]

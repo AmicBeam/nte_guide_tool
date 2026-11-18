@@ -240,3 +240,5 @@ MU06「千年虫之谜」、MU07「花海追想」、MU08「微风精灵」分�
 换装沿用通用武备显示：双方前排、备战区、角色详情与回放读取 `shape_id`；换武备即时切换，倒地、未知武备或加载失败回退默认。默认头像、默认立绘、手牌、构筑与图鉴不因装备绑定改图。五张战术卡名保留 MU01–MU05 的现行名称，特殊效果继续空白。
 
 验证：`.venv/bin/python -m unittest tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_elyms`；浏览器核对三套皮肤解码与切换。
+
+Exe排轴使用共享1024×1024默认立绘`portrait/Exe.webp`和256×256头像`avatar/Exe-square.webp`。头像从默认立绘的`(340,130,680,470)`方形区域裁剪并按Lanczos缩至256×256，以无损WebP保存；默认立绘保留原画布和透明边缘。图片绑定不改变攻略预告状态或排轴测试权限。

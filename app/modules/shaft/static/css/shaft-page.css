@@ -3868,6 +3868,7 @@ body.shaft-dragging .shaft-action-bar {
 }
 
 .shaft-track-portrait {
+    min-width: 0;
     display: grid;
     justify-items: center;
     gap: 2px;
@@ -3890,6 +3891,14 @@ body.shaft-dragging .shaft-action-bar {
     line-height: 1.05;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.shaft-track-portrait small.shaft-ranked-resource {
+    width: max-content;
+    max-width: none;
+    justify-self: center;
+    overflow: visible;
+    text-overflow: clip;
 }
 
 .shaft-track-name {

@@ -162,6 +162,20 @@ class ExeCompleteTest(ExeReleaseTest):
         self.assertNotIn('<th scope="col">基础评分</th>',other)
         self.assertNotIn('frame_gain',json.dumps(self.client.get('/api/guide/characters/1074?section=abilities&hit_details=0').json))
 
+    def test_rating_table_is_in_score_noun_and_public_formats(self):
+        score=service.detail('characters',CID)['nouns']['exescore']
+        table=score['rating_table']
+        self.assertEqual([r['rating']for r in table],['B','A','S','SS','SSS','Ω'])
+        self.assertEqual([r['score_threshold']for r in table],[0,100,300,500,3000,5000])
+        self.assertEqual([r['frame_multiplier']for r in table],[1,1.2,1.5,1.8,2,3])
+        self.assertEqual([r['score_decay_per_second']for r in table],[0,10,30,100,300,0])
+        self.assertIn('六次共鸣',score['rating_note'])
+        html=self.client.get('/guide/characters/1074').text
+        self.assertEqual(html.count('aria-label="评分评级标准"'),1)
+        for label in ['分数门槛','帧数获取倍率','每秒掉分']:self.assertIn(label,html)
+        self.assertIn('rating_table',json.dumps(self.client.get('/api/guide/characters/1074?section=nouns').json))
+        self.assertIn('评分评级标准',self.client.get('/guide/characters/1074.md?section=nouns').text)
+
     def test_signature_arc_and_actual_defaults(self):
         arc=service.detail('arcs',ARC)
         self.assertEqual((arc['name'],arc['type_name'],arc['rarity']),('虚线彼方','等离子',5))

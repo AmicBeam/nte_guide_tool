@@ -1789,6 +1789,19 @@
     };
   }
 
+  function timelinePersonalResourceLabel(character, member, name, value) {
+    const stateLabel = character.personal_resource_states?.[name]?.find((item) => Number(item.value) === value)?.label;
+    if (stateLabel) return stateLabel;
+    const model = character.ranked_resource_system;
+    if (model?.score_resource === name && model.ranks?.length) {
+      const ranks = model.ranks.slice(0, normalizeAwakeningResonances(member).includes(6) ? undefined : -1);
+      const rank = ranks.filter((item) => Number(value) >= Number(item.threshold)).at(-1) || ranks[0];
+      const amount = Number(value).toLocaleString('en-US', {useGrouping: false, maximumFractionDigits: 1});
+      return `${name}${amount} (${rank.label})`;
+    }
+    return `${name} ${formatNumber(value, (character.personal_resource_integer_resources || []).includes(name) ? 0 : 1)}`;
+  }
+
   function loopPersonalResourceDefinitions(member) {
     const characterId = String(member?.character_id || '');
     const hidden = new Set([
@@ -5131,9 +5144,9 @@
       const harmonyLabel = formatNumber(resources.harmony || 0, 1);
       const personalResourceLabels = timelinePersonalResourceEntries(character, resources.personalResources)
         .map(([name, value]) => {
-          const stateLabel = character.personal_resource_states?.[name]?.find((item) => Number(item.value) === value)?.label;
-          const label = stateLabel || `${name} ${formatNumber(value, (character.personal_resource_integer_resources || []).includes(name) ? 0 : 1)}`;
-          return `<small>${escapeHtml(label)}</small>`;
+          const label = timelinePersonalResourceLabel(character, member, name, value);
+          const ranked = character.ranked_resource_system?.score_resource === name;
+          return `<small${ranked ? ' class="shaft-ranked-resource"' : ''}>${escapeHtml(label)}</small>`;
         })
         .join('');
       const slotDetails = details

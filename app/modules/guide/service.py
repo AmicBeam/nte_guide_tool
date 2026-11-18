@@ -58,6 +58,8 @@ LABELS = {
     'hit_index': '命中项', 'repeat': '重复次数', 'harmony_gain': '基础环合',
     'energy_gain': '基础回能', 'stagger': '基础倾陷',
     'frame_gain': '基础帧数', 'score_gain': '基础评分',
+    'rating_table': '评分评级标准', 'rating': '评级', 'score_threshold': '分数门槛',
+    'frame_multiplier': '帧数获取倍率', 'score_decay_per_second': '每秒掉分', 'rating_note': '评级说明',
     'attack_values': '攻击倍率', 'defense_values': '防御倍率', 'hp_values': '生命倍率',
     'hit_detail_status': '命中数据状态',
     'arc_type': '弧盘适配', 'icon': '图标',

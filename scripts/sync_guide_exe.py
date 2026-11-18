@@ -38,6 +38,19 @@ def add_hit_resources(record, directory):
     visit(record)
 
 
+def add_rating_table(record, directory):
+    def table(name):return table_rows(json.loads((directory / (name + '.json')).read_text()))
+    thresholds=table('DT_ExeEffectFigure')
+    multipliers=table('DT_ExeEffectFigure_RankMult')['Exe_RankMult']['Keys']
+    decays=table('DT_ExeEffectFigure_ScoreDecay')['Exe_ScoreDecay']['Keys']
+    if len(multipliers)!=6 or len(decays)!=6:raise ValueError('Invalid Exe rating curves')
+    record['nouns']['exescore']['rating_table']=[
+        dict(rating=label,score_threshold=thresholds[f'Exe_RankScore{i}']['Keys'][0]['Value'],
+             frame_multiplier=multipliers[i-1]['Value'],score_decay_per_second=decays[i-1]['Value'])
+        for i,label in enumerate(['B','A','S','SS','SSS','Ω'],1)]
+    record['nouns']['exescore']['rating_note']='Ω评级需六次共鸣解锁；三次共鸣激活后，评分不再自然回落。帧数倍率作用于基础帧数获取。'
+
+
 def assemble(directory):
     def table(name):return table_rows(json.loads((directory/(name+'.json')).read_text()))
     raw=table('DT_Character')[CID]
@@ -102,6 +115,7 @@ def assemble(directory):
         stats=[dict(id_stats='CritBase',name='暴击率',value=8,b_show_percent=True)],
         type_name='「卡带」属性',slots=[[int(value)for value in row.split(',')]for row in slots['EquipmentSlots']])
     if sum(cell>=0 for row in record['equip_slots']['slots']for cell in row)!=20:raise ValueError('Invalid equipment slots')
+    add_rating_table(record, directory)
     rich=deepcopy(record);tips=table('DT_GameplayAbilityTipsData')
     for a in rich['abilities']:
         if a['id']in tips:

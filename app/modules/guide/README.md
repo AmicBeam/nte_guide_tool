@@ -609,3 +609,6 @@ Exe使用正式编号1074，旧链接`preview-exe`继续解析至正式角色；
 
 
 Exe技能的`hit_details`另含`frame_gain`（单次命中基础帧数）与`score_gain`（单次命中基础评分），按命中效果ID读取专属曲线；0为已确认的零获取，缺失不填零。网页详细命中表按实际字段显示两列，其他角色不增加空列；JSON、Markdown和CLI共用相同数值，`hit_details=0`仍可隐藏明细。重复次数单独保留，不把动作总帧数或总评分填入单次命中值；帧数未乘评级效率，评分未乘共鸣修正。导入所需表增加`DT_ExeEffectFigure_Frame.json`与`DT_ExeEffectFigure_Score.json`；缺失命中映射时中止。验证由`tests.test_guide_exe_complete`覆盖每项命中、零值、多段合计、公开格式、隐藏明细及其他角色列数。
+
+
+Exe的“评分”机制词条提供评级标准表：B／A／S／SS／SSS／Ω的分数门槛、基础帧数获取倍率与每秒自然掉分。表格通过`rating_table`保存，网页、JSON与Markdown共用；Ω的六次共鸣解锁与三次共鸣停止自然掉分在表下说明。显式导入另读取`DT_ExeEffectFigure_RankMult.json`与`DT_ExeEffectFigure_ScoreDecay.json`，不把评级数组当成技能等级数组。

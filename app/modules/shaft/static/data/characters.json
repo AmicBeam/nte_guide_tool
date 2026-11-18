@@ -1014,6 +1014,12 @@
         "ranked_export_last_hit": false,
         "skill_level_category": "basic"
       }
+    },
+    "bond_bonus": {
+      "label": "8暴伤",
+      "modifiers": {
+        "crit_dmg": 0.08
+      }
     }
   },
   {

@@ -75,6 +75,7 @@ def build(directory, workbook):
     character = dict(id=CID, name='Exe', element='暗', adaptation='等离子', rarity='S', level=80,
         avatar='/static/images/characters/avatar/Exe-square.webp', portrait='/static/images/characters/portrait/Exe.webp',
         base_stats=base_stats, modifiers=dict(crit_rate=.05,crit_dmg=.5),
+        bond_bonus=dict(label='8暴伤',modifiers={'crit_dmg':.08}),
         energy_capacity=120, initial_personal_resources={'帧数':0,'评分':0},
         timeline_personal_resources=['帧数','评分'],
         ranked_resource_system=dict(frame_resource='帧数',score_resource='评分',

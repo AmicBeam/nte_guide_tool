@@ -34,11 +34,11 @@ class ExeTest(unittest.TestCase):
 
     def buffs(self, detail):return {b['rule_id']:b for b in detail['applied_buffs']}
 
-    def test_catalog_exact_levels_durations_and_no_bond(self):
+    def test_catalog_exact_levels_durations_and_bond(self):
         c=load_shaft_catalog();char=next(x for x in c['characters']if x['id']==CID)
         self.assertEqual(char['base_stats'],dict(atk=676,hp=15271,**{'def':884}))
         self.assertEqual((char['adaptation'],char['element'],char['energy_capacity']),('等离子','暗',120))
-        self.assertNotIn('bond_bonus',char)
+        self.assertEqual(char['bond_bonus'],{'label':'8暴伤','modifiers':{'crit_dmg':.08}})
         actions={a['name']:a for a in c['actions_by_character'][CID]}
         for name,atk,hits,ticks in [('a1',.537,1,6),('a2',.916,2,6),('a3',1.047,3,7),('a4',2.228,7,13),
                                     ('a5',.786,6,8),('z',1.032,1,7),('e',3.849,6,12),('q',7.7,19,0),('援护',3.08,3,15)]:
@@ -55,6 +55,18 @@ class ExeTest(unittest.TestCase):
         self.assertEqual(len(clone['atk_multipliers_by_level']),13)
         self.assertEqual(clone['personal_resource_cost'],{})
         self.assertEqual(next(a for a in c['arcs']if a['adaptation']=='等离子')['id'],ARC)
+
+    def test_bond_adds_eight_percent_critical_damage_only_when_enabled(self):
+        panels=[]
+        for enabled in [False,True]:
+            axis=self.axis([(0,'action_exe_a1',0)])
+            axis['team'][0]['bond_full']=enabled
+            normalized=normalize_axis_payload(axis)
+            self.assertEqual(normalized['team'][0]['bond_full'],enabled)
+            self.assertEqual(normalized['character_builds'][CID]['bond_full'],enabled)
+            panels.append(self.sim(axis)['details'][0]['panel'])
+        self.assertAlmostEqual(panels[1]['crit_dmg']-panels[0]['crit_dmg'],.08)
+        for key in ['atk','crit_rate','hp','def']:self.assertEqual(panels[0][key],panels[1][key])
 
     def test_frame_gain_score_progress_and_export(self):
         r=self.own([('e',0),('a5',20)])

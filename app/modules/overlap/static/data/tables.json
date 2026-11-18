@@ -225241,7 +225241,7 @@
     }
   ],
   "input_sha256": {
-    "characters.json": "7df257cb976f448659fd0ca7d2652c9457456b8a8c3a0ba001be1160e4af91f2",
+    "characters.json": "afae9aea68b1a674b4eb62fa5511c37b19282f1f077fb40f871fdbab572dcd6b",
     "actions.json": "2c9435f4a2b92ce9c5f5cca8941ac43d95ce446adff90a0f3fb47aa8fefee173",
     "rules.json": "12aa19964a9196f27014f6a5e1574f662dedb146552c81008d48542b6eefd6e8",
     "generator.py": "2fc81d5353aab03241f808599ad3d3c6b625b9338b5b306a63bc3dda0de9956b"

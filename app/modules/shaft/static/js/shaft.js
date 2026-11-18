@@ -5600,7 +5600,7 @@
     return `
       <div class="shaft-detail-hero">
         <strong>${escapeHtml(action.name)}</strong>
-        <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${isStepBackground(step, action) ? (isInstantSwitchAction(action) ? '后台切人' : (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害')) : '前台动作'}</span>
+        <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${damageEvent?.kind === 'triggered_damage' ? '自动触发伤害' : isStepBackground(step, action) ? (isInstantSwitchAction(action) ? '后台切人' : (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害')) : '前台动作'}</span>
       </div>
       ${!damageEvent && isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `
         <div class="shaft-detail-multiplier">

@@ -7100,7 +7100,7 @@
     },
     "effects": {},
     "display": {
-      "line": true
+      "line": false
     },
     "activation": {
       "reduce_action_cooldowns": {
@@ -7152,7 +7152,7 @@
     },
     "effects": {},
     "display": {
-      "line": true
+      "line": false
     },
     "triggered_damage": {
       "action": {

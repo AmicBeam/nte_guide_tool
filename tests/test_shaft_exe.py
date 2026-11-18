@@ -41,25 +41,33 @@ class ExeTest(unittest.TestCase):
         self.assertNotIn('bond_bonus',char)
         actions={a['name']:a for a in c['actions_by_character'][CID]}
         for name,atk,hits,ticks in [('a1',.537,1,6),('a2',.916,2,6),('a3',1.047,3,7),('a4',2.228,7,13),
-                                    ('a5',.786,6,8),('z',1.032,1,7),('e',3.849,6,12),('q',7.7,19,0),('援护',3.08,3,15),('数字残像',.924,1,0)]:
+                                    ('a5',.786,6,8),('z',1.032,1,7),('e',3.849,6,12),('q',7.7,19,0),('援护',3.08,3,15)]:
             with self.subTest(name=name):
                 a=actions[name];self.assertAlmostEqual(a['multipliers']['atk'],atk);self.assertEqual(a['hit_count'],hits);self.assertEqual(a['duration_ticks'],ticks)
                 self.assertEqual(len(a['atk_multipliers_by_level']),13)
         self.assertEqual(actions['q']['energy_cost'],120)
         self.assertTrue(actions['q']['is_time_stop_zero'])
-        self.assertEqual(actions['数字残像']['personal_resource_cost'],{'残像额度':1})
+        self.assertNotIn('数字残像',actions)
+        self.assertEqual(char['initial_personal_resources'],{'帧数':0,'评分':0})
+        self.assertEqual(char['timeline_personal_resources'],['帧数','评分'])
+        clone=char['ranked_resource_system']['export_action']
+        self.assertAlmostEqual(clone['multipliers']['atk'],.924)
+        self.assertEqual(len(clone['atk_multipliers_by_level']),13)
+        self.assertEqual(clone['personal_resource_cost'],{})
         self.assertEqual(next(a for a in c['arcs']if a['adaptation']=='等离子')['id'],ARC)
 
     def test_frame_gain_score_progress_and_export(self):
-        r=self.own([('e',0),('a5',20),('clone',35)])
+        r=self.own([('e',0),('a5',20)])
+        hits=[e for e in r['periodic_damage_events']if e.get('action_id')=='action_exe_clone']
+        self.assertEqual(len(hits),1)
+        self.assertEqual((hits[0]['kind'],hits[0]['tick']),('triggered_damage',0))
+        self.assertGreater(hits[0]['damage'],0)
+        self.assertTrue(all(not b['display_as_line'] for b in hits[0]['triggered_buffs'] if b['rule_id']=='character_exe_cooldown'))
         first=r['details'][0]['personal_resources_after']
-        self.assertAlmostEqual(first['帧数'],1.356)
-        self.assertEqual(first['残像额度'],1)
-        self.assertEqual(r['details'][-1]['personal_resources_after']['残像额度'],0)
-        charges=[e for e in r['personal_resource_state_events']if e['resource']=='残像额度']
-        self.assertEqual(charges[-1]['value'],0)
-        self.assertGreater(r['details'][-1]['personal_resources_after']['帧数'],first['帧数'])
-        self.assertTrue(r['personal_resource_state_events'])
+        self.assertAlmostEqual(first['帧数'],5.856)
+        self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['帧数'],5.856)
+        self.assertFalse(any(e['resource']=='残像额度'for e in r['personal_resource_state_events']))
+        self.assertTrue(all('残像额度'not in d['personal_resources_after']for d in r['details']))
 
     def test_interrupt_keeps_exact_levels_and_requires_finisher(self):
         axis=self.axis([(0,'action_exe_a4',0)])
@@ -72,7 +80,7 @@ class ExeTest(unittest.TestCase):
             axis=self.axis([(0,'action_exe_a5',0)])
             axis['steps'][0].update(interrupted=True,interrupt_duration_ticks=5,interrupt_hit_count=hits)
             result=self.sim(axis,{'帧数':50})
-            self.assertEqual(result['details'][0]['personal_resources_after']['残像额度'],expected_charges)
+            self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),expected_charges)
 
     def test_score_decay_and_independent_three_resonance(self):
         for nodes,resonances,decays in [((),[],True),((),[3],False),([1,2,3],[],True)]:
@@ -109,17 +117,20 @@ class ExeTest(unittest.TestCase):
         self.assertNotIn('character_exe_d_clone',self.buffs(r['details'][1]))
 
     def test_clone_cooldown_floor_and_awakened_burst(self):
-        r=self.own([('e',0),('clone',50),('e',70)],initial={'残像额度':30})
-        self.assertTrue(any('CD' in w for w in r['details'][-1]['warnings']))
-        axis=self.axis([(0,'action_exe_e',0),(0,'action_exe_clone',50),(0,'action_exe_e',70)])
-        axis['steps'][1]['repeat']=20
-        r=self.sim(axis,{'残像额度':30})
+        # E's own export immediately lowers its cooldown from 15 to 14 seconds.
+        r=self.own([('e',0),('e',140)])
         self.assertFalse(any('CD' in w for w in r['details'][-1]['warnings']))
-        r=self.own([('q',0),('clone',10),('a1',200)],nodes=[5],initial={'残像额度':2})
+        r=self.own([('e',0),('e',130)])
+        self.assertTrue(any('CD' in w for w in r['details'][-1]['warnings']))
+        # E exports five, Q exports ten: shared floor remains two seconds after Q.
+        for tick,warning in [(39,True),(45,False)]:
+            r=self.own([('e',0),('q',20),('e',tick)],initial={'帧数':100})
+            self.assertEqual(any('CD' in w for w in r['details'][-1]['warnings']),warning)
+        r=self.own([('q',0),('a1',200)],nodes=[5],initial={'帧数':100})
         hits=[e for e in r['periodic_damage_events']if e.get('action_id')=='action_exe_clone_boom']
-        self.assertEqual(len(hits),1)
-        self.assertGreater(hits[0]['damage'],0)
-        r=self.own([('clone',0)],nodes=[5],initial={'残像额度':2})
+        self.assertEqual(len(hits),10)
+        self.assertTrue(all(e['damage']>0 for e in hits))
+        r=self.own([('a5',0)],nodes=[5],initial={'帧数':100})
         self.assertFalse(any(e.get('action_id')=='action_exe_clone_boom'for e in r['periodic_damage_events']))
 
     def test_f_healing_and_empty_hit(self):
@@ -145,7 +156,7 @@ class ExeTest(unittest.TestCase):
             self.assertAlmostEqual(level['buff_effects']['arc_exe_summon']['action_dmg'],.02+.005*(i-1))
         axis=self.axis([(0,'action_exe_a1',0)])
         axis['options'].update(loop_enabled=True,loop_initial_resources={CID:{'personal_resources':{'帧数':999,'评分':99999,'残像额度':4}}})
-        self.assertEqual(normalize_axis_payload(axis)['options']['loop_initial_resources'][CID]['personal_resources'],{'帧数':100,'评分':5000,'残像额度':4})
+        self.assertEqual(normalize_axis_payload(axis)['options']['loop_initial_resources'][CID]['personal_resources'],{'帧数':100,'评分':5000})
 
 
 class ExeAccessTest(RoomFlowTestCase):

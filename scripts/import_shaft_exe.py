@@ -75,10 +75,10 @@ def build(directory, workbook):
     character = dict(id=CID, name='Exe', element='暗', adaptation='等离子', rarity='S', level=80,
         avatar='/static/images/characters/avatar/Exe-square.webp', portrait='/static/images/characters/portrait/Exe.webp',
         base_stats=base_stats, modifiers=dict(crit_rate=.05,crit_dmg=.5),
-        energy_capacity=120, initial_personal_resources={'帧数':0,'评分':0,'残像额度':0},
-        timeline_personal_resources=['帧数','评分','残像额度'],
-        ranked_resource_system=dict(frame_resource='帧数',score_resource='评分',charge_resource='残像额度',
-            frame_cap=val(curves,'ExeFrameMax'),score_cap=rank_thresholds[-1],charge_cap=1000,
+        energy_capacity=120, initial_personal_resources={'帧数':0,'评分':0},
+        timeline_personal_resources=['帧数','评分'],
+        ranked_resource_system=dict(frame_resource='帧数',score_resource='评分',
+            frame_cap=val(curves,'ExeFrameMax'),score_cap=rank_thresholds[-1],
             export_cost=-val(curves,'Exe_CloneCost'),promote_reaction='黯星',promote_score=rank_thresholds[3],
             reaction_score=val(curves,'Exe_Score_Reaction'),empowered_buff_key='character_exe_equation',
             heal_atk_per_frame=val(curves,'Exe_RecoverHpCoef_L6'),score_per_consumed_frame=val(curves,'Exe_AddScore_L6'),
@@ -102,7 +102,7 @@ def build(directory, workbook):
             duration_implemented=True,duration_estimated=name in ['下落','闪反','e','援护'],multipliers=dict(atk=levels[0],hp=0,**{'def':0},flat=0),
             atk_multipliers_by_level=levels,energy_gain=aggregate('ChargeAdd'),harmony=aggregate('HeterochromeAdd'),stagger=aggregate('UnbalValue'),
             energy_return=0,self_modifiers={},cooldown_ticks=150 if name=='e' else 200 if name=='q' else 0,energy_cost=120 if name=='q' else 0,
-            personal_resource_cost={'残像额度':1} if name=='数字残像' else {},personal_resource_gain={},hit_count=len(hits),display_order=order,
+            personal_resource_cost={},personal_resource_gain={},hit_count=len(hits),display_order=order,
             can_background_override=name in ['a2','a3','a4','a5'],tags=['召唤物']+(['数字残像']if name=='数字残像'else []),
             ranked_resource_hits=[dict(frames=val(frames,key),score=val(scores,key),atk_levels=row['AtkRateBaseArray'])for key,row in hits],
             ranked_export_limit=5 if name=='e' else 10 if name=='q' else 1 if name in ['a5','闪反','援护'] else 0,
@@ -115,7 +115,12 @@ def build(directory, workbook):
         for i,(_,hit) in enumerate(hits,1):
             prev=cumulative[-1]; cumulative.append(dict(hit_count=i,damage=round(prev['damage']+hit['AtkRateBaseArray'][0],9),energy=round(prev['energy']+hit['ChargeAdd'],9),harmony=round(prev['harmony']+hit['HeterochromeAdd'],9),stagger=round(prev['stagger']+hit['UnbalValue'],9)))
         if seconds and action_type!='援护':output['action_hit_profiles'][action['id']]={'cumulative':cumulative}
-        actions.append(action)
+        if name=='数字残像':
+            action.pop('is_background_damage',None)
+            action['skill_level_category']='basic'
+            character['ranked_resource_system']['export_action']=action
+        else:
+            actions.append(action)
     output['actions']=[a for a in output['actions']if a['character_id']!=CID]+actions
     # Explicit summon classes supplied for this character's team interaction.
     for a in output['actions']:
@@ -124,7 +129,7 @@ def build(directory, workbook):
             (a['character_name']=='卡厄斯'and a['action_type']=='E') or (a['character_name']=='哈尼娅'and '后台'in a['name']) or
             (a['character_name']=='阿德勒'and a['action_type']in['E','Q']))
         if summon and a.get('damage_type')!='无':a['tags']=list(dict.fromkeys([*a.get('tags',[]),'召唤物']))
-    output['formula_constants']['personal_resource_caps'][CID]={'帧数':100,'评分':5000,'残像额度':1000}
+    output['formula_constants']['personal_resource_caps'][CID]={'帧数':100,'评分':5000}
     output['formula_constants']['default_build_options'][CID]={'curtain_bonus':{'value':8,'stat':'暴击','passive_type':'type3','fixed':True}}
     awakened=table(directory,'1074AwakenEffect')['1074']['AwakenEffectStructList']
     output['awakenings']['Exe']=[dict(title=plain(a['Title']),description=plain(a['Desc']).replace('{0}',str(damage['GE_Player_Exe_CloneBoom_Damage']['AtkRateBaseArray'][0]*100)),implemented=True)for a in awakened]
@@ -166,6 +171,8 @@ def add_effects(output, damage, curves, directory):
          triggered_damage=dict(action=dict(id='action_exe_clone_boom',name='数字残像·冲击',action_type='普攻',damage_type='普攻',
             skill_level_category='basic',hit_count=1,tags=['召唤物','数字残像'],multipliers={'atk':hit['AtkRateBaseArray'][0]},
             atk_multipliers_by_level=hit['AtkRateBaseArray'],ranked_resource_hits=[dict(frames=0,score=10)])))
+    for buff in buffs:
+        if buff['id'] in ['character_exe_cooldown','character_exe_e']:buff['display']['line']=False
     fork=table(directory,'DT_ForkItemData'); raw=next(v for k,v in fork.items()if k.casefold()=='fork_exe')
     arc=dict(id=ARC,name=plain(raw['ItemName']),level=80,rarity='S',adaptation='等离子',base_atk=570,
              detail='暴击伤害提高28%–40%，攻击力提高28%–56%；装备者每造成一次暗属性伤害，召唤物伤害提高2%–4%，最多10层，持续20秒，重复获得刷新持续时间。',

@@ -4690,7 +4690,11 @@
           const amount = Math.min(exportLimit - exported, Math.floor(num(resources[model.frame_resource]) / num(model.export_cost)));
           if (amount <= 0) return;
           resources[model.frame_resource] -= amount * num(model.export_cost);
-          resources[model.charge_resource] = Math.min(num(model.charge_cap), num(resources[model.charge_resource]) + amount);
+          if (model.export_action && tick >= 0) {
+            for (let i = 0; i < amount; i += 1) {
+              enqueueTriggeredDamage(owner, model.export_action, tick, {source_step_id: step.id});
+            }
+          }
           exported += amount;
           if (hasAwakeningNode(owner, 6)) addScore(amount * num(model.export_cost) * num(model.score_per_consumed_frame));
         });
@@ -6020,6 +6024,8 @@
       slotEnergy = energyBySlot.get(slot) ?? slotEnergy;
       const displayedEnergyGain = plannedEnergy.get(energyActorSlot) || 0;
       recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
+      // Exported attacks resolve after the source action has registered its cooldown.
+      if (snapshot.character?.ranked_resource_system?.export_action) settleReactionDamage(startTick);
       if (changesForeground) {
         frontEvents.push({
           slot,

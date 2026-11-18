@@ -884,21 +884,17 @@
     "energy_capacity": 120,
     "initial_personal_resources": {
       "帧数": 0,
-      "评分": 0,
-      "残像额度": 0
+      "评分": 0
     },
     "timeline_personal_resources": [
       "帧数",
-      "评分",
-      "残像额度"
+      "评分"
     ],
     "ranked_resource_system": {
       "frame_resource": "帧数",
       "score_resource": "评分",
-      "charge_resource": "残像额度",
       "frame_cap": 100.0,
       "score_cap": 5000.0,
-      "charge_cap": 1000,
       "export_cost": 10.0,
       "promote_reaction": "黯星",
       "promote_score": 500.0,
@@ -943,7 +939,81 @@
           "frame_multiplier": 3.0,
           "decay_per_second": 0.0
         }
-      ]
+      ],
+      "export_action": {
+        "id": "action_exe_clone",
+        "character_id": "char_exe",
+        "character_name": "Exe",
+        "name": "数字残像",
+        "action_type": "普攻",
+        "damage_type": "普攻",
+        "duration_seconds": 0,
+        "duration_ticks": 0,
+        "duration_implemented": true,
+        "duration_estimated": false,
+        "multipliers": {
+          "atk": 0.924,
+          "hp": 0,
+          "def": 0,
+          "flat": 0
+        },
+        "atk_multipliers_by_level": [
+          0.924,
+          0.998,
+          1.078,
+          1.164,
+          1.257,
+          1.358,
+          1.466,
+          1.584,
+          1.71,
+          1.847,
+          1.995,
+          2.154,
+          2.327
+        ],
+        "energy_gain": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0,
+        "energy_return": 0,
+        "self_modifiers": {},
+        "cooldown_ticks": 0,
+        "energy_cost": 0,
+        "personal_resource_cost": {},
+        "personal_resource_gain": {},
+        "hit_count": 1,
+        "display_order": 11,
+        "can_background_override": false,
+        "tags": [
+          "召唤物",
+          "数字残像"
+        ],
+        "ranked_resource_hits": [
+          {
+            "frames": 3.0,
+            "score": 50.0,
+            "atk_levels": [
+              0.924,
+              0.998,
+              1.078,
+              1.164,
+              1.257,
+              1.358,
+              1.466,
+              1.584,
+              1.71,
+              1.847,
+              1.995,
+              2.154,
+              2.327
+            ]
+          }
+        ],
+        "ranked_export_limit": 0,
+        "ranked_export_limit_empowered": 0,
+        "ranked_export_last_hit": false,
+        "skill_level_category": "basic"
+      }
     }
   },
   {

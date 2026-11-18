@@ -79,8 +79,8 @@ class ElymsArcTest(unittest.TestCase):
         self.assertEqual(role['affinity']['total_affinity'],56100)
         self.assertEqual(len(role['affinity']['levels']),10)
         self.assertEqual(role['affinity']['full_affinity_bonus'][0]['text'],'攻击力＋5%')
-        self.assertEqual(service.detail('characters','preview-exe')['status'],'preview')
-        self.assertNotIn('1074',{c['id'] for c in service.catalog()['characters']})
+        self.assertEqual(service.detail('characters','preview-exe')['id'],'1074')
+        self.assertNotIn('preview-exe',{c['id'] for c in service.catalog()['characters']})
 
 
 class ArcImportTest(unittest.TestCase):
@@ -105,10 +105,10 @@ class ArcImportTest(unittest.TestCase):
         payload=json.loads((ROOT/'app/modules/guide/data/ntedata_arcs.json').read_text())
         data={'arcs':[]}
         self.refresh.merge_local_arcs(data,payload);self.refresh.merge_local_arcs(data,payload)
-        self.assertEqual([a['id'] for a in data['arcs']],[ARC])
+        self.assertEqual([a['id'] for a in data['arcs']],[a['id'] for a in payload['arcs']])
         remote={'arcs':[{'id':ARC,'name':'new remote data'}]}
         self.refresh.merge_local_arcs(remote,payload)
-        self.assertEqual(remote['arcs'],[{'id':ARC,'name':'new remote data'}])
+        self.assertEqual(next(a for a in remote['arcs']if a['id']==ARC),{'id':ARC,'name':'new remote data'})
         broken=deepcopy(payload);broken['arcs'][0]['materials']=[]
         with self.assertRaisesRegex(ValueError,'Incomplete'):
             self.refresh.merge_local_arcs({'arcs':[]},broken)

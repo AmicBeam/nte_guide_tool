@@ -141,7 +141,7 @@ def entry(kind, identifier):
     return render_template('guide/detail.html', attached_articles=attached, record=record, sections=sections, kind=kind,
                            kinds=service.KINDS, art=art, profile=profile, overview=overview, arc_image=arc_image,
                            material_preview=presentation.upgrade_material_preview(overview) if overview else [],
-                           pending_releases=[profile] if profile and profile.get('content_released') is False else [],
+                           pending_releases=[overview] if overview and overview.get('content_released') is False else [],
                            notes=service.schema()['notes'], recommended_arc=arc_cultivation.recommended(profile) if profile else None)
 
 

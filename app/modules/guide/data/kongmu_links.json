@@ -232,5 +232,14 @@
         "name": "失落光芒"
       }
     ]
+  },
+  "1074": {
+    "character_id": "1074",
+    "recommendations": [
+      {
+        "id": "chaos",
+        "name": "迪亚波罗斯"
+      }
+    ]
   }
 }

@@ -105,7 +105,7 @@ class GuideArticlesTest(unittest.TestCase):
     def test_invalid_targets_and_fields_do_not_mutate_saved_draft(self):
         self.save()
         self.assertEqual(self.save(revision=1, target_kind='characters', target_id='missing').status_code, 400)
-        self.assertEqual(self.save(revision=1, target_kind='characters', target_id='preview-exe').status_code, 400)
+        self.assertEqual(self.save(revision=1, target_kind='characters', target_id='preview-nitsa').status_code, 400)
         self.assertEqual(self.save(revision=True).status_code, 400)
         self.assertEqual(self.save(ident='invalid').status_code, 404)
         self.assertEqual(self.save(revision=1, markdown='x'*150001).status_code, 400)

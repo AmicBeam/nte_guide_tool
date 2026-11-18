@@ -72,6 +72,8 @@ def fields(payload):
         if not isinstance(result[key], str) or len(result[key]) > limit:
             raise ValueError(f'{key} 格式或长度无效。')
     result['title'] = result['title'].strip()
+    if result['target_kind'] == 'characters' and result['target_id'] == 'preview-exe':
+        result['target_id'] = '1074'
     validate_target(result['target_kind'], result['target_id'])
     return result
 

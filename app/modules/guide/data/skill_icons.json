@@ -255,5 +255,16 @@
     "GA_Elyms_Passive3": "/static/guide/skill-icons/Elyms_Pas3.webp",
     "City_Ability_Elyms_01": null,
     "City_Ability_Elyms_02": null
+  },
+  "1074": {
+    "GA_Exe_Melee": "/static/guide/skill-icons/Exe_Melee.webp",
+    "GA_Exe_Skill": "/static/guide/skill-icons/Exe_Skill.webp",
+    "GA_Exe_UltraSkill": "/static/guide/skill-icons/Exe_UltraSkill.webp",
+    "GA_Exe_QTE": "/static/guide/skill-icons/Exe_QTE.webp",
+    "GA_Exe_Passive_1": "/static/guide/skill-icons/Exe_Pas1.webp",
+    "GA_Exe_Passive_2": "/static/guide/skill-icons/Exe_Pas2.webp",
+    "GA_Exe_Passive_3": "/static/guide/skill-icons/Exe_Pas3.webp",
+    "City_Ability_Exe_01": null,
+    "City_Ability_Exe_02": null
   }
 }

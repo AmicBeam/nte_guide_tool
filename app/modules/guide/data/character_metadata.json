@@ -604,6 +604,31 @@
           "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuijiagongji.webp"
         }
       ]
+    },
+    {
+      "id": "1074",
+      "arc_type": {
+        "id": "3",
+        "name": "等离子",
+        "icon": "/static/images/arc-types/YH_UI_icon_plasma.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": "",
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": "",
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        },
+        {
+          "name": "召唤",
+          "description": "",
+          "icon": "/static/images/character-tags/YH_UI_JueSe_Icon_ZhaoHuan.webp"
+        }
+      ]
     }
   ]
 }

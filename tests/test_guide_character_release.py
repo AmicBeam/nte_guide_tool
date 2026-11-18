@@ -121,26 +121,26 @@ class CharacterReleaseTest(unittest.TestCase):
             self.assertNotIn('沉入电子梦',json.dumps(result,ensure_ascii=False))
 
     def test_exe_reference_data_is_gated_even_when_added_to_preview(self):
-        records=deepcopy(previews.characters());row=next(r for r in records if r['id']=='preview-exe')
+        records=deepcopy(previews.characters());row=deepcopy(records[0]);row.update(id='synthetic-exe-preview',name='Exe');records.append(row)
         row['reference_details']={'abilities':[{'id':'GA_Exe_hidden','name':'EXE_SECRET',
             'type_name':'Melee','phases':[{'name':'EXE_SECRET','desc':'EXE_PRIVATE_EFFECT'}],
             'param_rows':[],'groups':[{'name':'EXE_SECRET','description':'EXE_PRIVATE_EFFECT','param_rows':[]}]}],
             'awaken':[],'resonance':[]}
         row['assets']['fullbody']=row['preview_image']
-        for time,visible in [('2026-11-26T09:59:59+08:00',False),('2026-11-26T02:00:00+00:00',True)]:
+        for time,visible in [('2026-11-26T11:59:59+08:00',False),('2026-11-26T04:00:00+00:00',True)]:
             with patch.object(previews,'characters',return_value=records),self.clock(time):
-                result=service.detail('characters','preview-exe')
+                result=service.detail('characters','synthetic-exe-preview')
                 self.assertEqual(result['content_released'],visible)
-                for path in ['/api/guide/characters/preview-exe','/guide/characters/preview-exe.md',
-                             '/guide/characters/preview-exe']:
+                for path in ['/api/guide/characters/synthetic-exe-preview','/guide/characters/synthetic-exe-preview.md',
+                             '/guide/characters/synthetic-exe-preview']:
                     response=self.client.get(path)
                     self.assertEqual(response.status_code,200)
                     self.assertEqual('EXE_SECRET'in response.text,visible)
-                self.assertEqual(self.client.get('/api/guide/characters/preview-exe?section=reference_details').status_code,
+                self.assertEqual(self.client.get('/api/guide/characters/synthetic-exe-preview?section=reference_details').status_code,
                                  200 if visible else 404)
         for record in [{'id':'synthetic-new-exe','name':'Exe'},
                        {'id':'synthetic-new-exe','name':'测试角色','aliases':['Exe']}]:
-            self.assertFalse(release.metadata(record,datetime.fromisoformat('2026-11-26T09:59:59+08:00'))['content_released'])
+            self.assertFalse(release.metadata(record,datetime.fromisoformat('2026-11-26T11:59:59+08:00'))['content_released'])
 
     def test_unconfigured_characters_and_timezone_validation(self):
         with self.clock('2026-11-01T00:00:00+08:00'):

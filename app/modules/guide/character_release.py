@@ -94,3 +94,18 @@ def project(record, now=None):
     collect(record.get('materials', {}))
     result['materials'] = {'breakthrough': [{'items': list(items.values())}], 'skills': []}
     return {**result, **state}
+
+
+def project_arc(record, now=None):
+    state = metadata(record, now)
+    if not state:
+        return record
+    subject = next((row['ids'][0] for row in configured_rows()
+                    if str(record['id']).casefold() in {str(value).casefold() for value in row['ids']}
+                    or record.get('name', '').casefold() == row['name'].casefold()), record['id'])
+    state['release_subject_id'] = subject
+    if state['content_released']:
+        return {**record, **state}
+    public = {'id', 'name', 'rarity', 'type_id', 'type_name', 'description', 'stats',
+              'materials', 'image', 'rarity_icon', 'exclusive_character_ids', 'exclusive_desc'}
+    return {**{key: deepcopy(value) for key, value in record.items() if key in public}, **state}

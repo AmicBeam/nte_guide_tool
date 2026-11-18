@@ -69,5 +69,5 @@ class PublishedEnergyCostTest(unittest.TestCase):
             response = client.get(path)
             self.assertEqual(response.status_code, 200)
             self.assertIn('消耗终结能量', json.dumps(response.json, ensure_ascii=False) if response.is_json else response.text)
-        self.assertEqual(service.detail('characters', 'preview-exe')['status'], 'preview')
+        self.assertEqual(service.detail('characters', 'preview-exe')['id'], '1074')
         self.assertEqual(service.detail('characters', 'preview-nitsa')['status'], 'preview')

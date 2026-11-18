@@ -35,6 +35,7 @@ LABELS = {
     'total_affinity': '从零到满好感所需好感值', 'required_gifts': '所需礼物份数',
     'full_affinity_total': '满好感总需求',
     'release_at': '资料开放时间（UTC+8）', 'content_released': '技能及后续资料已开放',
+    'release_subject_id': '资料开放关联角色',
     'skills_included': '包含技能养成',
     'costs': '礼物花费', 'unit_price': '单价', 'total_cost': '总花费',
     'story_only': '剧情专属料理',
@@ -160,6 +161,9 @@ def public_records(kind):
         records = records + [row for row in previews.characters() if str(row['id']) not in complete_ids]
         now = character_release.current_time()
         return [character_release.project(row, now) for row in records]
+    if kind == 'arcs':
+        now = character_release.current_time()
+        return [character_release.project_arc(row, now) for row in records]
     if kind == 'endless':
         from .endless_seasons import season_records
         return season_records(records)
@@ -250,6 +254,7 @@ def playable_character(identifier):
 
 
 def character_release_status(identifier):
+    identifier = '1074' if identifier == 'preview-exe' else identifier
     records = catalog()['characters'] + previews.characters()
     record = next((row for row in records if str(row['id']) == identifier), None)
     if record is None:
@@ -258,6 +263,7 @@ def character_release_status(identifier):
 
 
 def cultivation_character(identifier):
+    identifier = '1074' if identifier == 'preview-exe' else identifier
     record = playable_character(identifier)
     if record.get('content_released') is False:
         raw = next(c for c in catalog()['characters'] if str(c['id']) == identifier)
@@ -268,6 +274,8 @@ def cultivation_character(identifier):
 
 
 def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None, *, skill_level=None, hit_details=None, encounter=None):
+    if kind == 'characters' and identifier == 'preview-exe':
+        identifier = '1074'
     if kind == 'beginner' and section == 'progression':
         section = 'gameplay'
     record = next((r for r in public_records(kind) if str(r['id']) == identifier), None)

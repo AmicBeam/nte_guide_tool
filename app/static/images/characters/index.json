@@ -182,6 +182,13 @@
       "avatar": "/static/images/characters/avatar/曳尔沐-square-v2.webp",
       "portrait": "/static/images/characters/portrait/曳尔沐.webp",
       "fullbody": "/static/images/characters/fullbody/曳尔沐.webp"
+    },
+    {
+      "id": "1074",
+      "name": "Exe",
+      "avatar": "/static/images/characters/avatar/Exe-square.webp",
+      "portrait": "/static/images/characters/portrait/Exe.webp",
+      "fullbody": "/static/images/characters/fullbody/Exe.webp"
     }
   ]
 }

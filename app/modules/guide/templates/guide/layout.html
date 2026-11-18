@@ -12,7 +12,7 @@
 <main class="guide-page {% block page_class %}{% endblock %}">
 <header class="guide-fixed-header"><div class="guide-top"><a class="guide-brand" href="/">NTE <span>TOOLS</span></a>{% block guide_back %}{% endblock %}<div class="guide-header-title" aria-label="站点与游戏数据版本"><strong>{{ guide_header.title }}</strong><span>{% if guide_header.game_version %}游戏数据 v{{ guide_header.game_version }}{% else %}游戏数据版本待确认{% endif %}</span></div><nav class="guide-top-actions" aria-label="站点导航"><a href="/guide">首页</a><a href="/login" id="guide-account-link">登录</a></nav></div></header>
 {% block content %}{% endblock %}
-{% if pending_releases|default([]) %}{% for item in pending_releases %}<span hidden data-character-release-url="/api/guide/characters/{{ item.id|urlencode }}/release"></span>{% endfor %}<script defer src="{{ url_for('guide_module.static', filename='character_release.js') }}"></script>{% endif %}
+{% if pending_releases|default([]) %}{% for item in pending_releases %}<span hidden data-character-release-url="/api/guide/characters/{{ item.release_subject_id|default(item.id)|urlencode }}/release"></span>{% endfor %}<script defer src="{{ url_for('guide_module.static', filename='character_release.js') }}"></script>{% endif %}
 <footer class="guide-footer"><span>本站聚焦角色养成、配装、战斗机制与关卡攻略，按攻略需要收录相关数据，不以收录全部游戏资料为目标。</span><a href="/guide/llms.txt">LLM 阅读入口 ↗</a></footer>
 </main>
 {% endblock %}

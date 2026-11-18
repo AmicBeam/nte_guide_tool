@@ -353,6 +353,19 @@
       "element_id": "COSMOS",
       "rarity": 5,
       "icon": ""
+    },
+    {
+      "id": "1074",
+      "access_level": "test",
+      "name": "Exe",
+      "names": {
+        "zh": "Exe",
+        "en": "Exe"
+      },
+      "element": "Chaos",
+      "element_id": "CHAOS",
+      "rarity": 5,
+      "icon": ""
     }
   ]
 }

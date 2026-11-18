@@ -58,9 +58,23 @@ def build(directory, workbook):
     rank_thresholds = [val(curves, f'Exe_RankScore{i}') for i in range(1,7)]
     rank_mult = [k['Value'] for k in table(directory, 'DT_ExeEffectFigure_RankMult')['Exe_RankMult']['Keys']]
     decay = [k['Value'] for k in table(directory, 'DT_ExeEffectFigure_ScoreDecay')['Exe_ScoreDecay']['Keys']]
+    element=table(directory,'DT_Character')['1074']['ElementData']
+    base=table(directory,'DT_PlayerPackData')[element['PropModifyID']]
+    growth=table(directory,'DT_PlayerModifyPackData')
+    stage=table(directory,'DT_CharacterBreakthroughDataTable')[element['BreakthroughPackId']+'_6']['ModifyPackID']
+    base_stats={}
+    for key,prop in [('atk','AtkBase'),('hp','HPMaxBase'),('def','DefBase')]:
+        value=base[prop]
+        for modifier in [growth[element['UpgradeModifyPackId']+'_80'],growth[stage]]:
+            if modifier['ConditionArray']:raise ValueError('Conditional character growth')
+            for item in modifier['ModifyData']:
+                if item['PropName']!=prop:continue
+                if not item['ModifierOp'].endswith('MODIFY_MODOP_ADDITIVE'):raise ValueError('Nonadditive character growth')
+                value+=item['PropValue']
+        base_stats[key]=int(value)
     character = dict(id=CID, name='Exe', element='暗', adaptation='等离子', rarity='S', level=80,
         avatar='/static/images/characters/avatar/Exe-square.webp', portrait='/static/images/characters/portrait/Exe.webp',
-        base_stats=dict(atk=804,hp=15271, **{'def':884}), modifiers=dict(crit_rate=.05,crit_dmg=.5),
+        base_stats=base_stats, modifiers=dict(crit_rate=.05,crit_dmg=.5),
         energy_capacity=120, initial_personal_resources={'帧数':0,'评分':0,'残像额度':0},
         timeline_personal_resources=['帧数','评分','残像额度'],
         ranked_resource_system=dict(frame_resource='帧数',score_resource='评分',charge_resource='残像额度',

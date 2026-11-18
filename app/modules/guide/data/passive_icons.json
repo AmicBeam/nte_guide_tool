@@ -986,5 +986,43 @@
         "icon": "/static/guide/passive-icons/1009_2.webp"
       }
     ]
+  },
+  "1074": {
+    "awaken": [
+      {
+        "name": "print 你好，我的世界",
+        "icon": "/static/guide/passive-icons/1074_1.webp"
+      },
+      {
+        "name": "define X/Y",
+        "icon": "/static/guide/passive-icons/1074_2.webp"
+      },
+      {
+        "name": "for 永远一起玩",
+        "icon": "/static/guide/passive-icons/1074_3.webp"
+      },
+      {
+        "name": "kill 杀死进程",
+        "icon": "/static/guide/passive-icons/1074_4.webp"
+      },
+      {
+        "name": "null 空指针",
+        "icon": "/static/guide/passive-icons/1074_5.webp"
+      },
+      {
+        "name": "log 驱动骸骨的代码",
+        "icon": "/static/guide/passive-icons/1074_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "save 不曾想象的未来",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "load 不可证明的宝物",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
   }
 }

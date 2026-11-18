@@ -22,7 +22,8 @@ class ElymsKongmuTest(RoomFlowTestCase):
             public = self._get('/api/kongmu/catalog', token=token)
             ids = {c['id'] for c in public['characters']}
             self.assertIn('1090', ids)
-            self.assertEqual(tester_ids, ids)
+            self.assertEqual(tester_ids - {'1074'}, ids)
+            self.assertNotIn('1074', ids)
             self.assertEqual(public['meta']['character_count'], len(ids))
             headers = {'Authorization': f'Bearer {token}'} if token else {}
             for identifier in ('1090', 'char_elyms', '曳尔沐', 'Elyms'):

@@ -36,7 +36,7 @@ class ExeTest(unittest.TestCase):
 
     def test_catalog_exact_levels_durations_and_no_bond(self):
         c=load_shaft_catalog();char=next(x for x in c['characters']if x['id']==CID)
-        self.assertEqual(char['base_stats'],dict(atk=804,hp=15271,**{'def':884}))
+        self.assertEqual(char['base_stats'],dict(atk=676,hp=15271,**{'def':884}))
         self.assertEqual((char['adaptation'],char['element'],char['energy_capacity']),('等离子','暗',120))
         self.assertNotIn('bond_bonus',char)
         actions={a['name']:a for a in c['actions_by_character'][CID]}

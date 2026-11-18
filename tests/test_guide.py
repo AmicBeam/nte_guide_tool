@@ -71,7 +71,7 @@ class GuideTest(unittest.TestCase):
 
     def test_arc_icon_filters_and_rarity_images(self):
         html = self.client.get('/guide?kind=arcs&rarity=3&arc_type=1').text
-        self.assertEqual(html.count('data-filter-card '), 52)
+        self.assertEqual(html.count('data-filter-card '), 53)
         self.assertIn('aria-label="3星"', html)
         self.assertIn('data-guide-filter-group', html)
         self.assertNotIn('class="guide-arc-types"', html)
@@ -313,7 +313,7 @@ class GuideTest(unittest.TestCase):
 
     def test_all_characters_have_local_webp_art(self):
         characters = service.catalog()['characters']
-        self.assertEqual(len(characters), 26)
+        self.assertEqual(len(characters), 27)
         for character in characters:
             for kind in ('avatar', 'portrait', 'fullbody'):
                 url = character['assets'][kind]

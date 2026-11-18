@@ -274,7 +274,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 验证：`.venv/bin/python -m unittest tests.test_guide_arc_cultivation tests.test_guide_user_data tests.test_guide tests.test_guide_account tests.test_module_routes -q`；`node --test tests/test_guide_private_response.cjs tests/test_guide_equipment_images.cjs`。覆盖全部弧盘、首次升级、原地突破、无消耗、材料合计、无效类型／等级、推荐链接和同步预填；浏览器核对自动填入、手填保留、可选表单、换选弧盘与窄屏。
 
-“相关排轴与配装收益”标题右侧仅为有合轴第一页的角色显示“合轴收益表”按钮，进入 `/overlap?character=<合轴角色ID>` 并预选对应角色。`data/overlap_links.json` 保存攻略角色ID与已发布合轴角色ID的明确绑定，当前覆盖安魂曲、残虹、黑羽、明音凛；其他角色不显示。链接不进入双角色分页，不导入合轴领域服务；合轴第一页角色范围变化时同步更新绑定并运行 `tests.test_guide_builds`。
+“相关排轴与配装收益”标题右侧仅为有合轴第一页的角色显示“合轴收益表”按钮，进入 `/overlap?character=<合轴角色ID>` 并预选对应角色。`data/overlap_links.json` 保存攻略角色ID与已发布合轴角色ID的明确绑定，当前覆盖安魂曲、残虹、黑羽、明音凛、曳尔沐和Exe；其他角色不显示。链接不进入双角色分页，不导入合轴领域服务；合轴第一页角色范围变化时同步更新绑定并运行 `tests.test_guide_builds`。
 
 轨外之境列表卡片不显示左上序号、关数和跳转图标；常驻／轮换标签位于标题下一行，日期或长期开放状态位于右下角，环线ID保留在左下角。整张卡片仍可点击，当前赛期边缘高亮保留。
 
@@ -606,3 +606,6 @@ Exe使用正式编号1074，旧链接`preview-exe`继续解析至正式角色；
 显式导入使用`python scripts/sync_guide_exe.py --ntedata-dir /path/to/tables --ui-dir /path/to/UI --affinity-dir /path/to/tables`。头像沿用校准裁剪，补齐高清立绘、七张技能图标、六张觉醒图标及专属弧盘图片。养成与一图流默认选择本地绑定的专属弧盘「虚线彼方」，该默认值不表示官方推荐。空幕链接预选1074与迪亚波罗斯，空幕及排轴均维持测试权限。
 
 角色技能与弧盘效果共享2026-11-26 12:00（UTC+8）服务器开放窗口。角色和弧盘只读页到点自动复查并刷新；JSON、Markdown、搜索、助手及养成同样执行公开范围。新增攻略使用旧角色ID时保存为1074。验证执行`python -m unittest tests.test_guide_exe_complete -q`及完整攻略回归，并核对开放前、恰好到点、UTC等价时刻、浏览器自动刷新和窄屏布局。
+
+
+Exe技能的`hit_details`另含`frame_gain`（单次命中基础帧数）与`score_gain`（单次命中基础评分），按命中效果ID读取专属曲线；0为已确认的零获取，缺失不填零。网页详细命中表按实际字段显示两列，其他角色不增加空列；JSON、Markdown和CLI共用相同数值，`hit_details=0`仍可隐藏明细。重复次数单独保留，不把动作总帧数或总评分填入单次命中值；帧数未乘评级效率，评分未乘共鸣修正。导入所需表增加`DT_ExeEffectFigure_Frame.json`与`DT_ExeEffectFigure_Score.json`；缺失命中映射时中止。验证由`tests.test_guide_exe_complete`覆盖每项命中、零值、多段合计、公开格式、隐藏明细及其他角色列数。

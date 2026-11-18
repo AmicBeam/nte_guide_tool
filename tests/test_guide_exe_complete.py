@@ -130,6 +130,38 @@ class ExeCompleteTest(ExeReleaseTest):
             self.assertEqual(self.client.get('/api/guide/characters/1074?section='+section).status_code,200)
         self.assertIn('数据穿透',self.client.get('/guide/characters/1074.md').text)
 
+    def test_per_hit_frames_scores_are_in_every_public_detail_format(self):
+        role=service.detail('characters',CID)
+        expected={'Melee1':(.4,5),'Melee2':(.8,5),'Melee3':(.8,5),
+                  'Melee4':(.8,10),'Melee4_1':(.8,10),'Melee4_2':(.8,10),
+                  'Melee5':(0,0),'Branch':(2,100),'AirAttack':(.5,10),
+                  'PerfectEvadeAttack':(5,150),'CloneAtk':(3,50),
+                  'Skill':(1.67,50),'Skill1':(1.67,50),'UltraSkill1':(1,25),
+                  'UltraSkill2':(1.2,30),'QTE':(4,100),'QTE1':(3,100)}
+        found={}
+        for ability in role['abilities']:
+            for row in ability['param_rows']:
+                for hit in row.get('hit_details',[]):
+                    key=hit['effect_id'].removeprefix('GE_Player_Exe_').removesuffix('_Damage')
+                    found[key]=(hit['frame_gain'],hit['score_gain'])
+        self.assertEqual(found,expected)
+        e=next(a for a in role['abilities']if a['id']=='GA_Exe_Skill')['param_rows'][0]['hit_details']
+        self.assertEqual([h['repeat']for h in e],[3,3])
+        self.assertAlmostEqual(sum(h['repeat']*h['frame_gain']for h in e),10.02)
+        self.assertEqual(sum(h['repeat']*h['score_gain']for h in e),300)
+        reply=self.client.get('/api/guide/characters/1074?ability_id=GA_Exe_Skill&level=10').json['data']
+        self.assertIn('frame_gain',json.dumps(reply))
+        text=self.client.get('/guide/characters/1074.md?section=abilities').text
+        self.assertIn('基础帧数',text);self.assertIn('基础评分',text)
+        html=self.client.get('/guide/characters/1074').text
+        self.assertIn('<th scope="col">基础帧数</th>',html)
+        self.assertIn('<th scope="col">基础评分</th>',html)
+        self.assertIn('重复 ×3',html)
+        other=self.client.get('/guide/characters/1042').text
+        self.assertNotIn('<th scope="col">基础帧数</th>',other)
+        self.assertNotIn('<th scope="col">基础评分</th>',other)
+        self.assertNotIn('frame_gain',json.dumps(self.client.get('/api/guide/characters/1074?section=abilities&hit_details=0').json))
+
     def test_signature_arc_and_actual_defaults(self):
         arc=service.detail('arcs',ARC)
         self.assertEqual((arc['name'],arc['type_name'],arc['rarity']),('虚线彼方','等离子',5))

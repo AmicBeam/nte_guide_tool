@@ -449,7 +449,7 @@ def generate(characters, actions, rules):
             gaps = []
             if duration(action) is None:
                 gaps.append('完整动作时长')
-            if re.search(r'z|蓄力|分支|清明梦', action['name']) and not edges[action['name']]:
+            if re.search(r'z|蓄力|分支|清明梦', action['name']) and not edges[action['name']] and not override_map.get(action['name'], {}).get('combo_reset'):
                 gaps.append('重击后衔接')
             inventory.append({
                 'name': action['name'], 'action_id': action['id'], 'type': action['action_type'],
@@ -459,6 +459,7 @@ def generate(characters, actions, rules):
                 'successors': edges[action['name']], 'gaps': gaps,
                 'can_background_override': bool(action.get('can_background_override')),
                 'locks_foreground_switch': bool(action.get('locks_foreground_switch')),
+                **({'combo_reset': True} if override_map.get(action['name'], {}).get('combo_reset') else {}),
                 'can_start': action['name'] in start_actions,
                 'preinput_forbidden': action['name'] in rule.get('preinput_forbidden_actions', {}),
                 'source': action.get('source_note') or action.get('duration_source') or '仓库当前动作数据',

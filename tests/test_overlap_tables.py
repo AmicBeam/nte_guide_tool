@@ -84,13 +84,13 @@ class OverlapTablesTest(unittest.TestCase):
         c=self.character('Exe')
         self.assertEqual(c['start_actions'],['a1'])
         self.assertFalse(c['dodge_preserves_combo'])
-        self.assertEqual([a['name']for a in c['actions']],['a1','a2','a3','a4','a5'])
-        self.assertEqual([a['duration_seconds']for a in c['actions']],[.6,.6,.7,1.3,.8])
-        self.assertEqual([a['recovery_seconds']for a in c['actions']],[0,0,0,.5,0])
-        self.assertEqual([a['successors'][0]['can_preinput']for a in c['actions']],[True,False,True,False,False])
+        self.assertEqual([a['name']for a in c['actions']],['a1','a2','a3','a4','a5','z'])
+        self.assertEqual([a['duration_seconds']for a in c['actions']],[.6,.6,.7,1.3,.8,.7])
+        self.assertEqual([a['recovery_seconds']for a in c['actions']],[0,0,0,.5,0,0])
+        self.assertEqual([a['successors'][0]['can_preinput']for a in c['actions'][:5]],[True,False,True,False,False])
         self.assertTrue(all(not r['has_dodge'] and r['original_actions'][0]=='a1'for r in c['rows']))
         self.assertEqual({i for r in c['rows']for i in r['preinput_action_indices']},{0,2})
-        full=next(r for r in c['rows']if r['switch_method']=='full'and len(r['actions'])==5)
+        full=next(r for r in c['rows']if r['switch_method']=='full'and r['actions']==['a1','a2','a3','a4','a5'])
         self.assertEqual(full['release_end_seconds'],4)
         self.assertAlmostEqual(full['multipliers']['atk'],5.514)
         self.assertFalse(full['personal_resources'])
@@ -105,6 +105,23 @@ class OverlapTablesTest(unittest.TestCase):
             self.assertEqual(row['energy_gain'],full['energy_gain'])
             self.assertEqual(row['stagger'],full['stagger'])
         self.assertTrue(all(r['original_actions']==r['actions']for r in c['rows']))
+
+    def test_exe_z_resets_chain_and_never_leaves_foreground(self):
+        c=self.character('Exe');z=next(a for a in c['actions']if a['name']=='z')
+        self.assertTrue(z['combo_reset'])
+        self.assertFalse(z['successors']);self.assertFalse(z['switch_points']);self.assertFalse(z['gaps'])
+        self.assertEqual({a['name']for a in c['actions']if any(e['to']=='z'for e in a['successors'])},{'a1','a2','a3','a4','a5'})
+        rows=[r for r in c['rows']if 'z'in r['actions']]
+        self.assertTrue(rows)
+        for row in rows:
+            self.assertEqual(row['actions'][-1],'z')
+            step=row['timeline'][-1]
+            self.assertEqual(step['placement'],'foreground')
+            self.assertEqual(step['input_seconds'],step['start_seconds'])
+            self.assertAlmostEqual(step['end_seconds']-step['start_seconds'],.7)
+            self.assertFalse(row['ends_with_switch'])
+            self.assertTrue(all(row['actions'][i+1]!='z'for i in row['preinput_action_indices']))
+        self.assertTrue(all(any(r['original_actions']==[*(f'a{j}'for j in range(1,i+1)),'z']for r in rows)for i in range(1,6)))
 
     def test_elyms_a2_preinput_a3_starts_from_a1_and_preserves_whole_chain(self):
         character=self.character('曳尔沐')

@@ -20,6 +20,24 @@ ARC='fork_exe'
 RELEASE='2026-11-26T12:00:00+08:00'
 
 
+def add_hit_resources(record, directory):
+    tables = {field: table_rows(json.loads((directory / (name + '.json')).read_text()))
+              for field, name in [('frame_gain', 'DT_ExeEffectFigure_Frame'),
+                                  ('score_gain', 'DT_ExeEffectFigure_Score')]}
+    def visit(value):
+        if isinstance(value, dict):
+            for hit in value.get('hit_details', []):
+                for field, rows in tables.items():
+                    curve = rows.get(hit['effect_id'])
+                    if curve is None or len(curve['Keys']) != 1:
+                        raise ValueError('Missing or ambiguous Exe hit resource: ' + hit['effect_id'])
+                    hit[field] = curve['Keys'][0]['Value']
+            for child in value.values(): visit(child)
+        elif isinstance(value, list):
+            for child in value: visit(child)
+    visit(record)
+
+
 def assemble(directory):
     def table(name):return table_rows(json.loads((directory/(name+'.json')).read_text()))
     raw=table('DT_Character')[CID]
@@ -92,6 +110,7 @@ def assemble(directory):
     for section,originals in [('awaken',awake[:6]),('resonance',awake[6:])]:
         for target,source in zip(rich[section],originals):target['desc']=source['Desc']['LocalizedString']
     for noun in rich['nouns'].values():noun['desc']=table('DT_NounsExplanation')[noun['id']]['Explanation']['LocalizedString']
+    add_hit_resources(record, directory)
     return record,caps,character_data(rich)
 
 

@@ -313,7 +313,8 @@
         "a2",
         "a3",
         "a4",
-        "a5"
+        "a5",
+        "z"
       ],
       "start_actions": [
         "a1"
@@ -346,18 +347,48 @@
           "from": "a4",
           "to": "a5",
           "can_preinput": false
+        },
+        {
+          "from": "a1",
+          "to": "z",
+          "can_preinput": false
+        },
+        {
+          "from": "a2",
+          "to": "z",
+          "can_preinput": false
+        },
+        {
+          "from": "a3",
+          "to": "z",
+          "can_preinput": false
+        },
+        {
+          "from": "a4",
+          "to": "z",
+          "can_preinput": false
+        },
+        {
+          "from": "a5",
+          "to": "z",
+          "can_preinput": false
         }
       ],
       "actions": {
         "a4": {
           "recovery_seconds": 0.5
+        },
+        "z": {
+          "combo_reset": true
         }
       },
       "basic_chain_restart": true,
       "notes": [
         "仅统计普通攻击a1–a5；闪避会重置普攻序列。",
         "a1可预输入a2，a3可预输入a4；a2→a3及a4→a5须完整释放后衔接。",
-        "a4恢复后摇0.5秒，可在恢复窗口内接a5；不计数字残像、觉醒及评分带来的追加收益。"
+        "a4恢复后摇0.5秒，可在恢复窗口内接a5；不计数字残像、觉醒及评分带来的追加收益。",
+        "任意普通攻击段后可接z；z须全程前台释放，不支持切人合轴，也不能预输入下一动作。",
+        "z结束后重置普攻序列，下一次普通攻击只能重新从a1起手，不作为组内衔接。"
       ]
     }
   },

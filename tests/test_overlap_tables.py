@@ -92,7 +92,7 @@ class OverlapTablesTest(unittest.TestCase):
         self.assertEqual({i for r in c['rows']for i in r['preinput_action_indices']},{0,2})
         full=next(r for r in c['rows']if r['switch_method']=='full'and r['actions']==['a1','a2','a3','a4','a5'])
         self.assertEqual(full['release_end_seconds'],4)
-        self.assertAlmostEqual(full['multipliers']['atk'],5.514)
+        self.assertAlmostEqual(full['multipliers']['atk'],4.9626)
         self.assertFalse(full['personal_resources'])
         rows=[r for r in c['rows']if r['operation']=='a3预a4 / a5打满']
         self.assertEqual([r['timeline'][3]['recovery_used_seconds']for r in rows],[0,.1,.2,.3,.4,.5])

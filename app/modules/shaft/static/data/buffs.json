@@ -7060,7 +7060,7 @@
       ]
     },
     "effects": {
-      "all_dmg": 0.1
+      "all_dmg": 0.025
     },
     "display": {
       "line": true

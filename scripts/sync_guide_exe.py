@@ -7,6 +7,7 @@ from pathlib import Path
 from PIL import Image
 
 from guide_skill_details import table_rows, display_text
+from exe_adjustments import adjust_tables
 from refresh_guide_data import clean
 from sync_guide_preview_details import build as build_skills
 from sync_guide_rich_text import character_data
@@ -52,7 +53,10 @@ def add_rating_table(record, directory):
 
 
 def assemble(directory):
-    def table(name):return table_rows(json.loads((directory/(name+'.json')).read_text()))
+    overrides={}
+    def table(name):
+        return overrides[name] if name in overrides else table_rows(json.loads((directory/(name+'.json')).read_text()))
+    overrides=adjust_tables({name:table(name)for name in ['DT_SkillDamageData','DT_GameplayAbilityTipsData','DT_ExeEffectFigure','1074AwakenEffect']})
     raw=table('DT_Character')[CID]
     element=raw['ElementData']
     base=table('DT_PlayerPackData')[element['PropModifyID']]
@@ -61,7 +65,7 @@ def assemble(directory):
     stages=[breakthroughs[f"{element['BreakthroughPackId']}_{i}"] for i in range(7)]
     caps=[row['MaxCharacterLevel']for row in stages]
     if caps!=sorted(set(caps)) or caps[-1]!=80:raise ValueError('Invalid character level caps')
-    details=build_skills(directory,CID,'Exe')
+    details=build_skills(directory,CID,'Exe',table_overrides=overrides)
     record=dict(id=CID,name=clean(display_text(raw['ItemName'])),aliases=['EXE'],element='Chaos',element_id='CHAOS',element_name='暗',rarity=5,
         hp=base['HPMaxBase'],atk=base['AtkBase'],**{'def':base['DefBase']},**details)
     record['stats']=[]

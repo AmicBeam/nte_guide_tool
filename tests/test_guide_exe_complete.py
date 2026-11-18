@@ -124,7 +124,7 @@ class ExeCompleteTest(ExeReleaseTest):
         cost=next(p for p in q['param_rows']if p['label']=='消耗终结能量');self.assertEqual(cost['values'],['120']*13)
         damage=next(p for p in e['param_rows']if p.get('hit_details'))
         self.assertEqual([h['repeat']for h in damage['hit_details']],[3,3])
-        self.assertEqual(damage['values'][0],'48.3%*3+80%*3')
+        self.assertEqual(damage['values'][0],'43.47%*3+72%*3')
         self.assertEqual(len(role['materials']['breakthrough']),6);self.assertEqual(len(role['materials']['skills']),8)
         for section in ('stats','materials','abilities','awaken','resonance','nouns','equip_slots','affinity','experience'):
             self.assertEqual(self.client.get('/api/guide/characters/1074?section='+section).status_code,200)

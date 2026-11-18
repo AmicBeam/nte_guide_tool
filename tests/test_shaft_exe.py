@@ -40,8 +40,8 @@ class ExeTest(unittest.TestCase):
         self.assertEqual((char['adaptation'],char['element'],char['energy_capacity']),('等离子','暗',120))
         self.assertEqual(char['bond_bonus'],{'label':'8暴伤','modifiers':{'crit_dmg':.08}})
         actions={a['name']:a for a in c['actions_by_character'][CID]}
-        for name,atk,hits,ticks in [('a1',.537,1,6),('a2',.916,2,6),('a3',1.047,3,7),('a4',2.228,7,13),
-                                    ('a5',.786,6,8),('z',1.032,1,7),('e',3.849,6,12),('q',7.7,19,0),('援护',3.08,3,15)]:
+        for name,atk,hits,ticks in [('a1',.4833,1,6),('a2',.8244,2,6),('a3',.9423,3,7),('a4',2.0052,7,13),
+                                    ('a5',.7074,6,8),('z',.9288,1,7),('e',3.4641,6,12),('q',6.93,19,0),('援护',2.772,3,15)]:
             with self.subTest(name=name):
                 a=actions[name];self.assertAlmostEqual(a['multipliers']['atk'],atk);self.assertEqual(a['hit_count'],hits);self.assertEqual(a['duration_ticks'],ticks)
                 self.assertEqual(len(a['atk_multipliers_by_level']),13)
@@ -86,7 +86,7 @@ class ExeTest(unittest.TestCase):
         axis['team'][0]['skill_levels']['basic']=10
         axis['steps'][0].update(interrupted=True,interrupt_duration_ticks=3,interrupt_hit_count=3)
         detail=self.sim(axis)['details'][0]
-        expected=(.492*2+.68)
+        expected=(.492*2+.68)*.9
         self.assertAlmostEqual(detail['formula_parts']['base'] / detail['panel']['atk'],expected)
         for hits,expected_charges in [(0,0),(5,0),(6,1)]:
             axis=self.axis([(0,'action_exe_a5',0)])
@@ -115,6 +115,7 @@ class ExeTest(unittest.TestCase):
             others=[dict(slot=i+1,character_id=characters[name],arc_id=arcs[gear],cartridge_id='')for i,(name,gear)in enumerate(zip(['阿德勒','浔'],gear_names))]
             d=self.own([('a1',0)],others=others)['details'][0]
             self.assertEqual(self.buffs(d).get('character_exe_overclock',{}).get('stack_count',0),expected)
+            if expected:self.assertAlmostEqual(self.buffs(d)['character_exe_overclock']['effects']['all_dmg'],expected*.025)
         # The same wearer cannot add two more layers after their seeded arc layers.
         teammate=dict(slot=1,character_id=characters['阿德勒'],arc_id=arcs['茶花会'],cartridge_id='')
         adler_action=next(a['id']for a in c['actions_by_character'][teammate['character_id']]if a['action_type']=='E')

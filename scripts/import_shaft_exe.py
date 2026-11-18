@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
+from exe_adjustments import adjust_tables
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'app/modules/shaft/static/data'
@@ -55,6 +56,8 @@ def build(directory, workbook):
         for column, key in [('L','AtkRateBaseArray'), ('M','ChargeAdd'), ('N','HeterochromeAdd'), ('O','UnbalValue')]:
             expected = actual[key][0] if isinstance(actual[key], list) else actual[key]
             if abs(float(row[column]) - expected) > 1e-9: raise ValueError('Workbook and configuration disagree: ' + row['D'])
+    adjusted=adjust_tables({'DT_SkillDamageData':damage,'DT_GameplayAbilityTipsData':tips,'DT_ExeEffectFigure':curves,'1074AwakenEffect':table(directory,'1074AwakenEffect')})
+    damage,tips,curves=(adjusted[name]for name in ['DT_SkillDamageData','DT_GameplayAbilityTipsData','DT_ExeEffectFigure'])
     rank_thresholds = [val(curves, f'Exe_RankScore{i}') for i in range(1,7)]
     rank_mult = [k['Value'] for k in table(directory, 'DT_ExeEffectFigure_RankMult')['Exe_RankMult']['Keys']]
     decay = [k['Value'] for k in table(directory, 'DT_ExeEffectFigure_ScoreDecay')['Exe_ScoreDecay']['Keys']]
@@ -132,7 +135,7 @@ def build(directory, workbook):
         if summon and a.get('damage_type')!='无':a['tags']=list(dict.fromkeys([*a.get('tags',[]),'召唤物']))
     output['formula_constants']['personal_resource_caps'][CID]={'帧数':100,'评分':5000}
     output['formula_constants']['default_build_options'][CID]={'curtain_bonus':{'value':8,'stat':'暴击','passive_type':'type3','fixed':True}}
-    awakened=table(directory,'1074AwakenEffect')['1074']['AwakenEffectStructList']
+    awakened=adjusted['1074AwakenEffect']['1074']['AwakenEffectStructList']
     output['awakenings']['Exe']=[dict(title=plain(a['Title']),description=plain(a['Desc']).replace('{0}',str(damage['GE_Player_Exe_CloneBoom_Damage']['AtkRateBaseArray'][0]*100)),implemented=True)for a in awakened]
     output['awakenings']['Exe'][-1]['description'] += '\n当前排轴不模拟斩杀。'
     mechanisms=[dict(id='character_exe_talent1',character_id=CID,talent=1,name='额外得分',description=plain(tips['GA_Exe_Passive_1']['AbilityDescription'][0]['Description'])),
@@ -161,7 +164,7 @@ def add_effects(output, damage, curves, directory):
     rule('character_exe_d_team','kill 杀死进程·召唤物',effects={'action_dmg':.1},conditions=[node(4)],target=dict(scope='team',tags=['召唤物']))
     rule('character_exe_d_clone','kill 杀死进程·数字残像',effects={'action_dmg':.3},conditions=[node(4)],target=dict(scope='registrar',tags=['数字残像']))
     rule('character_exe_resonance3','save 不曾想象的未来',effects={'energy_recharge':.25},conditions=[resonance(3)])
-    overclock=rule('character_exe_overclock','临时超频','action_hit',effects={'all_dmg':.1},source=dict(scope='team',tags=['召唤物']),
+    overclock=rule('character_exe_overclock','临时超频','action_hit',effects={'all_dmg':curves['ExeDmgUpPas2']['Keys'][0]['Value']},source=dict(scope='team',tags=['召唤物']),
          stacking=dict(mode='add_stack',max_stacks=4,max_stacks_per_source=2,stack_gain_from='hit_count',seed_from_arc_names=['茶花会','海特洛的安宁']))
     overclock['trigger']['periodic_damage']=True
     rule('character_exe_cooldown','数字残像·冷却缩减','action_hit',source=dict(scope='registrar',action_ids=['action_exe_clone']),

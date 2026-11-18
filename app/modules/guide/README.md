@@ -612,3 +612,6 @@ Exe技能的`hit_details`另含`frame_gain`（单次命中基础帧数）与`sco
 
 
 Exe的“评分”机制词条提供评级标准表：B／A／S／SS／SSS／Ω的分数门槛、基础帧数获取倍率与每秒自然掉分。表格通过`rating_table`保存，网页、JSON与Markdown共用；Ω的六次共鸣解锁与三次共鸣停止自然掉分在表下说明。显式导入另读取`DT_ExeEffectFigure_RankMult.json`与`DT_ExeEffectFigure_ScoreDecay.json`，不把评级数组当成技能等级数组。
+
+
+Exe本体动作的1–13级基础倍率降低10%，数字残像及其冲击不调整；详细命中倍率与技能汇总值同步，资源获取数据保持原值。临时超频每层增伤2.5%，六次共鸣的BOSS斩杀阈值5%。显式导入在生成资料前应用统一离线调整，正文、富文本和结构化参数保持一致。

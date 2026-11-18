@@ -10,8 +10,9 @@ from refresh_guide_data import clean
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def build(directory, character_id, prefix):
+def build(directory, character_id, prefix, *, table_overrides=None):
     def table(name):
+        if table_overrides and name in table_overrides:return table_overrides[name]
         return table_rows(json.loads((directory / (name + '.json')).read_text()))
     tips, damage = table('DT_GameplayAbilityTipsData'), table('DT_SkillDamageData')
     curves = table('DT_' + prefix + 'EffectFigure')

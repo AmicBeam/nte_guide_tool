@@ -164,6 +164,7 @@ def add_effects(output, damage, curves, directory):
     rule('character_exe_d_team','kill 杀死进程·召唤物',effects={'action_dmg':.1},conditions=[node(4)],target=dict(scope='team',tags=['召唤物']))
     rule('character_exe_d_clone','kill 杀死进程·数字残像',effects={'action_dmg':.3},conditions=[node(4)],target=dict(scope='registrar',tags=['数字残像']))
     rule('character_exe_resonance3','save 不曾想象的未来',effects={'energy_recharge':.25},conditions=[resonance(3)])
+    rule('character_exe_resonance6_interrupt','load 不可证明的宝物·抗打断',effects={'interrupt_resistance':.5},conditions=[resonance(6)])
     overclock=rule('character_exe_overclock','临时超频','action_hit',effects={'all_dmg':curves['ExeDmgUpPas2']['Keys'][0]['Value']},source=dict(scope='team',tags=['召唤物']),
          stacking=dict(mode='add_stack',max_stacks=4,max_stacks_per_source=2,stack_gain_from='hit_count',seed_from_arc_names=['茶花会','海特洛的安宁']))
     overclock['trigger']['periodic_damage']=True

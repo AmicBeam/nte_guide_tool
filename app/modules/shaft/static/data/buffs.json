@@ -7021,6 +7021,47 @@
     }
   },
   {
+    "id": "character_exe_resonance6_interrupt",
+    "name": "load 不可证明的宝物·抗打断",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_resonance6_interrupt",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "interrupt_resistance": 0.5
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
     "id": "character_exe_overclock",
     "name": "临时超频",
     "providers": [

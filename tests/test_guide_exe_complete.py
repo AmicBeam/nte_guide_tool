@@ -124,7 +124,7 @@ class ExeCompleteTest(ExeReleaseTest):
         cost=next(p for p in q['param_rows']if p['label']=='消耗终结能量');self.assertEqual(cost['values'],['120']*13)
         damage=next(p for p in e['param_rows']if p.get('hit_details'))
         self.assertEqual([h['repeat']for h in damage['hit_details']],[3,3])
-        self.assertEqual(damage['values'][0],'43.47%*3+72%*3')
+        self.assertEqual(damage['values'][0],'36.5148%*3+60.48%*3')
         self.assertEqual(len(role['materials']['breakthrough']),6);self.assertEqual(len(role['materials']['skills']),8)
         for section in ('stats','materials','abilities','awaken','resonance','nouns','equip_slots','affinity','experience'):
             self.assertEqual(self.client.get('/api/guide/characters/1074?section='+section).status_code,200)
@@ -175,6 +175,17 @@ class ExeCompleteTest(ExeReleaseTest):
         for label in ['分数门槛','帧数获取倍率','每秒掉分']:self.assertIn(label,html)
         self.assertIn('rating_table',json.dumps(self.client.get('/api/guide/characters/1074?section=nouns').json))
         self.assertIn('评分评级标准',self.client.get('/guide/characters/1074.md?section=nouns').text)
+
+    def test_support_final_multiplier_growth_and_resonance_update(self):
+        record=service.detail('characters',CID)
+        support=next(a for a in record['abilities']if a['id']=='GA_Exe_QTE')['param_rows'][0]
+        self.assertEqual(support['values'][0],'20%*2+160%*1')
+        self.assertEqual([h['repeat']for h in support['hit_details']],[2,1])
+        self.assertEqual([h['energy_gain']for h in support['hit_details']],[.5,4])
+        self.assertEqual([h['stagger']for h in support['hit_details']],[.25,2])
+        passive=next(a for a in record['abilities']if a['id']=='GA_Exe_Passive_2')
+        self.assertIn('无法减至2秒以下',passive['groups'][0]['description'])
+        self.assertIn('抗打断能力提高50%',record['resonance'][-1]['desc'])
 
     def test_signature_arc_and_actual_defaults(self):
         arc=service.detail('arcs',ARC)

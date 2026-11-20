@@ -248,6 +248,16 @@ class GuideTest(unittest.TestCase):
         nanally = next(c for c in characters if c['id'] == '1010')
         third = nanally['abilities'][0]['param_rows'][2]
         self.assertEqual(len(third['hit_details']), 3)
+        melee = nanally['abilities'][0]
+        punch = next(g for g in melee['groups'] if g['name'] == '普通攻击：重拳出击！')
+        keys = [f'GA_Nanally_ExtraAtk{stage}_num' for stage in range(1, 4)]
+        self.assertEqual([r['key'] for r in punch['param_rows']], keys)
+        self.assertEqual([len(r['hit_details']) for r in punch['param_rows']], [2, 2, 1])
+        self.assertNotIn('强力普攻', [g['name'] for g in melee['groups']])
+        importer = load_file('guide_punch_grouping', 'scripts/guide_skill_details.py')
+        for row in punch['param_rows']:
+            phase = importer.select_group(row, melee['phases'])
+            self.assertEqual(melee['phases'][phase]['name'], punch['name'])
         html = self.client.get('/guide/characters/1042?section=abilities').text
         self.assertIn('详细命中数据', html)
         self.assertIn('基础回能', html)

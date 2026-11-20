@@ -74,6 +74,10 @@ def display_text(value):
 
 def select_group(row, phases):
     label = row['label']
+    key = row.get('key', '').lower()
+    if re.fullmatch(r'ga_nanally_extraatk[1-3]_num', key):
+        return next((i for i, phase in enumerate(phases)
+                     if phase['name'] == '普通攻击：重拳出击！'), None)
     # Explicit move names take precedence. A row mentioning several moves is shared.
     names = [(i, phase['name'].split('：')[-1].split(':')[-1].strip()) for i, phase in enumerate(phases)]
     matches = [(i, name) for i, name in names if name and name in label]
@@ -85,7 +89,6 @@ def select_group(row, phases):
         if len(distinct) == 1 and len(selected) == 1:
             return selected[0]
         return None
-    key = row.get('key', '').lower()
     tests = []
     if 'airattack' in key or 'airatk' in key or '下落' in label:
         tests = ['下落', '滞空', '空中']

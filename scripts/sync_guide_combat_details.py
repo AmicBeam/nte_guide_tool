@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 from tempfile import TemporaryDirectory
 
+from guide_skill_details import LACRIMOSA_NORMAL_ATTACKS
+
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'app/modules/guide/data'
 TYPES = ('Melee', 'Skill', 'UltraSkill', 'QTE', 'Peculiarity')
@@ -186,15 +188,18 @@ def order_unique(values):
     return list(dict.fromkeys(values))
 
 
-def section_window(montage, key):
+def section_window(montage, key, *, include_battle_continuation=False):
     sections = montage.get('CompositeSections') or []
     if len(sections) == 1:
         return (notify_time(sections[0]) or 0), montage['SequenceLength']
-    times = [(section['SectionName'].casefold(), notify_time(section)) for section in sections]
-    bounds = next((t for name, t in times if name == key.casefold()), None)
+    section = next((entry for entry in sections if entry['SectionName'].casefold() == key.casefold()), {})
+    bounds = notify_time(section)
     if bounds is None:
         return None
-    return bounds, min((t for _, t in times if t is not None and t > bounds), default=montage['SequenceLength'])
+    continuation = section.get('NextSectionName') if include_battle_continuation else None
+    times = (notify_time(entry) for entry in sections
+             if not (continuation == 'CR_Battle' and entry['SectionName'] == continuation))
+    return bounds, min((t for t in times if t is not None and t > bounds), default=montage['SequenceLength'])
 
 
 def followup_thresholds(assets, ability):
@@ -218,9 +223,11 @@ def followup_thresholds(assets, ability):
     return {key: min(values) for key, values in thresholds.items()}
 
 
-def inspect_montage(assets, exports, key, ability, definition, action_label=None):
+def inspect_montage(assets, exports, key, ability, definition, action_label=None, *, include_battle_continuation=False):
     montage = next((props(o) for o in exports if o['Type'] == 'AnimMontage'), None)
-    if not montage or not (window := section_window(montage, key)):
+    if not montage or not (window := section_window(
+        montage, key, include_battle_continuation=include_battle_continuation
+    )):
         return None
     start, end = window
     names = {o['Name']: o for o in exports}
@@ -308,6 +315,8 @@ def related(assets, ability):
     for key in assets.abilities.values():
         parent, name = key.rsplit('/', 1)
         if parent == directory and (name == terminal or name.startswith(main_id + '_') or (
+            main_id == 'ga_lacrimosa_melee' and name == 'ga_lacrimosa_meleemoda'
+        ) or (
             ability['type_name'] == 'Melee' and 'perfectevade' in name
         )):
             variants.append(key)
@@ -377,6 +386,7 @@ def build_character(assets, character, curated):
         for path in candidates:
             raw = assets.blueprint(path)
             definition = assets.defaults(path)[0]
+            ranged_lacrimosa = path.endswith('/ga_lacrimosa_meleemoda')
             pause = {tag for o in raw if o['Type']=='HTGAComponent_AbilityGamePaused'
                          for tag in props(o).get('TriggerEndEventTags',[])}
             data = {'hits': assets.hit_containers(definition), 'pause_end': pause,
@@ -384,12 +394,22 @@ def build_character(assets, character, curated):
             terminal = ability['type_name'] == 'UltraSkill' and path.endswith(('_end', '_subultraskill'))
             for key, animation in montage_bindings(definition):
                 label = '终结终段' if terminal and key == 'Default' else None
-                measured = inspect_montage(assets, assets.animation(animation), key, ability, data, label)
+                measured = inspect_montage(
+                    assets, assets.animation(animation), key, ability, data, label,
+                    include_battle_continuation=ranged_lacrimosa,
+                )
                 if not measured:
                     continue
                 row, direct_effects, spawn_effects = measured
-                group = match_group(ability, direct_effects, spawn_effects,
-                                    path == main or path.startswith(main + '_') or terminal, key)
+                if (
+                    ability['id'] == 'GA_Lacrimosa_Melee' and (path == main or ranged_lacrimosa)
+                    and (MELEE.fullmatch(key) or key in ('MeleePre', 'AppearMelee'))
+                ):
+                    form = '近战普攻' if path == main else '远程普攻'
+                    group = LACRIMOSA_NORMAL_ATTACKS[form]
+                else:
+                    group = match_group(ability, direct_effects, spawn_effects,
+                                        path == main or path.startswith(main + '_') or terminal, key)
                 if group:
                     rows[group].append(row)
         for name, moves in rows.items():

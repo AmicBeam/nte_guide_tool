@@ -338,6 +338,31 @@ class GuideTest(unittest.TestCase):
         self.assertIn('基础回能', html)
         self.assertIn('0.838', html)
 
+    def test_lacrimosa_normal_attacks_group_stats_and_combat_data_by_form(self):
+        importer = load_file('guide_lacrimosa_attack_grouping', 'scripts/guide_skill_details.py')
+        ability_id = 'GA_Lacrimosa_Melee'
+        path = f'/api/guide/characters/1004?ability_id={ability_id}'
+        player = SimpleNamespace(shaft_test_whitelisted=False)
+        with patch('app.dao.get_player_by_token', return_value=player):
+            response = self.client.get(path, headers={'Authorization': 'Bearer valid'})
+        groups = {group['name']: group for group in response.json['data']['abilities'][0]['groups']}
+        for name, prefix, damage_rows in (
+            ('普通攻击：茄汁金属乐', '近战普攻', 6),
+            ('普通攻击：茄汁打击乐', '远程普攻', 5),
+        ):
+            with self.subTest(name=name):
+                self.assertNotIn(prefix, groups)
+                group = groups[name]
+                self.assertEqual(len(group['parameter_keys']), damage_rows)
+                self.assertEqual([row['label'] for row in group['param_rows']], [prefix + '环合值'])
+                self.assertEqual([row[0] for row in group['combat_details']['rows']][:5],
+                                 [f'第 {i} 段' for i in range(1, 6)])
+        self.assertNotIn('近战普攻爆炸', groups)
+        raw = next(c for c in service.catalog()['characters'] if c['id'] == '1004')
+        ability = dict(next(a for a in raw['abilities'] if a['id'] == ability_id))
+        importer.group_ability_parameters(ability)
+        self.assertEqual(ability['groups'], next(a['groups'] for a in raw['abilities'] if a['id'] == ability_id))
+
     def test_lacrimosa_gift_forms_and_refresh(self):
         import copy
         importer = load_file('guide_gift_details', 'scripts/guide_skill_details.py')

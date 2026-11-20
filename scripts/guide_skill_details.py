@@ -11,6 +11,10 @@ import subprocess
 TABLES = ('DT_GameplayAbilityTipsData', 'DT_SkillDamageData', 'DT_GameplayAbilityCostData')
 LACRIMOSA_FORMS = Path(__file__).resolve().parents[1] / 'app/modules/guide/data/lacrimosa_forms.json'
 LACRIMOSA_FORM_ROW = 'GA_Lacrimosa_Skill_stolen_damage'
+LACRIMOSA_NORMAL_ATTACKS = {
+    '近战普攻': '普通攻击：茄汁金属乐',
+    '远程普攻': '普通攻击：茄汁打击乐',
+}
 
 
 def stolen_damage_row(damages):
@@ -72,9 +76,13 @@ def display_text(value):
     return plain((value or {}).get('LocalizedString') or (value or {}).get('SourceString'))
 
 
-def select_group(row, phases):
+def select_group(row, phases, ability_id=None):
     label = row['label']
     key = row.get('key', '').lower()
+    if ability_id == 'GA_Lacrimosa_Melee':
+        for prefix, name in LACRIMOSA_NORMAL_ATTACKS.items():
+            if label.startswith(prefix):
+                return next((i for i, phase in enumerate(phases) if phase['name'] == name), None)
     if re.fullmatch(r'ga_nanally_extraatk[1-3]_num', key):
         return next((i for i, phase in enumerate(phases)
                      if phase['name'] == '普通攻击：重拳出击！'), None)
@@ -180,13 +188,17 @@ def enrich_ability(ability, tables):
         row['hit_detail_status'] = 'available' if effects else 'not_applicable'
     if ability['id'] == 'GA_Lacrimosa_Skill':
         ability['param_rows'].append(stolen_damage_row(damages))
+    group_ability_parameters(ability)
+
+
+def group_ability_parameters(ability):
     phases = ability.get('phases') or []
     if not phases and not ability.get('param_rows'):
         return
     groups = [{'name': p['name'], 'description': p.get('desc'), 'param_rows': []} for p in phases]
     shared = {'name': '共用与其他参数', 'description': None, 'param_rows': []}
     for row in ability.get('param_rows') or []:
-        group = select_group(row, phases)
+        group = select_group(row, phases, ability['id'])
         (groups[group] if group is not None else shared)['param_rows'].append(row)
     # Damage rows without an unambiguous prose phase retain their own display label.
     other_groups = {}

@@ -89,7 +89,7 @@ class GuideTest(unittest.TestCase):
         self.assertIn('解除暂停事件（秒）', groups['音障爆鸣']['columns'])
         self.assertIn('切人锁定至（秒）', groups['变奏和弦']['columns'])
         self.assertIn('<th scope="row">强化短 E</th>', html)
-        self.assertIn('| 第 2 段 | 0.405 | 0.040 | 0.445 |', markdown)
+        self.assertIn('| 第 3 段 | 0.940 | 0.020*7 | 1.080 |', markdown)
         self.assertNotIn('combat_details', self.client.get(path).text)
 
     def test_character_icon_filters_combine_and_reset(self):

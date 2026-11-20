@@ -31,6 +31,7 @@ def reference_preview_access():
     header = request.headers.get('Authorization', '')
     token = header[7:].strip() if header.startswith('Bearer ') else ''
     player = get_player_by_token(token) if token else None
+    g.guide_authenticated = player is not None
     g.guide_test_preview = bool(player and player.shaft_test_whitelisted)
 
 
@@ -57,13 +58,15 @@ def filters():
 
 
 def get_record(kind, identifier, *, narrow=False):
+    from flask import g
     kind_check(kind)
     return service.detail(kind, identifier, request.args.get('section'), request.args.get('stage') or None,
                           request.args.get('ability_id') if narrow else None,
                           integer('level', 10, 1, 13) if narrow and 'level' in request.args else None,
                           skill_level=integer('skill_level', 10, 1, 13) if narrow and 'skill_level' in request.args else None,
                           hit_details=bool(integer('hit_details', 0, 0, 1)) if narrow and 'hit_details' in request.args else None,
-                          encounter=request.args.get('encounter') if kind == 'dungeons' else None)
+                          encounter=request.args.get('encounter') if kind == 'dungeons' else None,
+                          include_combat_details=g.guide_authenticated)
 
 
 @blueprint.errorhandler(ValueError)

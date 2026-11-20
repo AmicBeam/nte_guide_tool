@@ -117,16 +117,10 @@ def catalog():
     affinity_by_id = {record['id']: record['affinity'] for record in affinity['characters']}
     passive_icons = json.loads((Path(__file__).parent / 'data/passive_icons.json').read_text(encoding='utf-8'))
     skill_icons = json.loads((Path(__file__).parent / 'data/skill_icons.json').read_text(encoding='utf-8'))
-    combat_details = json.loads((Path(__file__).parent / 'data/skill_combat_details.json').read_text(encoding='utf-8'))
     for character in data['characters']:
         bind_description_parameters(character)
-        character_combat = combat_details.get(str(character['id']), {})
         for ability in character['abilities']:
             ability['icon'] = skill_icons[str(character['id'])].get(ability['id'])
-            move_details = character_combat.get(ability['id'], {})
-            for group in ability.get('groups', []):
-                if group['name'] in move_details:
-                    group['combat_details'] = move_details[group['name']]
         for section in ('awaken', 'resonance'):
             passive_bindings = {item['name']: item['icon'] for item in passive_icons[str(character['id'])][section]}
             for item in character[section]:
@@ -283,7 +277,28 @@ def cultivation_character(identifier):
     return record
 
 
-def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None, *, skill_level=None, hit_details=None, encounter=None):
+@lru_cache(maxsize=1)
+def _skill_combat_details():
+    return json.loads((Path(__file__).parent / 'data/skill_combat_details.json').read_text(encoding='utf-8'))
+
+
+def _with_combat_details(record):
+    details = _skill_combat_details().get(str(record['id']))
+    if not details or not record.get('abilities'):
+        return record
+    abilities = []
+    for ability in record['abilities']:
+        moves = details.get(ability['id'])
+        if moves:
+            groups = [{**group, 'combat_details': moves[group['name']]} if group['name'] in moves else group
+                      for group in ability.get('groups', [])]
+            ability = {**ability, 'groups': groups}
+        abilities.append(ability)
+    return {**record, 'abilities': abilities}
+
+
+def detail(kind, identifier, section=None, stage=None, ability_id=None, level=None, *, skill_level=None, hit_details=None,
+           encounter=None, include_combat_details=False):
     if kind == 'characters' and identifier == 'preview-exe':
         identifier = '1074'
     if kind == 'beginner' and section == 'progression':
@@ -320,6 +335,8 @@ def detail(kind, identifier, section=None, stage=None, ability_id=None, level=No
         record['stages'] = [x for x in record['stages'] if str(x['id']) == str(stage)]
         if not record['stages']:
             raise LookupError('未找到关卡')
+    if kind == 'characters' and include_combat_details and section in (None, 'abilities'):
+        record = _with_combat_details(record)
     selected = reference_view.select(record, kind, section, ability_id, level, skill_level, hit_details)
     if kind == 'characters':
         selected = {**selected, **{key: record[key] for key in ('release_at', 'content_released') if key in record}}

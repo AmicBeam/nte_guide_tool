@@ -5,6 +5,7 @@ import re
 import json
 from pathlib import Path
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from flask import Flask
@@ -49,6 +50,25 @@ class GuideTest(unittest.TestCase):
         self.assertTrue(all(x['element_name'] == '魂' for x in self.client.get('/api/guide/characters?element=魂').json['items']))
         self.assertIn('没有找到相关资料', self.client.get('/guide?q=不存在的关键词XYZ&rarity=').text)
         self.assertEqual(self.client.get('/api/guide/search?q=不存在的关键词XYZ').json['total'], 0)
+
+    def test_combat_details_require_a_valid_login(self):
+        paths = (
+            ('/guide/characters/1010', '判定与衔接'),
+            ('/guide/characters/1010.md?ability_id=GA_Nanally_Skill', '判定与衔接'),
+            ('/api/guide/characters/1010?section=abilities&skill_level=1&hit_details=0', 'combat_details'),
+            ('/api/guide/characters/1010?ability_id=GA_Nanally_Skill', 'combat_details'),
+        )
+        player = SimpleNamespace(shaft_test_whitelisted=False)
+        with patch('app.dao.get_player_by_token', side_effect={'valid': player}.get):
+            for path, marker in paths:
+                with self.subTest(path=path):
+                    for token in ('valid', None, 'expired'):
+                        headers = {'Authorization': f'Bearer {token}'} if token else {}
+                        response = self.client.get(path, headers=headers)
+                        self.assertEqual(response.status_code, 200)
+                        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+                        self.assertEqual(marker in response.text, token == 'valid')
+            self.assertNotIn('判定半径 400', self.client.get('/guide?kind=characters').text)
 
     def test_character_icon_filters_combine_and_reset(self):
         page = self.client.get('/guide?kind=characters&element=魂&rarity=5&arc_type=4')

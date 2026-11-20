@@ -90,4 +90,71 @@ if (toc && tocToggle) {
     updateCurrent();
 }
 
+const skillCards = [...document.querySelectorAll('[data-ability-id][data-character-id]')];
+const characterId = skillCards[0]?.dataset.characterId;
+if (characterId) {
+    const readToken = () => {
+        try { return localStorage.getItem('nte_token') || ''; } catch (_) { return ''; }
+    };
+    let requestId = 0;
+    const updateCombatDetails = async () => {
+        const id = ++requestId;
+        const token = readToken();
+        const previous = [...document.querySelectorAll('.guide-combat-details')];
+        const openMoves = new Set(previous.filter(detail => detail.open).map(detail => detail.parentElement));
+        previous.forEach(detail => detail.remove());
+        if (!token) return;
+
+        try {
+            const url = `/api/guide/characters/${encodeURIComponent(characterId)}?section=abilities&skill_level=1&hit_details=0`;
+            const response = await fetch(url, {
+                headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', redirect: 'error',
+            });
+            if (!response.ok) return;
+            const { data } = await response.json();
+            if (id !== requestId || token !== readToken()) return;
+
+            const abilities = new Map(data.abilities.map(ability => [ability.id, ability.groups]));
+            for (const card of skillCards) {
+                const groups = new Map((abilities.get(card.dataset.abilityId) || [])
+                    .filter(group => group.combat_details).map(group => [group.name, group.combat_details]));
+                for (const move of card.querySelectorAll('[data-move-name]')) {
+                    const sections = groups.get(move.dataset.moveName);
+                    if (!sections) continue;
+                    const detail = document.createElement('details');
+                    detail.className = 'guide-hit-details guide-combat-details';
+                    detail.open = openMoves.has(move);
+                    const summary = document.createElement('summary');
+                    summary.textContent = '判定与衔接';
+                    const list = document.createElement('dl');
+                    for (const [label, entries] of Object.entries(sections)) {
+                        const row = document.createElement('div');
+                        const title = document.createElement('dt');
+                        title.textContent = label;
+                        row.append(title);
+                        for (const entry of entries) {
+                            const value = document.createElement('dd');
+                            value.textContent = entry;
+                            row.append(value);
+                        }
+                        list.append(row);
+                    }
+                    detail.append(summary, list);
+                    move.append(detail);
+                }
+            }
+        } catch (_) { /* Keep the public character page usable if the authenticated read fails. */ }
+    };
+    updateCombatDetails();
+    window.addEventListener('storage', event => {
+        if (event.key === 'nte_token' || event.key === null) updateCombatDetails();
+    });
+    window.addEventListener('pageshow', event => {
+        if (event.persisted) updateCombatDetails();
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') updateCombatDetails();
+    });
+}
+
 })();

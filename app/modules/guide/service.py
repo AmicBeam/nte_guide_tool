@@ -53,7 +53,7 @@ LABELS = {
     'price': '商店标价', 'discount_price': '配置折扣价', 'discount_time_limited': '限时折扣',
     'availability_limited': '限时商品', 'unlock_id': '解锁条件 ID', 'max_value': '本级好感值上限',
     'groups': '招式分组', 'hit_details': '详细命中数据', 'effect_id': '命中效果 ID',
-    'combat_details': '判定与衔接',
+    'combat_details': '判定与时长',
     'hit_label': '变身名称', 'hit_description': '变身攻击说明',
     'form_ability_id': '变身技能 ID', 'details_only': '仅展示命中明细',
     'hit_index': '命中项', 'repeat': '重复次数', 'harmony_gain': '基础环合',

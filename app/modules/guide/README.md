@@ -73,7 +73,9 @@ python scripts/refresh_guide_data.py --transport curl
 
 娜娜莉「重拳出击！」的三段强力普攻按明确参数键归入原招式，倍率和详细命中数据在该组内一并展示。
 
-已登录用户可在对应招式分组中展开「判定与衔接」，入口与「详细命中数据」并列。网页使用本站 Bearer token 读取内容，JSON 与 Markdown 同样验证 token，CLI 使用已有的 `NTE_GUIDE_TOKEN`。匿名读取和失效凭据省略该字段，基础技能与详细命中数据仍可公开读取。`data/skill_combat_details.json` 按技能 ID 与招式组名维护，当前覆盖娜娜莉与明音凛，常规攻略刷新独立于此文件。网页和 Markdown 按动作分行，时长或判定参数分别成列。JSON 的 `combat_details` 包含 `columns`、与列对应的 `rows` 和可选 `notes`，空单元格使用 `null`。明音凛按招式展示动作衔接、可确认的切人限制与战斗暂停解除时点。普攻占时为动画推算，满命中占时按配置顿帧逐次累加。战斗暂停组件与关卡计时的对应关系需要按玩法验证。
+已登录用户可展开对应招式分组的「判定与时长」。JSON、Markdown 与 CLI 共用这份鉴权资料，CLI 沿用 `NTE_GUIDE_TOKEN`。网页和 Markdown 按动作分行，时长与判定参数分列。`combat_details` 的 `columns`、`rows` 和可选 `notes` 描述表格，空单元格使用 `null`。战斗暂停与具体关卡计时的对应关系按玩法验证。
+
+`scripts/sync_guide_combat_details.py` 离线匹配正式角色的技能蓝图、动画通知和伤害效果。使用 `--blueprints <NTEData目录> --list-montages` 列出所需客户端资产。导出动画 JSON 并保留 `HT/Content` 下的相对路径后，使用 `--blueprints <NTEData目录> --montages <导出目录>` 生成 `data/skill_combat_details.json`。通过技能、伤害效果和动画段的明确绑定归组。缺少核心技能绑定时保留现有快照，缺失的个别字段留空。连段占时是基于动画帧参数的推算，命中顿帧列为配置值。`data/skill_combat_overrides.json` 保留人工逐项核过的招式表和派生绑定。常规攻略刷新独立于这两份文件。
 
 ## 索引与弧盘展示
 

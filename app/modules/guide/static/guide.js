@@ -125,12 +125,12 @@ if (characterId) {
                     detail.className = 'guide-hit-details guide-combat-details';
                     detail.open = openMoves.has(move);
                     const summary = document.createElement('summary');
-                    summary.textContent = '判定与衔接';
+                    summary.textContent = '判定与时长';
                     const scroll = document.createElement('div');
                     scroll.className = 'guide-table-scroll';
                     scroll.tabIndex = 0;
                     scroll.setAttribute('role', 'region');
-                    scroll.setAttribute('aria-label', `${move.dataset.moveName}判定与衔接`);
+                    scroll.setAttribute('aria-label', `${move.dataset.moveName}判定与时长`);
                     const table = document.createElement('table');
                     table.className = 'guide-data-table guide-combat-table';
                     const headings = table.createTHead().insertRow();

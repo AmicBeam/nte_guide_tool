@@ -53,8 +53,8 @@ class GuideTest(unittest.TestCase):
 
     def test_combat_details_require_a_valid_login(self):
         paths = (
-            ('/guide/characters/1010', '判定与衔接'),
-            ('/guide/characters/1010.md?ability_id=GA_Nanally_Skill', '判定与衔接'),
+            ('/guide/characters/1010', '判定与时长'),
+            ('/guide/characters/1010.md?ability_id=GA_Nanally_Skill', '判定与时长'),
             ('/api/guide/characters/1010?section=abilities&skill_level=1&hit_details=0', 'combat_details'),
             ('/api/guide/characters/1010?ability_id=GA_Nanally_Skill', 'combat_details'),
         )
@@ -92,6 +92,29 @@ class GuideTest(unittest.TestCase):
         self.assertIn('<th scope="row">强化短 E</th>', html)
         self.assertIn('| 第 3 段 | 0.940 | 0.020*7 | 1.080 | 盒体半尺寸 600 × 270 × 200', markdown)
         self.assertNotIn('combat_details', self.client.get(path).text)
+
+    def test_combat_snapshot_covers_formal_characters(self):
+        tables = service._skill_combat_details()
+        characters = service.catalog()['characters']
+        self.assertEqual(set(tables), {str(character['id']) for character in characters})
+        for character in characters:
+            bindings = {ability['id']: {group['name'] for group in ability['groups']}
+                        for ability in character['abilities']}
+            skills = tables[str(character['id'])]
+            with self.subTest(character=character['name']):
+                for ability in character['abilities']:
+                    if ability['type_name'] not in ('Melee', 'Skill', 'UltraSkill', 'QTE'):
+                        continue
+                    columns = {column for table in skills[ability['id']].values() for column in table['columns']}
+                    self.assertTrue(any('秒' in column for column in columns))
+                    self.assertTrue(columns & {'伤害判定', '盒体半尺寸', '球形判定半径', '球形半径'})
+                for ability, groups in skills.items():
+                    self.assertTrue(groups.keys() <= bindings[ability])
+                    for table in groups.values():
+                        self.assertEqual(table['columns'][0], '动作')
+                        self.assertNotIn('动画总长（秒）', table['columns'])
+                        self.assertTrue(table['rows'])
+                        self.assertTrue(all(len(row) == len(table['columns']) for row in table['rows']))
 
     def test_character_icon_filters_combine_and_reset(self):
         page = self.client.get('/guide?kind=characters&element=魂&rarity=5&arc_type=4')

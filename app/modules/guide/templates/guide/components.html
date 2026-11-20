@@ -43,8 +43,8 @@
 {% if group.combat_details %}
 {% set combat = group.combat_details %}
 <details class="guide-hit-details guide-combat-details">
-  <summary>判定与衔接</summary>
-  <div class="guide-table-scroll" tabindex="0" role="region" aria-label="{{ group.name }}判定与衔接">
+  <summary>判定与时长</summary>
+  <div class="guide-table-scroll" tabindex="0" role="region" aria-label="{{ group.name }}判定与时长">
     <table class="guide-data-table guide-combat-table">
       <thead><tr>{% for column in combat.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
       <tbody>

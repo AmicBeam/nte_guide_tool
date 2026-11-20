@@ -3,6 +3,7 @@
 import argparse
 from copy import deepcopy
 import json
+from math import isclose
 from pathlib import Path
 from PIL import Image
 
@@ -16,9 +17,57 @@ from sync_guide_affinity import TABLES as AFFINITY_TABLES, build_affinity
 
 ROOT=Path(__file__).resolve().parents[1]
 DATA=ROOT/'app/modules/guide/data'
+SHAFT_DATA = ROOT / 'app/modules/shaft/static/data'
 CID='1074'
 ARC='fork_exe'
 RELEASE='2026-11-26T12:00:00+08:00'
+
+ACTION_HITS = {
+    'a1': (('Melee1', 1),),
+    'a2': (('Melee2', 2),),
+    'a3': (('Melee3', 3),),
+    'a4': (('Melee4', 2), ('Melee4_1', 2), ('Melee4_2', 3)),
+    'a5': (('Melee5', 6),),
+    'z': (('Branch', 1),),
+    'air': (('AirAttack', 1),),
+    'counter': (('PerfectEvadeAttack', 1),),
+    'e': (('Skill', 3), ('Skill1', 3)),
+    'q': (('UltraSkill1', 13), ('UltraSkill2', 6)),
+    'support': (('QTE', 2), ('QTE1', 1)),
+    'clone': (('CloneAtk', 1),),
+}
+
+
+def shaft_attack_curves(directory):
+    def read(name):
+        return json.loads((directory / (name + '.json')).read_text(encoding='utf-8'))
+
+    actions = {action['id']: action for action in read('actions')}
+    exe = next(character for character in read('characters') if character['id'] == 'char_exe')
+    clone = exe['ranked_resource_system']['export_action']
+    actions[clone['id']] = clone
+    shock = next(buff for buff in read('buffs') if buff['id'] == 'character_exe_e')['triggered_damage']['action']
+
+    curves = {'GE_Player_Exe_CloneBoom_Damage': shock['atk_multipliers_by_level']}
+    for suffix, bindings in ACTION_HITS.items():
+        action = actions[f'action_exe_{suffix}']
+        hits = [hit['atk_levels'] for hit in action['ranked_resource_hits']]
+        totals = action['atk_multipliers_by_level']
+        if (len(hits) != sum(count for _, count in bindings)
+                or len(totals) != 13 or any(len(hit) != len(totals) for hit in hits)
+                or any(not isclose(sum(level), total, abs_tol=1e-8)
+                       for level, total in zip(zip(*hits), totals))):
+            raise ValueError(f'Invalid Exe shaft damage data: {suffix}')
+        index = 0
+        for effect, count in bindings:
+            curve = hits[index]
+            if any(hit != curve for hit in hits[index:index + count]):
+                raise ValueError(f'Inconsistent Exe shaft damage for repeated hits: {effect}')
+            curves[f'GE_Player_Exe_{effect}_Damage'] = curve
+            index += count
+    if len(curves['GE_Player_Exe_CloneBoom_Damage']) != 13:
+        raise ValueError('Invalid Exe shaft shock damage levels')
+    return curves
 
 
 def add_hit_resources(record, directory):
@@ -57,6 +106,9 @@ def assemble(directory):
     def table(name):
         return overrides[name] if name in overrides else table_rows(json.loads((directory/(name+'.json')).read_text()))
     overrides=adjust_tables({name:table(name)for name in ['DT_SkillDamageData','DT_GameplayAbilityTipsData','DT_ExeEffectFigure','1074AwakenEffect']})
+    damage = overrides['DT_SkillDamageData']
+    for effect, curve in shaft_attack_curves(SHAFT_DATA).items():
+        damage[effect] = {**damage[effect], 'AtkRateBaseArray': curve}
     raw=table('DT_Character')[CID]
     element=raw['ElementData']
     base=table('DT_PlayerPackData')[element['PropModifyID']]

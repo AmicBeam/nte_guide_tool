@@ -3,7 +3,7 @@ from copy import deepcopy
 import importlib.util
 import json
 from pathlib import Path
-import subprocess
+import re
 import unittest
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -56,3 +56,40 @@ class ExeAdjustmentTest(unittest.TestCase):
         self.assertEqual(a['param_rows'][0]['hit_details'][0]['attack_values'][0],'40.5972%')
         self.assertIn('2.5%',next(a for a in role['abilities']if a['id']=='GA_Exe_Passive_2')['groups'][0]['description'])
         self.assertIn('5%',role['resonance'][-1]['desc']);self.assertNotIn('10%',role['resonance'][-1]['desc'])
+
+    def test_all_wiki_damage_levels_match_shaft_in_both_snapshots(self):
+        from scripts import refresh_guide_data
+        from scripts.sync_guide_exe import DATA, SHAFT_DATA, shaft_attack_curves
+        from scripts.guide_skill_details import percentage
+
+        curves = shaft_attack_curves(SHAFT_DATA)
+        supplemental = json.loads((DATA / 'ntedata_characters.json').read_text())
+        catalog = json.loads((DATA / 'catalog.json').read_text())
+        for records in (catalog, supplemental):
+            role = next(character for character in records['characters'] if character['id'] == '1074')
+            covered = set()
+            for ability in role['abilities']:
+                for row in ability['param_rows']:
+                    hits = row['hit_details']
+                    if not hits:
+                        continue
+                    for hit in hits:
+                        effect = hit['effect_id']
+                        covered.add(effect)
+                        self.assertEqual(hit['attack_values'], [percentage(level) for level in curves[effect]])
+                    expected = [[(hit['attack_values'][level], hit['repeat']) for hit in hits]
+                                for level in range(13)]
+                    shown = [[(number, int(count or 1)) for number, count in
+                              re.findall(r'(\d+(?:\.\d+)?%)(?:\*(\d+))?', value)]
+                             for value in row['values']]
+                    self.assertEqual(shown, expected, row['label'])
+
+            shock = 'GE_Player_Exe_CloneBoom_Damage'
+            awakening = next(item for item in role['awaken'] if item.get('parameters'))
+            self.assertEqual(awakening['parameters'][0]['values'],
+                             [percentage(level).removesuffix('%') for level in curves[shock]])
+            self.assertEqual(covered | {shock}, set(curves))
+
+        stale = {'characters': [{'id': '1074', 'abilities': []}], 'cultivation': {'level_caps': {}}}
+        refresh_guide_data.merge_local_characters(stale, supplemental)
+        self.assertEqual([character for character in stale['characters'] if character['id'] == '1074'], [role])

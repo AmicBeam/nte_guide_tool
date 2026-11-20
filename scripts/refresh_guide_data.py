@@ -258,18 +258,22 @@ def load_character_experience(directory=None):
 
 
 def merge_local_characters(data, supplemental):
-    """Keep explicitly imported normal characters absent from the remote index."""
-    present = {str(row['id']) for row in data['characters']}
+    """Retain explicitly imported characters and Exe's locally synchronized skill data."""
+    characters = data['characters']
+    positions = {str(row['id']): index for index, row in enumerate(characters)}
     for record in supplemental['characters']:
         identifier = str(record['id'])
-        if identifier in present:
+        if identifier in positions and identifier != '1074':
             continue
         caps = supplemental['level_caps'][identifier]
         if not record.get('stats') or not record.get('materials') or caps[-1] != 80:
             raise ValueError('Incomplete locally imported character')
-        data['characters'].append(record)
+        if identifier in positions:
+            characters[positions[identifier]] = record
+        else:
+            positions[identifier] = len(characters)
+            characters.append(record)
         data['cultivation']['level_caps'][identifier] = caps
-        present.add(identifier)
     return data
 
 

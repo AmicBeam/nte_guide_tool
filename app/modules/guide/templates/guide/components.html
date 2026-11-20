@@ -39,6 +39,20 @@
 {% if hits.available %}<details class="guide-hit-details"><summary>详细命中数据 · Lv. <span data-level-inline>{{ selected }}</span></summary><p class="guide-muted">环合、回能、倾陷{% if hits.frames %}、帧数{% endif %}{% if hits.scores %}、评分{% endif %}均为单次命中的基础值，不含配装、被动和状态修正；重复次数不自动折算为总量。</p>
 {% for row in group.param_rows %}{% if row.hit_details %}<div class="guide-hit-row"><h6>{{ row.label }}</h6><div class="guide-table-scroll"><table class="guide-data-table"><thead><tr><th scope="col">命中项</th><th scope="col">攻击倍率</th><th scope="col">基础环合</th><th scope="col">基础回能</th><th scope="col">基础倾陷</th>{% if hits.frames %}<th scope="col">基础帧数</th>{% endif %}{% if hits.scores %}<th scope="col">基础评分</th>{% endif %}</tr></thead><tbody>{% for hit in row.hit_details %}<tr><th scope="row">{{ hit.hit_label|default(hit.hit_index) }}{% if hit.hit_description|default('') %}<small>{{ hit.hit_description }}</small>{% endif %}{% if hit.repeat is not none %}<small>重复 ×{{ hit.repeat }}</small>{% else %}<small>次数未提供</small>{% endif %}</th><td data-level-values="{{ hit.attack_values|tojson|forceescape }}">{{ hit.attack_values[selected - 1] if selected <= hit.attack_values|length else '未提供' }}</td><td>{{ hit.harmony_gain|guide_scalar }}</td><td>{{ hit.energy_gain|guide_scalar }}</td><td>{{ hit.stagger|guide_scalar }}</td>{% if hits.frames %}<td>{{ hit.get("frame_gain")|guide_scalar }}</td>{% endif %}{% if hits.scores %}<td>{{ hit.get("score_gain")|guide_scalar }}</td>{% endif %}</tr>{% if hit.defense_values %}<tr><th scope="row">防御倍率</th><td colspan="{{ hit_cols }}" data-level-values="{{ hit.defense_values|tojson|forceescape }}">{{ hit.defense_values[selected - 1] if selected <= hit.defense_values|length else '未提供' }}</td></tr>{% endif %}{% if hit.hp_values %}<tr><th scope="row">生命倍率</th><td colspan="{{ hit_cols }}" data-level-values="{{ hit.hp_values|tojson|forceescape }}">{{ hit.hp_values[selected - 1] if selected <= hit.hp_values|length else '未提供' }}</td></tr>{% endif %}{% endfor %}</tbody></table></div></div>{% elif row.hit_detail_status == 'not_provided' %}<p class="guide-muted">{{ row.label }}：未提供可对应的命中数据。</p>{% endif %}{% endfor %}
 </details>{% endif %}
-{% endif %}</section>{% endfor %}
+{% endif %}
+{% if group.combat_details %}
+<details class="guide-hit-details guide-combat-details">
+  <summary>判定与衔接</summary>
+  <dl>
+    {% for label, entries in group.combat_details.items() %}
+    <div>
+      <dt>{{ label }}</dt>
+      {% for entry in entries %}<dd>{{ entry }}</dd>{% endfor %}
+    </div>
+    {% endfor %}
+  </dl>
+</details>
+{% endif %}
+</section>{% endfor %}
 </article>
 {% endmacro %}

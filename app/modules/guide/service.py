@@ -53,6 +53,7 @@ LABELS = {
     'price': '商店标价', 'discount_price': '配置折扣价', 'discount_time_limited': '限时折扣',
     'availability_limited': '限时商品', 'unlock_id': '解锁条件 ID', 'max_value': '本级好感值上限',
     'groups': '招式分组', 'hit_details': '详细命中数据', 'effect_id': '命中效果 ID',
+    'combat_details': '判定与衔接',
     'hit_label': '变身名称', 'hit_description': '变身攻击说明',
     'form_ability_id': '变身技能 ID', 'details_only': '仅展示命中明细',
     'hit_index': '命中项', 'repeat': '重复次数', 'harmony_gain': '基础环合',
@@ -116,10 +117,16 @@ def catalog():
     affinity_by_id = {record['id']: record['affinity'] for record in affinity['characters']}
     passive_icons = json.loads((Path(__file__).parent / 'data/passive_icons.json').read_text(encoding='utf-8'))
     skill_icons = json.loads((Path(__file__).parent / 'data/skill_icons.json').read_text(encoding='utf-8'))
+    combat_details = json.loads((Path(__file__).parent / 'data/skill_combat_details.json').read_text(encoding='utf-8'))
     for character in data['characters']:
         bind_description_parameters(character)
+        character_combat = combat_details.get(str(character['id']), {})
         for ability in character['abilities']:
             ability['icon'] = skill_icons[str(character['id'])].get(ability['id'])
+            move_details = character_combat.get(ability['id'], {})
+            for group in ability.get('groups', []):
+                if group['name'] in move_details:
+                    group['combat_details'] = move_details[group['name']]
         for section in ('awaken', 'resonance'):
             passive_bindings = {item['name']: item['icon'] for item in passive_icons[str(character['id'])][section]}
             for item in character[section]:

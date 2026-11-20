@@ -16,6 +16,11 @@ TYPES = ('Melee', 'Skill', 'UltraSkill', 'QTE', 'Peculiarity')
 COLUMNS = ('动作', '连段窗口（秒）', '连段占时推算（秒）', '动作衔接（秒）', '伤害通知（秒）', '命中顿帧（秒）',
            '切人锁定（秒）', '解除暂停事件（秒）', '伤害判定')
 MELEE = re.compile(r'(Ultra)?Melee([A-Z]?)(\d+)(.*)', re.I)
+COUNTER_SPAWN_PAUSES = {
+    'GA_Exe_Melee': 0.066666,
+    'GA_Lacrimosa_Melee': 0.3,
+    'GA_Mitsuki_Melee': 0.3,
+}
 LABELS = {
     'MeleePre': '接近起手', 'AppearMelee': '入场攻击', 'AirAttack': '下落起始', 'AirAttackEnd': '着地攻击',
     'AirAttackLoop': '下落循环', 'Atk': '反击攻击', 'PerfectEvadeBack': '后向极限闪避',
@@ -223,6 +228,35 @@ def followup_thresholds(assets, ability):
     return {key: min(values) for key, values in thresholds.items()}
 
 
+def evade_entry_times(assets, bindings, attack):
+    suffix = attack.removeprefix('Atk')
+    entries = []
+    for direction, label in (('Front', '前闪反击'), ('Back', '后闪反击')):
+        key = 'PerfectEvade' + direction + suffix
+        exports = assets.animation(bindings.get(key, ''))
+        montage = next((props(o) for o in exports if o['Type'] == 'AnimMontage'), None)
+        if not montage or not (window := section_window(montage, key)):
+            continue
+        start, end = window
+        names = {o['Name']: o for o in exports}
+        rate = montage.get('CommonTargetFrameRate') or {}
+        fps = rate.get('Numerator', 0) / (rate.get('Denominator') or 1)
+        if not fps:
+            continue
+        times = []
+        for notify in montage.get('Notifies') or []:
+            time = notify_time(notify)
+            if time is None or not start <= time < end:
+                continue
+            config = props(note_export(notify, names))
+            frame = config.get('nFrame')
+            if {attack, 'Atk'}.intersection(config.get('JumpSections') or []) and isinstance(frame, int):
+                times.append(time - start + frame / fps + config.get('fDelayTriggerTime', 0))
+        if times:
+            entries.append((label, min(times)))
+    return entries
+
+
 def inspect_montage(assets, exports, key, ability, definition, action_label=None, *, include_battle_continuation=False):
     montage = next((props(o) for o in exports if o['Type'] == 'AnimMontage'), None)
     if not montage or not (window := section_window(
@@ -313,7 +347,13 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
         ' / '.join(order_unique(pauses)) or None,
         ' / '.join(order_unique(ranges)) or None,
     )
-    return (row, direct_effects, spawn_effects) if any(row[1:]) else None
+    if not any(row[1:]):
+        return None
+    counter_duration = None
+    if key in ('Atk', 'Atk_tran') and cancel:
+        cutoff = min(cancel)
+        counter_duration = cutoff + sum(duration for time, duration in hit_pause_events if time <= cutoff)
+    return row, direct_effects, spawn_effects, counter_duration
 
 
 def related(assets, ability):
@@ -404,7 +444,8 @@ def build_character(assets, character, curated):
             data = {'hits': assets.hit_containers(definition), 'pause_end': pause,
                     'followup': followup_thresholds(assets, definition)}
             terminal = ability['type_name'] == 'UltraSkill' and path.endswith(('_end', '_subultraskill'))
-            for key, animation in montage_bindings(definition):
+            bindings = dict(montage_bindings(definition))
+            for key, animation in bindings.items():
                 label = '终结终段' if terminal and key == 'Default' else None
                 measured = inspect_montage(
                     assets, assets.animation(animation), key, ability, data, label,
@@ -412,7 +453,7 @@ def build_character(assets, character, curated):
                 )
                 if not measured:
                     continue
-                row, direct_effects, spawn_effects = measured
+                row, direct_effects, spawn_effects, counter_duration = measured
                 if (
                     ability['id'] == 'GA_Lacrimosa_Melee' and (path == main or ranged_lacrimosa)
                     and (MELEE.fullmatch(key) or key in ('MeleePre', 'AppearMelee'))
@@ -422,6 +463,24 @@ def build_character(assets, character, curated):
                 else:
                     group = match_group(ability, direct_effects, spawn_effects,
                                         path == main or path.startswith(main + '_') or terminal, key)
+                if 'perfectevade' in path and key in ('Atk', 'Atk_tran'):
+                    if not group:
+                        counter_groups = [g['name'] for g in ability['groups'] if g['name'].startswith('极限反击')]
+                        if len(counter_groups) == 1:
+                            group = counter_groups[0]
+                    entries = evade_entry_times(assets, bindings, key)
+                    if group and counter_duration is not None and len(entries) == 2:
+                        fixed_pause = COUNTER_SPAWN_PAUSES.get(ability['id'], 0)
+                        _, _, _, _, hit_notifies, hit_pause, *details = row
+                        if fixed_pause:
+                            hit_pause = ' / '.join(value for value in (hit_pause, fmt(fixed_pause)) if value)
+                        for label, entry in entries:
+                            damage_times = ' / '.join(
+                                fmt(entry + float(time)) for time in (hit_notifies or '').split(' / ') if time
+                            )
+                            rows[group].append((label, None, None, fmt(entry + counter_duration + fixed_pause),
+                                                damage_times or None, hit_pause, *details))
+                        continue
                 if group:
                     rows[group].append(row)
         for name, moves in rows.items():

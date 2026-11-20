@@ -1,6 +1,8 @@
 import unittest
 from copy import deepcopy
 
+from tests.shaft_duration_fixtures import with_scenario_ticks
+
 from app.modules.shaft.service import normalize_axis_payload, simulate_shaft_axis
 from app.modules.shaft.domain.buffs import activate_buff, registered_buff_rules
 from app.modules.shaft.domain.catalog import load_shaft_catalog
@@ -45,6 +47,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 self.assertNotIn('triggers_reaction_on_switch', noop)
                 self.assertEqual(actions_by_character[character['id']][-1]['name'], '无')
 
+    @with_scenario_ticks
     def test_noop_allows_one_tick_switch_gap_without_freezing_parallel_actions(self) -> None:
         # User 2026-09-11: 0.1s after 无, with no time stop or action cover.
         for placement in ('foreground', 'background'):
@@ -894,6 +897,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertAlmostEqual(a4['stagger_contributions_by_slot'][0]['average_stagger_damage_bonus'], 0.35)
         self.assertAlmostEqual(a5['stagger_contributions_by_slot'][0]['average_stagger_damage_bonus'], 0.2)
 
+    @with_scenario_ticks
     def test_hathor_haiyue_and_iloy_new_awakenings_use_existing_timeline_systems(self) -> None:
         hathor = simulate_shaft_axis({
             'team': [{
@@ -1564,6 +1568,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                     {'def_ignore': 0.05},
                 )
 
+    @with_scenario_ticks
     def test_action_energy_is_shared_to_teammates_but_return_energy_is_not(self) -> None:
         result = simulate_shaft_axis({
             'team': [
@@ -1621,6 +1626,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(gain_resources[0]['harmony'], 100)
         self.assertEqual(support_resources[0]['harmony'], 0)
 
+    @with_scenario_ticks
     def test_action_energy_available_mid_action_is_only_the_elapsed_fraction(self) -> None:
         result = simulate_shaft_axis({
             'team': [
@@ -1885,6 +1891,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertAlmostEqual(resources[0]['energy'], 5.2 + 1.814 * 0.6)
         self.assertAlmostEqual(resources[1]['energy'], 5.2 * 0.6 + 1.814)
 
+    @with_scenario_ticks
     def test_nanali_talent_changes_genesis_to_ten_one_second_flowers(self) -> None:
         result = simulate_shaft_axis({
             'team': [
@@ -2063,6 +2070,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         )
         self.assertAlmostEqual(clone_events[0]['damage'], genesis_events[0]['damage'] * 0.375)
 
+    @with_scenario_ticks
     def test_axis_duration_ignores_background_actions_after_foreground_end(self) -> None:
         payload = {
             'team': [{
@@ -2153,6 +2161,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(detail['nightmare_stacks'], 3)
         self.assertLess(detail['direct_damage'], 1512.038095675326 * 0.25)
 
+    @with_scenario_ticks
     def test_support_action_ignores_interruption_fields(self) -> None:
         payload = {
             'team': [
@@ -2426,6 +2435,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(completed_friendship['stack_count'], 2)
         self.assertAlmostEqual(completed_friendship['effects']['flat_atk'], 493.0 * 0.16)
 
+    @with_scenario_ticks
     def test_loop_axis_carries_previous_genesis_as_an_independent_instance(self) -> None:
         result = simulate_shaft_axis({
             'team': [
@@ -2452,6 +2462,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(result['summary']['duration_ticks'], 33)
         self.assertEqual([event['tick'] for event in result['reaction_damage_events']], [8, 18, 28])
 
+    @with_scenario_ticks
     def test_loop_axis_turbid_burn_evicts_carried_instance_and_generates_a_new_one(self) -> None:
         result = simulate_shaft_axis({
             'team': [
@@ -2858,7 +2869,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         }
         self.assertEqual(iloy_actions['援护']['duration_ticks'], 15)
         self.assertEqual(iloy_actions['z1']['duration_ticks'], 15)
-        self.assertEqual(iloy_actions['e']['duration_ticks'], 4)
+        self.assertEqual(iloy_actions['e']['duration_ticks'], 9)
         self.assertEqual(iloy_actions['长e']['duration_ticks'], 4)
         self.assertNotEqual(iloy_actions['e']['id'], iloy_actions['长e']['id'])
         self.assertEqual(iloy_actions['q']['duration_ticks'], 0)
@@ -2895,10 +2906,10 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
 
         expected_duration_ticks = {
             'a1': 3,
-            'a2': 3,
+            'a2': 4,
             'a3': 8,
             'a4': 10,
-            'a5': 13,
+            'a5': 14,
             '下落': 7,
         }
         self.assertEqual(
@@ -2961,7 +2972,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
 
         self.assertEqual(action['name'], '清明梦')
         self.assertEqual(action['action_type'], '普攻')
-        self.assertEqual(action['duration_ticks'], 70)
+        self.assertEqual(action['duration_ticks'], 72)
         self.assertEqual(action['hit_count'], 35)
         self.assertAlmostEqual(action['multipliers']['atk'], 0.237 * 35)
         self.assertAlmostEqual(action['energy_gain'], 0.766 * 35)
@@ -3008,8 +3019,8 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             if action['character_id'] == 'char_a01c39f576'
         }
         expected = {
-            'a1': (3, 0.76, 1, 2.431, 4.048, 0.484, 2, False, 442),
-            'a2': (7, 0.477, 3, 0.996, 1.659, 0.198, 3, True, 443),
+            'a1': (5, 0.76, 1, 2.431, 4.048, 0.484, 2, False, 442),
+            'a2': (11, 0.477, 3, 0.996, 1.659, 0.198, 3, True, 443),
             'a3': (7, 0.824, 8, 0.642, 1.069, 0.128, 3, True, 444),
         }
 
@@ -3466,6 +3477,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(minimum['furniture_flat_atk'], 0.0)
         self.assertEqual(minimum['furniture_flat_def'], 0.0)
 
+    @with_scenario_ticks
     def test_support_owner_can_chain_q_without_switch_loss(self) -> None:
         payload = {
             'team': [
@@ -3498,6 +3510,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(details['support']['visual_end_tick'], 16)
         self.assertEqual(details['owner_q']['visual_start_tick'], 16)
 
+    @with_scenario_ticks
     def test_different_character_can_start_when_support_ends_without_switch_loss(self) -> None:
         payload = {
             'team': [
@@ -3551,6 +3564,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(details['yi_q']['visual_start_tick'], 15)
         self.assertEqual(details['yi_q']['start_tick'], 15)
 
+    @with_scenario_ticks
     def test_zhenhong_opening_places_yi_q_at_three_point_two_seconds(self) -> None:
         payload = {
             'team': [
@@ -3577,6 +3591,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(yi_q['visual_start_tick'], 42)
         self.assertEqual(yi_q['start_tick'], 32)
 
+    @with_scenario_ticks
     def test_support_locks_other_characters_until_its_end_without_post_lock_loss(self) -> None:
         payload = {
             'team': [
@@ -3611,6 +3626,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(details['intruding_e']['foreground_lock_ticks'], 9)
         self.assertEqual(details['intruding_e']['switch_gap_ticks'], 0)
 
+    @with_scenario_ticks
     def test_canhong_illusion_e_locks_other_characters_until_its_end(self) -> None:
         payload = {
             'team': [
@@ -3778,6 +3794,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(firefly_buffs[0]['display_start_tick'], nanaly_q['display_start_tick'])
         self.assertEqual(firefly_buffs[0]['visual_start_tick'], nanaly_q['display_start_tick'])
 
+    @with_scenario_ticks
     def test_foreground_starts_allow_two_internal_sequence_gap_at_same_real_time(self) -> None:
         payload = {
             'team': [
@@ -3873,6 +3890,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(details['zhenhong_q2']['end_tick'], 0)
         self.assertEqual(details['nanaly_e']['start_tick'], 0)
 
+    @with_scenario_ticks
     def test_non_q_end_switches_character_with_switch_loss(self) -> None:
         payload = {
             'team': [
@@ -3974,6 +3992,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertEqual(covered_e['start_tick'], real_tick(covered_e['visual_start_tick']))
         self.assertEqual(covered_e['end_tick'], real_tick(covered_e['visual_end_tick']))
 
+    @with_scenario_ticks
     def test_expanded_q_lock_delays_switch_and_carries_the_character_sequence(self) -> None:
         payload = {
             'team': [
@@ -4000,6 +4019,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertEqual(details['same_character_next']['visual_start_tick'], 26)
         self.assertEqual(details['switched_e']['start_tick'], 7)
 
+    @with_scenario_ticks
     def test_true_red_opening_yi_e_starts_at_expanded_q_right_edge(self) -> None:
         payload = {
             'team': [
@@ -4072,6 +4092,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertEqual(ready_e['start_tick'], 30)
         self.assertFalse(any('CD' in warning for warning in ready_e['warnings']))
 
+    @with_scenario_ticks
     def test_q_does_not_cover_other_foreground_support_or_q(self) -> None:
         payload = {
             'team': [
@@ -4171,6 +4192,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertEqual(q2_details['zhenhong_q2']['q_cover_target_step_ids'], ['main_e'])
         self.assertFalse(q2_avoid_details['zhenhong_q2']['q_instant_release'])
 
+    @with_scenario_ticks
     def test_q_instant_release_keeps_visual_length_and_elapsed_until_q(self) -> None:
         payload = {
             'team': [
@@ -4281,6 +4303,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertEqual(mask['q_cover_target_step_ids'], ['foreground_e'])
         self.assertEqual(result['time_axis']['real_duration_ticks'], 4)
 
+    @with_scenario_ticks
     def test_q_instant_release_keeps_q_visual_width(self) -> None:
         payload = {
             'team': [
@@ -4348,6 +4371,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertEqual(same_column['q_instant_release_start_sequence'], 0)
         self.assertEqual(same_column['q_instant_release_end_sequence'], 1)
 
+    @with_scenario_ticks
     def test_q_instant_release_covers_connected_basic_background_attacks(self) -> None:
         payload = {
             'team': [
@@ -4459,6 +4483,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertTrue(details['covered_a5']['q_instant_release'])
         self.assertEqual(details['q_anchor']['q_cover_target_step_ids'], ['covered_a5'])
 
+    @with_scenario_ticks
     def test_q_instant_release_uses_sequence_for_zhenhong_dragon_chain(self) -> None:
         payload = {
             'team': [
@@ -4521,6 +4546,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertEqual(teammate_q['end_tick'], 2)
         self.assertEqual(result['summary']['duration_ticks'], 2)
 
+    @with_scenario_ticks
     def test_q_cover_width_expands_over_background_chain_and_keeps_followup_sequence(self) -> None:
         payload = {
             'team': [
@@ -4592,6 +4618,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertGreaterEqual(zhenhong_q['visual_start_tick'], zhenhong_a5['visual_end_tick'])
         self.assertEqual(result['summary']['duration_ticks'], 4)
 
+    @with_scenario_ticks
     def test_foreground_basic_starting_after_q_sequence_keeps_duration(self) -> None:
         payload = {
             'team': [
@@ -4627,6 +4654,7 @@ class ShaftSimulatorQInstantReleaseTestCase(unittest.TestCase):
         self.assertEqual(dragon_a1['visual_end_tick'] - dragon_a1['visual_start_tick'], 3)
         self.assertEqual(dragon_a1['original_duration_ticks'], 3)
 
+    @with_scenario_ticks
     def test_support_does_not_receive_switch_loss(self) -> None:
         payload = {
             'team': [
@@ -6373,6 +6401,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertTrue(all(layer['stack_count'] == 1 for layer in layers))
         self.assertTrue(all(layer['effects'] == {'hp_pct': 0.04} for layer in layers))
 
+    @with_scenario_ticks
     def test_nanali_authority_delay_preserves_pre_start_switch_but_resets_after_start(self) -> None:
         team = [
             {'slot': 0, 'character_id': 'char_bdc43f82c6', 'arc_id': '', 'cartridge_id': ''},
@@ -6734,6 +6763,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             200,
         )
 
+    @with_scenario_ticks
     def test_requiem_nightmare_has_independent_three_second_layers_and_settlement(self) -> None:
         catalog = load_shaft_catalog()
         requiem_far_a4 = next(
@@ -8496,6 +8526,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertEqual(sagiri_nightmare['formula_parts']['final_multiplier'], 1)
         self.assertAlmostEqual(sagiri_nightmare['damage'], solo_nightmare['damage'])
 
+    @with_scenario_ticks
     def test_sagiri_talent_one_uses_dot_count_as_final_multiplier_only_during_corrosion(self) -> None:
         result = simulate_shaft_axis({
             'team': [
@@ -9208,6 +9239,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             0.125,
         )
 
+    @with_scenario_ticks
     def test_canhong_illusion_attacks_add_one_layer_to_every_active_dot(self) -> None:
         expected_layers = {
             'action_canhong_illusion_a1': 2,
@@ -9330,6 +9362,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
             [(13, 165, 3, 3)],
         )
 
+    @with_scenario_ticks
     def test_canhong_tianyi_adds_one_turbid_burn_layer_for_team_dot_application(self) -> None:
         result = simulate_shaft_axis({
             'team': [

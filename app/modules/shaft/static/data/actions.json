@@ -8,8 +8,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.4,
-    "duration_ticks": 14,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -49,8 +49,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -182,8 +182,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": true,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 2.0,
       "hp": 0,
@@ -224,8 +224,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.333,
-    "duration_ticks": 3,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "multipliers": {
       "atk": 0.182,
       "hp": 0,
@@ -267,8 +267,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.5,
-    "duration_ticks": 5,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.513,
       "hp": 0,
@@ -310,8 +310,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 1.0859999999999999,
       "hp": 0,
@@ -353,8 +353,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.667,
-    "duration_ticks": 7,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.3130000000000002,
       "hp": 0,
@@ -396,8 +396,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 1.129,
       "hp": 0,
@@ -525,8 +525,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.333,
-    "duration_ticks": 3,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "multipliers": {
       "atk": 0.626,
       "hp": 0,
@@ -568,8 +568,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.667,
-    "duration_ticks": 7,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.408,
       "hp": 0,
@@ -611,8 +611,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
       "atk": 0.644,
       "hp": 0,
@@ -654,8 +654,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.833,
-    "duration_ticks": 8,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
     "multipliers": {
       "atk": 1.2229999999999999,
       "hp": 0,
@@ -905,8 +905,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 1.2007007007007,
       "hp": 0,
@@ -948,8 +948,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.333,
-    "duration_ticks": 13,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 2.4,
       "hp": 0,
@@ -1118,8 +1118,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -1283,8 +1283,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 2.1,
+    "duration_ticks": 21,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -1626,8 +1626,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 0.9,
       "hp": 0,
@@ -1667,8 +1667,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 0.59,
       "hp": 0,
@@ -1749,8 +1749,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 1.537,
       "hp": 0,
@@ -2038,8 +2038,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -2166,8 +2166,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -2341,8 +2341,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.3,
-    "duration_ticks": 3,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "multipliers": {
       "atk": 0.38799999999999996,
       "hp": 0,
@@ -2470,8 +2470,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 1.544,
       "hp": 0,
@@ -3021,8 +3021,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2.1,
-    "duration_ticks": 21,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 1.66,
       "hp": 0,
@@ -3195,8 +3195,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.1,
-    "duration_ticks": 11,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 5,
       "hp": 0,
@@ -3325,8 +3325,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -3407,8 +3407,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 1.04,
       "hp": 0,
@@ -3728,8 +3728,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -3813,8 +3813,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -4074,8 +4074,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 1.74,
       "hp": 0,
@@ -4115,8 +4115,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.8,
       "hp": 0,
@@ -4202,8 +4202,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -4506,8 +4506,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
     "multipliers": {
       "atk": 0.66,
       "hp": 0,
@@ -4589,8 +4589,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
       "atk": 1.44,
       "hp": 0,
@@ -4931,8 +4931,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 2.2,
+    "duration_ticks": 22,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -4972,8 +4972,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 1.9,
+    "duration_ticks": 19,
     "multipliers": {
       "atk": 4,
       "hp": 0,
@@ -5013,8 +5013,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 2.5,
+    "duration_ticks": 25,
     "multipliers": {
       "atk": 4,
       "hp": 0,
@@ -5180,8 +5180,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
     "multipliers": {
       "atk": 0,
       "hp": 0,
@@ -5328,8 +5328,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -5605,8 +5605,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.3,
+    "duration_ticks": 3,
     "multipliers": {
       "atk": 0.371,
       "hp": 0,
@@ -5651,8 +5651,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.3,
+    "duration_ticks": 3,
     "multipliers": {
       "atk": 0.48,
       "hp": 0,
@@ -5743,8 +5743,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 2.411,
       "hp": 0,
@@ -5793,8 +5793,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 1.239,
       "hp": 0,
@@ -5840,8 +5840,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
       "atk": 0.79,
       "hp": 0,
@@ -5973,8 +5973,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.8,
-    "duration_ticks": 8,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -6195,8 +6195,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -6236,8 +6236,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 3.998,
       "hp": 0,
@@ -6321,8 +6321,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -6362,8 +6362,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -6405,8 +6405,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -6491,8 +6491,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -6532,8 +6532,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 0,
       "hp": 0.066,
@@ -6753,8 +6753,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -6928,8 +6928,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -7052,8 +7052,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 2.1,
+    "duration_ticks": 21,
     "multipliers": {
       "atk": 1.95,
       "hp": 0,
@@ -7182,8 +7182,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 1,
       "hp": 0,
@@ -7353,8 +7353,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
       "atk": 0.541,
       "hp": 0,
@@ -7399,8 +7399,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.5,
-    "duration_ticks": 5,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.28800000000000003,
       "hp": 0,
@@ -7445,8 +7445,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 1.3319999999999999,
       "hp": 0,
@@ -7537,8 +7537,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.06,
       "hp": 0,
@@ -7666,8 +7666,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 8,
       "hp": 0,
@@ -7707,8 +7707,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -7880,8 +7880,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2.2,
-    "duration_ticks": 22,
+    "duration_seconds": 2.3,
+    "duration_ticks": 23,
     "multipliers": {
       "atk": 4.39,
       "hp": 0,
@@ -8007,8 +8007,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 3.003,
       "hp": 0,
@@ -8133,8 +8133,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -8215,8 +8215,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -8426,8 +8426,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.3,
-    "duration_ticks": 3,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
       "atk": 0.76,
       "hp": 0,
@@ -8463,8 +8463,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 0.477,
       "hp": 0,
@@ -8576,8 +8576,8 @@
     "damage_type": "普攻",
     "extra_tag": "蓄力重击",
     "is_background_damage": false,
-    "duration_seconds": 7,
-    "duration_ticks": 70,
+    "duration_seconds": 7.2,
+    "duration_ticks": 72,
     "multipliers": {
       "atk": 8.295,
       "hp": 0,
@@ -8615,8 +8615,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
     "multipliers": {
       "atk": 4.003,
       "hp": 0,
@@ -9179,27 +9179,27 @@
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "resonance_skill_level_bonus": false, "tags": ["援护", "饲火"], "source_row": 44, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 44；耗时1.5秒来自用户2026-08-06补充，无额外援护效果。"
   },
   {
-    "id": "action_canhong_a1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": false, "duration_seconds": 0.6, "duration_ticks": 6,
+    "id": "action_canhong_a1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": false, "duration_seconds": 0.4, "duration_ticks": 4,
     "multipliers": {"atk": 0.432, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 1.444, "harmony": 2.405, "stagger": 0.435, "tags": ["燎原", "现实形态"], "source_row": 2, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 2-3，按倍率呈现方式聚合。"
   },
   {
-    "id": "action_canhong_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.6, "duration_ticks": 6,
+    "id": "action_canhong_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.5, "duration_ticks": 5,
     "multipliers": {"atk": 0.352, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 1.176, "harmony": 1.958, "stagger": 0.355, "tags": ["燎原", "现实形态"], "source_row": 4, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 4。"
   },
   {
-    "id": "action_canhong_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.8, "duration_ticks": 8,
+    "id": "action_canhong_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1, "duration_ticks": 10,
     "multipliers": {"atk": 1.114, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.719, "harmony": 6.193, "stagger": 1.121, "tags": ["燎原", "现实形态"], "source_row": 5, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 5-7，按倍率呈现方式聚合。"
   },
   {
-    "id": "action_canhong_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.1, "duration_ticks": 11,
+    "id": "action_canhong_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
     "multipliers": {"atk": 1.782, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%+{4}%", "hit_count": 5, "energy_gain": 5.948, "harmony": 9.905, "stagger": 1.793, "tags": ["燎原", "现实形态"], "source_row": 8, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 8-12，按倍率呈现方式聚合；命中后可强化e。"
   },
   {
-    "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.2, "duration_ticks": 12,
+    "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.5, "duration_ticks": 15,
     "multipliers": {"atk": 2.579, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2+{2}%+{3}%", "hit_count": 6, "energy_gain": 8.611, "harmony": 14.339, "stagger": 2.595, "tags": ["燎原", "现实形态", "牵引"], "source_row": 590, "source_note": "腾讯文档《角色属性》tab 000003 rows 590-593，按倍率呈现方式聚合；命中后可强化e，牵引不进入单敌伤害计算。"
   },
   {
-    "id": "action_canhong_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "z", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "长按普攻", "duration_seconds": 1.0, "duration_ticks": 10,
+    "id": "action_canhong_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "z", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "长按普攻", "duration_seconds": 1.1, "duration_ticks": 11,
     "multipliers": {"atk": 2.178, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 7.301, "harmony": 12.1, "stagger": 2.25, "tags": ["z", "现实形态"], "source_row": 17, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 17-18，按倍率呈现方式聚合；对应「绰影」，仅可在a1或a2期间触发。"
   },
   {
@@ -9207,19 +9207,19 @@
     "multipliers": {"atk": 0.183, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0.61, "harmony": 1.018, "stagger": 0.121, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 21, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 21；对应「魇舞」一段。"
   },
   {
-    "id": "action_canhong_illusion_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a2", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.7, "duration_ticks": 7,
+    "id": "action_canhong_illusion_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a2", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1, "duration_ticks": 10,
     "multipliers": {"atk": 0.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.321, "harmony": 5.544, "stagger": 0.661, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 22, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 22-24，按倍率呈现方式聚合；对应「魇舞」二段。"
   },
   {
-    "id": "action_canhong_illusion_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a3", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
+    "id": "action_canhong_illusion_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a3", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1.2, "duration_ticks": 12,
     "multipliers": {"atk": 0.988, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2", "hit_count": 4, "energy_gain": 3.288, "harmony": 5.486, "stagger": 0.654, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层", "牵引"], "source_row": 25, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 25-26，按倍率呈现方式聚合；对应「魇舞」三段。"
   },
   {
-    "id": "action_canhong_illusion_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a4", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1.1, "duration_ticks": 11,
+    "id": "action_canhong_illusion_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a4", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
     "multipliers": {"atk": 2.82, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%", "hit_count": 3, "energy_gain": 9.38, "harmony": 15.653, "stagger": 1.865, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 27, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 27-28，按倍率呈现方式聚合；对应「魇舞」四段。"
   },
   {
-    "id": "action_canhong_illusion_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻z", "action_type": "普攻", "damage_type": "追击", "extra_tag": "长按普攻", "is_background_damage": false, "duration_seconds": 1.1, "duration_ticks": 11,
+    "id": "action_canhong_illusion_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻z", "action_type": "普攻", "damage_type": "追击", "extra_tag": "长按普攻", "is_background_damage": false, "duration_seconds": 1.4, "duration_ticks": 14,
     "multipliers": {"atk": 2.138, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%*2", "hit_count": 5, "energy_gain": 7.099, "harmony": 11.901, "stagger": 1.399, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["幻z", "追击", "幻境形态", "蚀心"], "source_row": 29, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 29-32，按倍率呈现方式聚合；对应「落月」。"
   },
   {
@@ -9227,19 +9227,19 @@
     "multipliers": {"atk": 0.574, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.1, "harmony": 3.4, "stagger": 0.4, "tags": ["下落攻击"], "source_row": 19, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 19；对应「折枝」，随下落高度最高提升至2倍，本动作按基础倍率录入。"
   },
   {
-    "id": "action_canhong_dodge_counter", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "闪反", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "闪避反击", "duration_seconds": 1.0, "duration_ticks": 10,
+    "id": "action_canhong_dodge_counter", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "闪反", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "闪避反击", "duration_seconds": 1.1, "duration_ticks": 11,
     "multipliers": {"atk": 1.75, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.5, "harmony": 4.2, "stagger": 2.5, "tags": ["闪避反击", "现实形态"], "source_row": 20, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 20；对应「虚徊」。"
   },
   {
-    "id": "action_canhong_e1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.0, "duration_ticks": 10,
+    "id": "action_canhong_e1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.1, "duration_ticks": 11,
     "multipliers": {"atk": 1.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 0.8, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "tags": ["现实转幻境"], "source_row": 34, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 34-35，按倍率呈现方式聚合；与强化e、幻e共享5秒冷却。"
   },
   {
-    "id": "action_canhong_E1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "强化e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.0, "duration_ticks": 10,
+    "id": "action_canhong_E1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "强化e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.1, "duration_ticks": 11,
     "multipliers": {"atk": 1.752, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 6.0, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "force_stagger_by_awakening_node": {"5": true}, "tags": ["强化", "现实转幻境", "蚀心5层", "乱"], "source_row": 36, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 36-37，按倍率呈现方式聚合；需在燎原a4/a5、z或闪反后释放，施加5层蚀心，与e、幻e共享5秒冷却；E觉仅在非循环轴首次命中强制倾陷。"
   },
   {
-    "id": "action_canhong_E2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻e", "action_type": "E", "damage_type": "追击", "is_background_damage": false, "locks_foreground_switch": true, "duration_seconds": 2.2, "duration_ticks": 22,
+    "id": "action_canhong_E2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻e", "action_type": "E", "damage_type": "追击", "is_background_damage": false, "locks_foreground_switch": true, "duration_seconds": 2.3, "duration_ticks": 23,
     "multipliers": {"atk": 4.498, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*4+{2}%", "hit_count": 7, "last_hit_atk_multiplier": 2.498, "dot_layers_applied_before_last_hit": 5, "energy_gain": 24.999, "harmony": 18.901, "stagger": 2.299, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["强化", "追击", "幻境转现实", "蚀心5层", "灭"], "source_row": 41, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 41-43，按强化「离魂错」的倍率呈现方式聚合；仅在幻境结束前3秒可强化，施加5层蚀心并触发灭，与e、强化e共享5秒冷却；技能时停敌人但不暂停轴计时。F觉按最后一段命中时目标DOT总层数强化该段。"
   },
   {
@@ -9289,7 +9289,7 @@
   },
   {
     "id": "action_lingke_support", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "恶灵左直拳！", "is_background_damage": false,
-    "duration_seconds": 1.5, "duration_ticks": 15,
+    "duration_seconds": 1.2, "duration_ticks": 12,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护"], "source_row": 487, "source_note": "腾讯文档《角色属性》tab 000003 row 487；技能描述由Nanoka 2026-08-24实时核实。动作耗时1.5秒来自用户2026-08-24补充。"
   },
   {
@@ -9344,8 +9344,8 @@
     "display_order": 1,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
       "atk": 0.237,
       "hp": 0,
@@ -9379,8 +9379,8 @@
     "display_order": 2,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 0.974,
       "hp": 0,
@@ -9414,8 +9414,8 @@
     "display_order": 3,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.8,
-    "duration_ticks": 8,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
     "multipliers": {
       "atk": 1.204,
       "hp": 0,
@@ -9449,8 +9449,8 @@
     "display_order": 4,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
     "multipliers": {
       "atk": 1.29,
       "hp": 0,
@@ -9484,8 +9484,8 @@
     "display_order": 5,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 1.82,
       "hp": 0,
@@ -9519,8 +9519,8 @@
     "display_order": 6,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 1.139,
       "hp": 0,
@@ -9587,8 +9587,8 @@
     "display_order": 8,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 1.275,
       "hp": 0,
@@ -9621,8 +9621,8 @@
     "display_order": 9,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.65,
       "hp": 0,
@@ -9663,8 +9663,8 @@
     "display_order": 10,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 1.11,
       "hp": 0,
@@ -9705,8 +9705,8 @@
     "display_order": 11,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 1.26,
       "hp": 0,
@@ -9747,8 +9747,8 @@
     "display_order": 12,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
       "atk": 1.355,
       "hp": 0,
@@ -9789,8 +9789,8 @@
     "display_order": 13,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 2.826,
       "hp": 0,
@@ -9831,8 +9831,8 @@
     "display_order": 14,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 2.16,
       "hp": 0,
@@ -9957,8 +9957,8 @@
     "display_order": 17,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 1.26,
       "hp": 0,
@@ -9999,8 +9999,8 @@
     "display_order": 18,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
     "multipliers": {
       "atk": 4.0,
       "hp": 0,
@@ -10073,8 +10073,8 @@
     "display_order": 20,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 4.2,
       "hp": 0,
@@ -10229,8 +10229,8 @@
     "display_order": 24,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 2.0,
       "hp": 0,
@@ -10305,8 +10305,8 @@
     "display_order": 0,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0.5,
-    "duration_ticks": 5,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.298,
       "hp": 0,
@@ -10367,8 +10367,8 @@
     "display_order": 2,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 0.849,
       "hp": 0,
@@ -10398,8 +10398,8 @@
     "display_order": 3,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.8,
-    "duration_ticks": 8,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 4.247,
       "hp": 0,
@@ -10497,8 +10497,8 @@
     "display_order": 6,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 2.0,
       "hp": 0,
@@ -10535,8 +10535,8 @@
     "display_order": 7,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0.5,
-    "duration_ticks": 5,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 3.6,
       "hp": 0,
@@ -10572,8 +10572,8 @@
     "display_order": 8,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
       "atk": 3.24,
       "hp": 0,
@@ -10651,8 +10651,8 @@
     "is_background_damage": false,
     "can_background_override": false,
     "locks_foreground_switch": true,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 10.125,
       "hp": 0,
@@ -10766,8 +10766,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "duration_pending": false,
     "multipliers": {
       "atk": 0.224,
@@ -10803,8 +10803,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "duration_pending": false,
     "multipliers": {
       "atk": 0.314,
@@ -10840,8 +10840,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.8,
-    "duration_ticks": 8,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "duration_pending": false,
     "multipliers": {
       "atk": 0.834,
@@ -10877,8 +10877,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.8,
-    "duration_ticks": 8,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "duration_pending": false,
     "multipliers": {
       "atk": 0.698,
@@ -10914,8 +10914,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "duration_pending": false,
     "multipliers": {
       "atk": 0.915,
@@ -10951,8 +10951,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "duration_pending": false,
     "multipliers": {
       "atk": 0.259,
@@ -10990,8 +10990,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.8,
-    "duration_ticks": 8,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "duration_pending": false,
     "multipliers": {
       "atk": 0.376,
@@ -11029,8 +11029,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
     "duration_pending": false,
     "multipliers": {
       "atk": 0.788,
@@ -11068,8 +11068,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "duration_pending": false,
     "multipliers": {
       "atk": 0.449,
@@ -11138,8 +11138,8 @@
     "action_type": "闪反",
     "damage_type": "闪反",
     "is_background_damage": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
     "duration_pending": false,
     "multipliers": {
       "atk": 1.0,
@@ -11171,8 +11171,8 @@
     "action_type": "E",
     "damage_type": "E",
     "is_background_damage": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "duration_pending": false,
     "multipliers": {
       "atk": 1.701,
@@ -11460,8 +11460,8 @@
     "action_type": "援护",
     "damage_type": "援护",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "duration_pending": false,
     "multipliers": {
       "atk": 2.0,
@@ -11493,8 +11493,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "duration_implemented": true,
     "duration_estimated": false,
     "multipliers": {
@@ -11566,8 +11566,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "duration_implemented": true,
     "duration_estimated": false,
     "multipliers": {
@@ -11956,8 +11956,8 @@
     "action_type": "普攻",
     "damage_type": "普攻",
     "is_background_damage": false,
-    "duration_seconds": 0.8,
-    "duration_ticks": 8,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "duration_implemented": true,
     "duration_estimated": false,
     "multipliers": {
@@ -12270,8 +12270,8 @@
     "action_type": "闪反",
     "damage_type": "闪反",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "duration_implemented": true,
     "duration_estimated": true,
     "multipliers": {
@@ -12343,8 +12343,8 @@
     "action_type": "E",
     "damage_type": "E",
     "is_background_damage": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "duration_implemented": true,
     "duration_estimated": true,
     "multipliers": {
@@ -12928,8 +12928,8 @@
     "action_type": "援护",
     "damage_type": "援护",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "duration_implemented": true,
     "duration_estimated": true,
     "multipliers": {

@@ -8,6 +8,8 @@ from pathlib import Path
 
 from flask import Flask
 
+from tests.shaft_duration_fixtures import use_scenario_ticks
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('overlap_generator', ROOT / 'app/modules/overlap/generator.py')
 generator = importlib.util.module_from_spec(spec)
@@ -20,6 +22,7 @@ class OverlapTablesTest(unittest.TestCase):
         cls.rules = json.loads((generator.MODULE / 'data/rules.json').read_text())
         cls.characters = json.loads((generator.SOURCE / 'characters.json').read_text())
         cls.actions = json.loads((generator.SOURCE / 'actions.json').read_text())
+        use_scenario_ticks(cls.actions)
         cls.payload = generator.generate(cls.characters, cls.actions, cls.rules)
 
     def character(self, name):

@@ -1,4 +1,10 @@
 {
+  "action_4f1cc1b94f": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 1.04, "energy": 2.6, "harmony": 4.3, "stagger": 2.5}
+    ]
+  },
   "action_982c67944f": {
     "source": "tencent-sheet",
     "harmony_source": "用户2026-09-19补充逐段0.973/0.973/6.11/6.543；释放时额外100不计入曲线，非Nanoka数值。",

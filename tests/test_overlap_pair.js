@@ -120,19 +120,19 @@ for (let i=0;i<data.characters.length;i++) for(let j=i+1;j<data.characters.lengt
 }
 const pictured=engine.match([data.characters[0],data.characters[1]]).plans.find(p=>
     JSON.stringify(p.actions)===JSON.stringify([['a1远','a2远','a3远','a4远'],['a1','z','a5']]));
-assert(pictured); assert.equal(pictured.period,3.2);
+assert(pictured); assert.equal(pictured.period,3.1);
 assert.equal(pictured.totalMultiplier,9.59);
-assert(Math.abs(pictured.multiplierRate - 9.59/3.2)<1e-9);
+assert(Math.abs(pictured.multiplierRate - 9.59/3.1)<1e-9);
 const allocation=engine.match([data.characters[0],data.characters[1]]).plans.find(p=>
     JSON.stringify(p.actions)===JSON.stringify([['a1远','a2远','a3远'],['a1','z','a5']]));
-assert.equal(allocation.period,2.8);
+assert.equal(allocation.period,3);
 assert(allocation.variants.length>1);
 assert.equal(allocation.variants[0].foregroundSeconds[1],1.2);
-assert.equal(allocation.variants.at(-1).foregroundSeconds[1],1.6);
+assert.equal(allocation.variants.at(-1).foregroundSeconds[1],1.8);
 const last=allocation.variants.at(-1), residualRole=last.roles.indexOf(1);
 const returnAt=last.segments.find(s=>s.role===residualRole).start;
 const a5End=last.offsets[residualRole]; // previous cycle a5 ends at this cycle a1 start
-assert(a5End-returnAt>=.6-1e-7,'return during a5 recovery before a1 z pre-a5');
+assert(a5End-returnAt>=.1-1e-7,'return during a5 recovery before a1 z pre-a5');
 const hei=engine.availableRows(data.characters[2]);
 assert(hei.length>0);
 assert(hei.some(r=>r.actions[0]==='魔e' && r.actions.at(-1)==='魔a5'));

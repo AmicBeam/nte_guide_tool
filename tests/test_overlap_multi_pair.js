@@ -128,7 +128,7 @@ assert(ePlans.plans.length>0);
 for(const plan of ePlans.plans.slice(0,40)){check(plan,heiyu);assert.equal(plan.groups[0].length,2);}
 for(const plan of ePlans.plans) for(const job of plan.jobs.filter(j=>j.role===0)) {
     for(const step of engine.rowById(heiyu[0],job.rowId).timeline.filter(s=>s.action==='魔a5')) {
-        assert.equal(step.duration_seconds,.7);
+        assert.equal(step.duration_seconds,1.2);
         assert.equal(step.detached,false);
     }
 }
@@ -149,7 +149,7 @@ for(const plan of lingerPlans.plans) {
         check(choice,lingerPair);
         const projected=engine.materialize(choice,lingerPair);
         const step=projected.rows[0].timeline.find(s=>s.action==='魔a3');
-        assert.equal(step.duration_seconds,1.2);
+        assert.equal(step.duration_seconds,1.4);
         assert.equal(step.recovery_used_seconds,.2);
         const recorded=engine.rowById(lingerPair[0],choice.jobs.find(j=>j.role===0).rowId);
         assert.equal(recorded.timeline[2].placement,'background');
@@ -206,15 +206,15 @@ const original=engine.match(pair,{groupCount:'single',maxGroups:1,containsGroups
 assert(original.plans.length>0);
 assert.equal(original.evaluated+original.filtered+original.pruned,original.checked);
 
-assert.equal(original.plans[0].period,2.8);
+assert.equal(original.plans[0].period,3);
 const allocations=engine.variants(original.plans[0],pair);
-assert(near(Math.max(...allocations.map(p=>p.foregroundSeconds[1])),1.6));
+assert(near(Math.max(...allocations.map(p=>p.foregroundSeconds[1])),1.8));
 allocations.forEach(p=>check(p,pair));
 // The screenshot's idle start (0 -> 0.1s before the first action) is forbidden.
 assert(allocations.every(p=>near(p.offsets[0],p.segments.find(s=>s.role===0).start)));
 assert(allocations.some(p=>{
     const segment=p.segments.find(s=>s.role===1),first=p.jobs.find(j=>j.role===1).offset;
-    return first-segment.start>=.6-1e-7 && near(p.foregroundSeconds[1],1.6);
+    return first-segment.start>=.1-1e-7 && near(p.foregroundSeconds[1],1.8);
 }),'returning during a5 recovery must remain possible');
 const idle={...allocations[0],jobs:allocations[0].jobs.map(j=>j.role===0?{...j,offset:j.offset+.1}:j),offsets:[allocations[0].offsets[0]+.1,allocations[0].offsets[1]]};
 assert.throws(()=>check(idle,pair),/empty entry/);

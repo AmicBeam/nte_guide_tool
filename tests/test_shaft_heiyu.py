@@ -50,16 +50,14 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(assist['energy_gain'], 2)
         self.assertAlmostEqual(assist['harmony'], 3.34)
         self.assertAlmostEqual(assist['stagger'], .4)
-        self.assertEqual(actions['a1']['duration_ticks'], 4)
+        self.assertEqual(actions['a1']['duration_ticks'], 5)
         self.assertEqual(actions['a1']['duration_source'], 'user-authorized-estimate')
         self.assertEqual(sum(actions[f'a{i}']['duration_ticks'] for i in range(1, 6)), 40)
-        # 魔a1–a5采用用户2026-10-15最新基础耗时；其余沿用2026-09-19，非Nanoka核实。
-        for name, ticks in {'魔a1': 7, '魔a2': 6, '魔a3': 10, '魔a4': 6,
-                            '魔a5': 7, '魔e': 10, '魔z2': 11}.items():
+        for name, ticks in {'魔a1': 6, '魔a2': 7, '魔a3': 12, '魔a4': 5,
+                            '魔a5': 12, '魔e': 11, '魔z2': 11}.items():
             self.assertEqual(actions[name]['duration_ticks'], ticks)
             self.assertEqual(actions[name]['duration_seconds'], ticks / 10)
-            self.assertEqual(actions[name]['duration_source'], 'user-supplied')
-        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 36)
+        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 42)
         self.assertEqual(len([a for a in actions.values() if a.get('source_row') == 19]), 1)
 
     def test_ntedata_energy_matches_damage_rows_and_interruptions(self):
@@ -131,10 +129,9 @@ class HeiyuTest(unittest.TestCase):
         detail = simulate_shaft_axis(axis)['result']['details'][0]
         self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'], .516)
 
-    def test_form_a5_seven_tick_base_ignores_legacy_detach_flag(self):
-        # User 2026-10-15: base duration is 0.7s; optional detach is removed.
+    def test_form_a5_duration_ignores_legacy_detach_flag(self):
         action = next(a for a in load_shaft_catalog()['actions_by_character'][CID] if a['name'] == '魔a5')
-        self.assertEqual(action['duration_seconds'], 0.7)
+        self.assertEqual(action['duration_seconds'], 1.2)
         self.assertFalse(action.get('can_detach'))
         self.assertNotIn('detached_duration_ticks', action)
         results = []
@@ -145,7 +142,7 @@ class HeiyuTest(unittest.TestCase):
                                'start_tick': 10, 'detached': detached}]}
             normalized = normalize_axis_payload(axis)
             detail = simulate_shaft_axis(normalized)['result']['details'][-1]
-            self.assertEqual(detail['duration_ticks'], 7)
+            self.assertEqual(detail['duration_ticks'], 12)
             self.assertFalse(detail['is_detached'])
             results.append(detail)
         for key in ('direct_damage', 'energy_gain', 'harmony', 'personal_resources_consumed'):
@@ -163,10 +160,10 @@ class HeiyuTest(unittest.TestCase):
             for action, value in zip(chain, expected):
                 self.assertAlmostEqual(action[field]['恶意'], value)
                 self.assertNotIn('validation_note', action)
-        r = self.simulate([(0, f'action_heiyu_a{i+1}', t) for i,t in enumerate([0,4,10,18,28])])
+        r = self.simulate([(0, f'action_heiyu_a{i+1}', t) for i,t in enumerate([0,5,12,21,29])])
         self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 40)
         self.assertEqual(r['summary']['duration_ticks'], 40)
-        r = self.simulate([(0, 'action_heiyu_q1', 0)] + [(0, f'action_heiyu_form_a{i+1}', t) for i,t in enumerate([10,17,23,33,39])])
+        r = self.simulate([(0, 'action_heiyu_q1', 0)] + [(0, f'action_heiyu_form_a{i+1}', t) for i,t in enumerate([10,16,23,35,40])])
         self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 8)
         self.assertTrue(all(d['resource_damage'] > 0 for d in r['details'][1:]))
 

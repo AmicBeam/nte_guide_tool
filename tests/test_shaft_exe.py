@@ -40,8 +40,8 @@ class ExeTest(unittest.TestCase):
         self.assertEqual((char['adaptation'],char['element'],char['energy_capacity']),('等离子','暗',120))
         self.assertEqual(char['bond_bonus'],{'label':'8暴伤','modifiers':{'crit_dmg':.08}})
         actions={a['name']:a for a in c['actions_by_character'][CID]}
-        for name,atk,hits,ticks in [('a1',.405972,1,6),('a2',.692496,2,6),('a3',.791532,3,7),('a4',1.684368,7,13),
-                                    ('a5',.594216,6,8),('z',.780192,1,7),('e',2.909844,6,12),('q',5.8212,19,0),('援护',2,3,15)]:
+        for name,atk,hits,ticks in [('a1',.405972,1,5),('a2',.692496,2,7),('a3',.791532,3,7),('a4',1.684368,7,13),
+                                    ('a5',.594216,6,7),('z',.780192,1,7),('e',2.909844,6,16),('q',5.8212,19,0),('援护',2,3,18)]:
             with self.subTest(name=name):
                 a=actions[name];self.assertAlmostEqual(a['multipliers']['atk'],atk);self.assertEqual(a['hit_count'],hits);self.assertEqual(a['duration_ticks'],ticks)
                 self.assertEqual(len(a['atk_multipliers_by_level']),13)

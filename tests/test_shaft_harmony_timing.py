@@ -1,5 +1,7 @@
 import unittest
 
+from tests.shaft_duration_fixtures import with_scenario_ticks
+
 from app.modules.shaft.domain.catalog import load_shaft_catalog
 from app.modules.shaft.service import simulate_shaft_axis
 
@@ -21,6 +23,7 @@ class HarmonyTimingTest(unittest.TestCase):
                       if a['character_id'] == cid and a['action_type'] == '援护')
         return dict(id='support', slot=1, action_id=action['id'], start_tick=tick)
 
+    @with_scenario_ticks
     def test_normal_action_accumulates_uniformly_and_only_for_owner(self):
         r = self.simulate('char_heiyu', [dict(id='a', slot=0, action_id='action_heiyu_a2', start_tick=0)], 'char_c78f7a08d5')
         self.assertEqual(r['details'][0]['harmony_after'], 0)
@@ -33,6 +36,7 @@ class HarmonyTimingTest(unittest.TestCase):
         self.assertAlmostEqual(r['resources_by_slot'][0]['harmony'], 4.782)
         self.assertEqual(r['resources_by_slot'][1]['harmony'], 0)
 
+    @with_scenario_ticks
     def test_cast_bonus_and_capped_gain_resume_after_mid_action_consumption(self):
         for cid, aid, other, hits, duration in self.CASES:
             for loop in (False, True):
@@ -63,6 +67,7 @@ class HarmonyTimingTest(unittest.TestCase):
                     self.assertAlmostEqual(r['resources_by_slot'][0]['harmony'], sum(hits[:count]) / 2)
                     self.assertEqual(r['harmony_events'][0]['amount'], 100)
 
+    @with_scenario_ticks
     def test_underfunded_support_uses_elapsed_fraction_then_remaining_gain_continues(self):
         r = self.simulate('char_heiyu', [dict(id='a', slot=0, action_id='action_heiyu_a2', start_tick=0),
                                        self.support('char_c78f7a08d5', 2)], 'char_c78f7a08d5')
@@ -80,6 +85,7 @@ class HarmonyTimingTest(unittest.TestCase):
         self.assertEqual(r['details'][0]['harmony_gain_timing'], 'instant')
         self.assertAlmostEqual(r['details'][0]['harmony'], 6.68)
 
+    @with_scenario_ticks
     def test_overlapping_background_streams_finish_at_axis_tail(self):
         r = self.simulate('char_heiyu', [dict(id='a', slot=0, action_id='action_heiyu_a2', start_tick=0, placement='background'),
                                        dict(id='b', slot=0, action_id='action_heiyu_a2', start_tick=2, placement='background'),

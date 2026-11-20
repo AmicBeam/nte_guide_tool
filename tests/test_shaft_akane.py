@@ -5,6 +5,8 @@ import unittest
 from copy import deepcopy
 from pathlib import Path
 
+from tests.shaft_duration_fixtures import with_scenario_ticks
+
 from app.modules.shaft.domain.catalog import load_shaft_catalog
 from app.modules.shaft.domain.legacy_actions import migrate_lingke_joint_steps
 from app.modules.shaft.service import normalize_axis_payload, simulate_shaft_axis, DEFAULT_UNPUBLISHED_CHARACTERS, RELEASED_CHARACTERS
@@ -67,7 +69,7 @@ class AkaneTest(unittest.TestCase):
         self.assertAlmostEqual(actions['q2']['multipliers']['atk'], 9.18)
         self.assertAlmostEqual(actions['短强E']['multipliers']['atk'], 11.25)
         self.assertAlmostEqual(actions['长强E']['multipliers']['atk'], 10.125)
-        self.assertEqual(actions['长强E']['duration_ticks'],15)
+        self.assertEqual(actions['长强E']['duration_ticks'],14)
         self.assertNotIn('同调共振',actions)
         c_awaken=c['awakenings']['明音凛'][2]
         self.assertIn('音域范围扩大30%',c_awaken['description'])
@@ -87,7 +89,7 @@ class AkaneTest(unittest.TestCase):
 
     def test_manual_enhanced_variants_keep_own_multiplier_duration_and_buffs(self):
         for form,name,base,duration in [('e','short_enhanced_e',11.25,7),
-                                        ('hold_e','long_enhanced_e',10.125,15)]:
+                                        ('hold_e','long_enhanced_e',10.125,14)]:
             with self.subTest(action=name):
                 p=self.payload([(form,0),(name,20),('a1',50)],nodes=range(1,7))
                 rows=simulate_shaft_axis(p)['result']['details']
@@ -226,7 +228,7 @@ class AkaneTest(unittest.TestCase):
         catalog=load_shaft_catalog()
         teammate=next(c for c in catalog['characters'] if c['name']=='真红')
         entry=next(a for a in catalog['actions_by_character'][teammate['id']] if a['name']=='a1')
-        for form, name, duration in [('e','short_enhanced_e',7),('hold_e','long_enhanced_e',15)]:
+        for form, name, duration in [('e','short_enhanced_e',7),('hold_e','long_enhanced_e',14)]:
             for switch_tick in (23,20+duration):
                 with self.subTest(form=form, switch_tick=switch_tick):
                     p=self.payload([(form,0),(name,20)],nodes=range(1,7))
@@ -335,6 +337,7 @@ class AkaneTest(unittest.TestCase):
                 self.assertEqual(f['effects'],{'def_ignore':.16})
                 self.assertEqual(f['end_tick']-f['start_tick'],200)
 
+    @with_scenario_ticks
     def test_delay_unlock_pulses_remaining_time_and_mode_switch(self):
         p=self.payload([('e',30),('hold_e',100),('a1',210)])
         p['team'].append(dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id=''))
@@ -511,4 +514,4 @@ class AkaneTest(unittest.TestCase):
         self.assertEqual(buffs['character_akane_d']['effects'],{'crit_dmg':.3})
         self.assertEqual(buffs['character_akane_f']['effects'],{'def_ignore':.16})
         self.assertEqual(buffs['character_akane_e_single']['effects'],{'base_multiplier_pct':.24})
-        self.assertEqual([next(x for x in c['actions'] if x['id']=='action_akane_'+a)['duration_ticks'] for a in ('a1','a2','a3','a4')],[5,5,10,8])
+        self.assertEqual([next(x for x in c['actions'] if x['id']=='action_akane_'+a)['duration_ticks'] for a in ('a1','a2','a3','a4')],[6,5,11,7])

@@ -112,6 +112,34 @@ class GuideTest(unittest.TestCase):
         self.assertEqual(by_action['第 2 段'], '0.633')
         self.assertIsNone(by_action['第 5 段'])
 
+    def test_directional_counter_durations_match_shaft_rounding(self):
+        from decimal import Decimal, ROUND_CEILING
+
+        tables = service._skill_combat_details()
+        actions = json.loads((ROOT / 'app/modules/shaft/static/data/actions.json').read_text())
+        counters = {(action['character_name'], action['name']): action['duration_ticks'] for action in actions}
+        for role, cid, ability, group, action in (
+            ('Exe', '1074', 'GA_Exe_Melee', '极限反击：零延迟响应', '闪反'),
+            ('明音凛', '1057', 'GA_Akane_Melee', '极限反击：羽刃回响', '闪反'),
+            ('黑羽', '1042', 'GA_BlackBird_Melee', '极限反击：生于灾厄', '魔闪反'),
+            ('九原', '1055', 'GA_Kuhara_Melee', '极限反击：局势逆转', '闪反'),
+        ):
+            with self.subTest(role=role, action=action):
+                table = tables[cid][ability][group]
+                self.assertEqual([row[0] for row in table['rows']], ['前闪反击', '后闪反击'])
+                duration = table['columns'].index('动作衔接（秒）')
+                slower = max(Decimal(row[duration]) for row in table['rows'])
+                self.assertEqual(counters[role, action], int((slower * 10).to_integral_value(rounding=ROUND_CEILING)))
+        self.assertEqual([row[1] for row in tables['1074']['GA_Exe_Melee']['极限反击：零延迟响应']['rows']],
+                         ['1.194', '1.277'])
+        player = SimpleNamespace(shaft_test_whitelisted=False)
+        with patch('app.dao.get_player_by_token', return_value=player):
+            markdown = self.client.get('/guide/characters/1074.md?ability_id=GA_Exe_Melee',
+                                       headers={'Authorization': 'Bearer valid'}).text
+        self.assertIn('| 前闪反击 | 1.194 |', markdown)
+        self.assertIn('| 后闪反击 | 1.277 |', markdown)
+        self.assertNotIn('触发延迟', markdown)
+
     def test_combat_snapshot_covers_formal_characters(self):
         tables = service._skill_combat_details()
         characters = service.catalog()['characters']

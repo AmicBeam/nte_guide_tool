@@ -6,6 +6,8 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
+from tests.shaft_duration_fixtures import with_scenario_ticks
+
 from app.modules.shaft.service import get_shaft_catalog_payload, simulate_shaft_axis, SHAFT_SOURCE_VERSION
 from app.modules.shaft.domain.catalog import get_record_map, load_shaft_catalog
 
@@ -693,15 +695,15 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions['血宴']['multipliers']['atk'], 6.999)
 
         self.assertEqual(actions['血宴']['energy_cost'], 120)
-        self.assertEqual(actions['e']['duration_ticks'], 10)
-        self.assertEqual(actions['强化e']['duration_ticks'], 10)
-        self.assertEqual(actions['幻e']['duration_ticks'], 22)
+        self.assertEqual(actions['e']['duration_ticks'], 11)
+        self.assertEqual(actions['强化e']['duration_ticks'], 11)
+        self.assertEqual(actions['幻e']['duration_ticks'], 23)
         self.assertEqual(
             {actions[name]['cooldown_group'] for name in ('e', '强化e', '幻e')},
             {'canhong_e'},
         )
         self.assertEqual(actions['幻a1']['duration_ticks'], 3)
-        self.assertEqual(actions['幻a4']['duration_ticks'], 11)
+        self.assertEqual(actions['幻a4']['duration_ticks'], 9)
         self.assertEqual(actions['援护']['duration_ticks'], 15)
         self.assertEqual(actions['援护']['multipliers']['atk'], 2.0)
         self.assertEqual(actions['援护']['energy_gain'], 5.2)
@@ -814,7 +816,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             self.assertEqual(action['stagger'], stagger)
             self.assertEqual(action['duration_ticks'], 0)
             self.assertEqual(action['can_background_override'], can_background)
-        self.assertEqual(actions_by_name['援护']['duration_ticks'], 15)
+        self.assertEqual(actions_by_name['援护']['duration_ticks'], 12)
         self.assertEqual(actions_by_name['e']['duration_ticks'], 10)
         self.assertEqual(actions_by_name['e']['multipliers']['atk'], 1.0)
         self.assertEqual(actions_by_name['e']['hit_count'], 4)
@@ -2028,6 +2030,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('state.cursorTick = timelineTickFromEvent(event);', source)
         self.assertIn('renderTimeline();\n        renderStepDetail();\n        renderEditorActions();', source)
 
+    @with_scenario_ticks
     def test_selection_and_initial_shortcuts_use_display_timeline_coordinates(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         catalog = get_shaft_catalog_payload()
@@ -2453,7 +2456,7 @@ process.stdout.write(JSON.stringify([run(true), run(false)]));
         self.assertEqual(yixing['character_name'], '达芙蒂尔')
         self.assertEqual(yixing['name'], '移行')
         self.assertEqual(yixing['action_type'], '普攻')
-        self.assertEqual(yixing['duration_ticks'], 10)
+        self.assertEqual(yixing['duration_ticks'], 17)
         self.assertTrue(yixing['can_background_override'])
 
     def test_market_dislike_uses_authenticated_toggle_and_refreshes_market(self) -> None:
@@ -2664,6 +2667,7 @@ process.stdout.write(JSON.stringify([run(true), run(false)]));
             self.assertEqual(detail['end_tick'], 0)
             self.assertEqual(detail['duration_ticks'], 0)
 
+    @with_scenario_ticks
     def test_yi_q_e_reordering_preserves_total_visual_span(self) -> None:
         team = [{
             'slot': 0,
@@ -2699,6 +2703,7 @@ process.stdout.write(JSON.stringify([run(true), run(false)]));
         self.assertEqual(visual_span(q_then_e), visual_span(e_then_q))
         self.assertEqual(visual_span(q_then_e), 20 * _js_number_constant('TIMELINE_TICK_PX'))
 
+    @with_scenario_ticks
     def test_short_nonzero_action_after_q_keeps_true_timeline_position(self) -> None:
         min_action_card_px = _js_number_constant('MIN_ACTION_CARD_PX')
         payload = {

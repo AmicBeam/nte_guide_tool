@@ -89,11 +89,11 @@ def build(directory, workbook):
             ranks=[dict(label=label,threshold=t,frame_multiplier=m,decay_per_second=d) for label,t,m,d in zip(['B','A','S','SS','SSS','Ω'],rank_thresholds,rank_mult,decay)]))
     chars=[c for c in output['characters'] if c['id']!=CID]
     index=max(i for i,c in enumerate(chars) if c['element']=='暗')+1;chars.insert(index,character);output['characters']=chars
-    configurations=[('a1','Melee1',1,.6),('a2','Melee2',2,.6),('a3','Melee3',3,.7),
-        ('a4',[('Melee4',2),('Melee4_1',2),('Melee4_2',3)],1,1.3),('a5','Melee5',6,.8),
-        ('z','Branch',1,.7),('下落','AirAttack',1,.8),('闪反','PerfectEvadeAttack',1,1),
-        ('e',[('Skill',3),('Skill1',3)],1,1.2),('q',[('UltraSkill1',13),('UltraSkill2',6)],1,0),
-        ('援护',[('QTE',2),('QTE1',1)],1,1.5),('数字残像','CloneAtk',1,0)]
+    configurations=[('a1','Melee1',1,.5),('a2','Melee2',2,.7),('a3','Melee3',3,.7),
+        ('a4',[('Melee4',2),('Melee4_1',2),('Melee4_2',3)],1,1.3),('a5','Melee5',6,.7),
+        ('z','Branch',1,.7),('下落','AirAttack',1,.8),('闪反','PerfectEvadeAttack',1,1.3),
+        ('e',[('Skill',3),('Skill1',3)],1,1.6),('q',[('UltraSkill1',13),('UltraSkill2',6)],1,0),
+        ('援护',[('QTE',2),('QTE1',1)],1,1.8),('数字残像','CloneAtk',1,0)]
     actions=[]
     for order,(name,parts,count,seconds) in enumerate(configurations):
         if isinstance(parts,str):parts=[(parts,count)]

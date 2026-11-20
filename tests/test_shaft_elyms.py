@@ -5,6 +5,8 @@ import subprocess
 import unittest
 from pathlib import Path
 
+from tests.shaft_duration_fixtures import with_scenario_ticks
+
 from app.modules.shaft.domain.catalog import load_shaft_catalog
 from app.modules.shaft.service import normalize_axis_payload, simulate_shaft_axis
 from tests.test_solo_room_flow import RoomFlowTestCase
@@ -56,25 +58,25 @@ class ElymsCatalogTest(unittest.TestCase):
         actions = {a['name']:a for a in c['actions_by_character'][CID]}
         self.assertEqual(len(actions),21)
         self.assertNotIn('瞄准',actions)
-        expected = {'a1': (0.224, 2, 1.408, 2.34, 0.278, 4),
-         'a2': (0.314, 2, 1.964, 3.266, 0.388, 6),
-         'a3': (0.834, 3, 5.227, 8.692, 1.034, 8),
-         'a4': (0.698, 5, 4.371, 7.266, 0.865, 8),
-         'a5': (0.915, 1, 5.733, 9.534, 1.134, 10),
-         '强a1': (0.259, 2, 1.62, 2.695, 0.328, 6),
-         '强a2': (0.376, 4, 2.352, 3.912, 0.476, 8),
-         '强a3': (0.788, 4, 4.928, 8.194, 0.996, 6),
-         '重击': (0.449, 4, 2.801, 4.7, 0.6, 10),
+        expected = {'a1': (0.224, 2, 1.408, 2.34, 0.278, 5),
+         'a2': (0.314, 2, 1.964, 3.266, 0.388, 5),
+         'a3': (0.834, 3, 5.227, 8.692, 1.034, 12),
+         'a4': (0.698, 5, 4.371, 7.266, 0.865, 6),
+         'a5': (0.915, 1, 5.733, 9.534, 1.134, 11),
+         '强a1': (0.259, 2, 1.62, 2.695, 0.328, 5),
+         '强a2': (0.376, 4, 2.352, 3.912, 0.476, 4),
+         '强a3': (0.788, 4, 4.928, 8.194, 0.996, 10),
+         '重击': (0.449, 4, 2.801, 4.7, 0.6, 7),
          '下落': (0.296, 1, 1.9, 3.1, 0.4, 8),
-         '闪反': (1.0, 1, 2.5, 4.2, 2.5, 10),
-         'e1': (1.701, 6, 5.1, 8.399, 1.001, 10),
+         '闪反': (1.0, 1, 2.5, 4.2, 2.5, 8),
+         'e1': (1.701, 6, 5.1, 8.399, 1.001, 11),
          'e2': (0.998, 6, 8.3, 0.0, 0.0, 0),
          'e3': (1.277, 6, 8.3, 0.0, 0.0, 0),
          'q群': (4.05, 4, 0.0, 0.0, 1.501, 0),
          'q单': (4.5, 8, 0.0, 0.0, 1.502, 0),
          '追忆群': (1.08, 4, 1.7, 2.8, 0.3, 0),
          '追忆单': (1.2, 4, 1.7, 2.8, 0.3, 0),
-         '援护': (2.0, 1, 5.2, 0.0, 2.5, 15)}
+         '援护': (2.0, 1, 5.2, 0.0, 2.5, 11)}
         for name,(mult,hits,energy,harmony,stagger,ticks) in expected.items():
             with self.subTest(action=name):
                 a=actions[name]
@@ -365,6 +367,7 @@ class ElymsCatalogTest(unittest.TestCase):
         axis['initial_energy']=initial_energy
         return axis
 
+    @with_scenario_ticks
     def test_only_actual_yingxu_energy_stacks_and_refreshes(self):
         r=simulate_shaft_axis(self.yingxu_axis())['result']
         events=[e for e in r['energy_events'] if e['kind']=='yingxu_gain']
@@ -385,6 +388,7 @@ class ElymsCatalogTest(unittest.TestCase):
         for tick in (315,):
             self.assertNotIn('character_elyms_energy_light',self.effects(by_tick[tick]))
 
+    @with_scenario_ticks
     def test_full_energy_still_stacks_but_creation_without_delay_does_not(self):
         capped=simulate_shaft_axis(self.yingxu_axis(1000))['result']
         events=[e for e in capped['energy_events'] if e['kind']=='yingxu_gain']
@@ -471,6 +475,7 @@ class ElymsActivationTest(unittest.TestCase):
                                 input=json.dumps(dict(axis=axis,catalog=load_shaft_catalog(),result=result)),text=True,capture_output=True,check=True)
         return [w for w in json.loads(response.stdout) if '尚未激活或激活已过期' in w]
 
+    @with_scenario_ticks
     def test_weak_finisher_and_e1_activate_e2_for_twelve_seconds(self):
         self.assertTrue(self.check([('skill2',0)]))
         self.assertEqual(self.check([('melee5',0),('skill2',129)]),[])
@@ -480,6 +485,7 @@ class ElymsActivationTest(unittest.TestCase):
         self.assertEqual(self.check([('melee5',0),('ultraskilla1',10),('skill2',20)]),[])
         self.assertTrue(self.check([('melee5',0),('skill2',10),('skill2',20)]))
 
+    @with_scenario_ticks
     def test_strong_finisher_activates_e3_once_for_six_seconds(self):
         prefix=[('skill1',0),('skill2',10),('meleeb3',20)]
         self.assertEqual(self.check(prefix+[('goodbye',85)]),[])
@@ -502,6 +508,7 @@ class ElymsActivationTest(unittest.TestCase):
         self.assertEqual(result['details'][2]['hit_count'],3)
         self.assertTrue(self.check(names,result=result))
 
+    @with_scenario_ticks
     def test_resonance_and_current_signal_are_only_validation(self):
         names=[('skill1',0),('skill2',10),('goodbye',20),('goodbye',30)]
         # Three active nodes enable the one immediate E3 when B jumps to strong signal.
@@ -527,6 +534,7 @@ class ElymsSpecialEZeroTimeTest(unittest.TestCase):
     axis = ElymsCatalogTest.axis
     sim = ElymsCatalogTest.sim
 
+    @with_scenario_ticks
     def test_special_es_use_public_zero_time_mask_and_foreground_lock(self):
         teammate=dict(slot=1,character_id='char_dd034941ef',arc_id='',cartridge_id='')
         for name in ('skill2','goodbye'):

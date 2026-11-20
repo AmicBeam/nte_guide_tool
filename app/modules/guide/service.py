@@ -351,7 +351,15 @@ def markdown_value(value, depth=2):
         for key, item in value.items():
             if key == 'base_cooldown' and item is None:
                 continue
-            if isinstance(item, (dict, list)):
+            if key == 'combat_details':
+                columns = item['columns']
+                rows = [columns, ['---'] * len(columns), *item['rows']]
+                lines += [f'{"#" * min(depth, 6)} {label(key)}', '']
+                for row in rows:
+                    cells = ['—' if cell is None else cell.replace('|', r'\|') for cell in row]
+                    lines.append('| ' + ' | '.join(cells) + ' |')
+                lines += ['', *[f'- {note}' for note in item.get('notes', [])], '']
+            elif isinstance(item, (dict, list)):
                 lines += [f'{"#" * min(depth, 6)} {label(key)}', '', markdown_value(item, depth + 1)]
             else:
                 lines.append(f'- {label(key)}: {scalar(item)}')

@@ -119,27 +119,46 @@ if (characterId) {
                 const groups = new Map((abilities.get(card.dataset.abilityId) || [])
                     .filter(group => group.combat_details).map(group => [group.name, group.combat_details]));
                 for (const move of card.querySelectorAll('[data-move-name]')) {
-                    const sections = groups.get(move.dataset.moveName);
-                    if (!sections) continue;
+                    const combat = groups.get(move.dataset.moveName);
+                    if (!combat) continue;
                     const detail = document.createElement('details');
                     detail.className = 'guide-hit-details guide-combat-details';
                     detail.open = openMoves.has(move);
                     const summary = document.createElement('summary');
                     summary.textContent = '判定与衔接';
-                    const list = document.createElement('dl');
-                    for (const [label, entries] of Object.entries(sections)) {
-                        const row = document.createElement('div');
-                        const title = document.createElement('dt');
+                    const scroll = document.createElement('div');
+                    scroll.className = 'guide-table-scroll';
+                    scroll.tabIndex = 0;
+                    scroll.setAttribute('role', 'region');
+                    scroll.setAttribute('aria-label', `${move.dataset.moveName}判定与衔接`);
+                    const table = document.createElement('table');
+                    table.className = 'guide-data-table guide-combat-table';
+                    const headings = table.createTHead().insertRow();
+                    for (const label of combat.columns) {
+                        const heading = document.createElement('th');
+                        heading.scope = 'col';
+                        heading.textContent = label;
+                        headings.append(heading);
+                    }
+                    const body = table.createTBody();
+                    for (const [label, ...entries] of combat.rows) {
+                        const row = body.insertRow();
+                        const title = document.createElement('th');
+                        title.scope = 'row';
                         title.textContent = label;
                         row.append(title);
                         for (const entry of entries) {
-                            const value = document.createElement('dd');
-                            value.textContent = entry;
-                            row.append(value);
+                            row.insertCell().textContent = entry ?? '—';
                         }
-                        list.append(row);
                     }
-                    detail.append(summary, list);
+                    scroll.append(table);
+                    detail.append(summary, scroll);
+                    for (const note of combat.notes || []) {
+                        const paragraph = document.createElement('p');
+                        paragraph.className = 'guide-combat-note';
+                        paragraph.textContent = note;
+                        detail.append(paragraph);
+                    }
                     move.append(detail);
                 }
             }

@@ -102,11 +102,13 @@
 .guide-element-badge{display:inline-flex;align-items:center;gap:4px;margin-right:10px;vertical-align:middle;white-space:nowrap}
 .guide-element-badge>img{display:block;width:22px;height:22px;flex:none;object-fit:contain}
 
-.guide-combat-details dl{display:grid;gap:14px;margin:16px 0 0}
-.guide-combat-details dl>div{display:grid;grid-template-columns:minmax(5em,max-content) minmax(0,1fr);gap:4px 18px}
-.guide-combat-details dt{grid-column:1;font-size:13px;font-weight:600}
-.guide-combat-details dd{grid-column:2;margin:0;color:var(--g-dim);font-size:13px;line-height:1.6}
+.guide-combat-table{font-size:13px}
+.guide-combat-table th,.guide-combat-table td{vertical-align:top;white-space:nowrap}
+.guide-combat-table th[scope=row]{font-weight:600}
+.guide-combat-table td{color:var(--g-dim);font-variant-numeric:tabular-nums}
+.guide-combat-note{margin:10px 0 0;color:var(--g-dim);font-size:12px;line-height:1.6}
 @media(max-width:700px){
-  .guide-combat-details dl>div{grid-template-columns:minmax(0,1fr)}
-  .guide-combat-details dd{grid-column:1}
+  .guide-combat-table th,.guide-combat-table td{padding:8px 6px}
+  .guide-combat-table thead th{min-width:3.5em;white-space:normal}
+  .guide-combat-table tbody th{min-width:7em;white-space:normal}
 }

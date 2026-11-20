@@ -74,14 +74,22 @@ class GuideTest(unittest.TestCase):
         path = '/api/guide/characters/1057?section=abilities&hit_details=0'
         player = SimpleNamespace(shaft_test_whitelisted=False)
         with patch('app.dao.get_player_by_token', return_value=player):
-            response = self.client.get(path, headers={'Authorization': 'Bearer valid'})
+            headers = {'Authorization': 'Bearer valid'}
+            response = self.client.get(path, headers=headers)
+            html = self.client.get('/guide/characters/1057', headers=headers).text
+            markdown = self.client.get('/guide/characters/1057.md?ability_id=GA_Akane_Melee', headers=headers).text
         groups = {group['name']: group['combat_details'] for ability in response.json['data']['abilities']
                   for group in ability['groups'] if 'combat_details' in group}
         self.assertEqual(set(groups), {'普通攻击：弦刃', '普通攻击：舞台跳水', '极限反击：羽刃回响',
                                       '变轨技能：律动音浪', '音障爆鸣', '变奏和弦'})
-        self.assertIn('2.775 秒', groups['普通攻击：弦刃']['连段占时'][-1])
-        self.assertIn('战斗暂停', groups['音障爆鸣'])
-        self.assertIn('切人限制', groups['变奏和弦'])
+        for table in groups.values():
+            self.assertEqual(table['columns'][0], '动作')
+            self.assertTrue(all(len(row) == len(table['columns']) for row in table['rows']))
+        self.assertEqual(groups['普通攻击：弦刃']['rows'][-1], ['完整循环', '2.595', '0.180', '2.775'])
+        self.assertIn('解除暂停事件（秒）', groups['音障爆鸣']['columns'])
+        self.assertIn('切人锁定至（秒）', groups['变奏和弦']['columns'])
+        self.assertIn('<th scope="row">强化短 E</th>', html)
+        self.assertIn('| 第 2 段 → 第 3 段 | 0.405 | 0.040 | 0.445 |', markdown)
         self.assertNotIn('combat_details', self.client.get(path).text)
 
     def test_character_icon_filters_combine_and_reset(self):

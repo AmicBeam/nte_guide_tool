@@ -41,16 +41,23 @@
 </details>{% endif %}
 {% endif %}
 {% if group.combat_details %}
+{% set combat = group.combat_details %}
 <details class="guide-hit-details guide-combat-details">
   <summary>判定与衔接</summary>
-  <dl>
-    {% for label, entries in group.combat_details.items() %}
-    <div>
-      <dt>{{ label }}</dt>
-      {% for entry in entries %}<dd>{{ entry }}</dd>{% endfor %}
-    </div>
-    {% endfor %}
-  </dl>
+  <div class="guide-table-scroll" tabindex="0" role="region" aria-label="{{ group.name }}判定与衔接">
+    <table class="guide-data-table guide-combat-table">
+      <thead><tr>{% for column in combat.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in combat.rows %}
+        <tr>
+          <th scope="row">{{ row[0] }}</th>
+          {% for value in row[1:] %}<td>{{ value if value is not none else '—' }}</td>{% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% for note in combat.notes|default([]) %}<p class="guide-combat-note">{{ note }}</p>{% endfor %}
 </details>
 {% endif %}
 </section>{% endfor %}

@@ -70,6 +70,20 @@ class GuideTest(unittest.TestCase):
                         self.assertEqual(marker in response.text, token == 'valid')
             self.assertNotIn('判定半径 400', self.client.get('/guide?kind=characters').text)
 
+    def test_akane_combat_timing_is_bound_to_combat_moves(self):
+        path = '/api/guide/characters/1057?section=abilities&hit_details=0'
+        player = SimpleNamespace(shaft_test_whitelisted=False)
+        with patch('app.dao.get_player_by_token', return_value=player):
+            response = self.client.get(path, headers={'Authorization': 'Bearer valid'})
+        groups = {group['name']: group['combat_details'] for ability in response.json['data']['abilities']
+                  for group in ability['groups'] if 'combat_details' in group}
+        self.assertEqual(set(groups), {'普通攻击：弦刃', '普通攻击：舞台跳水', '极限反击：羽刃回响',
+                                      '变轨技能：律动音浪', '音障爆鸣', '变奏和弦'})
+        self.assertIn('2.775 秒', groups['普通攻击：弦刃']['连段占时'][-1])
+        self.assertIn('战斗暂停', groups['音障爆鸣'])
+        self.assertIn('切人限制', groups['变奏和弦'])
+        self.assertNotIn('combat_details', self.client.get(path).text)
+
     def test_character_icon_filters_combine_and_reset(self):
         page = self.client.get('/guide?kind=characters&element=魂&rarity=5&arc_type=4')
         self.assertEqual(page.status_code, 200)

@@ -124,26 +124,12 @@ class Assets:
     def damage_range(self, key):
         p, native = self.defaults(key)
         if 'BoxTrace' in native and p.get('HalfSize'):
-            shape = '盒体半尺寸 ' + vec(p['HalfSize'], ' × ')
-        elif 'SphereTrace' in native and p.get('SphereRadius'):
-            shape = '球形半径 ' + fmt(p['SphereRadius'])
-        elif 'CapsuleTrace' in native and p.get('CapsuleRadius') and p.get('CapsuleHalfHeight'):
-            shape = f"胶囊半径 {fmt(p['CapsuleRadius'])}、半高 {fmt(p['CapsuleHalfHeight'])}"
-        else:
-            return ''
-        values = [shape]
-        offset, sweep = p.get('OffsetFromActor'), p.get('TraceVector')
-        if offset and sweep and offset == sweep and any(offset.values()):
-            values.append('偏移／扫掠 (' + vec(offset) + ')')
-        else:
-            for title, value in [('偏移', offset), ('扫掠', sweep)]:
-                if value and any(value.values()):
-                    values.append(f'{title} ({vec(value)})')
-        if p.get('TraceLength'):
-            values.append('检测长度 ' + fmt(p['TraceLength']))
-        if p.get('MaxCount', 0) > 0:
-            values.append(f"目标上限 {p['MaxCount']}")
-        return '，'.join(values)
+            return '盒体半尺寸 ' + vec(p['HalfSize'], ' × ')
+        if 'SphereTrace' in native and p.get('SphereRadius'):
+            return '球形半径 ' + fmt(p['SphereRadius'])
+        if 'CapsuleTrace' in native and p.get('CapsuleRadius') and p.get('CapsuleHalfHeight'):
+            return f"胶囊半径 {fmt(p['CapsuleRadius'])}、半高 {fmt(p['CapsuleHalfHeight'])}"
+        return ''
 
     def attack_hit_pause(self, effect):
         pause = self.defaults(game_path(effect))[0].get('HitPauseData') or {}
@@ -283,7 +269,7 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
                 if target.get('ObjectName') == "Class'HTTargetType_AbilityTarget'":
                     geometry = '技能目标'
                 if geometry:
-                    ranges.append(('生成物：' if is_spawn else '') + geometry)
+                    ranges.append(geometry)
                 elif collision := container.get('projectile_collision'):
                     ranges.append(collision)
                 if not is_spawn:

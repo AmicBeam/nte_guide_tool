@@ -90,8 +90,17 @@ class GuideTest(unittest.TestCase):
         self.assertIn('解除暂停事件（秒）', groups['音障爆鸣']['columns'])
         self.assertIn('切人锁定（秒）', groups['变奏和弦']['columns'])
         self.assertIn('<th scope="row">强化短 E</th>', html)
-        self.assertIn('| 第 3 段 | 0.940 | 0.020*7 | 1.080 | 盒体半尺寸 600 × 270 × 200', markdown)
+        self.assertIn('| 第 3 段 | 0.940 | 0.020*7 | 1.080 | 盒体半尺寸 600 × 270 × 200 |', markdown)
         self.assertNotIn('combat_details', self.client.get(path).text)
+
+    def test_exe_assist_combat_details_include_all_fixed_hit_pauses(self):
+        path = '/guide/characters/1074.md?ability_id=GA_Exe_QTE'
+        player = SimpleNamespace(shaft_test_whitelisted=False)
+        with patch('app.dao.get_player_by_token', return_value=player):
+            markdown = self.client.get(path, headers={'Authorization': 'Bearer valid'}).text
+        self.assertIn('判定与时长', markdown)
+        self.assertIn('| 0.033*2 / 0.300 | 0–1.189 | 盒体半尺寸 350 × 350 × 300 |', markdown)
+        self.assertNotIn('判定与时长', self.client.get(path).text)
 
     def test_combat_snapshot_covers_formal_characters(self):
         tables = service._skill_combat_details()

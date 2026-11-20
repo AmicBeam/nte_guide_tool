@@ -51,7 +51,7 @@
       {% for row in combat.rows %}
         <tr>
           <th scope="row">{{ row[0] }}</th>
-          {% for value in row[1:] %}<td>{{ value if value is not none else '—' }}</td>{% endfor %}
+          {% for value in row[1:] %}<td{% if combat.columns[loop.index] == '伤害判定' %} class="guide-combat-range"{% endif %}>{{ value if value is not none else '—' }}</td>{% endfor %}
         </tr>
       {% endfor %}
       </tbody>

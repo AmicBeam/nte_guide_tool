@@ -84,12 +84,13 @@ class GuideTest(unittest.TestCase):
                                       '变轨技能：律动音浪', '音障爆鸣', '变奏和弦'})
         for table in groups.values():
             self.assertEqual(table['columns'][0], '动作')
+            self.assertEqual(table['columns'][-1], '伤害判定')
             self.assertTrue(all(len(row) == len(table['columns']) for row in table['rows']))
-        self.assertEqual(groups['普通攻击：弦刃']['rows'][-1], ['完整循环', '2.595', '0.180', '2.775'])
+        self.assertEqual(groups['普通攻击：弦刃']['rows'][-1], ['完整循环', '2.595', '0.180', '2.775', None])
         self.assertIn('解除暂停事件（秒）', groups['音障爆鸣']['columns'])
-        self.assertIn('切人锁定至（秒）', groups['变奏和弦']['columns'])
+        self.assertIn('切人锁定（秒）', groups['变奏和弦']['columns'])
         self.assertIn('<th scope="row">强化短 E</th>', html)
-        self.assertIn('| 第 3 段 | 0.940 | 0.020*7 | 1.080 |', markdown)
+        self.assertIn('| 第 3 段 | 0.940 | 0.020*7 | 1.080 | 盒体半尺寸 600 × 270 × 200', markdown)
         self.assertNotIn('combat_details', self.client.get(path).text)
 
     def test_character_icon_filters_combine_and_reset(self):

@@ -147,8 +147,10 @@ if (characterId) {
                         title.scope = 'row';
                         title.textContent = label;
                         row.append(title);
-                        for (const entry of entries) {
-                            row.insertCell().textContent = entry ?? '—';
+                        for (const [index, entry] of entries.entries()) {
+                            const cell = row.insertCell();
+                            if (combat.columns[index + 1] === '伤害判定') cell.className = 'guide-combat-range';
+                            cell.textContent = entry ?? '—';
                         }
                     }
                     scroll.append(table);

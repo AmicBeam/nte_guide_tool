@@ -106,6 +106,7 @@
 .guide-combat-table th,.guide-combat-table td{vertical-align:top;white-space:nowrap}
 .guide-combat-table th[scope=row]{font-weight:600}
 .guide-combat-table td{color:var(--g-dim);font-variant-numeric:tabular-nums}
+.guide-combat-table td.guide-combat-range{min-width:13em;white-space:normal;overflow-wrap:anywhere}
 .guide-combat-note{margin:10px 0 0;color:var(--g-dim);font-size:12px;line-height:1.6}
 @media(max-width:700px){
   .guide-combat-table th,.guide-combat-table td{padding:8px 6px}

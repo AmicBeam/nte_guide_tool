@@ -47,6 +47,7 @@ class ExeTest(unittest.TestCase):
                 self.assertEqual(len(a['atk_multipliers_by_level']),13)
         self.assertEqual(actions['q']['energy_cost'],120)
         self.assertTrue(actions['q']['is_time_stop_zero'])
+        self.assertTrue(actions['q']['ranked_export_feedback'])
         self.assertNotIn('数字残像',actions)
         self.assertEqual(char['initial_personal_resources'],{'帧数':0,'评分':0})
         self.assertEqual(char['timeline_personal_resources'],['帧数','评分'])
@@ -159,6 +160,61 @@ class ExeTest(unittest.TestCase):
         for trigger,release,warning in [(105,124,True),(105,125,False),(115,129,True),(115,130,False)]:
             result=self.own([('e',0),('a5',trigger),('e',release)],initial={'帧数':10})
             self.assertEqual(any('CD'in w for w in result['details'][-1]['warnings']),warning)
+
+    def test_q_clone_frames_feed_back_immediately_with_one_ten_export_budget(self):
+        for frames,count,remaining,score in [(0,4,6.48,705),(10,6,6.6,805),(100,10,72.96,1005)]:
+            result=self.own([('q',0)],initial={'帧数':frames,'评分':0})
+            events=[e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']
+            self.assertEqual(len(events),count)
+            self.assertTrue(all(e['tick']==0 and e['damage']>0 for e in events))
+            self.assertAlmostEqual(result['details'][0]['personal_resources_after']['帧数'],remaining)
+            self.assertAlmostEqual(result['resources_by_slot'][0]['personal_resources']['帧数'],remaining)
+            self.assertEqual(result['resources_by_slot'][0]['personal_resources']['评分'],score)
+        # At Ω, feedback must stop at ten exports even though each hit returns nine frames.
+        axis=self.axis([(0,'action_exe_q',0)])
+        axis['team'][0]['awakening_resonances']=[6]
+        result=self.sim(axis,{'帧数':0,'评分':5000})
+        self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),10)
+        self.assertAlmostEqual(result['resources_by_slot'][0]['personal_resources']['帧数'],50.6)
+
+    def test_q_feedback_keeps_bursts_healing_and_loop_initial_resources_single(self):
+        result=self.own([('q',0)],nodes=[5],initial={'帧数':0,'评分':0})
+        self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),4)
+        self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone_boom']),4)
+        self.assertAlmostEqual(result['resources_by_slot'][0]['personal_resources']['帧数'],6.84)
+        result=self.own([('q',0)],nodes=[6],initial={'帧数':0,'评分':0})
+        self.assertEqual(len([e for e in result['healing_events']if e.get('source')=='Exe·帧数回复']),23)
+        axis=self.axis([(0,'action_exe_q',0),(0,'action_none_exe',25)])
+        axis['options'].update(loop_enabled=True,loop_initial_resources={CID:{'personal_resources':{'帧数':0,'评分':0}}})
+        result=self.sim(axis)
+        self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),4)
+        self.assertAlmostEqual(result['resources_by_slot'][0]['personal_resources']['帧数'],6.48)
+        self.assertFalse(any(e['tick']<0 for e in result['personal_resource_state_events']))
+        # Other sources keep their own export rules; a clone does not export autonomously.
+        result=self.own([('e',0)],initial={'帧数':100,'评分':0})
+        self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),5)
+        result=self.own([('e',0)],initial={'帧数':10,'评分':0})
+        self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),2)
+        self.assertGreater(result['resources_by_slot'][0]['personal_resources']['帧数'],10)
+        result=self.own([('q',0),('q',205)],initial={'帧数':100,'评分':0})
+        for source in ['0','1']:
+            self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone'and e.get('source_step_id')==source]),10)
+
+    def test_triangle_detail_summarizes_clone_and_burst_counts_without_merging_hits(self):
+        result=self.own([('q',0)],nodes=[5],initial={'帧数':0,'评分':0})
+        source=(ROOT/'app/modules/shaft/static/js/shaft.js').read_text()
+        def function(name):
+            start=source.index('  function '+name+'(')
+            return source[start:source.index('\n  function ',start+1)]
+        script='const events='+json.dumps(result['periodic_damage_events'],ensure_ascii=False)+';'
+        for name in ['displayText','escapeHtml','damageTriggerCounts','renderDamageTriggerCounts','groupedTimelineDamageEvents']:
+            script+=function(name)
+        script+='const group=groupedTimelineDamageEvents(events)[0];console.log(JSON.stringify({counts:damageTriggerCounts(group.events),html:renderDamageTriggerCounts(group.events),events:group.events.length}));'
+        rendered=json.loads(subprocess.check_output(['node','-e',script],text=True))
+        self.assertEqual(rendered['counts'],[{'name':'数字残像','count':4},{'name':'数字残像·冲击','count':4}])
+        self.assertEqual(rendered['events'],8)
+        self.assertIn('自动伤害触发次数',rendered['html'])
+        self.assertEqual(rendered['html'].count('4次'),2)
 
     def test_f_healing_and_empty_hit(self):
         r=self.own([('a1',0)],nodes=[6])

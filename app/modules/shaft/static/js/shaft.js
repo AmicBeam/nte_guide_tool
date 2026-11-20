@@ -5358,6 +5358,24 @@
     };
   }
 
+  function damageTriggerCounts(events) {
+    const groups = new Map();
+    (events || []).filter((event) => event.kind === 'triggered_damage').forEach((event) => {
+      const key = event.action_id || event.reaction;
+      const group = groups.get(key) || {name: String(event.reaction || '自动伤害'), count: 0};
+      group.count += 1;
+      groups.set(key, group);
+    });
+    return Array.from(groups.values());
+  }
+
+  function renderDamageTriggerCounts(events) {
+    const counts = damageTriggerCounts(events);
+    if (!counts.length) return '';
+    return `<div class="shaft-detail-hero"><strong>自动伤害触发次数</strong>${counts.map((item) =>
+      `<div class="shaft-detail-kv"><span>${escapeHtml(item.name)}</span><strong>${item.count}次</strong></div>`).join('')}</div>`;
+  }
+
   function renderStepDetail() {
     const selectionCount = selectedStepIds().length;
     const step = selectedStep();
@@ -5368,7 +5386,8 @@
     const selectedDamage = state.timelineDamageMarkers.get(state.selectedDamageMarkerKey);
     if (selectedDamage) {
       badge.textContent = `${ticksToSeconds(selectedDamage.tick)}s`;
-      panel.innerHTML = (selectedDamage.events || [selectedDamage]).map(renderDamageEventDetail).join('');
+      const events = selectedDamage.events || [selectedDamage];
+      panel.innerHTML = renderDamageTriggerCounts(events) + events.map(renderDamageEventDetail).join('');
       return;
     }
     if (selectionCount > 1) {

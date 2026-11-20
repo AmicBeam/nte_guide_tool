@@ -4687,6 +4687,17 @@
           });
           const mayExport = action.ranked_export_last_hit !== true || index === int(action.original_hit_count, count) - 1;
           if (!mayExport || exported >= exportLimit) return;
+          if (action.ranked_export_feedback === true && model.export_action && tick >= 0 && context.loop_prime_only !== true) {
+            // Resolve one summon at a time; its hit can fund another export from this same budget.
+            while (exported < exportLimit && num(resources[model.frame_resource]) >= num(model.export_cost)) {
+              resources[model.frame_resource] -= num(model.export_cost);
+              exported += 1;
+              if (hasAwakeningNode(owner, 6)) addScore(num(model.export_cost) * num(model.score_per_consumed_frame));
+              enqueueTriggeredDamage(owner, model.export_action, tick, {source_step_id: step.id});
+              settleReactionDamage(tick);
+            }
+            return;
+          }
           const amount = Math.min(exportLimit - exported, Math.floor(num(resources[model.frame_resource]) / num(model.export_cost)));
           if (amount <= 0) return;
           resources[model.frame_resource] -= amount * num(model.export_cost);
@@ -4705,7 +4716,9 @@
     }
 
     function triggerBuffsForEvent(event, triggerTick, step, action, snapshot, isBackground, extraContext = {}) {
-      updateRankedResources(event, triggerTick, step, action, snapshot, extraContext);
+      const feedbackAfterBuffs = action.ranked_export_feedback === true && event === 'action_hit'
+        && extraContext.action_hit_timing !== 'end' && triggerTick >= 0 && extraContext.loop_prime_only !== true;
+      if (!feedbackAfterBuffs) updateRankedResources(event, triggerTick, step, action, snapshot, extraContext);
       const triggered = [];
       const dotLayerApplications = [];
       const decorateTriggeredSummary = (summary, runtimeRule, triggerEvent = event) => {
@@ -5109,6 +5122,7 @@
           ));
         });
       }
+      if (feedbackAfterBuffs) updateRankedResources(event, triggerTick, step, action, snapshot, extraContext);
       syncPersonalResourceStates(triggerTick);
       return triggered;
     }
@@ -5886,6 +5900,7 @@
       const hasResolvedHit = action.interrupted_hit_count !== 0;
       const appliedEnemyDebuffs = hasResolvedHit ? applyEnemyDebuffs(enemyDebuffs, action, buffTick, enemyDebuffDurationTicks) : [];
       appliedEnemyDebuffs.forEach((reaction) => recordSelfReaction(reaction, snapshot, buffTick, 'status', action.name, step.id));
+      if (action.ranked_export_feedback === true) recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
       if (!action.periodic_damage && hasResolvedHit) {
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
           triggeredBuffs.push(...triggerBuffsForEvent('action_hit', startTick, step, action, snapshot, isBackground, {
@@ -6023,7 +6038,7 @@
       });
       slotEnergy = energyBySlot.get(slot) ?? slotEnergy;
       const displayedEnergyGain = plannedEnergy.get(energyActorSlot) || 0;
-      recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
+      if (action.ranked_export_feedback !== true) recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
       // Exported attacks resolve after the source action has registered its cooldown.
       if (snapshot.character?.ranked_resource_system?.export_action) settleReactionDamage(startTick);
       if (changesForeground) {

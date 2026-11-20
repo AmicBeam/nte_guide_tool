@@ -86,16 +86,30 @@
         }
         return result;
     }
-    function orders(sequences) {
+    function rotations(sequence) {
+        return sequence.rows.length === 1 ? [sequence] : [sequence,
+            {...sequence, rows: [...sequence.rows].reverse(),
+                actions: [...sequence.rows].reverse().flatMap(row => row.actions),
+                gaps: [...sequence.gaps].reverse(), groups: [...sequence.groups].reverse()}];
+    }
+    // Stable character order chooses equal-period representatives consistently
+    // after swapping UI slots; both starts and both group rotations remain legal.
+    function* sequencePairs(choices, firstRole) {
+        for (const first of choices[firstRole]) for (const second of choices[1 - firstRole]) {
+            yield firstRole === 0 ? [first, second] : [second, first];
+        }
+    }
+    function orders(sequences, firstRole) {
         const queues = sequences.map((sequence, role) => sequence.rows.flatMap((row, occurrence) => row.foreground_intervals.map((_, segment) => ({role, occurrence, segment}))));
         const result = [];
         function walk(indices, current) {
             if (indices[0] === queues[0].length && indices[1] === queues[1].length) {result.push(current); return;}
-            for (let role = 0; role < 2; role++) {
+            for (const role of [firstRole, 1 - firstRole]) {
                 const next = queues[role][indices[role]];
                 if (!next) continue;
                 const previous = current.at(-1);
-                if (!previous && role !== 0) continue; // canonical cycle anchor
+                // Either actor may anchor the cycle: a returning group can
+                // straddle the seam when the other actor is selected first.
                 if (previous?.role === role && previous.occurrence === next.occurrence) continue;
                 const counts = [...indices]; counts[role]++;
                 walk(counts, [...current, next]);
@@ -143,14 +157,15 @@
             blocks.at(-1).items.push({...item, job: queues[item.role][item.occurrence]});
         });
         if (blocks.length < 2) return null;
-        const sameEnd = blocks[0].role === blocks.at(-1).role;
+        const anchorRole = blocks[0].role;
+        const sameEnd = anchorRole === blocks.at(-1).role;
         const cuts = [0, ...blocks.slice(1).map((_, i) => jobs.length + 1 + i)];
         const size = jobs.length + blocks.length;
         const constant = [], periodic = [], links = [];
         jobs.forEach((_, j) => constant.push([j + 1, 0, 0]));
         // A same-actor seam has no handover. Anchor its first action at zero
         // rather than displaying an arbitrary idle prefix at the cycle origin.
-        if (sameEnd) constant.push([0, queues[0][0] + 1, 0]);
+        if (sameEnd) constant.push([0, queues[anchorRole][0] + 1, 0]);
         blocks.forEach((block, i) => block.items.forEach(item => {
             const [start, end] = jobs[item.job].row.foreground_intervals[item.segment].map(ms);
             constant.push([item.job + 1, cuts[i], start]);
@@ -163,7 +178,7 @@
         else periodic.push([0, cuts.at(-1), -1200]);
         // Ending with the starting actor requires a full release before restarting.
         if (sameEnd) {
-            const actualLast = queues[0].at(-1);
+            const actualLast = queues[anchorRole].at(-1);
             periodic.push([0, actualLast + 1, -ms(jobs[actualLast].row.release_end_seconds)]);
         }
         sequences.forEach((sequence, role) => sequence.rows.forEach((row, occurrence) => {
@@ -390,6 +405,7 @@
     }
     function match(characters, options = {}, progress = () => {}) {
         if (characters.length !== 2 || characters[0].id === characters[1].id) throw new Error('请选择两个不同的角色');
+        const firstRole = String(characters[0].id) < String(characters[1].id) ? 0 : 1;
         const choices = characters.map((c, role) => sequences(c, options, options.containsGroups?.[role] || ''));
         groupMetadata = new Map();
         const codes = new Map(characters.flatMap(c => groupOptions(c, options)).map((g, i) => [g.key, i]));
@@ -400,45 +416,42 @@
         });
         const best = new Map(), total = choices[0].length * choices[1].length;
         let checked = 0, feasible = 0, evaluated = 0, filtered = 0, pruned = 0, solved = 0;
-        for (const a of choices[0]) {
-            for (const initialB of choices[1]) {
-                const kinds = [a.kinds, initialB.kinds];
-                // Both actors repeating their sole group adds no new group mix.
-                if ((a.rows.length === 2 && initialB.rows.length === 2 && kinds.every(n => n === 1))
-                    || (options.groupCount === 'single' && kinds.some(n => n !== 1))
-                    || (options.groupCount === 'with-two' && !kinds.includes(2))
-                    || (options.groupCount === 'both-two' && kinds.some(n => n !== 2))) {checked++; filtered++; continue;}
-                const id = `${a.code}|${initialB.code}`, previous = best.get(id);
-                // Own releases cannot overlap; mandatory foreground of both actors
-                // also fits within one cycle. An incumbent tie adds no new recipe.
-                const lower = Math.max(a.lower, initialB.lower, a.foreground + initialB.foreground, 2400);
-                if (previous && lower >= ms(previous.period)) {checked++; pruned++; continue;}
-                evaluated++;
-                const rotations = initialB.rows.length === 1 ? [initialB] : [initialB,
-                    {...initialB, rows: [...initialB.rows].reverse(), actions: [...initialB.rows].reverse().flatMap(r => r.actions), gaps: [...initialB.gaps].reverse(), groups: [...initialB.groups].reverse()}];
-                for (const b of rotations) for (const order of orders([a, b])) {
-                    const m = model([a, b], order, options), current = best.get(id);
-                    if (!m) continue;
-                    // Each handover needs 1.2s before the next, including the seam.
-                    const switches = m.blocks.length - (m.sameEnd ? 1 : 0);
-                    if (current && Math.max(lower, switches * 1200) >= ms(current.period)) continue;
-                    solved++;
-                    const solution = minimum(m, current ? ms(current.period) - 1 : Infinity);
-                    if (!solution) continue;
-                    const branch = specialize(m, solution.entryChoices);
-                    const plan = realize(branch, solution.period, solution.values, characters);
-                    if (!plan) continue;
-                    feasible++;
-                    if (!current || plan.period < current.period) {
-                        plan.id = id;
-                        plan.recipe = {sequences: m.sequences.map(s => s.rows.map(r => r.id)), order: m.order,
-                            entryChoices: solution.entryChoices, noForegroundIdle:!!options.noForegroundIdle};
-                        best.set(id, plan);
-                    }
+        for (const [initialA, initialB] of sequencePairs(choices, firstRole)) {
+            const a = initialA;
+            const kinds = [a.kinds, initialB.kinds];
+            // Both actors repeating their sole group adds no new group mix.
+            if ((a.rows.length === 2 && initialB.rows.length === 2 && kinds.every(n => n === 1))
+                || (options.groupCount === 'single' && kinds.some(n => n !== 1))
+                || (options.groupCount === 'with-two' && !kinds.includes(2))
+                || (options.groupCount === 'both-two' && kinds.some(n => n !== 2))) {checked++; filtered++; continue;}
+            const id = `${a.code}|${initialB.code}`, previous = best.get(id);
+            // Own releases cannot overlap; mandatory foreground of both actors
+            // also fits within one cycle. An incumbent tie adds no new recipe.
+            const lower = Math.max(a.lower, initialB.lower, a.foreground + initialB.foreground, 2400);
+            if (previous && lower >= ms(previous.period)) {checked++; pruned++; continue;}
+            evaluated++;
+            for (const [a, b] of sequencePairs([rotations(initialA), rotations(initialB)], firstRole)) for (const order of orders([a, b], firstRole)) {
+                const m = model([a, b], order, options), current = best.get(id);
+                if (!m) continue;
+                // Each handover needs 1.2s before the next, including the seam.
+                const switches = m.blocks.length - (m.sameEnd ? 1 : 0);
+                if (current && Math.max(lower, switches * 1200) >= ms(current.period)) continue;
+                solved++;
+                const solution = minimum(m, current ? ms(current.period) - 1 : Infinity);
+                if (!solution) continue;
+                const branch = specialize(m, solution.entryChoices);
+                const plan = realize(branch, solution.period, solution.values, characters);
+                if (!plan) continue;
+                feasible++;
+                if (!current || plan.period < current.period) {
+                    plan.id = id;
+                    plan.recipe = {sequences: m.sequences.map(s => s.rows.map(r => r.id)), order: m.order,
+                        entryChoices: solution.entryChoices, noForegroundIdle:!!options.noForegroundIdle};
+                    best.set(id, plan);
                 }
-                checked++;
             }
-            progress({checked, total, evaluated, filtered, pruned, solved});
+            checked++;
+            if (checked % 128 === 0) progress({checked, total, evaluated, filtered, pruned, solved});
         }
         progress({checked, total, evaluated, filtered, pruned, solved, phase: 'prune'});
         const candidates = [...best.values()];
@@ -468,6 +481,7 @@
     // inside a bucket, preserving the exhaustive matcher's winning recipe at ties.
     function createTopSearch(characters, options = {}, progress = () => {}) {
         if (characters.length !== 2 || characters[0].id === characters[1].id) throw new Error('请选择两个不同的角色');
+        const firstRole = String(characters[0].id) < String(characters[1].id) ? 0 : 1;
         const compare = comparePlans(options.sort || 'rate');
         const choices = characters.map((c,role)=>sequences(c,options,options.containsGroups?.[role] || ''));
         const codes = new Map(characters.flatMap(c=>groupOptions(c,options)).map((g,i)=>[g.key,i]));
@@ -505,8 +519,7 @@
         checked=filtered;
         tasks.sort((a,b)=>compare(a.optimistic,b.optimistic));
         let remainingWeight=tasks.reduce((sum,t)=>sum+t.weight,0), frontier=[], first=0;
-        const roleOrders = (bucket,role) => {
-            if (role===0) return [...bucket.orders.values()];
+        const roleOrders = bucket => {
             if (!bucket.rotatedOrders) {
                 const orders=new Map(bucket.orders);
                 for (const sequence of bucket.variants) {
@@ -523,18 +536,16 @@
             return top.some(plan=>task.lower<=ms(plan.period)
                 && task.optimistic.actions.every((actions,role)=>actions.length>=plan.actions[role].length)
                 && (task.lower<ms(plan.period) || task.optimistic.actions.some((actions,role)=>actions.length>plan.actions[role].length))
-                && [task.a,task.b].every((bucket,role)=>roleOrders(bucket,role).some(actions=>core.subsequence(plan.actions[role],actions))));
+                && [task.a,task.b].every((bucket,role)=>roleOrders(bucket).some(actions=>core.subsequence(plan.actions[role],actions))));
         }
         function solveTask(task) {
             let best=null;
-            for (const a of task.a.variants) for (const initialB of task.b.variants) {
+            for (const [initialA, initialB] of sequencePairs([task.a.variants, task.b.variants], firstRole)) {
+                const a=initialA;
                 const lower=Math.max(a.lower,initialB.lower,a.foreground+initialB.foreground,2400);
                 if (best && lower>=ms(best.period)) {checked++;pruned++;continue;}
                 evaluated++;
-                const rotations=initialB.rows.length===1 ? [initialB] : [initialB,
-                    {...initialB,rows:[...initialB.rows].reverse(),actions:[...initialB.rows].reverse().flatMap(r=>r.actions),
-                        gaps:[...initialB.gaps].reverse(),groups:[...initialB.groups].reverse()}];
-                for (const b of rotations) for (const order of orders([a,b])) {
+                for (const [a,b] of sequencePairs([rotations(initialA),rotations(initialB)], firstRole)) for (const order of orders([a,b], firstRole)) {
                     const m=model([a,b],order,options);
                     if (!m) continue;
                     const switches=m.blocks.length-(m.sameEnd ? 1 : 0);

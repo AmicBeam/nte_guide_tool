@@ -211,11 +211,11 @@ const allocations=engine.variants(original.plans[0],pair);
 assert(near(Math.max(...allocations.map(p=>p.foregroundSeconds[1])),1.6));
 allocations.forEach(p=>check(p,pair));
 // The screenshot's idle start (0 -> 0.1s before the first action) is forbidden.
-assert(allocations.every(p=>near(p.offsets[0],0)));
+assert(allocations.every(p=>near(p.offsets[0],p.segments.find(s=>s.role===0).start)));
 assert(allocations.some(p=>{
     const segment=p.segments.find(s=>s.role===1),first=p.jobs.find(j=>j.role===1).offset;
     return first-segment.start>=.6-1e-7 && near(p.foregroundSeconds[1],1.6);
 }),'returning during a5 recovery must remain possible');
-const idle={...allocations[0],jobs:allocations[0].jobs.map(j=>j.role===0?{...j,offset:j.offset+.1}:j),offsets:[.1,allocations[0].offsets[1]]};
+const idle={...allocations[0],jobs:allocations[0].jobs.map(j=>j.role===0?{...j,offset:j.offset+.1}:j),offsets:[allocations[0].offsets[0]+.1,allocations[0].offsets[1]]};
 assert.throws(()=>check(idle,pair),/empty entry/);
 console.log(`PASS: ${count} multi-group plans, ${variants} allocations, ${checkedMinimum} exact period oracle checks`);

@@ -241,6 +241,7 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
     pauses = []
     ranges = []
     hit_pauses = Counter()
+    hit_pause_events = []
     direct_effects = set()
     spawn_effects = set()
     for notify in montage.get('Notifies') or []:
@@ -255,7 +256,7 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
             windows.append(f'{fmt(relative)}–{fmt(min(end_time, end) - start)}')
             frame = p.get('nFrame')
             if fps and isinstance(frame, int) and frame > 0 and time + frame / fps <= min(end_time,end):
-                predictions.append(fmt(relative + frame / fps))
+                predictions.append(relative + frame / fps)
         elif kind.startswith('BP_CanBreakSkill') and any(t.endswith('BreakSkill_AnySkill') for t in p.get('BreakSkillTypes',[])):
             cancel.append(relative)
         elif 'CantChangePlayer' in kind and end_time is not None:
@@ -285,16 +286,27 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
                         if seconds := assets.attack_hit_pause(effect):
                             hit_pauses_at_event.add(seconds)
             hit_pauses.update(hit_pauses_at_event)
+            if hit_pauses_at_event:
+                hit_pause_events.append((relative, sum(hit_pauses_at_event)))
     pause_column = ' / '.join(f'{fmt(value)}*{count}' if count > 1 else fmt(value)
                               for value, count in sorted(hit_pauses.items()))
+    combo_duration = ' / '.join(order_unique(
+        fmt(transition + sum(duration for time, duration in hit_pause_events if time <= transition))
+        for transition in predictions
+    )) or None
+    normal_combo = (
+        MELEE.fullmatch(key) or key in ('MeleePre', 'AppearMelee')
+        or (combo_duration and ability['type_name'] == 'Melee' and key.startswith(('Branch', 'ExtraAttack')))
+    )
     threshold = definition['followup'].get(key)
     if threshold is not None and not start <= threshold < end:
         threshold = None
+    followup = fmt(threshold - start) if threshold is not None else (fmt(min(cancel)) if cancel else None)
     row = (
         action_label or move_label(key, ability['type_name']),
         ' / '.join(order_unique(windows)) or None,
-        ' / '.join(order_unique(predictions)) or None,
-        fmt(threshold - start) if threshold is not None else (fmt(min(cancel)) if cancel else None),
+        None if normal_combo else combo_duration,
+        combo_duration if normal_combo else followup,
         ' / '.join(order_unique(times)) or None,
         pause_column or None,
         ' / '.join(order_unique(locks)) or None,

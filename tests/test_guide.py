@@ -86,11 +86,11 @@ class GuideTest(unittest.TestCase):
             self.assertEqual(table['columns'][0], '动作')
             self.assertEqual(table['columns'][-1], '伤害判定')
             self.assertTrue(all(len(row) == len(table['columns']) for row in table['rows']))
-        self.assertEqual(groups['普通攻击：弦刃']['rows'][-1], ['完整循环', '2.595', '0.180', '2.775', None])
+        self.assertEqual(groups['普通攻击：弦刃']['rows'][-1], ['完整循环', '2.775', '0.180', None])
         self.assertIn('解除暂停事件（秒）', groups['音障爆鸣']['columns'])
         self.assertIn('切人锁定（秒）', groups['变奏和弦']['columns'])
         self.assertIn('<th scope="row">强化短 E</th>', html)
-        self.assertIn('| 第 3 段 | 0.940 | 0.020*7 | 1.080 | 盒体半尺寸 600 × 270 × 200 |', markdown)
+        self.assertIn('| 第 3 段 | 1.080 | 0.020*7 | 盒体半尺寸 600 × 270 × 200 |', markdown)
         self.assertNotIn('combat_details', self.client.get(path).text)
 
     def test_exe_assist_combat_details_include_all_fixed_hit_pauses(self):
@@ -101,6 +101,16 @@ class GuideTest(unittest.TestCase):
         self.assertIn('判定与时长', markdown)
         self.assertIn('| 0.033*2 / 0.300 | 0–1.189 | 盒体半尺寸 350 × 350 × 300 |', markdown)
         self.assertNotIn('判定与时长', self.client.get(path).text)
+
+    def test_exe_normal_combo_uses_hit_adjusted_transition_time(self):
+        table = service._skill_combat_details()['1074']['GA_Exe_Melee']['普通攻击：物理层侵入']
+        columns, rows = table['columns'], table['rows']
+        self.assertNotIn('连段占时推算（秒）', columns)
+        transition = columns.index('动作衔接（秒）')
+        by_action = {row[0]: row[transition] for row in rows}
+        self.assertEqual(by_action['第 1 段'], '0.45')
+        self.assertEqual(by_action['第 2 段'], '0.633')
+        self.assertIsNone(by_action['第 5 段'])
 
     def test_combat_snapshot_covers_formal_characters(self):
         tables = service._skill_combat_details()

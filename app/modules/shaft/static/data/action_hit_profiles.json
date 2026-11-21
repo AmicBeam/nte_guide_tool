@@ -1,4 +1,39 @@
 {
+  "action_d99994f07b": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.397, "energy": 1.987, "harmony": 3.303, "stagger": 0.402},
+      {"hit_count": 2, "damage": 0.794, "energy": 3.974, "harmony": 6.606, "stagger": 0.804}
+    ]
+  },
+  "action_3705623d51": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.255, "energy": 1.417, "harmony": 2.366, "stagger": 0.283},
+      {"hit_count": 2, "damage": 0.778, "energy": 4.324, "harmony": 7.219, "stagger": 0.864}
+    ]
+  },
+  "action_208b8ec7c2": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.863, "energy": 4.099, "harmony": 6.846, "stagger": 0.815}
+    ]
+  },
+  "action_a7443f657f": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.233, "energy": 0.896, "harmony": 1.493, "stagger": 0.179},
+      {"hit_count": 2, "damage": 0.466, "energy": 1.792, "harmony": 2.986, "stagger": 0.358},
+      {"hit_count": 3, "damage": 0.699, "energy": 2.688, "harmony": 4.479, "stagger": 0.537},
+      {"hit_count": 4, "damage": 1.932, "energy": 7.434, "harmony": 12.39, "stagger": 1.486}
+    ]
+  },
+  "action_lingke_a5": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.74, "energy": 4.635, "harmony": 7.703, "stagger": 0.923}
+    ]
+  },
   "action_4f1cc1b94f": {
     "cumulative": [
       {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},

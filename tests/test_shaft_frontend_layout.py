@@ -814,7 +814,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             self.assertEqual(action['energy_gain'], energy)
             self.assertEqual(action['harmony'], harmony)
             self.assertEqual(action['stagger'], stagger)
-            self.assertEqual(action['duration_ticks'], 0)
+            self.assertEqual(action['duration_ticks'], 9 if name == 'a5' else 0)
             self.assertEqual(action['can_background_override'], can_background)
         self.assertEqual(actions_by_name['援护']['duration_ticks'], 12)
         self.assertEqual(actions_by_name['e']['duration_ticks'], 10)

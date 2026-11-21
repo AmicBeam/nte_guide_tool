@@ -47,6 +47,28 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
                 self.assertNotIn('triggers_reaction_on_switch', noop)
                 self.assertEqual(actions_by_character[character['id']][-1]['name'], '无')
 
+    def test_a5_durations_include_hit_pause_and_support_interruption(self) -> None:
+        actions = {action['id']: action for action in load_shaft_catalog()['actions']}
+        for action_id, ticks, first_hit in (
+            ('action_d99994f07b', 14, .397),
+            ('action_3705623d51', 11, .255),
+            ('action_208b8ec7c2', 9, .863),
+            ('action_a7443f657f', 18, .233),
+            ('action_lingke_a5', 9, .74),
+        ):
+            action = actions[action_id]
+            with self.subTest(character=action['character_name'], action=action['name']):
+                self.assertEqual(action['duration_ticks'], ticks)
+                self.assertEqual(action['duration_seconds'], ticks / 10)
+                self.assertFalse(action.get('duration_pending'))
+                profile = action['hit_profile']['cumulative']
+                self.assertEqual([hit['hit_count'] for hit in profile], list(range(action['hit_count'] + 1)))
+                self.assertEqual(profile[1]['damage'], first_hit)
+                self.assertEqual(profile[-1]['damage'], action['multipliers']['atk'])
+                self.assertEqual(profile[-1]['energy'], action['energy_gain'])
+                self.assertEqual(profile[-1]['harmony'], action['harmony'])
+                self.assertEqual(profile[-1]['stagger'], action['stagger'])
+
     @with_scenario_ticks
     def test_noop_allows_one_tick_switch_gap_without_freezing_parallel_actions(self) -> None:
         # User 2026-09-11: 0.1s after 无, with no time stop or action cover.

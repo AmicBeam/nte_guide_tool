@@ -1500,8 +1500,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 0.794,
       "hp": 0,
@@ -1529,7 +1529,6 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 26,
-    "duration_pending": true,
     "source_formula": "{0}%*2",
     "can_background_override": true,
     "source_action_name": "5a",
@@ -4030,8 +4029,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 0.778,
       "hp": 0,
@@ -4059,7 +4058,6 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 67,
-    "duration_pending": true,
     "source_formula": "{0}%+{1}%",
     "can_background_override": true,
     "source_action_name": "5a",
@@ -4421,8 +4419,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
     "multipliers": {
       "atk": 0.863,
       "hp": 0,
@@ -4450,7 +4448,6 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 72,
-    "duration_pending": true,
     "source_formula": "{0}%",
     "can_background_override": true,
     "source_action_name": "5a",
@@ -5558,8 +5555,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 1.932,
       "hp": 0,
@@ -5589,7 +5586,6 @@
       "噩梦": 4
     },
     "source_row": 95,
-    "duration_pending": true,
     "source_formula": "{0}%*3+{1}%",
     "can_background_override": true,
     "nightmare_stacks": 4,
@@ -9284,8 +9280,8 @@
   },
   {
     "id": "action_lingke_a5", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 5, "is_background_damage": false, "can_background_override": true,
-    "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 0.74, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 4.635, "harmony": 7.703, "stagger": 0.923, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 473, "source_note": "腾讯文档《角色属性》tab 000003 row 473：1级倍率74%、1段，回能4.635、环合7.703、倾陷0.923。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+    "duration_seconds": 0.9, "duration_ticks": 9,
+    "multipliers": {"atk": 0.74, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 4.635, "harmony": 7.703, "stagger": 0.923, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 473, "source_note": "腾讯文档《角色属性》tab 000003 row 473：1级倍率74%、1段，回能4.635、环合7.703、倾陷0.923。可按普攻后段规则手动放到后台。"
   },
   {
     "id": "action_lingke_support", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "恶灵左直拳！", "is_background_damage": false,

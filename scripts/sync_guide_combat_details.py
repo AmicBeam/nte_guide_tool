@@ -16,6 +16,8 @@ TYPES = ('Melee', 'Skill', 'UltraSkill', 'QTE', 'Peculiarity')
 COLUMNS = ('动作', '连段窗口（秒）', '连段占时推算（秒）', '动作衔接（秒）', '伤害通知（秒）', '命中顿帧（秒）',
            '切人锁定（秒）', '解除暂停事件（秒）', '伤害判定')
 MELEE = re.compile(r'(Ultra)?Melee([A-Z]?)(\d+)(.*)', re.I)
+LACRIMOSA_SWITCH_ABILITIES = {'ga_lacrimosa_switchskill', 'ga_lacrimosa_switchskillmodb'}
+LACRIMOSA_SWITCH_MOVES = {'SwitchModA': '近切远', 'SwitchModB': '远切近'}
 COUNTER_SPAWN_PAUSES = {
     'GA_Exe_Melee': 0.066666,
     'GA_Lacrimosa_Melee': 0.3,
@@ -28,6 +30,7 @@ LABELS = {
     'Skillhold': '长按', 'Skill_Short': '强化短按', 'Skill_Long': '强化长按', 'UltraSkill': '极轨终结',
     'Fire': '射击', 'Fire_LoopAim': '瞄准射击', 'Branch': '分支攻击', 'End': '收招', 'Loop': '循环',
     'UltraSkillB': '变身终结', 'Atk_tran': '变身反击', 'QTE_tran': '变身援护',
+    **LACRIMOSA_SWITCH_MOVES,
 }
 
 
@@ -335,12 +338,15 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
     threshold = definition['followup'].get(key)
     if threshold is not None and not start <= threshold < end:
         threshold = None
-    followup = fmt(threshold - start) if threshold is not None else (fmt(min(cancel)) if cancel else None)
+    followup = threshold - start if threshold is not None else min(cancel, default=None)
+    style_switch = ability.get('id') == 'GA_Lacrimosa_Melee' and key in LACRIMOSA_SWITCH_MOVES
+    if style_switch and followup is not None:
+        followup += sum(duration for time, duration in hit_pause_events if time <= followup)
     row = (
         action_label or move_label(key, ability['type_name']),
-        ' / '.join(order_unique(windows)) or None,
-        None if normal_combo else combo_duration,
-        combo_duration if normal_combo else followup,
+        None if style_switch else (' / '.join(order_unique(windows)) or None),
+        None if normal_combo or style_switch else combo_duration,
+        combo_duration if normal_combo else (fmt(followup) if followup is not None else None),
         ' / '.join(order_unique(times)) or None,
         pause_column or None,
         ' / '.join(order_unique(locks)) or None,
@@ -367,7 +373,7 @@ def related(assets, ability):
     for key in assets.abilities.values():
         parent, name = key.rsplit('/', 1)
         if parent == directory and (name == terminal or name.startswith(main_id + '_') or (
-            main_id == 'ga_lacrimosa_melee' and name == 'ga_lacrimosa_meleemoda'
+            main_id == 'ga_lacrimosa_melee' and (name == 'ga_lacrimosa_meleemoda' or name in LACRIMOSA_SWITCH_ABILITIES)
         ) or (
             ability['type_name'] == 'Melee' and 'perfectevade' in name
         )):

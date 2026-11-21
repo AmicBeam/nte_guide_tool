@@ -396,6 +396,11 @@ class GuideTest(unittest.TestCase):
                 self.assertEqual([row[0] for row in group['combat_details']['rows']][:5],
                                  [f'第 {i} 段' for i in range(1, 6)])
         self.assertNotIn('近战普攻爆炸', groups)
+        switch = groups['风味变奏']['combat_details']
+        self.assertEqual(switch['columns'],
+                         ['动作', '动作衔接（秒）', '伤害通知（秒）', '命中顿帧（秒）', '伤害判定'])
+        self.assertEqual([row[:2] for row in switch['rows']], [['近切远', '1.506'], ['远切近', '0.76']])
+        self.assertTrue(all(row[-1].startswith('盒体半尺寸 ') for row in switch['rows']))
         raw = next(c for c in service.catalog()['characters'] if c['id'] == '1004')
         ability = dict(next(a for a in raw['abilities'] if a['id'] == ability_id))
         importer.group_ability_parameters(ability)

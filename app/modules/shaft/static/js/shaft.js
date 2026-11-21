@@ -1468,6 +1468,9 @@
 
   function foregroundLockEndTick(step, action, startTick) {
     if (!isZeroForegroundQStep(step, action)) {
+      if (action?.detach_via_jump && isDetachedStep(step, action)) {
+        return startTick + Number(action.duration_ticks);
+      }
       return startTick + actionVisualDurationTicks(action, step);
     }
     const detail = (timelineResult()?.details || []).find((item) => item.step_id === step?.id);
@@ -6935,7 +6938,7 @@
       : `当前队伍没有可选的${action.damage_element || ''}属性非灵可角色。`;
     $('shaft-action-edit-detached').checked = isDetachedStep(step, action);
     $('shaft-action-edit-detached-hint').textContent = canDetach
-      ? `勾选后动作占用 ${ticksToSeconds(action.detached_duration_ticks || 0)} 秒；时间轴名称不变，以黄色字体标识。`
+      ? `勾选后动作占用 ${ticksToSeconds(action.detached_duration_ticks || 0)} 秒；${action.detach_via_jump ? '按跳跃时点缩短占用，不缩短切人锁定；' : ''}时间轴名称不变，以黄色字体标识。`
       : '';
     $('shaft-action-edit-interrupted').checked = isInterruptedStep(step, action);
     $('shaft-action-edit-duration').value = String(step.interrupt_duration_ticks || baseActionDurationTicks(action, step));

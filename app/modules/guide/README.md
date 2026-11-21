@@ -79,7 +79,7 @@ python scripts/refresh_guide_data.py --transport curl
 
 安魂曲的近战普攻数据随「茄汁金属乐」展示，远程普攻数据随「茄汁打击乐」展示。两组各自提供倍率、环合值、逐命中明细和登录后可读的判定与时长，近战爆炸归入「茄汁金属乐」。
 
-`scripts/sync_guide_combat_details.py` 离线匹配正式角色的技能蓝图、动画通知和伤害效果。使用 `--blueprints <NTEData目录> --list-montages` 列出所需客户端资产。导出动画 JSON 并保留 `HT/Content` 下的相对路径后，使用 `--blueprints <NTEData目录> --montages <导出目录> --damage-trigger-table <伤害触发表 JSON>` 生成 `data/skill_combat_details.json`。通过技能、伤害效果和动画段的明确绑定归组。缺少核心技能绑定时保留现有快照，缺失的个别字段留空。「动作占时」优先使用已确认的连段推算点，其余动作读取明确的技能续接、通用技能开放或结束能力通知，计入该节点前可核实的直接命中和固定伤害体顿帧。命中后才触发的条件生成物以及占时节点之后的顿帧不计入。连段窗口和各动画事件按原始通知位置展示。`data/skill_combat_overrides.json` 保留人工逐项核过的招式表和派生绑定。常规攻略刷新独立于这两份文件。
+`scripts/sync_guide_combat_details.py` 离线匹配正式角色的技能蓝图、动画通知和伤害效果。使用 `--blueprints <NTEData目录> --list-montages` 列出所需客户端资产。导出动画 JSON 并保留 `HT/Content` 下的相对路径后，使用 `--blueprints <NTEData目录> --montages <导出目录> --damage-trigger-table <伤害触发表 JSON>` 生成 `data/skill_combat_details.json`。通过技能、伤害效果和动画段的明确绑定归组。缺少核心技能绑定时保留现有快照，缺失的个别字段留空。「动作占时」优先使用已确认的连段推算点，其余动作读取明确的技能续接、通用技能开放或结束能力通知，计入该节点前可核实的直接命中和固定伤害体顿帧。命中后才触发的条件生成物以及占时节点之后的顿帧不计入。「允许跳跃」从动作段起点另列原始跳跃开放时间，不替换「动作占时」，也不代表可切人。连段窗口和各动画事件按原始通知位置展示。`data/skill_combat_overrides.json` 保留人工逐项核过的招式表和派生绑定。常规攻略刷新独立于这两份文件。
 
 ## 索引与弧盘展示
 

@@ -99,13 +99,16 @@ class GuideTest(unittest.TestCase):
                                       '变轨技能：律动音浪', '音障爆鸣', '变奏和弦'})
         for table in groups.values():
             self.assertEqual(table['columns'][0], '动作')
-            self.assertEqual(table['columns'][-1], '伤害判定')
+            self.assertIn('伤害判定', table['columns'])
             self.assertTrue(all(len(row) == len(table['columns']) for row in table['rows']))
         normal = groups['普通攻击：弦刃']
         window = normal['columns'].index('连段窗口（秒）')
         self.assertEqual([row[window] for row in normal['rows']],
                          ['0.150–0.889', '0.172–0.494', '0.073–1.036', '0.500–0.760', None])
-        self.assertEqual(normal['rows'][-1], ['完整循环', None, '2.775', '0.180', None])
+        self.assertEqual(normal['rows'][-1], ['完整循环', None, '2.775', '0.180', None, None])
+        self.assertIn('允许跳跃（秒）', normal['columns'])
+        self.assertIn('允许跳跃（秒）', html)
+        self.assertIn('允许跳跃（秒）', markdown)
         self.assertIn('解除暂停事件（秒）', groups['音障爆鸣']['columns'])
         self.assertEqual(groups['音障爆鸣']['rows'][0][:3], ['终结第一段', '4.25', '0.020*10'])
         self.assertIn('切人锁定（秒）', groups['变奏和弦']['columns'])
@@ -141,6 +144,10 @@ class GuideTest(unittest.TestCase):
         turn = dict(zip(attacks['columns'], next(row for row in attacks['rows'] if row[0] == '第 5 段')))
         self.assertEqual(turn['动作占时（秒）'], '1.358')
         self.assertEqual(turn['命中顿帧（秒）'], '0.03*6')
+        self.assertEqual(turn['允许跳跃（秒）'], '0.524')
+        ultimate_row = dict(zip(ultimate['columns'], ultimate['rows'][0]))
+        self.assertEqual(ultimate_row['连段窗口（秒）'], '3.15–5.667')
+        self.assertNotEqual(ultimate_row['允许跳跃（秒）'], '3.15')
 
     def test_directional_counter_durations_match_shaft_rounding(self):
         from decimal import Decimal, ROUND_CEILING
@@ -457,9 +464,9 @@ class GuideTest(unittest.TestCase):
         self.assertNotIn('近战普攻爆炸', groups)
         switch = groups['风味变奏']['combat_details']
         self.assertEqual(switch['columns'],
-                         ['动作', '动作占时（秒）', '伤害通知（秒）', '命中顿帧（秒）', '伤害判定'])
+                         ['动作', '动作占时（秒）', '伤害通知（秒）', '命中顿帧（秒）', '伤害判定', '允许跳跃（秒）'])
         self.assertEqual([row[:2] for row in switch['rows']], [['近切远', '1.506'], ['远切近', '0.76']])
-        self.assertTrue(all(row[-1].startswith('盒体半尺寸 ') for row in switch['rows']))
+        self.assertTrue(all(row[switch['columns'].index('伤害判定')].startswith('盒体半尺寸 ') for row in switch['rows']))
         raw = next(c for c in service.catalog()['characters'] if c['id'] == '1004')
         ability = dict(next(a for a in raw['abilities'] if a['id'] == ability_id))
         importer.group_ability_parameters(ability)

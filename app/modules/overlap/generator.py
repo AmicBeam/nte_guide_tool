@@ -41,7 +41,7 @@ def switch_points(action, override, normal_seconds=None, replace_detach=False):
     if normal_seconds is not None:
         result.append({'id':'normal', 'after_seconds':number(normal_seconds), 'label':'正常切人',
                        'source':'用户2026-10-12：动作开始后0.2秒正常切人，完整伤害与资源继续在后台结算。'})
-    if action.get('can_detach') and not replace_detach:
+    if action.get('can_detach') and not action.get('detach_via_jump') and not replace_detach:
         result.append({
             'id': 'detached', 'after_seconds': action['detached_duration_seconds'],
             'label': '脱手切人', 'source': 'actions.json：can_detach / detached_duration_seconds',

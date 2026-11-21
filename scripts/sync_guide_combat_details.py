@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'app/modules/guide/data'
 TYPES = ('Melee', 'Skill', 'UltraSkill', 'QTE', 'Peculiarity')
 COLUMNS = ('动作', '连段窗口（秒）', '动作占时（秒）', '伤害通知（秒）', '命中顿帧（秒）',
-           '切人锁定（秒）', '解除暂停事件（秒）', '伤害判定')
+           '切人锁定（秒）', '解除暂停事件（秒）', '伤害判定', '允许跳跃（秒）')
 MELEE = re.compile(r'(Ultra|Magic)?Melee([A-Z]?)(\d+)(.*)', re.I)
 ADDITIONAL_ABILITIES = {
     'ga_lacrimosa_melee': ('ga_lacrimosa_meleemoda', 'ga_lacrimosa_switchskill', 'ga_lacrimosa_switchskillmodb'),
@@ -33,6 +33,8 @@ ADDITIONAL_ABILITIES = {
 MONTAGE_GROUPS = {
     ('ga_sagiri_skill', 'Skill1'): '变轨技能：打嗝',
     ('ga_haniel_melee', 'End'): '普通攻击：超异科魔法炮',
+    ('ga_cang_skill', 'Skill'): '天地之心',
+    ('ga_cang_skill', 'SkillB'): '如此罪状',
     ('ga_cang_melee', 'Branch1'): '普通攻击：无状之言',
     ('ga_cang_melee', 'Branch2'): '普通攻击：无讳之语',
     ('ga_hathor_melee', 'AirAttackEnd'): '普通攻击：压轴派送',
@@ -77,6 +79,20 @@ MONTAGE_LABELS = {
     ('ga_daffodill_evade', 'AttackEvade'): '特殊闪避',
 }
 LACRIMOSA_SWITCH_MOVES = {'SwitchModA': '近切远', 'SwitchModB': '远切近'}
+CURATED_JUMP_LABELS = {
+    ('GA_Nanally_Melee', '普通攻击：重拳出击！'): {
+        f'第 {number} 段': f'强化攻击第 {number} 段' for number in range(1, 4)
+    },
+    ('GA_Nanally_Skill', '柯林斯·嗷呜术'): {'本体攻击': '变轨技能'},
+    ('GA_Nanally_UltraSkill', '柯林斯·终极术'): {'本体伤害': '极轨终结'},
+    ('GA_Cang_Skill', '天地之心'): {'基础变轨技能': '变轨技能'},
+    ('GA_Cang_Skill', '噤念'): {'闪避派生': 'SkillA'},
+    ('GA_Cang_Skill', '如此罪状'): {'普攻派生': 'SkillB'},
+    ('GA_Akane_Skill', '变轨技能：律动音浪'): {
+        '短按 E': '变轨技能', '长按 E': '长按', '强化短 E': '强化短按', '强化长 E': '强化长按',
+    },
+    ('GA_Akane_UltraSkill', '音障爆鸣'): {'终结第一段': '极轨终结', '终结第二段': '终结终段'},
+}
 COUNTER_SPAWN_PAUSES = {
     'GA_Exe_Melee': 0.066666,
     'GA_Lacrimosa_Melee': 0.3,
@@ -358,6 +374,7 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
     windows = []
     predictions = []
     cancel = []
+    jump = []
     ability_end = []
     locks = []
     pauses = []
@@ -369,12 +386,17 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
     spawn_effects = set()
     for notify in montage.get('Notifies') or []:
         time = notify_time(notify)
-        if time is None or not start <= time < end:
+        if time is None or time >= end:
             continue
         relative = time - start
         component = note_export(notify, names)
         p, kind = props(component), component.get('Type', '')
         end_time = notify_time(notify.get('EndLink') or {})
+        if kind.startswith('BP_CanBreakSkill') and (time >= start or (end_time is not None and end_time > start)):
+            if 'BreakSkill_Jump' in {tag.rsplit('::', 1)[-1] for tag in p.get('BreakSkillTypes', [])}:
+                jump.append(max(time, start) - start)
+        if time < start:
+            continue
         if kind.startswith('BP_JumpSection') and p.get('JumpSections') and end_time is not None and end_time > time:
             windows.append(f'{fmt(relative)}–{fmt(min(end_time, end) - start)}')
             frame = p.get('nFrame')
@@ -430,6 +452,10 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
     endpoints = predictions if predictions and not style_switch else ([] if followup is None else [followup])
     counter_cutoff = min(cancel, default=None) if key in ('Atk', 'Atk_tran') else None
     cutoff = counter_cutoff if counter_cutoff is not None else max(endpoints, default=None)
+    jump_time = min(jump, default=None)
+    jump_occupancy = None if jump_time is None else with_hit_pause(
+        jump_time, [*hit_pause_events, *sorted(spawn_pause_events)],
+    )
     if cutoff is not None:
         fixed_spawns = sorted((time, pause) for time, pause in spawn_pause_events if time <= cutoff)
         hit_pause_events.extend(fixed_spawns)
@@ -446,13 +472,14 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
         ' / '.join(order_unique(locks)) or None,
         ' / '.join(order_unique(pauses)) or None,
         ' / '.join(order_unique(ranges)) or None,
+        fmt(jump_time) if jump_time is not None else None,
     )
     if not any(row[1:]):
         return None
     counter_duration = None
     if counter_cutoff is not None:
         counter_duration = with_hit_pause(counter_cutoff, hit_pause_events)
-    return row, direct_effects, spawn_effects, counter_duration
+    return row, direct_effects, spawn_effects, counter_duration, jump_occupancy
 
 
 def related(assets, ability):
@@ -525,7 +552,7 @@ def match_group(ability, direct_effects, spawn_effects, primary, key):
                 return likely[0]
     return None
 
-def build_character(assets, character, curated):
+def build_character(assets, character, curated, jump_occupancies=None):
     record = {
         skill: {name: deepcopy(table) for name, table in groups.items() if 'columns' in table}
         for skill, groups in curated.items()
@@ -560,7 +587,7 @@ def build_character(assets, character, curated):
                 )
                 if not measured:
                     continue
-                row, direct_effects, spawn_effects, counter_duration = measured
+                row, direct_effects, spawn_effects, counter_duration, jump_occupancy = measured
                 if (
                     ability['id'] == 'GA_Lacrimosa_Melee' and (path == main or ranged_lacrimosa)
                     and (MELEE.fullmatch(key) or key in ('MeleePre', 'AppearMelee'))
@@ -579,22 +606,42 @@ def build_character(assets, character, curated):
                             group = counter_groups[0]
                     entries = evade_entry_times(assets, bindings, key)
                     if group and counter_duration is not None and len(entries) == 2:
-                        _, _, _, hit_notifies, hit_pause, *details = row
+                        _, _, _, hit_notifies, hit_pause, *details, jump_time = row
                         fixed_pause = COUNTER_SPAWN_PAUSES.get(ability['id'], 0) if not hit_pause else 0
                         if fixed_pause:
                             hit_pause = ' / '.join(value for value in (hit_pause, fmt(fixed_pause)) if value)
                         for label, entry in entries:
+                            if jump_occupancies is not None:
+                                jump_occupancies.setdefault((ability['id'], group, label), []).append(
+                                    None if jump_occupancy is None else entry + jump_occupancy
+                                )
                             damage_times = ' / '.join(
                                 fmt(entry + float(time)) for time in (hit_notifies or '').split(' / ') if time
                             )
                             rows[group].append((label, None, fmt(entry + counter_duration + fixed_pause),
-                                                damage_times or None, hit_pause, *details))
+                                                damage_times or None, hit_pause, *details,
+                                                fmt(entry + float(jump_time)) if jump_time is not None else None))
                         continue
                 if group:
+                    if jump_occupancies is not None:
+                        jump_occupancies.setdefault((ability['id'], group, row[0]), []).append(jump_occupancy)
                     rows[group].append(row)
         for name, moves in rows.items():
             groups = record.setdefault(ability['id'], {})
             if name in groups:
+                table = groups[name]
+                aliases = CURATED_JUMP_LABELS.get((ability['id'], name), {})
+                jumps = defaultdict(set)
+                for move in moves:
+                    jumps[move[0]].add(move[-1])
+                row_labels = [aliases.get(row[0], row[0]) for row in table['rows']]
+                values = [
+                    next(iter(jumps[label])) if len(jumps[label]) == 1 else None
+                    for label in row_labels
+                ]
+                if COLUMNS[-1] not in table['columns'] and any(value is not None for value in values):
+                    table['columns'] = [*table['columns'], COLUMNS[-1]]
+                    table['rows'] = [[*row, value] for row, value in zip(table['rows'], values)]
                 continue
             columns = [i for i in range(len(COLUMNS)) if any(row[i] is not None for row in moves)]
             groups[name] = {

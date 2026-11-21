@@ -54,10 +54,10 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(actions['a1']['duration_source'], 'user-authorized-estimate')
         self.assertEqual(sum(actions[f'a{i}']['duration_ticks'] for i in range(1, 6)), 40)
         for name, ticks in {'魔a1': 6, '魔a2': 7, '魔a3': 12, '魔a4': 5,
-                            '魔a5': 7, '魔e': 11, '魔z2': 11}.items():
+                            '魔a5': 14, '魔e': 11, '魔z2': 11}.items():
             self.assertEqual(actions[name]['duration_ticks'], ticks)
             self.assertEqual(actions[name]['duration_seconds'], ticks / 10)
-        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 37)
+        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 44)
         self.assertEqual(len([a for a in actions.values() if a.get('source_row') == 19]), 1)
 
     def test_ntedata_energy_matches_damage_rows_and_interruptions(self):
@@ -129,11 +129,11 @@ class HeiyuTest(unittest.TestCase):
         detail = simulate_shaft_axis(axis)['result']['details'][0]
         self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'], .516)
 
-    def test_form_a5_duration_ignores_legacy_detach_flag(self):
+    def test_form_a5_detached_duration_keeps_full_resolution(self):
         action = next(a for a in load_shaft_catalog()['actions_by_character'][CID] if a['name'] == '魔a5')
-        self.assertEqual(action['duration_seconds'], 0.7)
-        self.assertFalse(action.get('can_detach'))
-        self.assertNotIn('detached_duration_ticks', action)
+        self.assertEqual(action['duration_seconds'], 1.4)
+        self.assertTrue(action['can_detach'])
+        self.assertEqual(action['detached_duration_ticks'], 6)
         results = []
         for detached in (False, True):
             axis = {'team': [{'slot': 0, 'character_id': CID, 'arc_id': '', 'cartridge_id': ''}],
@@ -142,10 +142,10 @@ class HeiyuTest(unittest.TestCase):
                                'start_tick': 10, 'detached': detached}]}
             normalized = normalize_axis_payload(axis)
             detail = simulate_shaft_axis(normalized)['result']['details'][-1]
-            self.assertEqual(detail['duration_ticks'], 7)
-            self.assertFalse(detail['is_detached'])
+            self.assertEqual(detail['duration_ticks'], 6 if detached else 14)
+            self.assertEqual(detail['is_detached'], detached)
             results.append(detail)
-        for key in ('direct_damage', 'energy_gain', 'harmony', 'personal_resources_consumed'):
+        for key in ('direct_damage', 'energy_gain', 'harmony', 'stagger_amount', 'personal_resources_consumed'):
             self.assertEqual(results[0][key], results[1][key])
 
     def test_basic_malice_is_proportional_and_chain_totals_are_preserved(self):

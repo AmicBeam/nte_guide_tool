@@ -128,7 +128,7 @@ assert(ePlans.plans.length>0);
 for(const plan of ePlans.plans.slice(0,40)){check(plan,heiyu);assert.equal(plan.groups[0].length,2);}
 for(const plan of ePlans.plans) for(const job of plan.jobs.filter(j=>j.role===0)) {
     for(const step of engine.rowById(heiyu[0],job.rowId).timeline.filter(s=>s.action==='魔a5')) {
-        assert.equal(step.duration_seconds,0.7);
+        assert.equal(step.duration_seconds,1.4);
         assert.equal(step.detached,false);
     }
 }

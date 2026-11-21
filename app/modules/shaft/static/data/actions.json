@@ -9785,8 +9785,8 @@
     "display_order": 13,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 2.826,
       "hp": 0,

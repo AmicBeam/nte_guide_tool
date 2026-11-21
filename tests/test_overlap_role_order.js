@@ -66,9 +66,9 @@ for (const characters of [pair,[...pair].reverse()]) {
     const full=engine.match(characters,options).plans;
     const top=engine.createTopSearch(characters,options).extend(20).plans;
     assert.equal(full.length,1);
-    assert.equal(full[0].period,5.1);
-    assert(Math.abs(full[0].multiplierRate-2.9873270588235297)<1e-10);
+    assert.equal(full[0].period,4.6);
+    assert(Math.abs(full[0].multiplierRate-15.235368/4.6)<1e-10);
     assert.deepEqual(top.map(p=>identity(p)),full.map(p=>identity(p)));
     validate(top[0],characters);
 }
-console.log(`PASS: ${comparisons} role-swap Top20/40 comparisons and both 5.1s cycle anchors`);
+console.log(`PASS: ${comparisons} role-swap Top20/40 comparisons and both 4.6s cycle anchors`);

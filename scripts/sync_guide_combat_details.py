@@ -15,8 +15,68 @@ DATA = ROOT / 'app/modules/guide/data'
 TYPES = ('Melee', 'Skill', 'UltraSkill', 'QTE', 'Peculiarity')
 COLUMNS = ('动作', '连段窗口（秒）', '连段占时推算（秒）', '动作衔接（秒）', '伤害通知（秒）', '命中顿帧（秒）',
            '切人锁定（秒）', '解除暂停事件（秒）', '伤害判定')
-MELEE = re.compile(r'(Ultra)?Melee([A-Z]?)(\d+)(.*)', re.I)
-LACRIMOSA_SWITCH_ABILITIES = {'ga_lacrimosa_switchskill', 'ga_lacrimosa_switchskillmodb'}
+MELEE = re.compile(r'(Ultra|Magic)?Melee([A-Z]?)(\d+)(.*)', re.I)
+COMBO_STARTS = {'MeleePre', 'AppearMelee', 'MagicMeleePre', 'MeleeBPre', 'AppearMeleeB'}
+ADDITIONAL_ABILITIES = {
+    'ga_lacrimosa_melee': ('ga_lacrimosa_meleemoda', 'ga_lacrimosa_switchskill', 'ga_lacrimosa_switchskillmodb'),
+    'ga_lacrimosa_ultraskill': ('ga_lacrimosa_ultraskillmoda',),
+    'ga_hathor_skill': ('ga_hathor_skill2',),
+    'ga_zankou_melee': ('ga_zankou_meleemagic',),
+    'ga_zankou_ultraskill': ('ga_zankou_ultraskillforce', 'ga_zankou_ultraskillmagic'),
+    'ga_blackbird_melee': ('ga_blackbird_evolve_melee',),
+    'ga_blackbird_skill': ('ga_blackbird_evolve_skill',),
+    'ga_blackbird_ultraskill': ('ga_blackbird_evolve_ultraskill',),
+    'ga_daffodill_melee': ('ga_daffodill_evade',),
+    'ga_mitsuki_melee': ('ga_mitsuki_evade',),
+    'ga_elyms_melee': ('ga_elyms_meleeb',),
+    'ga_elyms_ultraskill': ('ga_elyms_ultraskillb',),
+}
+MONTAGE_GROUPS = {
+    ('ga_sagiri_skill', 'Skill1'): '变轨技能：打嗝',
+    ('ga_haniel_melee', 'End'): '普通攻击：超异科魔法炮',
+    ('ga_cang_melee', 'Branch1'): '普通攻击：无状之言',
+    ('ga_cang_melee', 'Branch2'): '普通攻击：无讳之语',
+    ('ga_hathor_melee', 'AirAttackEnd'): '普通攻击：压轴派送',
+    ('ga_hathor_melee', 'Branch'): '普通攻击：制高清算',
+    ('ga_hathor_melee', 'BranchEnd'): '普通攻击：制高清算',
+    ('ga_adler_melee', 'Branch'): '蓄力攻击',
+    ('ga_zankou_meleemagic', 'MagicMelee1'): '普通攻击：魇舞',
+    ('ga_zankou_meleemagic', 'MagicMeleePre'): '普通攻击：魇舞',
+    ('ga_jin_melee', 'Branch1'): '普通攻击：漪澜',
+    ('ga_daffodill_melee', 'Branch1'): '普通攻击：临水照影',
+    ('ga_daffodill_evade', 'AttackEvade'): '普通攻击：错位锋芒',
+    ('ga_daffodill_skill', 'Skill1'): '变轨技能：同振',
+    ('ga_daffodill_skill', 'Skill2'): '变轨技能：如响斯应',
+    ('ga_mitsuki_evade', 'EvadeBranchEntry'): '普通攻击：顿音',
+    ('ga_mitsuki_evade', 'End'): '普通攻击：顿音',
+    ('ga_chaos071_melee', 'Branch1'): '普通攻击：裁断',
+    ('ga_chaos071_melee', 'Branch2'): '普通攻击：裁断',
+    ('ga_chaos071_melee', 'Branch1_Ultra'): '普通攻击：裁断',
+    ('ga_chaos071_melee', 'Branch2_Ultra'): '普通攻击：裁断',
+    ('ga_oneiroi_perfectevade', 'Atk'): '无意识响应',
+    ('ga_shinku_melee', 'AirAttackEnd'): '普通攻击：空箭',
+    ('ga_shinku_melee', 'Branch1'): '普通攻击：特种格斗术—变式',
+    ('ga_shinku_melee_rage', 'AirAttackEnd'): '普通攻击：落锤',
+    ('ga_shinku_melee_rage', 'Branch'): '普通攻击：惊骇急袭—轻蔑',
+    ('ga_shinku_skill', 'Skill'): '变轨技能：高速突破',
+    ('ga_exe_melee', 'Branch'): '普通攻击：纵深侵入',
+}
+MONTAGE_LABELS = {
+    ('ga_lacrimosa_ultraskill', 'UltraSkillB'): '近战终结',
+    ('ga_lacrimosa_ultraskillmoda', 'UltraSkill'): '远程终结',
+    ('ga_elyms_ultraskill', 'UltraSkill'): '对群终结',
+    ('ga_elyms_ultraskillb', 'UltraSkill'): '对单终结',
+    ('ga_elyms_meleeb', 'MeleeB1'): '第 1 段',
+    ('ga_elyms_meleeb', 'MeleeB2'): '第 2 段',
+    ('ga_elyms_meleeb', 'MeleeB3'): '第 3 段',
+    ('ga_hathor_melee', 'Branch'): '环绕起手',
+    ('ga_hathor_melee', 'BranchEnd'): '着地攻击',
+    ('ga_haniel_melee', 'End'): '蓄力炮',
+    ('ga_chaos071_melee', 'Branch1_Ultra'): '强化第 1 段',
+    ('ga_chaos071_melee', 'Branch2_Ultra'): '强化第 2 段',
+    ('ga_mitsuki_evade', 'EvadeBranchEntry'): '冲刺起手',
+    ('ga_daffodill_evade', 'AttackEvade'): '特殊闪避',
+}
 LACRIMOSA_SWITCH_MOVES = {'SwitchModA': '近切远', 'SwitchModB': '远切近'}
 COUNTER_SPAWN_PAUSES = {
     'GA_Exe_Melee': 0.066666,
@@ -30,6 +90,9 @@ LABELS = {
     'Skillhold': '长按', 'Skill_Short': '强化短按', 'Skill_Long': '强化长按', 'UltraSkill': '极轨终结',
     'Fire': '射击', 'Fire_LoopAim': '瞄准射击', 'Branch': '分支攻击', 'End': '收招', 'Loop': '循环',
     'UltraSkillB': '变身终结', 'Atk_tran': '变身反击', 'QTE_tran': '变身援护',
+    'MagicMeleePre': '接近起手', 'MeleeBPre': '接近起手', 'AppearMeleeB': '入场攻击',
+    'Skill2_1': '第 1 段', 'Skill2_2': '第 2 段', 'Skill2_3': '第 3 段',
+    'UltraSkillForce': '强化终结', 'UltraskillMagic': '幻境终结',
     **LACRIMOSA_SWITCH_MOVES,
 }
 
@@ -62,7 +125,7 @@ def vec(value, separator=', '):
 def move_label(section, ability_type):
     if match := MELEE.fullmatch(section):
         enhanced, form, num, suffix = match.groups()
-        prefix = '强化' if enhanced else ''
+        prefix = '强化' if (enhanced or '').casefold() == 'ultra' else ''
         if form:
             prefix += f'{form.upper()} 形态'
         variant = f'（变体 {suffix.lstrip("_")}）' if suffix else ''
@@ -332,7 +395,7 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
         for transition in predictions
     )) or None
     normal_combo = (
-        MELEE.fullmatch(key) or key in ('MeleePre', 'AppearMelee')
+        MELEE.fullmatch(key) or key in COMBO_STARTS
         or (combo_duration and ability['type_name'] == 'Melee' and key.startswith(('Branch', 'ExtraAttack')))
     )
     threshold = definition['followup'].get(key)
@@ -369,14 +432,15 @@ def related(assets, ability):
         return []
     directory = primary.rsplit('/', 1)[0]
     terminal = main_id.removesuffix('_ultraskill') + '_subultraskill' if ability['type_name'] == 'UltraSkill' else None
+    additional = ADDITIONAL_ABILITIES.get(main_id, ())
     variants = []
     for key in assets.abilities.values():
         parent, name = key.rsplit('/', 1)
-        if parent == directory and (name == terminal or name.startswith(main_id + '_') or (
-            main_id == 'ga_lacrimosa_melee' and (name == 'ga_lacrimosa_meleemoda' or name in LACRIMOSA_SWITCH_ABILITIES)
-        ) or (
-            ability['type_name'] == 'Melee' and 'perfectevade' in name
-        )):
+        same_folder_variant = parent == directory and (
+            name == terminal or name.startswith(main_id + '_')
+            or (ability['type_name'] == 'Melee' and 'perfectevade' in name)
+        )
+        if name in additional or same_folder_variant:
             variants.append(key)
     return [primary, *sorted(variants)]
 
@@ -442,6 +506,7 @@ def build_character(assets, character, curated):
         main = candidates[0]
         rows = defaultdict(list)
         for path in candidates:
+            blueprint_name = path.rsplit('/', 1)[1]
             raw = assets.blueprint(path)
             definition = assets.defaults(path)[0]
             ranged_lacrimosa = path.endswith('/ga_lacrimosa_meleemoda')
@@ -452,7 +517,9 @@ def build_character(assets, character, curated):
             terminal = ability['type_name'] == 'UltraSkill' and path.endswith(('_end', '_subultraskill'))
             bindings = dict(montage_bindings(definition))
             for key, animation in bindings.items():
-                label = '终结终段' if terminal and key == 'Default' else None
+                label = MONTAGE_LABELS.get((blueprint_name, key))
+                if label is None and terminal and key == 'Default':
+                    label = '终结终段'
                 measured = inspect_montage(
                     assets, assets.animation(animation), key, ability, data, label,
                     include_battle_continuation=ranged_lacrimosa,
@@ -467,8 +534,10 @@ def build_character(assets, character, curated):
                     form = '近战普攻' if path == main else '远程普攻'
                     group = LACRIMOSA_NORMAL_ATTACKS[form]
                 else:
-                    group = match_group(ability, direct_effects, spawn_effects,
-                                        path == main or path.startswith(main + '_') or terminal, key)
+                    group = MONTAGE_GROUPS.get((blueprint_name, key)) or match_group(
+                        ability, direct_effects, spawn_effects,
+                        path == main or path.startswith(main + '_') or terminal, key,
+                    )
                 if 'perfectevade' in path and key in ('Atk', 'Atk_tran'):
                     if not group:
                         counter_groups = [g['name'] for g in ability['groups'] if g['name'].startswith('极限反击')]

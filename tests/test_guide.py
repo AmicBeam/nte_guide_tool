@@ -167,6 +167,34 @@ class GuideTest(unittest.TestCase):
                         self.assertTrue(table['rows'])
                         self.assertTrue(all(len(row) == len(table['columns']) for row in table['rows']))
 
+    def test_combat_snapshot_includes_separate_abilities_and_named_moves(self):
+        tables = service._skill_combat_details()
+        for cid, skill, groups in (
+            ('1023', 'GA_Cang_Melee', {'普通攻击：无状之言', '普通攻击：无讳之语'}),
+            ('1025', 'GA_Hathor_Skill', {'变轨技能：轮转打击', '持续'}),
+            ('1036', 'GA_Zankou_Melee', {'普通攻击：魇舞', '普通攻击：落月'}),
+            ('1042', 'GA_BlackBird_Melee', {'普通攻击：祭火', '普通攻击：灼痕',
+                                          '普通攻击：予尔等之恩泽', '普通攻击：赐众生之福音'}),
+            ('1042', 'GA_BlackBird_Skill', {'渡世死焰'}),
+            ('1042', 'GA_BlackBird_UltraSkill', {'万火归一'}),
+            ('1054', 'GA_Daffodill_Skill', {'变轨技能：同振', '变轨技能：如响斯应'}),
+            ('1070', 'GA_Mitsuki_Melee', {'普通攻击：顿音'}),
+            ('1071', 'GA_Chaos071_Melee', {'普通攻击：裁断'}),
+            ('1075', 'GA_Oneiroi_Melee', {'无意识响应'}),
+            ('1090', 'GA_Elyms_Melee', {'错频故障'}),
+        ):
+            with self.subTest(skill=skill):
+                self.assertTrue(groups <= tables[cid][skill].keys())
+
+        elyms = tables['1090']['GA_Elyms_Melee']['错频故障']
+        self.assertEqual([row[:3] for row in elyms['rows'][:3]], [
+            ['第 1 段', '0.085–0.568', '0.451'],
+            ['第 2 段', '0.082–0.54', '0.382'],
+            ['第 3 段', None, None],
+        ])
+        self.assertEqual([row[0] for row in tables['1090']['GA_Elyms_UltraSkill']['一如昨日光景']['rows']],
+                         ['对群终结', '对单终结'])
+
     def test_character_icon_filters_combine_and_reset(self):
         page = self.client.get('/guide?kind=characters&element=魂&rarity=5&arc_type=4')
         self.assertEqual(page.status_code, 200)

@@ -107,6 +107,7 @@ class GuideTest(unittest.TestCase):
                          ['0.150–0.889', '0.172–0.494', '0.073–1.036', '0.500–0.760', None])
         self.assertEqual(normal['rows'][-1], ['完整循环', None, '2.775', '0.180', None])
         self.assertIn('解除暂停事件（秒）', groups['音障爆鸣']['columns'])
+        self.assertEqual(groups['音障爆鸣']['rows'][0][:3], ['终结第一段', '4.25', '0.020*10'])
         self.assertIn('切人锁定（秒）', groups['变奏和弦']['columns'])
         self.assertIn('<th scope="row">强化短 E</th>', html)
         self.assertIn('| 第 3 段 | 0.073–1.036 | 1.080 | 0.020*7 | 盒体半尺寸 600 × 270 × 200 |', markdown)
@@ -118,6 +119,7 @@ class GuideTest(unittest.TestCase):
         with patch('app.dao.get_player_by_token', return_value=player):
             markdown = self.client.get(path, headers={'Authorization': 'Bearer valid'}).text
         self.assertIn('判定与时长', markdown)
+        self.assertIn('| 援护攻击 | 1.767 |', markdown)
         self.assertIn('| 0.033*2 / 0.300 | 0–1.189 | 盒体半尺寸 350 × 350 × 300 |', markdown)
         self.assertNotIn('判定与时长', self.client.get(path).text)
 
@@ -125,11 +127,20 @@ class GuideTest(unittest.TestCase):
         table = service._skill_combat_details()['1074']['GA_Exe_Melee']['普通攻击：物理层侵入']
         columns, rows = table['columns'], table['rows']
         self.assertNotIn('连段占时推算（秒）', columns)
-        transition = columns.index('动作衔接（秒）')
+        transition = columns.index('动作占时（秒）')
         by_action = {row[0]: row[transition] for row in rows}
         self.assertEqual(by_action['第 1 段'], '0.45')
         self.assertEqual(by_action['第 2 段'], '0.633')
-        self.assertIsNone(by_action['第 5 段'])
+        self.assertEqual(by_action['第 5 段'], '0.619')
+
+    def test_action_occupancy_uses_combo_first_and_includes_fixed_spawn_pauses(self):
+        tables = service._skill_combat_details()['1042']
+        ultimate = tables['GA_BlackBird_UltraSkill']['恳请众魂安息']
+        self.assertEqual(ultimate['rows'][0][ultimate['columns'].index('动作占时（秒）')], '5.653')
+        attacks = tables['GA_BlackBird_Melee']['普通攻击：祭火']
+        turn = dict(zip(attacks['columns'], next(row for row in attacks['rows'] if row[0] == '第 5 段')))
+        self.assertEqual(turn['动作占时（秒）'], '1.358')
+        self.assertEqual(turn['命中顿帧（秒）'], '0.03*6')
 
     def test_directional_counter_durations_match_shaft_rounding(self):
         from decimal import Decimal, ROUND_CEILING
@@ -146,7 +157,7 @@ class GuideTest(unittest.TestCase):
             with self.subTest(role=role, action=action):
                 table = tables[cid][ability][group]
                 self.assertEqual([row[0] for row in table['rows']], ['前闪反击', '后闪反击'])
-                duration = table['columns'].index('动作衔接（秒）')
+                duration = table['columns'].index('动作占时（秒）')
                 slower = max(Decimal(row[duration]) for row in table['rows'])
                 self.assertEqual(counters[role, action], int((slower * 10).to_integral_value(rounding=ROUND_CEILING)))
         self.assertEqual([row[1] for row in tables['1074']['GA_Exe_Melee']['极限反击：零延迟响应']['rows']],
@@ -178,6 +189,7 @@ class GuideTest(unittest.TestCase):
                     self.assertTrue(groups.keys() <= bindings[ability])
                     for table in groups.values():
                         self.assertEqual(table['columns'][0], '动作')
+                        self.assertFalse({'动作衔接（秒）', '连段占时推算（秒）'} & set(table['columns']))
                         self.assertNotIn('动画总长（秒）', table['columns'])
                         self.assertTrue(table['rows'])
                         self.assertTrue(all(len(row) == len(table['columns']) for row in table['rows']))
@@ -205,7 +217,7 @@ class GuideTest(unittest.TestCase):
         self.assertEqual([row[:3] for row in elyms['rows'][:3]], [
             ['第 1 段', '0.085–0.568', '0.451'],
             ['第 2 段', '0.082–0.54', '0.382'],
-            ['第 3 段', None, None],
+            ['第 3 段', None, '0.934'],
         ])
         self.assertEqual([row[0] for row in tables['1090']['GA_Elyms_UltraSkill']['一如昨日光景']['rows']],
                          ['对群终结', '对单终结'])
@@ -445,7 +457,7 @@ class GuideTest(unittest.TestCase):
         self.assertNotIn('近战普攻爆炸', groups)
         switch = groups['风味变奏']['combat_details']
         self.assertEqual(switch['columns'],
-                         ['动作', '动作衔接（秒）', '伤害通知（秒）', '命中顿帧（秒）', '伤害判定'])
+                         ['动作', '动作占时（秒）', '伤害通知（秒）', '命中顿帧（秒）', '伤害判定'])
         self.assertEqual([row[:2] for row in switch['rows']], [['近切远', '1.506'], ['远切近', '0.76']])
         self.assertTrue(all(row[-1].startswith('盒体半尺寸 ') for row in switch['rows']))
         raw = next(c for c in service.catalog()['characters'] if c['id'] == '1004')

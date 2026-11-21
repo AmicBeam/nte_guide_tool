@@ -13,10 +13,9 @@ from guide_skill_details import LACRIMOSA_NORMAL_ATTACKS
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'app/modules/guide/data'
 TYPES = ('Melee', 'Skill', 'UltraSkill', 'QTE', 'Peculiarity')
-COLUMNS = ('动作', '连段窗口（秒）', '连段占时推算（秒）', '动作衔接（秒）', '伤害通知（秒）', '命中顿帧（秒）',
+COLUMNS = ('动作', '连段窗口（秒）', '动作占时（秒）', '伤害通知（秒）', '命中顿帧（秒）',
            '切人锁定（秒）', '解除暂停事件（秒）', '伤害判定')
 MELEE = re.compile(r'(Ultra|Magic)?Melee([A-Z]?)(\d+)(.*)', re.I)
-COMBO_STARTS = {'MeleePre', 'AppearMelee', 'MagicMeleePre', 'MeleeBPre', 'AppearMeleeB'}
 ADDITIONAL_ABILITIES = {
     'ga_lacrimosa_melee': ('ga_lacrimosa_meleemoda', 'ga_lacrimosa_switchskill', 'ga_lacrimosa_switchskillmodb'),
     'ga_lacrimosa_ultraskill': ('ga_lacrimosa_ultraskillmoda',),
@@ -165,7 +164,7 @@ def notify_time(notify):
 
 
 class Assets:
-    def __init__(self, blueprints, montages=None):
+    def __init__(self, blueprints, montages=None, damage_triggers=None):
         self.blueprints = {p.relative_to(blueprints).with_suffix('').as_posix().casefold(): p
                            for p in blueprints.rglob('*.json')}
         self.montages = {}
@@ -174,6 +173,7 @@ class Assets:
                              for path in montages.rglob('*.json')}
         self.abilities = {p.stem.casefold(): k for k, p in self.blueprints.items()
                           if k.startswith('blueprints/abilities/player/') and p.stem.startswith('GA_')}
+        self.damage_triggers = damage_triggers or {}
 
     @lru_cache(maxsize=None)
     def blueprint(self, key):
@@ -207,7 +207,21 @@ class Assets:
     def attack_hit_pause(self, effect):
         pause = self.defaults(game_path(effect))[0].get('HitPauseData') or {}
         seconds = pause.get('AttackDilationTime')
-        return seconds if isinstance(seconds, (int, float)) and seconds > 0 else None
+        rate = pause.get('AttackDilationRate', 0)
+        return seconds if isinstance(seconds, (int, float)) and seconds > 0 and rate < 1 else None
+
+    def fixed_damage_offsets(self, container):
+        trigger = self.damage_triggers.get(container.get('damage_trigger'), {})
+        count = trigger.get('MaxTriggerCount')
+        period = trigger.get('Period', 0)
+        if (not trigger.get('TriggerOnSpawn') or not isinstance(count, int) or count <= 0
+                or (count > 1 and period <= 0)):
+            return ()
+        spawn = trigger.get('DelaySpawnTime', 0)
+        first_hit = trigger.get('DelayTriggerTime', 0)
+        life = trigger.get('duration', 0)
+        return tuple(spawn + first_hit + i * period for i in range(count)
+                     if not life or first_hit + i * period <= life)
 
     def resolve_export(self, ref):
         exports = self.blueprint(game_path(ref))
@@ -232,6 +246,9 @@ class Assets:
             for value in nested_dicts(props(actor)):
                 container = value.get('EffectContainer')
                 if container:
+                    if (actor.get('Type') == 'HTAbilitySpawnDamageTriggerActor'
+                            and not value.get('SpawnConditionObjs') and not value.get('RandomCountCurve')):
+                        container = {**container, 'damage_trigger': value.get('DamageTriggerConfigID')}
                     result[tag_name(entry)].append((container, True))
                 reference = value.get('SpawnClass') or value.get('SapwnActorClass')
                 actor_exports = self.blueprint(game_path(reference))
@@ -257,6 +274,10 @@ def nested_dicts(value):
 
 def order_unique(values):
     return list(dict.fromkeys(values))
+
+
+def with_hit_pause(cutoff, hit_pause_events):
+    return cutoff + sum(duration for time, duration in hit_pause_events if time <= cutoff)
 
 
 def section_window(montage, key, *, include_battle_continuation=False):
@@ -337,11 +358,13 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
     windows = []
     predictions = []
     cancel = []
+    ability_end = []
     locks = []
     pauses = []
     ranges = []
     hit_pauses = Counter()
     hit_pause_events = []
+    spawn_pause_events = set()
     direct_effects = set()
     spawn_effects = set()
     for notify in montage.get('Notifies') or []:
@@ -359,6 +382,8 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
                 predictions.append(relative + frame / fps)
         elif kind.startswith('BP_CanBreakSkill') and any(t.endswith('BreakSkill_AnySkill') for t in p.get('BreakSkillTypes',[])):
             cancel.append(relative)
+        elif kind.startswith('BP_TriggerEndAbilityEffect'):
+            ability_end.append(relative)
         elif 'CantChangePlayer' in kind and end_time is not None:
             locks.append(f'{fmt(relative)}–{fmt(min(end_time, end) - start)}')
         elif kind.startswith('BP_SendGamePlayEvent'):
@@ -366,7 +391,10 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
             if tag in definition['pause_end']:
                 pauses.append(fmt(relative))
             hit_pauses_at_event = set()
-            for container, is_spawn in definition['hits'].get(tag, []):
+            containers = definition['hits'].get(tag, [])
+            direct_at_event = {game_path(ref) for container, spawned in containers if not spawned
+                               for ref in container.get('TargetGameplayEffectClasses', [])}
+            for container, is_spawn in containers:
                 damage = [ref for ref in container.get('TargetGameplayEffectClasses', [])
                           if ref_name(ref).casefold().startswith('ge_') and 'damage' in ref_name(ref).casefold()]
                 if not damage:
@@ -380,7 +408,13 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
                     ranges.append(geometry)
                 elif collision := container.get('projectile_collision'):
                     ranges.append(collision)
-                if not is_spawn:
+                if is_spawn:
+                    offsets = assets.fixed_damage_offsets(container)
+                    for effect in damage:
+                        if game_path(effect) not in direct_at_event and (seconds := assets.attack_hit_pause(effect)):
+                            spawn_pause_events.update((relative + offset, seconds)
+                                                      for offset in offsets)
+                else:
                     times.append(fmt(relative))
                     for effect in damage:
                         if seconds := assets.attack_hit_pause(effect):
@@ -388,28 +422,25 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
             hit_pauses.update(hit_pauses_at_event)
             if hit_pauses_at_event:
                 hit_pause_events.append((relative, sum(hit_pauses_at_event)))
-    pause_column = ' / '.join(f'{fmt(value)}*{count}' if count > 1 else fmt(value)
-                              for value, count in sorted(hit_pauses.items()))
-    combo_duration = ' / '.join(order_unique(
-        fmt(transition + sum(duration for time, duration in hit_pause_events if time <= transition))
-        for transition in predictions
-    )) or None
-    normal_combo = (
-        MELEE.fullmatch(key) or key in COMBO_STARTS
-        or (combo_duration and ability['type_name'] == 'Melee' and key.startswith(('Branch', 'ExtraAttack')))
-    )
     threshold = definition['followup'].get(key)
     if threshold is not None and not start <= threshold < end:
         threshold = None
-    followup = threshold - start if threshold is not None else min(cancel, default=None)
     style_switch = ability.get('id') == 'GA_Lacrimosa_Melee' and key in LACRIMOSA_SWITCH_MOVES
-    if style_switch and followup is not None:
-        followup += sum(duration for time, duration in hit_pause_events if time <= followup)
+    followup = threshold - start if threshold is not None else min(cancel or ability_end, default=None)
+    endpoints = predictions if predictions and not style_switch else ([] if followup is None else [followup])
+    counter_cutoff = min(cancel, default=None) if key in ('Atk', 'Atk_tran') else None
+    cutoff = counter_cutoff if counter_cutoff is not None else max(endpoints, default=None)
+    if cutoff is not None:
+        fixed_spawns = sorted((time, pause) for time, pause in spawn_pause_events if time <= cutoff)
+        hit_pause_events.extend(fixed_spawns)
+        hit_pauses.update(pause for _, pause in fixed_spawns)
+    occupancy = ' / '.join(order_unique(fmt(with_hit_pause(t, hit_pause_events)) for t in endpoints)) or None
+    pause_column = ' / '.join(f'{fmt(value)}*{count}' if count > 1 else fmt(value)
+                              for value, count in sorted(hit_pauses.items()))
     row = (
         action_label or move_label(key, ability['type_name']),
         None if style_switch else (' / '.join(order_unique(windows)) or None),
-        None if normal_combo or style_switch else combo_duration,
-        combo_duration if normal_combo else (fmt(followup) if followup is not None else None),
+        occupancy,
         ' / '.join(order_unique(times)) or None,
         pause_column or None,
         ' / '.join(order_unique(locks)) or None,
@@ -419,9 +450,8 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
     if not any(row[1:]):
         return None
     counter_duration = None
-    if key in ('Atk', 'Atk_tran') and cancel:
-        cutoff = min(cancel)
-        counter_duration = cutoff + sum(duration for time, duration in hit_pause_events if time <= cutoff)
+    if counter_cutoff is not None:
+        counter_duration = with_hit_pause(counter_cutoff, hit_pause_events)
     return row, direct_effects, spawn_effects, counter_duration
 
 
@@ -549,15 +579,15 @@ def build_character(assets, character, curated):
                             group = counter_groups[0]
                     entries = evade_entry_times(assets, bindings, key)
                     if group and counter_duration is not None and len(entries) == 2:
-                        fixed_pause = COUNTER_SPAWN_PAUSES.get(ability['id'], 0)
-                        _, _, _, _, hit_notifies, hit_pause, *details = row
+                        _, _, _, hit_notifies, hit_pause, *details = row
+                        fixed_pause = COUNTER_SPAWN_PAUSES.get(ability['id'], 0) if not hit_pause else 0
                         if fixed_pause:
                             hit_pause = ' / '.join(value for value in (hit_pause, fmt(fixed_pause)) if value)
                         for label, entry in entries:
                             damage_times = ' / '.join(
                                 fmt(entry + float(time)) for time in (hit_notifies or '').split(' / ') if time
                             )
-                            rows[group].append((label, None, None, fmt(entry + counter_duration + fixed_pause),
+                            rows[group].append((label, None, fmt(entry + counter_duration + fixed_pause),
                                                 damage_times or None, hit_pause, *details))
                         continue
                 if group:
@@ -608,10 +638,19 @@ def main():
     mode.add_argument('--list-montages', action='store_true', help='Print client asset paths for an export manifest')
     parser.add_argument('--catalog', type=Path, default=DATA / 'catalog.json')
     parser.add_argument('--curated', type=Path, default=DATA / 'skill_combat_overrides.json')
+    parser.add_argument('--damage-trigger-table', type=Path, help='DamageTriggerActorDataTable JSON for fixed spawned hits')
     parser.add_argument('--output', type=Path, default=DATA / 'skill_combat_details.json')
     args = parser.parse_args()
     catalog = read_json(args.catalog)['characters']
-    assets = Assets(args.blueprints, args.montages)
+    if args.montages and not args.damage_trigger_table:
+        parser.error('--damage-trigger-table is required to include fixed spawned hit pauses')
+    damage_triggers = None
+    if args.damage_trigger_table:
+        damage_triggers = next((export['Rows'] for export in read_json(args.damage_trigger_table)
+                                if export.get('Name') == 'DamageTriggerActorDataTable'), None)
+        if not damage_triggers:
+            parser.error('Missing DamageTriggerActorDataTable rows')
+    assets = Assets(args.blueprints, args.montages, damage_triggers)
     if not assets.abilities:
         parser.error('No ability assets')
     if args.list_montages:

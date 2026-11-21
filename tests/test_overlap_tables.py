@@ -589,10 +589,6 @@ class OverlapTablesTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             generator.generate(self.characters, self.actions, rules)
 
-    def test_jump_detach_does_not_create_a_switch_point(self):
-        action = {'can_detach': True, 'detached_duration_seconds': 0.4, 'detach_via_jump': True}
-        self.assertEqual(generator.switch_points(action, {}), [])
-
     def test_generator_is_deterministic_and_checked_in_output_is_current(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / 'tables.json'

@@ -114,8 +114,7 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             for action in catalog['actions_by_character']['char_c78f7a08d5']
         }
         self.assertEqual(
-            {name for name, action in requiem_actions.items()
-             if action.get('can_detach') and not action.get('detach_via_jump')},
+            {name for name, action in requiem_actions.items() if action.get('can_detach')},
             {'a4远', 'e'},
         )
         self.assertNotIn('a4闪', requiem_actions)
@@ -150,25 +149,6 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(detail['action_name'], 'a4远')
         self.assertTrue(detail['is_detached'])
         self.assertEqual(detail['duration_ticks'], 5)
-
-    def test_jump_detach_is_optional_and_keeps_full_resolution(self) -> None:
-        action = next(action for action in load_shaft_catalog()['actions']
-                      if action['character_name'] == '娜娜莉' and action['name'] == 'a5')
-        details = []
-        for detached in (False, True):
-            result = simulate_shaft_axis({
-                'team': [{'slot': 0, 'character_id': action['character_id']}],
-                'steps': [{'id': 'a5', 'slot': 0, 'action_id': action['id'], 'start_tick': 0,
-                           'detached': detached}],
-                'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
-            })['result']
-            details.append(result['details'][0])
-        normal, detached = details
-        self.assertEqual((normal['duration_ticks'], detached['duration_ticks']), (14, 4))
-        self.assertFalse(normal['is_detached'])
-        self.assertTrue(detached['is_detached'])
-        for field in ('direct_damage', 'energy_gain', 'harmony', 'stagger_amount'):
-            self.assertEqual(normal[field], detached[field])
 
     def test_background_noop_still_switches_the_current_foreground_character(self) -> None:
         payload = {

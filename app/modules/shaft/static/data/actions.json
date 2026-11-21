@@ -213,11 +213,7 @@
     "source_row": 8,
     "source_formula": "{0}%",
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 1.3,
-    "detached_duration_ticks": 13,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_c5f19361cb",
@@ -260,11 +256,7 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "source_action_name": "5a",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_a01a545590",
@@ -307,11 +299,7 @@
     "source_formula": "{0}%+{1}%",
     "can_background_override": true,
     "source_action_name": "5a",
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 0.5,
-    "detached_duration_ticks": 5,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_c6ff824434",
@@ -440,11 +428,7 @@
     "source_formula": "{0}%",
     "can_background_override": true,
     "source_action_name": "5a",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.9,
-    "detached_duration_ticks": 9,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_12b7f98163",
@@ -530,11 +514,7 @@
     "pre_input_node": true,
     "source_formula": "{0}%",
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.7,
-    "detached_duration_ticks": 7,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_40e3b63106",
@@ -620,11 +600,7 @@
     "source_formula": "{0}%",
     "can_background_override": true,
     "source_action_name": "龙5a",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_f0625f9268",
@@ -710,11 +686,7 @@
     "source_formula": "{0}%+{1}%",
     "can_background_override": true,
     "source_action_name": "龙5a",
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 0.7,
-    "detached_duration_ticks": 7,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_cf3b21dac1",
@@ -757,11 +729,7 @@
     "source_formula": "{0}%",
     "can_background_override": true,
     "source_action_name": "龙5a",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.9,
-    "detached_duration_ticks": 9,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_f8e8e72eba",
@@ -1012,11 +980,7 @@
     "pre_input_node": true,
     "can_background_override": false,
     "hit_count": 2,
-    "tags_by_awakening_node": {"5": ["heal", "治疗"]},
-    "can_detach": true,
-    "detached_duration_seconds": 1.0,
-    "detached_duration_ticks": 10,
-    "detach_via_jump": true
+    "tags_by_awakening_node": {"5": ["heal", "治疗"]}
   },
   {
     "id": "action_c32b4b9417",
@@ -1266,11 +1230,7 @@
     "personal_resource_gain": {},
     "source_row": 23,
     "can_background_override": false,
-    "hit_count": 7,
-    "can_detach": true,
-    "detached_duration_seconds": 1.3,
-    "detached_duration_ticks": 13,
-    "detach_via_jump": true
+    "hit_count": 7
   },
   {
     "id": "action_50de5ed4be",
@@ -1572,11 +1532,7 @@
     "source_formula": "{0}%*2",
     "can_background_override": true,
     "source_action_name": "5a",
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 1.1,
-    "detached_duration_ticks": 11,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_b8a5eed5a9",
@@ -1699,11 +1655,7 @@
     "personal_resource_gain": {},
     "source_row": 29,
     "can_background_override": false,
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 0.5,
-    "detached_duration_ticks": 5,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_09ad16cdd4",
@@ -1744,11 +1696,7 @@
     "personal_resource_gain": {},
     "source_row": 30,
     "can_background_override": false,
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 1.2,
-    "detached_duration_ticks": 12,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_6d0d0f28a5",
@@ -1789,11 +1737,7 @@
     "personal_resource_gain": {},
     "source_row": 31,
     "can_background_override": false,
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 0.7,
-    "detached_duration_ticks": 7,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_9ce74dc556",
@@ -1834,11 +1778,7 @@
     "personal_resource_gain": {},
     "source_row": 32,
     "can_background_override": false,
-    "hit_count": 4,
-    "can_detach": true,
-    "detached_duration_seconds": 1.5,
-    "detached_duration_ticks": 15,
-    "detach_via_jump": true
+    "hit_count": 4
   },
   {
     "id": "action_25559001a0",
@@ -2432,11 +2372,7 @@
     "source_formula": "{0}%",
     "can_background_override": true,
     "source_action_name": "5a",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_8fd4a72c7d",
@@ -2479,11 +2415,7 @@
     "source_formula": "{0}%+{1}%+{2}%",
     "can_background_override": true,
     "source_action_name": "5a",
-    "hit_count": 3,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "hit_count": 3
   },
   {
     "id": "action_51235d8709",
@@ -2526,11 +2458,7 @@
     "source_formula": "{0}%*7",
     "can_background_override": true,
     "source_action_name": "5a",
-    "hit_count": 7,
-    "can_detach": true,
-    "detached_duration_seconds": 0.5,
-    "detached_duration_ticks": 5,
-    "detach_via_jump": true
+    "hit_count": 7
   },
   {
     "id": "action_74adab43b7",
@@ -2573,11 +2501,7 @@
     "source_formula": "{0}%+{1}%",
     "can_background_override": true,
     "source_action_name": "5a",
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_2a1e2207f2",
@@ -3126,11 +3050,7 @@
     "personal_resource_gain": {},
     "source_row": 49,
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.5,
-    "detached_duration_ticks": 5,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_2346434fc4",
@@ -3217,11 +3137,7 @@
     "personal_resource_gain": {},
     "source_row": 51,
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_2d0c051441",
@@ -3520,11 +3436,7 @@
     "personal_resource_gain": {},
     "source_row": 58,
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_08d9487c2c",
@@ -4149,11 +4061,7 @@
     "source_formula": "{0}%+{1}%",
     "can_background_override": true,
     "source_action_name": "5a",
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 0.8,
-    "detached_duration_ticks": 8,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_cc06c5dd84",
@@ -4194,11 +4102,7 @@
     "personal_resource_gain": {},
     "source_row": 68,
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.5,
-    "detached_duration_ticks": 5,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_6b96f24d8c",
@@ -4242,11 +4146,7 @@
     "personal_resource_gain": {},
     "source_row": 69,
     "can_background_override": false,
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 0.8,
-    "detached_duration_ticks": 8,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_9670752877",
@@ -4551,11 +4451,7 @@
     "source_formula": "{0}%",
     "can_background_override": true,
     "source_action_name": "5a",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.5,
-    "detached_duration_ticks": 5,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_83feeefb58",
@@ -4638,11 +4534,7 @@
     "source_row": 74,
     "source_formula": "{0}%",
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_b38e023917",
@@ -4725,11 +4617,7 @@
     "source_row": 76,
     "can_background_override": false,
     "hit_count": 1,
-    "tags_by_awakening_node": {"4": ["heal", "治疗"]},
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "tags_by_awakening_node": {"4": ["heal", "治疗"]}
   },
   {
     "id": "action_c18c2d7577",
@@ -4771,11 +4659,7 @@
     "source_row": 77,
     "source_formula": "{0}%",
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_c234af7127",
@@ -4817,11 +4701,7 @@
     "source_row": 78,
     "can_background_override": false,
     "hit_count": 4,
-    "tags_by_awakening_node": {"4": ["heal", "治疗"]},
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "tags_by_awakening_node": {"4": ["heal", "治疗"]}
   },
   {
     "id": "action_d737daad2b",
@@ -4904,11 +4784,7 @@
     "source_row": 80,
     "can_background_override": false,
     "hit_count": 1,
-    "tags_by_awakening_node": {"4": ["heal", "治疗"]},
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "tags_by_awakening_node": {"4": ["heal", "治疗"]}
   },
   {
     "id": "action_a9fb500d88",
@@ -5082,11 +4958,7 @@
     "personal_resource_gain": {},
     "source_row": 84,
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 2.0,
-    "detached_duration_ticks": 20,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_fc0889c388",
@@ -5127,11 +4999,7 @@
     "personal_resource_gain": {},
     "source_row": 86,
     "can_background_override": false,
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 1.6,
-    "detached_duration_ticks": 16,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_43a333a290",
@@ -5342,11 +5210,7 @@
     "hit_count": 3,
     "tags": [
       "召唤物"
-    ],
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    ]
   },
   {
     "id": "action_881b816d9f",
@@ -5726,11 +5590,7 @@
     "can_background_override": true,
     "nightmare_stacks": 4,
     "source_action_name": "5a近",
-    "hit_count": 4,
-    "can_detach": true,
-    "detached_duration_seconds": 1.5,
-    "detached_duration_ticks": 15,
-    "detach_via_jump": true
+    "hit_count": 4
   },
   {
     "id": "action_39502832da",
@@ -5776,11 +5636,7 @@
     "can_background_override": false,
     "nightmare_stacks": 1,
     "source_action_name": "5a远",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_de60da4553",
@@ -5826,11 +5682,7 @@
     "can_background_override": true,
     "nightmare_stacks": 3,
     "source_action_name": "5a远",
-    "hit_count": 3,
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    "hit_count": 3
   },
   {
     "id": "action_ae46a26f6e",
@@ -5876,11 +5728,7 @@
     "can_background_override": true,
     "nightmare_stacks": 1,
     "source_action_name": "5a远",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.5,
-    "detached_duration_ticks": 5,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_6d2645f71e",
@@ -5977,11 +5825,7 @@
     "can_background_override": true,
     "nightmare_stacks": 1,
     "source_action_name": "5a远",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 1.4,
-    "detached_duration_ticks": 14,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_907f25722f",
@@ -6070,11 +5914,7 @@
     "source_row": 101,
     "can_background_override": false,
     "nightmare_stacks": 1,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_4d428c72e8",
@@ -6118,11 +5958,7 @@
     "source_row": 102,
     "can_background_override": false,
     "nightmare_stacks": 6,
-    "hit_count": 6,
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "hit_count": 6
   },
   {
     "id": "action_2745f804a5",
@@ -6428,11 +6264,7 @@
     "source_note": "按用户 2026-09-04 补充口径，移行默认前台但可手动放到后台。",
     "source_formula": "{0}%+{1}%*4+{2}%",
     "can_background_override": true,
-    "hit_count": 6,
-    "can_detach": true,
-    "detached_duration_seconds": 1.6,
-    "detached_duration_ticks": 16,
-    "detach_via_jump": true
+    "hit_count": 6
   },
   {
     "id": "action_016c708ddb",
@@ -6515,11 +6347,7 @@
     "personal_resource_gain": {},
     "source_row": 112,
     "can_background_override": false,
-    "hit_count": 8,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "hit_count": 8
   },
   {
     "id": "action_5206179376",
@@ -6730,11 +6558,7 @@
     "personal_resource_gain": {},
     "source_row": 117,
     "can_background_override": false,
-    "hit_count": 3,
-    "can_detach": true,
-    "detached_duration_seconds": 1.2,
-    "detached_duration_ticks": 12,
-    "detach_via_jump": true
+    "hit_count": 3
   },
   {
     "id": "action_bdc49de5c5",
@@ -6914,11 +6738,7 @@
     "source_row": 122,
     "source_formula": "{0}%*6",
     "can_background_override": false,
-    "hit_count": 6,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "hit_count": 6
   },
   {
     "id": "action_db30565b20",
@@ -6962,11 +6782,7 @@
     "personal_resource_gain": {},
     "source_row": 123,
     "can_background_override": false,
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 1.3,
-    "detached_duration_ticks": 13,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_d44546c512",
@@ -7179,11 +6995,7 @@
     "personal_resource_gain": {},
     "source_row": 128,
     "can_background_override": false,
-    "hit_count": 0,
-    "can_detach": true,
-    "detached_duration_seconds": 1.0,
-    "detached_duration_ticks": 10,
-    "detach_via_jump": true
+    "hit_count": 0
   },
   {
     "id": "action_18cf1ad6b6",
@@ -7266,11 +7078,7 @@
     "personal_resource_gain": {},
     "source_row": 130,
     "can_background_override": false,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.5,
-    "detached_duration_ticks": 5,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_592e2c7563",
@@ -7530,11 +7338,7 @@
     "can_background_override": false,
     "sin_recovery": 22,
     "source_action_name": "5a",
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_48204bed53",
@@ -7762,11 +7566,7 @@
     "source_row": 137,
     "can_background_override": false,
     "sin_recovery": 100,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_2fe17b70d8",
@@ -7810,11 +7610,7 @@
     "source_row": 138,
     "can_background_override": false,
     "sin_recovery": 30,
-    "hit_count": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    "hit_count": 1
   },
   {
     "id": "action_0dc6b76620",
@@ -8028,11 +7824,7 @@
     "personal_resource_gain": {},
     "source_row": 145,
     "can_background_override": false,
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 1.7,
-    "detached_duration_ticks": 17,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_61c61302f2",
@@ -8115,11 +7907,7 @@
     "source_row": 147,
     "source_formula": "{0}%*4+{1}%+{2}%*5",
     "can_background_override": false,
-    "hit_count": 10,
-    "can_detach": true,
-    "detached_duration_seconds": 2.1,
-    "detached_duration_ticks": 21,
-    "detach_via_jump": true
+    "hit_count": 10
   },
   {
     "id": "action_6b6bace5c8",
@@ -8330,11 +8118,7 @@
     "source_row": 152,
     "source_formula": "{0}%+{1}%",
     "can_background_override": false,
-    "hit_count": 2,
-    "can_detach": true,
-    "detached_duration_seconds": 1.4,
-    "detached_duration_ticks": 14,
-    "detach_via_jump": true
+    "hit_count": 2
   },
   {
     "id": "action_31c54a4e71",
@@ -8458,11 +8242,7 @@
     "source_row": 155,
     "source_formula": "{0}%*4+{1}%+{2}%+{3}%",
     "can_background_override": false,
-    "hit_count": 7,
-    "can_detach": true,
-    "detached_duration_seconds": 1.2,
-    "detached_duration_ticks": 12,
-    "detach_via_jump": true
+    "hit_count": 7
   },
   {
     "id": "action_ff4f07b530",
@@ -8668,11 +8448,7 @@
     "hit_count": 1,
     "tags": [
       "召唤物"
-    ],
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    ]
   },
   {
     "id": "action_d3328cde94",
@@ -8709,11 +8485,7 @@
     "hit_count": 3,
     "tags": [
       "召唤物"
-    ],
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6,
-    "detach_via_jump": true
+    ]
   },
   {
     "id": "action_ace58eb0ce",
@@ -8750,11 +8522,7 @@
     "hit_count": 8,
     "tags": [
       "召唤物"
-    ],
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    ]
   },
   {
     "id": "action_iloy_z1",
@@ -8871,11 +8639,7 @@
       "heal",
       "治疗",
       "召唤物"
-    ],
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6,
-    "detach_via_jump": true
+    ]
   },
   {
     "id": "action_iloy_long_e",
@@ -9412,11 +9176,7 @@
   },
   {
     "id": "action_canhong_a1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": false, "duration_seconds": 0.4, "duration_ticks": 4,
-    "multipliers": {"atk": 0.432, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 1.444, "harmony": 2.405, "stagger": 0.435, "tags": ["燎原", "现实形态"], "source_row": 2, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 2-3，按倍率呈现方式聚合。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "multipliers": {"atk": 0.432, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 1.444, "harmony": 2.405, "stagger": 0.435, "tags": ["燎原", "现实形态"], "source_row": 2, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 2-3，按倍率呈现方式聚合。"
   },
   {
     "id": "action_canhong_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.5, "duration_ticks": 5,
@@ -9424,35 +9184,19 @@
   },
   {
     "id": "action_canhong_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1, "duration_ticks": 10,
-    "multipliers": {"atk": 1.114, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.719, "harmony": 6.193, "stagger": 1.121, "tags": ["燎原", "现实形态"], "source_row": 5, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 5-7，按倍率呈现方式聚合。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.7,
-    "detached_duration_ticks": 7,
-    "detach_via_jump": true
+    "multipliers": {"atk": 1.114, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.719, "harmony": 6.193, "stagger": 1.121, "tags": ["燎原", "现实形态"], "source_row": 5, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 5-7，按倍率呈现方式聚合。"
   },
   {
     "id": "action_canhong_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
-    "multipliers": {"atk": 1.782, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%+{4}%", "hit_count": 5, "energy_gain": 5.948, "harmony": 9.905, "stagger": 1.793, "tags": ["燎原", "现实形态"], "source_row": 8, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 8-12，按倍率呈现方式聚合；命中后可强化e。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.7,
-    "detached_duration_ticks": 7,
-    "detach_via_jump": true
+    "multipliers": {"atk": 1.782, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%+{4}%", "hit_count": 5, "energy_gain": 5.948, "harmony": 9.905, "stagger": 1.793, "tags": ["燎原", "现实形态"], "source_row": 8, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 8-12，按倍率呈现方式聚合；命中后可强化e。"
   },
   {
     "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.5, "duration_ticks": 15,
-    "multipliers": {"atk": 2.579, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2+{2}%+{3}%", "hit_count": 6, "energy_gain": 8.611, "harmony": 14.339, "stagger": 2.595, "tags": ["燎原", "现实形态", "牵引"], "source_row": 590, "source_note": "腾讯文档《角色属性》tab 000003 rows 590-593，按倍率呈现方式聚合；命中后可强化e，牵引不进入单敌伤害计算。",
-    "can_detach": true,
-    "detached_duration_seconds": 1.3,
-    "detached_duration_ticks": 13,
-    "detach_via_jump": true
+    "multipliers": {"atk": 2.579, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2+{2}%+{3}%", "hit_count": 6, "energy_gain": 8.611, "harmony": 14.339, "stagger": 2.595, "tags": ["燎原", "现实形态", "牵引"], "source_row": 590, "source_note": "腾讯文档《角色属性》tab 000003 rows 590-593，按倍率呈现方式聚合；命中后可强化e，牵引不进入单敌伤害计算。"
   },
   {
     "id": "action_canhong_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "z", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "长按普攻", "duration_seconds": 1.1, "duration_ticks": 11,
-    "multipliers": {"atk": 2.178, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 7.301, "harmony": 12.1, "stagger": 2.25, "tags": ["z", "现实形态"], "source_row": 17, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 17-18，按倍率呈现方式聚合；对应「绰影」，仅可在a1或a2期间触发。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.8,
-    "detached_duration_ticks": 8,
-    "detach_via_jump": true
+    "multipliers": {"atk": 2.178, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 7.301, "harmony": 12.1, "stagger": 2.25, "tags": ["z", "现实形态"], "source_row": 17, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 17-18，按倍率呈现方式聚合；对应「绰影」，仅可在a1或a2期间触发。"
   },
   {
     "id": "action_canhong_illusion_a1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a1", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": false, "duration_seconds": 0.3, "duration_ticks": 3,
@@ -9460,67 +9204,35 @@
   },
   {
     "id": "action_canhong_illusion_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a2", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1, "duration_ticks": 10,
-    "multipliers": {"atk": 0.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.321, "harmony": 5.544, "stagger": 0.661, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 22, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 22-24，按倍率呈现方式聚合；对应「魇舞」二段。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.7,
-    "detached_duration_ticks": 7,
-    "detach_via_jump": true
+    "multipliers": {"atk": 0.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.321, "harmony": 5.544, "stagger": 0.661, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 22, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 22-24，按倍率呈现方式聚合；对应「魇舞」二段。"
   },
   {
     "id": "action_canhong_illusion_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a3", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1.2, "duration_ticks": 12,
-    "multipliers": {"atk": 0.988, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2", "hit_count": 4, "energy_gain": 3.288, "harmony": 5.486, "stagger": 0.654, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层", "牵引"], "source_row": 25, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 25-26，按倍率呈现方式聚合；对应「魇舞」三段。",
-    "can_detach": true,
-    "detached_duration_seconds": 1.0,
-    "detached_duration_ticks": 10,
-    "detach_via_jump": true
+    "multipliers": {"atk": 0.988, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2", "hit_count": 4, "energy_gain": 3.288, "harmony": 5.486, "stagger": 0.654, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层", "牵引"], "source_row": 25, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 25-26，按倍率呈现方式聚合；对应「魇舞」三段。"
   },
   {
     "id": "action_canhong_illusion_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a4", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
-    "multipliers": {"atk": 2.82, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%", "hit_count": 3, "energy_gain": 9.38, "harmony": 15.653, "stagger": 1.865, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 27, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 27-28，按倍率呈现方式聚合；对应「魇舞」四段。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "multipliers": {"atk": 2.82, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%", "hit_count": 3, "energy_gain": 9.38, "harmony": 15.653, "stagger": 1.865, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 27, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 27-28，按倍率呈现方式聚合；对应「魇舞」四段。"
   },
   {
     "id": "action_canhong_illusion_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻z", "action_type": "普攻", "damage_type": "追击", "extra_tag": "长按普攻", "is_background_damage": false, "duration_seconds": 1.4, "duration_ticks": 14,
-    "multipliers": {"atk": 2.138, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%*2", "hit_count": 5, "energy_gain": 7.099, "harmony": 11.901, "stagger": 1.399, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["幻z", "追击", "幻境形态", "蚀心"], "source_row": 29, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 29-32，按倍率呈现方式聚合；对应「落月」。",
-    "can_detach": true,
-    "detached_duration_seconds": 1.3,
-    "detached_duration_ticks": 13,
-    "detach_via_jump": true
+    "multipliers": {"atk": 2.138, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%*2", "hit_count": 5, "energy_gain": 7.099, "harmony": 11.901, "stagger": 1.399, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["幻z", "追击", "幻境形态", "蚀心"], "source_row": 29, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 29-32，按倍率呈现方式聚合；对应「落月」。"
   },
   {
     "id": "action_canhong_plunge", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "下落", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "下落攻击", "duration_seconds": 1.0, "duration_ticks": 10,
-    "multipliers": {"atk": 0.574, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.1, "harmony": 3.4, "stagger": 0.4, "tags": ["下落攻击"], "source_row": 19, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 19；对应「折枝」，随下落高度最高提升至2倍，本动作按基础倍率录入。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    "multipliers": {"atk": 0.574, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.1, "harmony": 3.4, "stagger": 0.4, "tags": ["下落攻击"], "source_row": 19, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 19；对应「折枝」，随下落高度最高提升至2倍，本动作按基础倍率录入。"
   },
   {
     "id": "action_canhong_dodge_counter", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "闪反", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "闪避反击", "duration_seconds": 1.1, "duration_ticks": 11,
-    "multipliers": {"atk": 1.75, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.5, "harmony": 4.2, "stagger": 2.5, "tags": ["闪避反击", "现实形态"], "source_row": 20, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 20；对应「虚徊」。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "multipliers": {"atk": 1.75, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.5, "harmony": 4.2, "stagger": 2.5, "tags": ["闪避反击", "现实形态"], "source_row": 20, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 20；对应「虚徊」。"
   },
   {
     "id": "action_canhong_e1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.1, "duration_ticks": 11,
-    "multipliers": {"atk": 1.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 0.8, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "tags": ["现实转幻境"], "source_row": 34, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 34-35，按倍率呈现方式聚合；与强化e、幻e共享5秒冷却。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.8,
-    "detached_duration_ticks": 8,
-    "detach_via_jump": true
+    "multipliers": {"atk": 1.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 0.8, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "tags": ["现实转幻境"], "source_row": 34, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 34-35，按倍率呈现方式聚合；与强化e、幻e共享5秒冷却。"
   },
   {
     "id": "action_canhong_E1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "强化e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.1, "duration_ticks": 11,
-    "multipliers": {"atk": 1.752, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 6.0, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "force_stagger_by_awakening_node": {"5": true}, "tags": ["强化", "现实转幻境", "蚀心5层", "乱"], "source_row": 36, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 36-37，按倍率呈现方式聚合；需在燎原a4/a5、z或闪反后释放，施加5层蚀心，与e、幻e共享5秒冷却；E觉仅在非循环轴首次命中强制倾陷。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.8,
-    "detached_duration_ticks": 8,
-    "detach_via_jump": true
+    "multipliers": {"atk": 1.752, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 6.0, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "force_stagger_by_awakening_node": {"5": true}, "tags": ["强化", "现实转幻境", "蚀心5层", "乱"], "source_row": 36, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 36-37，按倍率呈现方式聚合；需在燎原a4/a5、z或闪反后释放，施加5层蚀心，与e、幻e共享5秒冷却；E觉仅在非循环轴首次命中强制倾陷。"
   },
   {
     "id": "action_canhong_E2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻e", "action_type": "E", "damage_type": "追击", "is_background_damage": false, "locks_foreground_switch": true, "duration_seconds": 2.3, "duration_ticks": 23,
@@ -9569,11 +9281,7 @@
   {
     "id": "action_lingke_a5", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 5, "is_background_damage": false, "can_background_override": true,
     "duration_seconds": 0.9, "duration_ticks": 9,
-    "multipliers": {"atk": 0.74, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 4.635, "harmony": 7.703, "stagger": 0.923, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 473, "source_note": "腾讯文档《角色属性》tab 000003 row 473：1级倍率74%、1段，回能4.635、环合7.703、倾陷0.923。可按普攻后段规则手动放到后台。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.7,
-    "detached_duration_ticks": 7,
-    "detach_via_jump": true
+    "multipliers": {"atk": 0.74, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 4.635, "harmony": 7.703, "stagger": 0.923, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 473, "source_note": "腾讯文档《角色属性》tab 000003 row 473：1级倍率74%、1段，回能4.635、环合7.703、倾陷0.923。可按普攻后段规则手动放到后台。"
   },
   {
     "id": "action_lingke_support", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "恶灵左直拳！", "is_background_damage": false,
@@ -9583,11 +9291,7 @@
   {
     "id": "action_lingke_e", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "e", "action_type": "E", "damage_type": "E", "extra_tag": "瞬息全频振", "is_background_damage": false,
     "duration_seconds": 1.0, "duration_ticks": 10,
-    "multipliers": {"atk": 1.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%", "hit_count": 4, "energy_gain": 8.4, "harmony": 14.099, "stagger": 1.7, "cooldown_ticks": 120, "cooldown_group": "lingke_e", "energy_cost": 0, "tags": ["瞬息全频振"], "source_row": 479, "source_note": "腾讯文档《角色属性》tab 000003 rows 479-482：17.8%+13.8%+23.8%+44.6%=100%，回能8.4、环合14.099、倾陷1.7；12秒CD与技能描述由Nanoka 2026-08-24实时核实。动作耗时1秒来自用户2026-08-24补充。",
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    "multipliers": {"atk": 1.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%", "hit_count": 4, "energy_gain": 8.4, "harmony": 14.099, "stagger": 1.7, "cooldown_ticks": 120, "cooldown_group": "lingke_e", "energy_cost": 0, "tags": ["瞬息全频振"], "source_row": 479, "source_note": "腾讯文档《角色属性》tab 000003 rows 479-482：17.8%+13.8%+23.8%+44.6%=100%，回能8.4、环合14.099、倾陷1.7；12秒CD与技能描述由Nanoka 2026-08-24实时核实。动作耗时1秒来自用户2026-08-24补充。"
   },
   {
     "id": "action_lingke_q", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "q展开", "action_type": "Q", "damage_type": "Q", "extra_tag": "超负荷共鸣·展开", "display_order": 20, "is_background_damage": false, "duration_seconds": 0, "duration_ticks": 0,
@@ -9658,11 +9362,7 @@
     "personal_resource_gain": {
       "恶意": 0.857919
     },
-    "personal_resource_scale_with_damage_ratio": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_a2",
@@ -9697,11 +9397,7 @@
     "personal_resource_gain": {
       "恶意": 3.525792
     },
-    "personal_resource_scale_with_damage_ratio": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_a3",
@@ -9736,11 +9432,7 @@
     "personal_resource_gain": {
       "恶意": 4.358372
     },
-    "personal_resource_scale_with_damage_ratio": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_a4",
@@ -9810,11 +9502,7 @@
     "personal_resource_gain": {
       "恶意": 6.588232
     },
-    "personal_resource_scale_with_damage_ratio": true,
-    "can_detach": true,
-    "detached_duration_seconds": 1.0,
-    "detached_duration_ticks": 10,
-    "detach_via_jump": true
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_z",
@@ -9848,11 +9536,7 @@
       "恶意": 4.123077
     },
     "forbidden_buff_key": "character_heiyu_form",
-    "duration_source": "user-authorized-estimate",
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_plunge",
@@ -9886,11 +9570,7 @@
       "恶意": 1.723077
     },
     "forbidden_buff_key": "character_heiyu_form",
-    "duration_source": "user-authorized-estimate",
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_counter",
@@ -9924,11 +9604,7 @@
       "恶意": 4.615385
     },
     "forbidden_buff_key": "character_heiyu_form",
-    "duration_source": "user-authorized-estimate",
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_form_a1",
@@ -9970,11 +9646,7 @@
       "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    }
   },
   {
     "id": "action_heiyu_form_a2",
@@ -10016,11 +9688,7 @@
       "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    }
   },
   {
     "id": "action_heiyu_form_a3",
@@ -10062,11 +9730,7 @@
       "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    }
   },
   {
     "id": "action_heiyu_form_a4",
@@ -10108,11 +9772,7 @@
       "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    }
   },
   {
     "id": "action_heiyu_form_a5",
@@ -10127,10 +9787,6 @@
     "can_background_override": true,
     "duration_seconds": 0.7,
     "duration_ticks": 7,
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6,
-    "detach_via_jump": true,
     "multipliers": {
       "atk": 2.826,
       "hp": 0,
@@ -10145,7 +9801,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 14,
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。魔a5普通占时0.7秒，跳跃脱手占用0.6秒；完整伤害与资源不变。",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。用户2026-10-15最新指定魔a5基础耗时0.7秒，取消可选脱手；完整伤害与资源不变。耗时非Nanoka核实或逐帧实测。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -10200,11 +9856,7 @@
       "skill_level_category": "basic"
     },
     "duration_source": "user-authorized-estimate",
-    "personal_resource_scale_with_damage_ratio": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.7,
-    "detached_duration_ticks": 7,
-    "detach_via_jump": true
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_form_z2",
@@ -10246,11 +9898,7 @@
       "skill_level_category": "basic"
     },
     "duration_source": "user-supplied",
-    "personal_resource_scale_with_damage_ratio": true,
-    "can_detach": true,
-    "detached_duration_seconds": 1.0,
-    "detached_duration_ticks": 10,
-    "detach_via_jump": true
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_form_plunge",
@@ -10292,11 +9940,7 @@
       "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    }
   },
   {
     "id": "action_heiyu_form_counter",
@@ -10338,11 +9982,7 @@
       "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    }
   },
   {
     "id": "action_heiyu_e",
@@ -10378,11 +10018,7 @@
       "恶意": 40
     },
     "forbidden_buff_key": "character_heiyu_form",
-    "duration_source": "user-authorized-estimate",
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "duration_source": "user-authorized-estimate"
   },
   {
     "id": "action_heiyu_assist",
@@ -10465,11 +10101,7 @@
       "skill_level_category": "basic"
     },
     "duration_source": "user-supplied",
-    "personal_resource_scale_with_damage_ratio": true,
-    "can_detach": true,
-    "detached_duration_seconds": 1.0,
-    "detached_duration_ticks": 10,
-    "detach_via_jump": true
+    "personal_resource_scale_with_damage_ratio": true
   },
   {
     "id": "action_heiyu_q1",
@@ -10811,11 +10443,7 @@
     "personal_resource_gain": {
       "弦能": 1
     },
-    "personal_resource_gain_on_first_hit": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_counter",
@@ -10852,11 +10480,7 @@
     "personal_resource_gain": {
       "弦能": 2
     },
-    "personal_resource_gain_on_first_hit": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_support",
@@ -10931,11 +10555,7 @@
         "atk": 10
       }
     },
-    "personal_resource_gain_on_first_hit": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.5,
-    "detached_duration_ticks": 5,
-    "detach_via_jump": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_hold_e",
@@ -10967,11 +10587,7 @@
     "personal_resource_gain": {
       "弦能": 6
     },
-    "personal_resource_gain_on_first_hit": true,
-    "can_detach": true,
-    "detached_duration_seconds": 1.3,
-    "detached_duration_ticks": 13,
-    "detach_via_jump": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_short_enhanced_e",
@@ -11017,11 +10633,7 @@
       "3": {
         "atk": 8
       }
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6,
-    "detach_via_jump": true
+    }
   },
   {
     "id": "action_akane_long_enhanced_e",
@@ -11067,11 +10679,7 @@
       "3": {
         "atk": 8
       }
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 1.3,
-    "detached_duration_ticks": 13,
-    "detach_via_jump": true
+    }
   },
   {
     "id": "action_akane_q1",
@@ -11181,11 +10789,7 @@
       "character_elyms_strong"
     ],
     "duration_implemented": true,
-    "duration_estimated": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_melee2",
@@ -11222,11 +10826,7 @@
       "character_elyms_strong"
     ],
     "duration_implemented": true,
-    "duration_estimated": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_melee3",
@@ -11263,11 +10863,7 @@
       "character_elyms_strong"
     ],
     "duration_implemented": true,
-    "duration_estimated": true,
-    "can_detach": true,
-    "detached_duration_seconds": 1.1,
-    "detached_duration_ticks": 11,
-    "detach_via_jump": true
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_melee4",
@@ -11304,11 +10900,7 @@
       "character_elyms_strong"
     ],
     "duration_implemented": true,
-    "duration_estimated": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_melee5",
@@ -11345,11 +10937,7 @@
       "character_elyms_strong"
     ],
     "duration_implemented": true,
-    "duration_estimated": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.8,
-    "detached_duration_ticks": 8,
-    "detach_via_jump": true
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_meleeb1",
@@ -11503,11 +11091,7 @@
       "character_elyms_strong"
     ],
     "duration_implemented": true,
-    "duration_estimated": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6,
-    "detach_via_jump": true
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_airattack",
@@ -11540,11 +11124,7 @@
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
     "duration_implemented": true,
-    "duration_estimated": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.2,
-    "detached_duration_ticks": 2,
-    "detach_via_jump": true
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_perfectevadeattack",
@@ -11577,11 +11157,7 @@
     "can_background_override": false,
     "resonance_skill_level_bonus": true,
     "duration_implemented": true,
-    "duration_estimated": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "duration_estimated": true
   },
   {
     "id": "action_elyms_skill1",
@@ -11616,11 +11192,7 @@
     "harmony_on_start": 100,
     "duration_implemented": true,
     "duration_estimated": true,
-    "multiplier_level": 1,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "multiplier_level": 1
   },
   {
     "id": "action_elyms_skill2",
@@ -11980,11 +11552,7 @@
     ],
     "ranked_export_limit": 0,
     "ranked_export_limit_empowered": 1,
-    "ranked_export_last_hit": false,
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "ranked_export_last_hit": false
   },
   {
     "id": "action_exe_a2",
@@ -12076,11 +11644,7 @@
     ],
     "ranked_export_limit": 0,
     "ranked_export_limit_empowered": 1,
-    "ranked_export_last_hit": false,
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6,
-    "detach_via_jump": true
+    "ranked_export_last_hit": false
   },
   {
     "id": "action_exe_a3",
@@ -12546,11 +12110,7 @@
     ],
     "ranked_export_limit": 1,
     "ranked_export_limit_empowered": 1,
-    "ranked_export_last_hit": true,
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6,
-    "detach_via_jump": true
+    "ranked_export_last_hit": true
   },
   {
     "id": "action_exe_z",
@@ -12696,11 +12256,7 @@
     ],
     "ranked_export_limit": 0,
     "ranked_export_limit_empowered": 1,
-    "ranked_export_last_hit": false,
-    "can_detach": true,
-    "detached_duration_seconds": 0.3,
-    "detached_duration_ticks": 3,
-    "detach_via_jump": true
+    "ranked_export_last_hit": false
   },
   {
     "id": "action_exe_counter",
@@ -12773,11 +12329,7 @@
     ],
     "ranked_export_limit": 1,
     "ranked_export_limit_empowered": 3,
-    "ranked_export_last_hit": false,
-    "can_detach": true,
-    "detached_duration_seconds": 0.4,
-    "detached_duration_ticks": 4,
-    "detach_via_jump": true
+    "ranked_export_last_hit": false
   },
   {
     "id": "action_exe_e",
@@ -12945,11 +12497,7 @@
     ],
     "ranked_export_limit": 5,
     "ranked_export_limit_empowered": 10,
-    "ranked_export_last_hit": false,
-    "can_detach": true,
-    "detached_duration_seconds": 1.4,
-    "detached_duration_ticks": 14,
-    "detach_via_jump": true
+    "ranked_export_last_hit": false
   },
   {
     "id": "action_exe_q",
@@ -13478,10 +13026,6 @@
     "ranked_export_limit": 1,
     "ranked_export_limit_empowered": 3,
     "ranked_export_last_hit": false,
-    "resonance_skill_level_bonus": false,
-    "can_detach": true,
-    "detached_duration_seconds": 1.5,
-    "detached_duration_ticks": 15,
-    "detach_via_jump": true
+    "resonance_skill_level_bonus": false
   }
 ]

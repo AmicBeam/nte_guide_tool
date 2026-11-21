@@ -453,9 +453,6 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
     counter_cutoff = min(cancel, default=None) if key in ('Atk', 'Atk_tran') else None
     cutoff = counter_cutoff if counter_cutoff is not None else max(endpoints, default=None)
     jump_time = min(jump, default=None)
-    jump_occupancy = None if jump_time is None else with_hit_pause(
-        jump_time, [*hit_pause_events, *sorted(spawn_pause_events)],
-    )
     if cutoff is not None:
         fixed_spawns = sorted((time, pause) for time, pause in spawn_pause_events if time <= cutoff)
         hit_pause_events.extend(fixed_spawns)
@@ -479,7 +476,7 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
     counter_duration = None
     if counter_cutoff is not None:
         counter_duration = with_hit_pause(counter_cutoff, hit_pause_events)
-    return row, direct_effects, spawn_effects, counter_duration, jump_occupancy
+    return row, direct_effects, spawn_effects, counter_duration
 
 
 def related(assets, ability):
@@ -552,7 +549,7 @@ def match_group(ability, direct_effects, spawn_effects, primary, key):
                 return likely[0]
     return None
 
-def build_character(assets, character, curated, jump_occupancies=None):
+def build_character(assets, character, curated):
     record = {
         skill: {name: deepcopy(table) for name, table in groups.items() if 'columns' in table}
         for skill, groups in curated.items()
@@ -587,7 +584,7 @@ def build_character(assets, character, curated, jump_occupancies=None):
                 )
                 if not measured:
                     continue
-                row, direct_effects, spawn_effects, counter_duration, jump_occupancy = measured
+                row, direct_effects, spawn_effects, counter_duration = measured
                 if (
                     ability['id'] == 'GA_Lacrimosa_Melee' and (path == main or ranged_lacrimosa)
                     and (MELEE.fullmatch(key) or key in ('MeleePre', 'AppearMelee'))
@@ -611,10 +608,6 @@ def build_character(assets, character, curated, jump_occupancies=None):
                         if fixed_pause:
                             hit_pause = ' / '.join(value for value in (hit_pause, fmt(fixed_pause)) if value)
                         for label, entry in entries:
-                            if jump_occupancies is not None:
-                                jump_occupancies.setdefault((ability['id'], group, label), []).append(
-                                    None if jump_occupancy is None else entry + jump_occupancy
-                                )
                             damage_times = ' / '.join(
                                 fmt(entry + float(time)) for time in (hit_notifies or '').split(' / ') if time
                             )
@@ -623,8 +616,6 @@ def build_character(assets, character, curated, jump_occupancies=None):
                                                 fmt(entry + float(jump_time)) if jump_time is not None else None))
                         continue
                 if group:
-                    if jump_occupancies is not None:
-                        jump_occupancies.setdefault((ability['id'], group, row[0]), []).append(jump_occupancy)
                     rows[group].append(row)
         for name, moves in rows.items():
             groups = record.setdefault(ability['id'], {})

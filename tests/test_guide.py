@@ -86,11 +86,15 @@ class GuideTest(unittest.TestCase):
             self.assertEqual(table['columns'][0], '动作')
             self.assertEqual(table['columns'][-1], '伤害判定')
             self.assertTrue(all(len(row) == len(table['columns']) for row in table['rows']))
-        self.assertEqual(groups['普通攻击：弦刃']['rows'][-1], ['完整循环', '2.775', '0.180', None])
+        normal = groups['普通攻击：弦刃']
+        window = normal['columns'].index('连段窗口（秒）')
+        self.assertEqual([row[window] for row in normal['rows']],
+                         ['0.150–0.889', '0.172–0.494', '0.073–1.036', '0.500–0.760', None])
+        self.assertEqual(normal['rows'][-1], ['完整循环', None, '2.775', '0.180', None])
         self.assertIn('解除暂停事件（秒）', groups['音障爆鸣']['columns'])
         self.assertIn('切人锁定（秒）', groups['变奏和弦']['columns'])
         self.assertIn('<th scope="row">强化短 E</th>', html)
-        self.assertIn('| 第 3 段 | 1.080 | 0.020*7 | 盒体半尺寸 600 × 270 × 200 |', markdown)
+        self.assertIn('| 第 3 段 | 0.073–1.036 | 1.080 | 0.020*7 | 盒体半尺寸 600 × 270 × 200 |', markdown)
         self.assertNotIn('combat_details', self.client.get(path).text)
 
     def test_exe_assist_combat_details_include_all_fixed_hit_pauses(self):

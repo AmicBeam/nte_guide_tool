@@ -70,6 +70,21 @@ class GuideTest(unittest.TestCase):
                         self.assertEqual(marker in response.text, token == 'valid')
             self.assertNotIn('判定半径 400', self.client.get('/guide?kind=characters').text)
 
+    def test_special_combo_followups_render_in_combat_details(self):
+        endpoint = '/api/guide/characters/1042?ability_id=GA_BlackBird_UltraSkill'
+        followup = '接魔女形态「祭火」第 3 段。'
+        player = SimpleNamespace(shaft_test_whitelisted=False)
+        with patch('app.dao.get_player_by_token', return_value=player):
+            headers = {'Authorization': 'Bearer valid'}
+            authorized = self.client.get(endpoint, headers=headers).json['data']
+            groups = authorized['abilities'][0]['groups']
+            combat = next(group['combat_details'] for group in groups if group['name'] == '恳请众魂安息')
+            self.assertIn(followup, combat['notes'])
+            self.assertIn('3.15–5.667', combat['rows'][0])
+            self.assertIn(followup, self.client.get('/guide/characters/1042', headers=headers).text)
+            self.assertIn(followup, self.client.get('/guide/characters/1042.md', headers=headers).text)
+            self.assertNotIn(followup, self.client.get(endpoint).text)
+
     def test_akane_combat_timing_is_bound_to_combat_moves(self):
         path = '/api/guide/characters/1057?section=abilities&hit_details=0'
         player = SimpleNamespace(shaft_test_whitelisted=False)

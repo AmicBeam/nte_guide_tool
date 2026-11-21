@@ -75,6 +75,8 @@ python scripts/refresh_guide_data.py --transport curl
 
 已登录用户可展开对应招式分组的「判定与时长」。JSON、Markdown 与 CLI 共用这份鉴权资料，CLI 沿用 `NTE_GUIDE_TOKEN`。网页和 Markdown 按动作分行，时长与判定参数分列。`combat_details` 的 `columns`、`rows` 和可选 `notes` 描述表格，空单元格使用 `null`。战斗暂停与具体关卡计时的对应关系按玩法验证。
 
+特殊连段在「判定与时长」的表下注明目标招式及段数，配置明确的输入和条件一并标注。只有表注的覆盖项会并入自动生成的同名招式表，完整表格仍可单独覆盖。
+
 安魂曲的近战普攻数据随「茄汁金属乐」展示，远程普攻数据随「茄汁打击乐」展示。两组各自提供倍率、环合值、逐命中明细和登录后可读的判定与时长，近战爆炸归入「茄汁金属乐」。
 
 `scripts/sync_guide_combat_details.py` 离线匹配正式角色的技能蓝图、动画通知和伤害效果。使用 `--blueprints <NTEData目录> --list-montages` 列出所需客户端资产。导出动画 JSON 并保留 `HT/Content` 下的相对路径后，使用 `--blueprints <NTEData目录> --montages <导出目录>` 生成 `data/skill_combat_details.json`。通过技能、伤害效果和动画段的明确绑定归组。缺少核心技能绑定时保留现有快照，缺失的个别字段留空。普攻连段的「动作衔接」按动画帧参数推算，计入衔接前命中触发的顿帧；缺少连段时点时留空。命中顿帧列单独列出配置值。`data/skill_combat_overrides.json` 保留人工逐项核过的招式表和派生绑定。常规攻略刷新独立于这两份文件。

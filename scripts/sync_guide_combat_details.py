@@ -496,7 +496,11 @@ def match_group(ability, direct_effects, spawn_effects, primary, key):
     return None
 
 def build_character(assets, character, curated):
-    record = deepcopy(curated)
+    record = {
+        skill: {name: deepcopy(table) for name, table in groups.items() if 'columns' in table}
+        for skill, groups in curated.items()
+        if any('columns' in table for table in groups.values())
+    }
     for ability in character['abilities']:
         if ability['type_name'] not in TYPES:
             continue
@@ -559,11 +563,15 @@ def build_character(assets, character, curated):
                 if group:
                     rows[group].append(row)
         for name, moves in rows.items():
+            groups = record.setdefault(ability['id'], {})
+            if name in groups:
+                continue
             columns = [i for i in range(len(COLUMNS)) if any(row[i] is not None for row in moves)]
-            record.setdefault(ability['id'], {}).setdefault(name, {
+            groups[name] = {
                 'columns': [COLUMNS[i] for i in columns],
                 'rows': [[row[i] for i in columns] for row in order_unique(moves)],
-            })
+                **curated.get(ability['id'], {}).get(name, {}),
+            }
     return record
 
 
@@ -572,7 +580,11 @@ def build_tables(assets, characters, curated):
     missing = []
     for character in characters:
         identifier = str(character['id'])
-        tables = build_character(assets, character, curated.get(identifier, {}))
+        overrides = curated.get(identifier, {})
+        tables = build_character(assets, character, overrides)
+        for skill, groups in overrides.items():
+            for name in groups.keys() - tables.get(skill, {}).keys():
+                missing.append(f"{character['name']} ({skill} / {name})")
         if tables:
             result[identifier] = tables
         for ability in character['abilities']:

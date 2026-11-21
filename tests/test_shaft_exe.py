@@ -200,21 +200,57 @@ class ExeTest(unittest.TestCase):
         for source in ['0','1']:
             self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone'and e.get('source_step_id')==source]),10)
 
-    def test_triangle_detail_summarizes_clone_and_burst_counts_without_merging_hits(self):
-        result=self.own([('q',0)],nodes=[5],initial={'帧数':0,'评分':0})
-        source=(ROOT/'app/modules/shaft/static/js/shaft.js').read_text()
+    def test_triangle_merges_equal_damage_without_hiding_rating_changes(self):
+        source = (ROOT / 'app/modules/shaft/static/js/shaft.js').read_text()
+
         def function(name):
-            start=source.index('  function '+name+'(')
-            return source[start:source.index('\n  function ',start+1)]
-        script='const events='+json.dumps(result['periodic_damage_events'],ensure_ascii=False)+';'
-        for name in ['displayText','escapeHtml','damageTriggerCounts','renderDamageTriggerCounts','groupedTimelineDamageEvents']:
-            script+=function(name)
-        script+='const group=groupedTimelineDamageEvents(events)[0];console.log(JSON.stringify({counts:damageTriggerCounts(group.events),html:renderDamageTriggerCounts(group.events),events:group.events.length}));'
-        rendered=json.loads(subprocess.check_output(['node','-e',script],text=True))
-        self.assertEqual(rendered['counts'],[{'name':'数字残像','count':4},{'name':'数字残像·冲击','count':4}])
-        self.assertEqual(rendered['events'],8)
-        self.assertIn('自动伤害触发次数',rendered['html'])
-        self.assertEqual(rendered['html'].count('4次'),2)
+            start = source.index('  function ' + name + '(')
+            return source[start:source.index('\n  function ', start + 1)]
+
+        functions = '\n'.join(function(name) for name in [
+            'escapeHtml', 'displayText', 'isDigitalAfterimageDamage',
+            'summarizeTimelineDamageEvents', 'groupedTimelineDamageEvents',
+            'damageMarkerTooltip', 'damageEventSummaryRows',
+        ])
+        for nodes, frames in [([5], 0), ([2, 5], 100)]:
+            with self.subTest(nodes=nodes):
+                result = self.own([('q', 0)], nodes=nodes, initial={'帧数': frames, '评分': 0})
+                events = result['periodic_damage_events']
+                script = functions + """
+                    const formatNumber = (value, digits = 0) => Number(value).toFixed(digits);
+                    const ticksToSeconds = (ticks) => ticks / 10;
+                    const events = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+                    const marker = groupedTimelineDamageEvents(events)[0];
+                    console.log(JSON.stringify({
+                      entries: marker.events,
+                      tooltip: damageMarkerTooltip(marker),
+                      rows: marker.events.map(damageEventSummaryRows),
+                      rawEvents: events,
+                    }));
+                """
+                rendered = json.loads(subprocess.check_output(
+                    ['node', '-e', script], input=json.dumps(events), text=True,
+                ))
+                self.assertEqual(rendered['rawEvents'], events)
+                expected = {}
+                for event in events:
+                    key = event['reaction'], event['damage']
+                    expected[key] = expected.get(key, 0) + 1
+                entries = rendered['entries']
+                self.assertEqual(
+                    {(entry['reaction'], entry['damage']): entry['display_count'] for entry in entries},
+                    expected,
+                )
+                self.assertEqual(len(entries), len(expected))
+                self.assertEqual(
+                    rendered['tooltip'].count(' 伤害'), len(entries),
+                )
+                if nodes == [5]:
+                    self.assertEqual(list(expected.values()), [4, 4])
+                    self.assertEqual(rendered['tooltip'].count('× 4次'), 2)
+                    self.assertTrue(all('× 4次' in row for row in rendered['rows']))
+                else:
+                    self.assertGreater(len(entries), 2)
 
     def test_f_healing_and_empty_hit(self):
         r=self.own([('a1',0)],nodes=[6])

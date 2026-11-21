@@ -4860,8 +4860,38 @@
       if (Number(formula.non_fuwen_amplification || 1) !== 1) lines.push(`环合增幅 ×${formatNumber(formula.non_fuwen_amplification, 3)}`);
     }
     if (event?.kind === 'passive_settlement') lines.unshift(`延滞持续 ${ticksToSeconds(event.delay_duration_ticks)}s`);
-    const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
+    const count = event?.display_count > 1 ? ` × ${event.display_count}次` : '';
+    const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害${count} · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
     return `${heading}\n${lines.join('\n')}`;
+  }
+
+  function isDigitalAfterimageDamage(event) {
+    return event.kind === 'triggered_damage'
+      && ['action_exe_clone', 'action_exe_clone_boom'].includes(event.action_id);
+  }
+
+  function summarizeTimelineDamageEvents(events) {
+    const groups = new Map();
+    const entries = [];
+    for (const event of events) {
+      if (!isDigitalAfterimageDamage(event)) {
+        entries.push(event);
+        continue;
+      }
+      const key = JSON.stringify([
+        event.action_id, event.tick, event.damage_element, event.damage,
+        event.formula_parts, event.panel,
+      ]);
+      const entry = groups.get(key);
+      if (entry) {
+        entry.display_count += 1;
+      } else {
+        const first = {...event, display_count: 1};
+        groups.set(key, first);
+        entries.push(first);
+      }
+    }
+    return entries;
   }
 
   function groupedTimelineDamageEvents(events) {
@@ -4882,6 +4912,7 @@
       const primary = group.events.find((event) => !event?.kind) || group.events[0] || {};
       return {
         ...group,
+        events: summarizeTimelineDamageEvents(group.events),
         reaction: primary.reaction,
         resource_damage_marker: Boolean(primary.resource_damage_marker),
         kind: group.events.every((event) => Boolean(event?.kind)) ? 'periodic_group' : '',
@@ -5360,7 +5391,7 @@
 
   function damageTriggerCounts(events) {
     const groups = new Map();
-    (events || []).filter((event) => event.kind === 'triggered_damage').forEach((event) => {
+    (events || []).filter((event) => event.kind === 'triggered_damage' && !isDigitalAfterimageDamage(event)).forEach((event) => {
       const key = event.action_id || event.reaction;
       const group = groups.get(key) || {name: String(event.reaction || '自动伤害'), count: 0};
       group.count += 1;
@@ -5412,7 +5443,10 @@
   function damageEventSummaryRows(event) {
     const formula = event.formula_parts || {};
     const rows = [['结算时间', `${ticksToSeconds(event.tick)}s`]];
-    if (event.damage != null) rows.push(['伤害', formatNumber(event.damage)]);
+    if (event.damage != null) {
+      const damage = formatNumber(event.damage);
+      rows.push(['伤害', event.display_count > 1 ? `${damage} × ${event.display_count}次` : damage]);
+    }
     if (event.stagger_amount != null) rows.push(['削减倾陷值', formatNumber(event.stagger_amount, 2)]);
     if (event.reaction === '失谐') {
       rows.push(['失谐削条', formatNumber(event.dissonance_stagger, 2)], ['等级差', formatNumber(event.level_gap)]);

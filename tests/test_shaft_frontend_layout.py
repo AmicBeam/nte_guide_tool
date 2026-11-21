@@ -160,7 +160,7 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         catalog = get_shaft_catalog_payload()
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
 
-        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.5.0')
+        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.5.1')
         self.assertEqual(SHAFT_SOURCE_VERSION, catalog['source_meta']['version_label'])
         self.assertIn('{% block title %}异环云配队——排轴计算{% endblock %}', template)
         self.assertIn('<h1>异环云配队——排轴计算</h1>', template)
@@ -1700,7 +1700,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('`频率 ×${formatNumber(formula.frequency_multiplier ?? 1, 2)}`', source)
         self.assertIn('`减防 ${percent(formula.def_down)}　穿防 ${percent(formula.def_ignore)}　减抗 ${percent(formula.res_down)}`', source)
         self.assertIn('lines.push(`最终增伤 ${percent(formula.final_dmg)}`);', source)
-        self.assertIn("const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;", source)
+        self.assertIn("const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害${count} · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;", source)
         self.assertNotIn('最终 ${formatNumber(event?.damage || 0)} 伤害', source)
         self.assertNotIn('const zones = [];', source)
         self.assertNotIn('乘区　${zones.join', source)

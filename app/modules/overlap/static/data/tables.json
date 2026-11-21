@@ -17760,7 +17760,7 @@
           "locks_foreground_switch": false,
           "can_start": false,
           "preinput_forbidden": false,
-          "source": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。用户2026-10-15最新指定魔a5基础耗时0.7秒，取消可选脱手；完整伤害与资源不变。耗时非Nanoka核实或逐帧实测。",
+          "source": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。魔a5普通占时0.7秒，跳跃脱手占用0.6秒；完整伤害与资源不变。",
           "conditions": {
             "cooldown_ticks": 0,
             "energy_cost": 0,
@@ -224647,7 +224647,7 @@
   ],
   "input_sha256": {
     "characters.json": "afae9aea68b1a674b4eb62fa5511c37b19282f1f077fb40f871fdbab572dcd6b",
-    "actions.json": "2bd95a4cb00205f70a0d9be43e0fa0ea070cc27cf992692a05152fde5160eba0",
+    "actions.json": "9497f81f2f9135a8e5d53ef9706f1f6f5c17207b101453d0dd7aba50eb7d1a7b",
     "rules.json": "5564ddcedcecc1308741277bf13ad907295866516f8e33f3eb4ba8a6e15d04d9",
     "generator.py": "45b0f2af5d0f3c787cc39629645c3374d43e2ca0cc01b0fd959c1f8bc4fc5497"
   },

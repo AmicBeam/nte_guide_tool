@@ -95,6 +95,32 @@ class ExeTest(unittest.TestCase):
             result=self.sim(axis,{'帧数':50})
             self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),expected_charges)
 
+    def test_counter_repeats_damage_and_resources_for_each_retained_hit(self):
+        counter = next(
+            action for action in load_shaft_catalog()['actions_by_character'][CID]
+            if action['id'] == 'action_exe_counter'
+        )
+        hits = counter['ranked_resource_hits']
+        self.assertEqual(counter['hit_count'], 2)
+        self.assertEqual([(hit['frames'], hit['score']) for hit in hits], [(5, 150)] * 2)
+        self.assertEqual(hits[0]['atk_levels'], hits[1]['atk_levels'])
+        self.assertEqual(counter['atk_multipliers_by_level'], [value * 2 for value in hits[0]['atk_levels']])
+        self.assertEqual((counter['energy_gain'], counter['harmony'], counter['stagger']), (3.5, 5.8, 2.5))
+
+        for count, expected_frames, exports in [(0, 0, 0), (1, 5, 0), (2, 5.5, 1)]:
+            with self.subTest(count=count):
+                axis = self.axis([(0, 'action_exe_counter', 0)])
+                axis['team'][0]['skill_levels']['basic'] = 10
+                if count < 2:
+                    axis['steps'][0].update(interrupted=True, interrupt_duration_ticks=7, interrupt_hit_count=count)
+                result = self.sim(axis, {'帧数': 0, '评分': 0})
+                detail = result['details'][0]
+                self.assertAlmostEqual(detail['formula_parts']['base'] / detail['panel']['atk'], 1.222452 * count)
+                self.assertAlmostEqual(detail['stagger_amount'], 1.25 * count)
+                self.assertAlmostEqual(detail['personal_resources_after']['帧数'], expected_frames)
+                self.assertEqual(sum(event.get('action_id') == 'action_exe_clone'
+                                     for event in result['periodic_damage_events']), exports)
+
     def test_score_decay_and_independent_three_resonance(self):
         for nodes,resonances,decays in [((),[],True),((),[3],False),([1,2,3],[],True)]:
             axis=self.axis([(0,'action_none_exe',100)],nodes=nodes)

@@ -5641,6 +5641,13 @@
         "energy": 1.75,
         "harmony": 2.9,
         "stagger": 1.25
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.223208,
+        "energy": 3.5,
+        "harmony": 5.8,
+        "stagger": 2.5
       }
     ]
   },

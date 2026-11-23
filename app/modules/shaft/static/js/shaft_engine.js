@@ -4162,7 +4162,8 @@
           if (event.kind === 'triggered_damage' && event.damage > 0 && event._counted_in_total) {
             const snapshot = snapshots.get(int(event.contributor_slot));
             event.triggered_buffs = triggerBuffsForEvent('action_hit', int(event.tick),
-              {id: event.action_id, slot: snapshot.slot}, event._action, snapshot, true);
+              {id: event.action_id, slot: snapshot.slot}, event._action, snapshot, true,
+              {triggered_damage_visual_tick: event.visual_tick});
           }
           const triggersPeriodicDamageBuffs = (Boolean(event.kind) && !['passive_settlement', 'triggered_damage', 'reaction_pulse', 'analysis_retained_reaction'].includes(event.kind))
             || ['浊燃', '创生', '创生复制体'].includes(reactionName);
@@ -4673,6 +4674,7 @@
         const empowered = activeBuffs.some((buff) => int(buff.owner_slot) === owner.slot
           && buff.definition_id === model.empowered_buff_key && tick >= int(buff.start_tick) && tick < int(buff.end_tick));
         const exportLimit = empowered ? int(action.ranked_export_limit_empowered) : int(action.ranked_export_limit);
+        const exportAnchor = {source_step_id: step.id, visual_tick: context.visual_trigger_tick};
         let exported = 0;
         hits.forEach((hit, index) => {
           const before = num(resources[model.frame_resource]);
@@ -4692,7 +4694,7 @@
               resources[model.frame_resource] -= num(model.export_cost);
               exported += 1;
               if (hasAwakeningNode(owner, 6)) addScore(num(model.export_cost) * num(model.score_per_consumed_frame));
-              enqueueTriggeredDamage(owner, model.export_action, tick, {source_step_id: step.id});
+              enqueueTriggeredDamage(owner, model.export_action, tick, exportAnchor);
               settleReactionDamage(tick);
             }
             return;
@@ -4702,7 +4704,7 @@
           resources[model.frame_resource] -= amount * num(model.export_cost);
           if (model.export_action && tick >= 0) {
             for (let i = 0; i < amount; i += 1) {
-              enqueueTriggeredDamage(owner, model.export_action, tick, {source_step_id: step.id});
+              enqueueTriggeredDamage(owner, model.export_action, tick, exportAnchor);
             }
           }
           exported += amount;
@@ -4996,8 +4998,10 @@
         const instance = activateBuff(activeBuffs, runtimeRule, triggerTick, stackGain, context);
         if (!instance) return;
         if (runtimeRule.triggered_damage?.action) {
+          const delay = Math.max(0, int(runtimeRule.triggered_damage.delay_ticks));
+          const visualTick = extraContext.triggered_damage_visual_tick ?? extraContext.visual_trigger_tick;
           enqueueTriggeredDamage(snapshots.get(ownerSlot), runtimeRule.triggered_damage.action,
-            triggerTick + Math.max(0, int(runtimeRule.triggered_damage.delay_ticks)));
+            triggerTick + delay, {visual_tick: delay === 0 ? visualTick : undefined});
         }
         if (runtimeRule.delayed_reaction?.reaction) {
           let echoTick = triggerTick + Math.max(0, int(runtimeRule.delayed_reaction.delay_ticks));
@@ -6222,7 +6226,7 @@
       effect.visual_end_tick = visualTickFromCalculationTick(int(effect.end_tick), qVirtualIntervals);
     });
     reactionDamageEvents.forEach((event) => {
-      event.visual_tick = visualTickFromCalculationTick(int(event.tick), qVirtualIntervals);
+      event.visual_tick ??= visualTickFromCalculationTick(int(event.tick), qVirtualIntervals);
     });
     frontEvents.sort((a, b) => int(a.visual_start_tick, int(a.start_tick)) - int(b.visual_start_tick, int(b.start_tick)) || int(a.order) - int(b.order));
     const dedupedFrontEvents = [];

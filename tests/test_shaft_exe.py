@@ -238,6 +238,17 @@ class ExeTest(unittest.TestCase):
         for source in ['0','1']:
             self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone'and e.get('source_step_id')==source]),10)
 
+    def test_afterimage_markers_follow_each_action_at_the_same_calculation_tick(self):
+        result = self.own([('q', 0), ('e', 5)], nodes=[5], initial={'帧数': 30, '评分': 0})
+        q, e = result['details']
+        self.assertEqual((q['start_tick'], e['start_tick']), (0, 0))
+        self.assertEqual((q['visual_start_tick'], e['visual_start_tick']), (0, 5))
+        events = result['periodic_damage_events']
+        for action_id in ('action_exe_clone', 'action_exe_clone_boom'):
+            marks = [(event['tick'], event['visual_tick']) for event in events if event['action_id'] == action_id]
+            self.assertEqual(marks, [(0, 0)] * 10 + [(0, 5)] * 2)
+        self.assertEqual(result['summary']['duration_ticks'], 16)
+
     def test_triangle_merges_equal_damage_without_hiding_rating_changes(self):
         source = (ROOT / 'app/modules/shaft/static/js/shaft.js').read_text()
 

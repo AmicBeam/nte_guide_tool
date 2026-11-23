@@ -595,7 +595,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const actionBase = Number(detail?.formula_parts?.base || 0) * actionMultiplier;', source)
         self.assertIn('? actionBase / realtimeAtk', source)
         self.assertNotIn('? Number(detail?.direct_damage || 0) / realtimeAtk', source)
-        self.assertIn('`${formatNumber(finalActionAtkMultiplier * 100, 1)}%攻击`', source)
+        self.assertIn("action.id === 'action_exe_counter' && Number(hitCount) > 1", source)
+        self.assertIn('`${formatNumber(finalActionAtkMultiplier * 100 / equalHitCount, 1)}%攻击${multiplierSuffix}`', source)
         self.assertIn('<span>动作倍率</span><strong>${escapeHtml(actionMultiplierText)}</strong>', source)
 
     def test_action_detail_hides_requiem_nightmare_from_applied_buffs(self) -> None:

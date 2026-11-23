@@ -10,6 +10,8 @@ def adjust_tables(tables):
     result={name:dict(rows) for name,rows in tables.items()}
     damage=result['DT_SkillDamageData']
     baseline=damage['GE_Player_Exe_Melee1_Damage']['AtkRateBaseArray'][0]
+    if baseline == .406:
+        return result
     scales={.537:Decimal('0.756'),.4833:Decimal('0.84'),.405972:Decimal('1')}
     if baseline not in scales:raise ValueError('Unexpected Exe baseline multiplier')
     scale=scales[baseline]

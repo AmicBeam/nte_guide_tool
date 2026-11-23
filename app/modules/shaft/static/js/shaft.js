@@ -5645,7 +5645,9 @@
     const finalActionAtkMultiplier = realtimeAtk > 0
       ? actionBase / realtimeAtk
       : 0;
-    const actionMultiplierText = `${formatNumber(finalActionAtkMultiplier * 100, 1)}%攻击`;
+    const equalHitCount = action.id === 'action_exe_counter' && Number(hitCount) > 1 ? Number(hitCount) : 1;
+    const multiplierSuffix = equalHitCount > 1 ? ` × ${equalHitCount}` : '';
+    const actionMultiplierText = `${formatNumber(finalActionAtkMultiplier * 100 / equalHitCount, 1)}%攻击${multiplierSuffix}`;
     specialStats.push(`<div class="shaft-detail-kv"><span>动作倍率</span><strong>${escapeHtml(actionMultiplierText)}</strong></div>`);
     if (hitCount !== undefined && hitCount !== null) {
       specialStats.push(`<div class="shaft-detail-kv"><span>伤害段数</span><strong>${formatNumber(hitCount, 0)}</strong></div>`);

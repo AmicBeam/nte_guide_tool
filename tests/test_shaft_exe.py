@@ -40,8 +40,8 @@ class ExeTest(unittest.TestCase):
         self.assertEqual((char['adaptation'],char['element'],char['energy_capacity']),('等离子','暗',120))
         self.assertEqual(char['bond_bonus'],{'label':'8暴伤','modifiers':{'crit_dmg':.08}})
         actions={a['name']:a for a in c['actions_by_character'][CID]}
-        for name,atk,hits,ticks in [('a1',.405972,1,5),('a2',.692496,2,7),('a3',.791532,3,7),('a4',1.684368,7,13),
-                                    ('a5',.594216,6,7),('z',.780192,1,7),('e',2.909844,6,16),('q',5.8212,19,0),('援护',2,3,18)]:
+        for name,atk,hits,ticks in [('a1',.406,1,5),('a2',.692,2,7),('a3',.792,3,7),('a4',1.684,7,13),
+                                    ('a5',.594,6,7),('z',.780,1,7),('e',2.91,6,16),('q',5.822,19,0),('援护',2,3,18)]:
             with self.subTest(name=name):
                 a=actions[name];self.assertAlmostEqual(a['multipliers']['atk'],atk);self.assertEqual(a['hit_count'],hits);self.assertEqual(a['duration_ticks'],ticks)
                 self.assertEqual(len(a['atk_multipliers_by_level']),13)
@@ -52,7 +52,7 @@ class ExeTest(unittest.TestCase):
         self.assertEqual(char['initial_personal_resources'],{'帧数':0,'评分':0})
         self.assertEqual(char['timeline_personal_resources'],['帧数','评分'])
         clone=char['ranked_resource_system']['export_action']
-        self.assertAlmostEqual(clone['multipliers']['atk'],.924)
+        self.assertAlmostEqual(clone['multipliers']['atk'],.776)
         self.assertEqual(len(clone['atk_multipliers_by_level']),13)
         self.assertEqual(clone['personal_resource_cost'],{})
         self.assertEqual(next(a for a in c['arcs']if a['adaptation']=='等离子')['id'],ARC)
@@ -87,7 +87,7 @@ class ExeTest(unittest.TestCase):
         axis['team'][0]['skill_levels']['basic']=10
         axis['steps'][0].update(interrupted=True,interrupt_duration_ticks=3,interrupt_hit_count=3)
         detail=self.sim(axis)['details'][0]
-        expected=(.492*2+.68)*.756
+        expected=(.372*2+.514)
         self.assertAlmostEqual(detail['formula_parts']['base'] / detail['panel']['atk'],expected)
         for hits,expected_charges in [(0,0),(5,0),(6,1)]:
             axis=self.axis([(0,'action_exe_a5',0)])
@@ -115,7 +115,7 @@ class ExeTest(unittest.TestCase):
                     axis['steps'][0].update(interrupted=True, interrupt_duration_ticks=7, interrupt_hit_count=count)
                 result = self.sim(axis, {'帧数': 0, '评分': 0})
                 detail = result['details'][0]
-                self.assertAlmostEqual(detail['formula_parts']['base'] / detail['panel']['atk'], 1.222452 * count)
+                self.assertAlmostEqual(detail['formula_parts']['base'] / detail['panel']['atk'], 1.221 * count)
                 self.assertAlmostEqual(detail['stagger_amount'], 1.25 * count)
                 self.assertAlmostEqual(detail['personal_resources_after']['帧数'], expected_frames)
                 self.assertEqual(sum(event.get('action_id') == 'action_exe_clone'
@@ -128,6 +128,18 @@ class ExeTest(unittest.TestCase):
             r=self.sim(axis,{'评分':600})
             score=r['resources_by_slot'][0]['personal_resources']['评分']
             self.assertEqual(score<600,decays)
+
+    def test_teammates_dark_star_raises_exe_rating(self):
+        others = [
+            {'slot': 1, 'character_id': 'char_c78f7a08d5', 'arc_id': '', 'cartridge_id': ''},
+            {'slot': 2, 'character_id': 'char_heiyu', 'arc_id': '', 'cartridge_id': ''},
+        ]
+        axis = self.axis([(1, 'action_none_c78f7a08d5', 0),
+                          (2, 'action_heiyu_support', 2)], others=others)
+        result = self.sim(axis)
+        self.assertTrue(any(reaction['reaction'] == '黯星' for reaction in result['reaction_effects']))
+        self.assertTrue(any(event['slot'] == 0 and event['resource'] == '评分' and event['value'] == 700
+                            for event in result['personal_resource_state_events']))
 
     def test_a_b_and_omega_bonuses(self):
         for score,nodes,expected_atk,expected_dark in [(0,[2],.1,0),(500,[1,2],.2,.2),(3000,[2],.3,0),(5000,[1,2,3,4,5,6],.5,.2)]:

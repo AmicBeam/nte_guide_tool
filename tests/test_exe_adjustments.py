@@ -44,16 +44,26 @@ class ExeAdjustmentTest(unittest.TestCase):
         self.assertEqual(adjustments.adjust_tables(previous),result)
         self.assertEqual(adjustments.adjust_tables(result),result)
 
+    def test_current_game_multipliers_and_descriptions_pass_through(self):
+        raw = {
+            'DT_SkillDamageData': {
+                'GE_Player_Exe_Melee1_Damage': {'AtkRateBaseArray': [.406, .438]},
+                'GE_Player_Exe_CloneAtk_Damage': {'AtkRateBaseArray': [.776, .838]},
+            },
+            'DT_GameplayAbilityTipsData': {'GA_Exe_Passive_2': {'Description': '当前冷却时间低于2秒时不再触发'}},
+        }
+        self.assertEqual(adjustments.adjust_tables(raw), raw)
+
     def test_wiki_and_shaft_current_values_are_consistent(self):
         p=ROOT/'app/modules/shaft/static/data'
         actions=json.loads((p/'actions.json').read_text())
-        self.assertAlmostEqual(next(a for a in actions if a['id']=='action_exe_a1')['multipliers']['atk'],.405972)
+        self.assertAlmostEqual(next(a for a in actions if a['id']=='action_exe_a1')['multipliers']['atk'],.406)
         buffs=json.loads((p/'buffs.json').read_text())
         self.assertEqual(next(b for b in buffs if b['id']=='character_exe_overclock')['effects']['all_dmg'],.025)
         role=next(c for c in json.loads((ROOT/'app/modules/guide/data/catalog.json').read_text())['characters']if c['id']=='1074')
         a=next(a for a in role['abilities']if a['id']=='GA_Exe_Melee')
-        self.assertEqual(a['param_rows'][0]['values'][0],'40.5972%')
-        self.assertEqual(a['param_rows'][0]['hit_details'][0]['attack_values'][0],'40.5972%')
+        self.assertEqual(a['param_rows'][0]['values'][0],'40.6%')
+        self.assertEqual(a['param_rows'][0]['hit_details'][0]['attack_values'][0],'40.6%')
         self.assertIn('2.5%',next(a for a in role['abilities']if a['id']=='GA_Exe_Passive_2')['groups'][0]['description'])
         self.assertIn('5%',role['resonance'][-1]['desc']);self.assertNotIn('10%',role['resonance'][-1]['desc'])
 

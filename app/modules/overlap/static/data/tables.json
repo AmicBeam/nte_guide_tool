@@ -387553,13 +387553,13 @@
             }
           ],
           "multipliers": {
-            "atk": 1.098468,
+            "atk": 1.098,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 0.91539,
+            "atk": 0.915,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -387658,13 +387658,13 @@
             }
           ],
           "multipliers": {
-            "atk": 1.098468,
+            "atk": 1.098,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 2.74617,
+            "atk": 2.745,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -387763,13 +387763,13 @@
             }
           ],
           "multipliers": {
-            "atk": 1.098468,
+            "atk": 1.098,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.56924,
+            "atk": 1.568571,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -388156,13 +388156,13 @@
             }
           ],
           "multipliers": {
-            "atk": 3.574368,
+            "atk": 3.574,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.11699,
+            "atk": 1.116875,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -388301,13 +388301,13 @@
             }
           ],
           "multipliers": {
-            "atk": 3.574368,
+            "atk": 3.574,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 2.23398,
+            "atk": 2.23375,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -388446,13 +388446,13 @@
             }
           ],
           "multipliers": {
-            "atk": 3.574368,
+            "atk": 3.574,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.70208,
+            "atk": 1.701905,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -388611,13 +388611,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.168584,
+            "atk": 4.168,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.068868,
+            "atk": 1.068718,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -388774,13 +388774,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.168584,
+            "atk": 4.168,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.068868,
+            "atk": 1.068718,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -388944,13 +388944,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.168584,
+            "atk": 4.168,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.812428,
+            "atk": 1.812174,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -389134,13 +389134,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.168584,
+            "atk": 4.168,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.226054,
+            "atk": 1.225882,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -389305,13 +389305,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.168584,
+            "atk": 4.168,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 2.31588,
+            "atk": 2.315556,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -389517,13 +389517,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.948776,
+            "atk": 4.948,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.075821,
+            "atk": 1.075652,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -389700,13 +389700,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.948776,
+            "atk": 4.948,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.075821,
+            "atk": 1.075652,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -389890,13 +389890,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.948776,
+            "atk": 4.948,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.649592,
+            "atk": 1.649333,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -390080,13 +390080,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.35456,
+            "atk": 4.354,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.116554,
+            "atk": 1.11641,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -390243,13 +390243,13 @@
             }
           ],
           "multipliers": {
-            "atk": 4.35456,
+            "atk": 4.354,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.116554,
+            "atk": 1.11641,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -390387,13 +390387,13 @@
             }
           ],
           "multipliers": {
-            "atk": 2.670192,
+            "atk": 2.67,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.026997,
+            "atk": 1.026923,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -390530,13 +390530,13 @@
             }
           ],
           "multipliers": {
-            "atk": 2.670192,
+            "atk": 2.67,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 1.026997,
+            "atk": 1.026923,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -390654,13 +390654,13 @@
             }
           ],
           "multipliers": {
-            "atk": 1.87866,
+            "atk": 1.878,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 0.988768,
+            "atk": 0.988421,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -390777,13 +390777,13 @@
             }
           ],
           "multipliers": {
-            "atk": 1.87866,
+            "atk": 1.878,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 0.988768,
+            "atk": 0.988421,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -390881,13 +390881,13 @@
             }
           ],
           "multipliers": {
-            "atk": 1.186164,
+            "atk": 1.186,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 0.98847,
+            "atk": 0.988333,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -390984,13 +390984,13 @@
             }
           ],
           "multipliers": {
-            "atk": 1.186164,
+            "atk": 1.186,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
           },
           "multiplier_rates": {
-            "atk": 0.98847,
+            "atk": 0.988333,
             "hp": 0.0,
             "def": 0.0,
             "flat": 0.0
@@ -391043,8 +391043,8 @@
     }
   ],
   "input_sha256": {
-    "characters.json": "afae9aea68b1a674b4eb62fa5511c37b19282f1f077fb40f871fdbab572dcd6b",
-    "actions.json": "586865c3f5c41d1ffd79989bfaf184c7153ab0af7670c3a1b7d66f93eecde6e6",
+    "characters.json": "21cfcd0dd5fa04b3e5c911f1a241dce7d652f126ed0aac5809c83c1e194d2362",
+    "actions.json": "04a8b363ebdb19cbdeb858e29d68890d2e8e85739579e63864f0a13608effa00",
     "rules.json": "a54084598088d66867e93bcc3dc7a9d106cd9d0817b88e0051aad912a55ad1a6",
     "generator.py": "45b0f2af5d0f3c787cc39629645c3374d43e2ca0cc01b0fd959c1f8bc4fc5497"
   },

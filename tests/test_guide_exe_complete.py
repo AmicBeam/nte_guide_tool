@@ -124,7 +124,11 @@ class ExeCompleteTest(ExeReleaseTest):
         cost=next(p for p in q['param_rows']if p['label']=='消耗终结能量');self.assertEqual(cost['values'],['120']*13)
         damage=next(p for p in e['param_rows']if p.get('hit_details'))
         self.assertEqual([h['repeat']for h in damage['hit_details']],[3,3])
-        self.assertEqual(damage['values'][0],'36.5148%*3+60.48%*3')
+        self.assertEqual(damage['values'][0],'36.5%*3+60.5%*3')
+        melee=next(a for a in role['abilities']if a['id']=='GA_Exe_Melee')
+        counter=next(row for row in melee['param_rows']if row['key']=='Exe_PerfectEvade_dmg_num')
+        self.assertEqual(counter['values'][0],'61.1%*2')
+        self.assertEqual([hit['repeat'] for hit in counter['hit_details']],[2])
         self.assertEqual(len(role['materials']['breakthrough']),6);self.assertEqual(len(role['materials']['skills']),8)
         for section in ('stats','materials','abilities','awaken','resonance','nouns','equip_slots','affinity','experience'):
             self.assertEqual(self.client.get('/api/guide/characters/1074?section='+section).status_code,200)
@@ -184,8 +188,8 @@ class ExeCompleteTest(ExeReleaseTest):
         self.assertEqual([h['energy_gain']for h in support['hit_details']],[.5,4])
         self.assertEqual([h['stagger']for h in support['hit_details']],[.25,2])
         passive=next(a for a in record['abilities']if a['id']=='GA_Exe_Passive_2')
-        self.assertIn('无法减至2秒以下',passive['groups'][0]['description'])
-        self.assertIn('抗打断能力提高50%',record['resonance'][-1]['desc'])
+        self.assertIn('当前冷却时间低于2秒时不再触发',passive['groups'][0]['description'])
+        self.assertIn('评分」提升效率及抗打断能力提高50%',record['resonance'][-1]['desc'])
 
     def test_signature_arc_and_actual_defaults(self):
         arc=service.detail('arcs',ARC)

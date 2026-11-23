@@ -30,7 +30,7 @@ ACTION_HITS = {
     'a5': (('Melee5', 6),),
     'z': (('Branch', 1),),
     'air': (('AirAttack', 1),),
-    'counter': (('PerfectEvadeAttack', 1),),
+    'counter': (('PerfectEvadeAttack', 2),),
     'e': (('Skill', 3), ('Skill1', 3)),
     'q': (('UltraSkill1', 13), ('UltraSkill2', 6)),
     'support': (('QTE', 2), ('QTE1', 1)),

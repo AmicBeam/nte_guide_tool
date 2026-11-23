@@ -4659,8 +4659,7 @@
             + amount * (hasAwakeningResonance(owner, 6) ? 1.5 : 1));
         };
         if (event === 'reaction_trigger') {
-          if (context.reaction?.reaction === model.promote_reaction
-            && [context.reaction.previous_slot, context.reaction.support_slot].map(Number).includes(owner.slot)) {
+          if (model.promote_reaction && context.reaction?.reaction === model.promote_reaction) {
             resources[model.score_resource] = Math.max(num(resources[model.score_resource]), num(model.promote_score));
           }
           addScore(num(model.reaction_score));

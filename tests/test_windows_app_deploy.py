@@ -190,6 +190,8 @@ if pathlib.Path(sys.argv[0]).name == 'ssh':
         pathlib.Path(control).touch()
         sys.exit(0)
     if '-O' in sys.argv:
+        if sys.argv[sys.argv.index('-O') + 1] == 'check':
+            sys.exit(0 if control and pathlib.Path(control).exists() else 1)
         pathlib.Path(control).unlink(missing_ok=True)
         sys.exit(0)
     if not control or not pathlib.Path(control).exists() or 'BatchMode=yes' not in sys.argv or 'ProxyCommand=false' not in sys.argv:
@@ -274,6 +276,27 @@ else:
         self.assertFalse((self.root / 'captured.zip').exists())
         control = next(arg.split('=', 1)[1] for call in calls for arg in call if arg.startswith('ControlPath='))
         self.assertFalse(Path(control).parent.exists())
+
+    def test_reuses_supplied_master_without_closing_it(self):
+        control = self.root / 'existing.sock'
+        control.touch()
+        self.env['NTE_DEPLOY_SSH_CONTROL_PATH'] = str(control)
+        result = self.client('--deploy')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(control.exists())
+        calls = [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
+        self.assertEqual([call[call.index('-O') + 1] for call in calls if '-O' in call], ['check'])
+        self.assertFalse(any('-N' in call for call in calls))
+        self.assertTrue(all(f'ControlPath={control}' in call for call in calls))
+
+    def test_unavailable_supplied_master_stops_before_upload(self):
+        self.env['NTE_DEPLOY_SSH_CONTROL_PATH'] = str(self.root / 'missing.sock')
+        result = self.client('--deploy')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('The supplied SSH master is unavailable.', result.stderr)
+        calls = [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
+        self.assertEqual(len(calls), 1)
+        self.assertIn('check', calls[0])
 
     def test_check_and_offline_prepare_never_contact_server(self):
         self.assertEqual(self.client('--check').returncode, 0)

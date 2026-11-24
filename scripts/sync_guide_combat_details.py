@@ -79,7 +79,7 @@ MONTAGE_LABELS = {
     ('ga_daffodill_evade', 'AttackEvade'): '特殊闪避',
 }
 LACRIMOSA_SWITCH_MOVES = {'SwitchModA': '近切远', 'SwitchModB': '远切近'}
-CURATED_JUMP_LABELS = {
+CURATED_ROW_LABELS = {
     ('GA_Nanally_Melee', '普通攻击：重拳出击！'): {
         f'第 {number} 段': f'强化攻击第 {number} 段' for number in range(1, 4)
     },
@@ -433,11 +433,14 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
                 if is_spawn:
                     offsets = assets.fixed_damage_offsets(container)
                     for effect in damage:
-                        if game_path(effect) not in direct_at_event and (seconds := assets.attack_hit_pause(effect)):
+                        if game_path(effect) in direct_at_event:
+                            continue
+                        times.extend(relative + offset for offset in offsets)
+                        if seconds := assets.attack_hit_pause(effect):
                             spawn_pause_events.update((relative + offset, seconds)
                                                       for offset in offsets)
                 else:
-                    times.append(fmt(relative))
+                    times.append(relative)
                     for effect in damage:
                         if seconds := assets.attack_hit_pause(effect):
                             hit_pauses_at_event.add(seconds)
@@ -464,7 +467,7 @@ def inspect_montage(assets, exports, key, ability, definition, action_label=None
         action_label or move_label(key, ability['type_name']),
         None if style_switch else (' / '.join(order_unique(windows)) or None),
         occupancy,
-        ' / '.join(order_unique(times)) or None,
+        ' / '.join(order_unique(fmt(time) for time in sorted(times))) or None,
         pause_column or None,
         ' / '.join(order_unique(locks)) or None,
         ' / '.join(order_unique(pauses)) or None,
@@ -549,6 +552,30 @@ def match_group(ability, direct_effects, spawn_effects, primary, key):
                 return likely[0]
     return None
 
+
+def fill_measured_columns(table, moves, aliases):
+    for column in ('伤害通知（秒）', '允许跳跃（秒）'):
+        if column == '允许跳跃（秒）' and column in table['columns']:
+            continue
+        index = COLUMNS.index(column)
+        by_label = defaultdict(set)
+        for move in moves:
+            by_label[move[0]].add(move[index])
+        values = []
+        for row in table['rows']:
+            entries = by_label[aliases.get(row[0], row[0])]
+            values.append(next(iter(entries)) if len(entries) == 1 else None)
+        if column not in table['columns']:
+            if any(value is not None for value in values):
+                table['columns'].append(column)
+                table['rows'] = [[*row, value] for row, value in zip(table['rows'], values)]
+        else:
+            index = table['columns'].index(column)
+            for row, value in zip(table['rows'], values):
+                if row[index] is None:
+                    row[index] = value
+
+
 def build_character(assets, character, curated):
     record = {
         skill: {name: deepcopy(table) for name, table in groups.items() if 'columns' in table}
@@ -620,19 +647,7 @@ def build_character(assets, character, curated):
         for name, moves in rows.items():
             groups = record.setdefault(ability['id'], {})
             if name in groups:
-                table = groups[name]
-                aliases = CURATED_JUMP_LABELS.get((ability['id'], name), {})
-                jumps = defaultdict(set)
-                for move in moves:
-                    jumps[move[0]].add(move[-1])
-                row_labels = [aliases.get(row[0], row[0]) for row in table['rows']]
-                values = [
-                    next(iter(jumps[label])) if len(jumps[label]) == 1 else None
-                    for label in row_labels
-                ]
-                if COLUMNS[-1] not in table['columns'] and any(value is not None for value in values):
-                    table['columns'] = [*table['columns'], COLUMNS[-1]]
-                    table['rows'] = [[*row, value] for row, value in zip(table['rows'], values)]
+                fill_measured_columns(groups[name], moves, CURATED_ROW_LABELS.get((ability['id'], name), {}))
                 continue
             columns = [i for i in range(len(COLUMNS)) if any(row[i] is not None for row in moves)]
             groups[name] = {

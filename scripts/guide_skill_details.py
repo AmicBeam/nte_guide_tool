@@ -15,6 +15,26 @@ LACRIMOSA_NORMAL_ATTACKS = {
     '近战普攻': '普通攻击：茄汁金属乐',
     '远程普攻': '普通攻击：茄汁打击乐',
 }
+MOVE_PARAMETER_GROUPS = {
+    'ga_sagiri_skill_1_num': '变轨技能：打嗝',
+    'mint_melee_8_2_num': '跃起',
+    'ga_haniel_branch_1_num': '普通攻击：超异科魔法炮',
+    'ga_hathor_airattack_1_num': '普通攻击：压轴派送',
+    'ga_hathor_branch_1_num': '普通攻击：制高清算',
+    'ga_jin_branch_1_num': '普通攻击：漪澜',
+    'ga_daffodill_branch_num': '普通攻击：临水照影',
+    'ga_daffodill_skill_1_num': '变轨技能：同振',
+    'ga_daffodill_skill_2_num': '变轨技能：如响斯应',
+    'ga_chaos_branch_1_num': '普通攻击：裁断',
+    'ga_chaos_branchpower_1_num': '普通攻击：裁断',
+    'oneiroi_perfectevade_dmg_num': '无意识响应',
+    'ga_shinku_airattack_1_num': '普通攻击：空箭',
+    'ga_shinku_branch1_1_num': '普通攻击：特种格斗术—变式',
+    'ga_shinku_airattack2_1_num': '普通攻击：落锤',
+    'ga_shinku_branch2_1_num': '普通攻击：惊骇急袭—轻蔑',
+    'ga_shinku_skill1_1_num': '变轨技能：高速突破',
+    'ga_exe_branch_1_num': '普通攻击：纵深侵入',
+}
 
 
 def stolen_damage_row(damages):
@@ -86,6 +106,11 @@ def select_group(row, phases, ability_id=None):
     if re.fullmatch(r'ga_nanally_extraatk[1-3]_num', key):
         return next((i for i, phase in enumerate(phases)
                      if phase['name'] == '普通攻击：重拳出击！'), None)
+    if key in MOVE_PARAMETER_GROUPS:
+        name = MOVE_PARAMETER_GROUPS[key]
+        match = next((i for i, phase in enumerate(phases) if phase['name'] == name), None)
+        if match is not None:
+            return match
     # Explicit move names take precedence. A row mentioning several moves is shared.
     names = [(i, phase['name'].split('：')[-1].split(':')[-1].strip()) for i, phase in enumerate(phases)]
     matches = [(i, name) for i, name in names if name and name in label]
@@ -207,6 +232,7 @@ def group_ability_parameters(ability):
         if row['hit_details']:
             name = re.sub(r'[一二三四五六七八九十]+段', '', row['label'])
             name = re.sub(r'(?:基础)?(?:伤害)?倍率.*$', '', name).strip(' ：:') or row['label']
+            name = MOVE_PARAMETER_GROUPS.get(row.get('key', '').lower(), name)
             other_groups.setdefault(name, {'name': name, 'description': None, 'param_rows': []})['param_rows'].append(row)
         else:
             common.append(row)

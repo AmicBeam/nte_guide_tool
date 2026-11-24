@@ -105,7 +105,10 @@ class GuideTest(unittest.TestCase):
         window = normal['columns'].index('连段窗口（秒）')
         self.assertEqual([row[window] for row in normal['rows']],
                          ['0.150–0.889', '0.172–0.494', '0.073–1.036', '0.500–0.760', None])
-        self.assertEqual(normal['rows'][-1], ['完整循环', None, '2.775', '0.180', None, None])
+        loop = dict(zip(normal['columns'], normal['rows'][-1]))
+        self.assertEqual((loop['动作'], loop['动作占时（秒）'], loop['命中顿帧（秒）']),
+                         ('完整循环', '2.775', '0.180'))
+        self.assertIsNone(loop['伤害通知（秒）'])
         self.assertIn('允许跳跃（秒）', normal['columns'])
         self.assertIn('允许跳跃（秒）', html)
         self.assertIn('允许跳跃（秒）', markdown)
@@ -125,6 +128,63 @@ class GuideTest(unittest.TestCase):
         self.assertIn('| 援护攻击 | 1.767 |', markdown)
         self.assertIn('| 0.033*2 / 0.300 | 0–1.189 | 盒体半尺寸 350 × 350 × 300 |', markdown)
         self.assertNotIn('判定与时长', self.client.get(path).text)
+
+    def test_iloy_skill_notification_and_evade_geometry_render_in_their_groups(self):
+        headers = {'Authorization': 'Bearer valid'}
+        player = SimpleNamespace(shaft_test_whitelisted=False)
+        with patch('app.dao.get_player_by_token', return_value=player):
+            skill = self.client.get('/api/guide/characters/1075?ability_id=GA_Oneiroi_Skill', headers=headers)
+            melee = self.client.get('/api/guide/characters/1075?ability_id=GA_Oneiroi_Melee', headers=headers)
+            html = self.client.get('/guide/characters/1075', headers=headers).text
+            markdown = self.client.get('/guide/characters/1075.md?section=abilities', headers=headers).text
+        table = skill.json['data']['abilities'][0]['groups'][0]['combat_details']
+        at = table['columns'].index('伤害通知（秒）')
+        self.assertEqual(table['rows'][0][at].split(' / ')[0], '0.499')
+        self.assertIsNone(table['rows'][1][at])
+        ability = melee.json['data']['abilities'][0]
+        groups = ability['groups']
+        counter = next(group for group in groups if group['name'] == '无意识响应')
+        self.assertNotIn('极限反击', [group['name'] for group in groups])
+        self.assertEqual(counter['parameter_keys'], ['Oneiroi_PerfectEvade_dmg_num'])
+        param = next(row for row in ability['param_rows'] if row['key'] in counter['parameter_keys'])
+        self.assertEqual(param['hit_details'][0]['effect_id'],
+                         'GE_Player_Oneiroi_PerfectEvadeAttack_Damage')
+        combat = counter['combat_details']
+        geometry = combat['columns'].index('伤害判定')
+        self.assertEqual([(row[0], row[geometry]) for row in combat['rows']], [
+            ('前闪反击', '盒体半尺寸 800 × 300 × 200'),
+            ('后闪反击', '盒体半尺寸 800 × 300 × 200'),
+        ])
+        for content in (html, markdown):
+            self.assertIn('0.499 / 0.551', content)
+            self.assertIn('盒体半尺寸 800 × 300 × 200', content)
+
+    def test_fixed_spawn_and_curated_move_tables_include_computed_damage_notifications(self):
+        tables = service._skill_combat_details()
+        for cid, ability, group, label, first_hit in (
+            ('1042', 'GA_BlackBird_Melee', '普通攻击：祭火', '第 5 段', '0.337'),
+            ('1010', 'GA_Nanally_Melee', '普通攻击：柯林斯秘传技法', '第 1 段', '0.191'),
+        ):
+            with self.subTest(group=group):
+                table = tables[cid][ability][group]
+                row = next(row for row in table['rows'] if row[0] == label)
+                self.assertEqual(row[table['columns'].index('伤害通知（秒）')].split(' / ')[0], first_hit)
+
+    def test_explicitly_linked_move_parameters_share_a_group_with_combat_details(self):
+        from scripts.guide_skill_details import MOVE_PARAMETER_GROUPS
+
+        seen = set()
+        for character in service.catalog()['characters']:
+            projected = service._with_combat_details(character)
+            for ability in projected['abilities']:
+                for group in ability['groups']:
+                    for row in group['param_rows']:
+                        key = row.get('key', '').lower()
+                        if key in MOVE_PARAMETER_GROUPS:
+                            self.assertEqual(group['name'], MOVE_PARAMETER_GROUPS[key])
+                            self.assertIn('combat_details', group, key)
+                            seen.add(key)
+        self.assertEqual(seen, set(MOVE_PARAMETER_GROUPS))
 
     def test_exe_normal_combo_uses_hit_adjusted_transition_time(self):
         table = service._skill_combat_details()['1074']['GA_Exe_Melee']['普通攻击：物理层侵入']

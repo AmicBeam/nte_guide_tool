@@ -8653,6 +8653,9 @@
     "source_formula": "{0}%+{1}%*7+{2}%",
     "source_action_name": "未来自我连续性假设",
     "can_background_override": false,
+    "can_detach": true,
+    "detached_duration_seconds": 0.5,
+    "detached_duration_ticks": 5,
     "hit_count": 9,
     "tags": [
       "heal",

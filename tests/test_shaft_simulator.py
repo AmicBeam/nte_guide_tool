@@ -1550,6 +1550,31 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertAlmostEqual(detail['harmony'], 7.998)
         self.assertAlmostEqual(detail['stagger_amount'], 1.003)
 
+    def test_iloy_short_e_detach_reduces_occupation_without_losing_hits(self) -> None:
+        axis = {
+            'team': [{'slot': 0, 'character_id': 'char_a01c39f576', 'arc_id': '', 'cartridge_id': ''}],
+            'steps': [{'id': 'e', 'slot': 0, 'action_id': 'action_afea1e6fb2', 'start_tick': 0}],
+            'team_panel_bonus': self.ZERO_TEAM_PANEL_BONUS,
+            'initial_energy': 0,
+        }
+        normal = simulate_shaft_axis(axis)['result']['details'][0]
+        axis['steps'][0]['detached'] = True
+        normalized = normalize_axis_payload(axis)
+        detached = simulate_shaft_axis(normalized)['result']['details'][0]
+        self.assertTrue(normalized['steps'][0]['detached'])
+        self.assertTrue(detached['is_detached'])
+        self.assertEqual((normal['duration_ticks'], detached['duration_ticks']), (9, 5))
+        for key in ('direct_damage', 'hit_count', 'energy_gain', 'harmony', 'stagger_amount',
+                    'personal_resources_after'):
+            self.assertEqual(detached[key], normal[key])
+
+        axis['steps'][0].update(interrupted=True, interrupt_duration_ticks=9, interrupt_hit_count=1)
+        interrupted = simulate_shaft_axis(normalize_axis_payload(axis))['result']['details'][0]
+        self.assertEqual((interrupted['duration_ticks'], interrupted['hit_count']), (5, 1))
+
+        axis['steps'][0]['action_id'] = 'action_iloy_long_e'
+        self.assertNotIn('detached', normalize_axis_payload(axis)['steps'][0])
+
     def test_iloy_healing_actions_grant_visible_team_def_ignore_line(self) -> None:
         healing_actions = (
             'action_01209221c1',

@@ -256,9 +256,12 @@ else:
         self.env['NTE_MOCK_AUTH_FAIL'] = '1'
         result = self.client('--deploy')
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Could not establish the deployment SSH session. Nothing was uploaded.', result.stderr)
         calls = [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
         self.assertEqual(len(calls), 1)
         self.assertIn('-N', calls[0])
+        self.assertIn('ConnectTimeout=15', calls[0])
+        self.assertIn('ConnectionAttempts=1', calls[0])
         control = next(arg.split('=', 1)[1] for arg in calls[0] if arg.startswith('ControlPath='))
         self.assertFalse(Path(control).parent.exists())
 

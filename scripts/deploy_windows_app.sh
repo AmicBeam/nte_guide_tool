@@ -213,9 +213,12 @@ if [[ "$MODE" == "deploy" ]]; then
     chmod 700 "$SSH_CONTROL_DIR"
     SSH_OPTIONS=(-o "ControlPath=$SSH_CONTROL_DIR/socket" -o ControlMaster=no -o BatchMode=yes -o ProxyCommand=false
                  -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
-    printf 'Connecting (one authentication for this deployment)...\n'
-    ssh -o "ControlPath=$SSH_CONTROL_DIR/socket" -o ControlMaster=yes -o ControlPersist=no \
-        -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -f -N "$DEPLOY_HOST"
+    printf 'Connecting (15-second SSH handshake timeout; one authentication for this deployment)...\n'
+    if ! ssh -o "ControlPath=$SSH_CONTROL_DIR/socket" -o ControlMaster=yes -o ControlPersist=no \
+        -o ConnectTimeout=15 -o ConnectionAttempts=1 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
+        -f -N "$DEPLOY_HOST"; then
+        fail "Could not establish the deployment SSH session. Nothing was uploaded."
+    fi
     SSH_MASTER_STARTED="true"
     scp -q "${SSH_OPTIONS[@]}" "$REMOTE_SCRIPT" "$DEPLOY_HOST:$REMOTE_HELPER"
     if [[ "$FORCE_FULL" != "true" ]]; then

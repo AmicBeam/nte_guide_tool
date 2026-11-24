@@ -2706,6 +2706,18 @@
         Math.max(cooldownUntil.get(cooldownKey) || 0, int(startTick) + occupiedTicks),
       );
     }
+
+    function reduceActionCooldowns(activation, slot, tick, hitCount) {
+      const floor = tick + Math.max(0, int(activation.cooldown_floor_ticks));
+      Object.entries(activation.reduce_action_cooldowns || {}).forEach(([actionId, reduction]) => {
+        const configured = actionsById.get(actionId);
+        const key = configured ? actionCooldownKey(slot, configured) : `${slot}:${actionId}`;
+        const deadline = cooldownUntil.get(key);
+        if (deadline > floor) {
+          cooldownUntil.set(key, Math.max(floor, deadline - num(reduction) * Math.max(0, num(hitCount, 1))));
+        }
+      });
+    }
     const forcedStaggerTargets = new Set();
     const periodicHealingStates = new Map();
     const personalResources = new Map(Array.from(snapshots.keys()).map((slot) => [slot, {}]));
@@ -4646,6 +4658,17 @@
       return deadlineTick;
     }
 
+    function primeRankedDamageHit(action, owner, tick) {
+      const damage = reactionDamageAtTick({
+        kind: 'triggered_damage', contributor_slot: owner.slot, tick, _action: action,
+        atk_multiplier: num(action.multipliers?.atk),
+      });
+      if (damage > 0) {
+        triggerBuffsForEvent('action_hit', tick, {id: action.id, slot: owner.slot}, action, owner, true,
+          {loop_prime_only: true, prime_ranked_damage_hit: true});
+      }
+    }
+
     function updateRankedResources(event, tick, step, action, snapshot, context) {
       if (context.display_only === true) return;
       snapshots.forEach((owner) => {
@@ -4694,7 +4717,7 @@
           resources[model.frame_resource] = Math.min(num(model.frame_cap), before + num(hit.frames) * num(rank().frame_multiplier, 1));
           const gain = resources[model.frame_resource] - before;
           addScore(num(hit.score));
-          if (gain > 0 && hasAwakeningNode(owner, 6) && tick >= 0) healingEvents.push({
+          if (gain > 0 && hasAwakeningNode(owner, 6) && tick >= 0 && context.loop_prime_only !== true) healingEvents.push({
             kind: 'triggered_heal', source: `${owner.character.name}·${model.frame_resource}回复`, tick, slot: owner.slot,
             character_id: owner.character.id, character_name: owner.character.name,
             healing: gain * num(model.heal_atk_per_frame) * num(context.current_atk, owner.stats.atk),
@@ -4706,7 +4729,9 @@
             resources[model.frame_resource] -= exportCost;
             exported += 1;
             if (hasAwakeningNode(owner, 6)) addScore(exportCost * num(model.score_per_consumed_frame));
-            if (settleExports) {
+            if (model.export_action && context.loop_prime_only === true) {
+              primeRankedDamageHit(model.export_action, owner, tick);
+            } else if (settleExports) {
               enqueueTriggeredDamage(owner, model.export_action, tick, exportAnchor);
               settleReactionDamage(tick);
             }
@@ -4720,7 +4745,7 @@
 
     function triggerBuffsForEvent(event, triggerTick, step, action, snapshot, isBackground, extraContext = {}) {
       const feedbackAfterBuffs = canExportRankedDamage(action, snapshot) && event === 'action_hit'
-        && extraContext.action_hit_timing !== 'end' && triggerTick >= 0 && extraContext.loop_prime_only !== true;
+        && extraContext.action_hit_timing !== 'end' && (triggerTick >= 0 || extraContext.loop_prime_only === true);
       if (!feedbackAfterBuffs) updateRankedResources(event, triggerTick, step, action, snapshot, extraContext);
       const triggered = [];
       const dotLayerApplications = [];
@@ -4750,7 +4775,13 @@
         fons_full: fonsFull,
         loop_enabled: options.loop_enabled,
       }, extraContext);
+      const primeRankedHit = extraContext.prime_ranked_damage_hit === true;
       buffRules.forEach((rule) => {
+        const activation = rule.activation && typeof rule.activation === 'object' ? rule.activation : {};
+        const triggeredDamage = rule.triggered_damage;
+        const immediateRankedDamage = primeRankedHit && !num(triggeredDamage?.delay_ticks)
+          && asList(triggeredDamage?.action?.ranked_resource_hits).length > 0;
+        if (primeRankedHit && !activation.reduce_action_cooldowns && !immediateRankedDamage) return;
         const ownerSlot = int(rule.owner_slot);
         const ownerInstances = activeBuffs.filter((instance) => (
           int(instance.owner_slot) === ownerSlot
@@ -4780,7 +4811,15 @@
           ? buffTriggerCooldowns.get(cooldownKey)
           : Number.NEGATIVE_INFINITY;
         if (cooldownTicks > 0 && triggerTick < cooldownUntilTick) return;
-        const activation = rule.activation && typeof rule.activation === 'object' ? rule.activation : {};
+        if (primeRankedHit) {
+          // Replay only the cooldown and resource feedback needed for warm-up.
+          reduceActionCooldowns(activation, ownerSlot, triggerTick, context.hit_count);
+          if (immediateRankedDamage) {
+            const owner = snapshots.get(ownerSlot);
+            if (owner) primeRankedDamageHit(triggeredDamage.action, owner, triggerTick);
+          }
+          return;
+        }
         const runtimeRule = clone(rule);
         if (activation.stack_gain_from_key) {
           runtimeRule.stacking = Object.assign({}, runtimeRule.stacking, {
@@ -4975,13 +5014,7 @@
             triggerTick,
           );
         });
-        Object.entries(activation.reduce_action_cooldowns || {}).forEach(([actionId, reduction]) => {
-          const configured = actionsById.get(actionId);
-          const key = configured ? actionCooldownKey(ownerSlot, configured) : `${ownerSlot}:${actionId}`;
-          const deadline = num(cooldownUntil.get(key));
-          const floor = triggerTick + Math.max(0, int(activation.cooldown_floor_ticks));
-          if (deadline > floor) cooldownUntil.set(key, Math.max(floor, deadline - num(reduction) * Math.max(0, num(context.hit_count, 1))));
-        });
+        reduceActionCooldowns(activation, ownerSlot, triggerTick, context.hit_count);
         const previousInstances = new Set(activeBuffs);
         let stackGain = stackGainForRule(runtimeRule, context);
         if (num(runtimeRule.stacking?.max_stacks_per_source) > 0) {
@@ -5223,6 +5256,8 @@
         const startTick = int(scheduled.start_tick) - loopDurationTicks;
         const endTick = int(scheduled.end_tick) - loopDurationTicks;
         activeBuffs = activeBuffs.filter((instance) => startTick < int(instance.end_tick));
+        const hasRankedExports = canExportRankedDamage(action, snapshot);
+        if (hasRankedExports) recordActionCooldown(scheduled.slot, action, snapshot, startTick, scheduled.duration_ticks);
         const actionMultiplier = backgroundActionMultiplier(step, action);
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
           triggerBuffsForEvent(
@@ -5251,13 +5286,7 @@
             },
           );
         }
-        recordActionCooldown(
-          int(scheduled.slot),
-          action,
-          snapshot,
-          startTick,
-          int(scheduled.duration_ticks),
-        );
+        if (!hasRankedExports) recordActionCooldown(scheduled.slot, action, snapshot, startTick, scheduled.duration_ticks);
         const reactionVisualTick = reactionTriggerVisualTick(scheduled);
         const reactionTick = calculationTickFromVisualIntervals(reactionVisualTick, qVirtualIntervals);
         const previousInstances = new Set(activeBuffs);

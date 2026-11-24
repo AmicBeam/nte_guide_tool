@@ -198,6 +198,26 @@ class ExeTest(unittest.TestCase):
             result=self.own([('e',0),('a5',trigger),('e',release)],initial={'帧数':100})
             self.assertEqual(any('CD'in w for w in result['details'][-1]['warnings']),warning)
 
+    def test_loop_warmup_afterimages_reduce_cooldown_without_counting_previous_cycle_hits(self):
+        for frames, length, warning, exports in [
+            (0, 100, '动作 CD 尚未结束，需等到 4.0s。', 1),
+            (25, 99, '动作 CD 尚未结束，需等到 0.1s。', 5),
+            (25, 100, None, 5),
+        ]:
+            with self.subTest(frames=frames, length=length):
+                axis = self.axis([(0, 'action_exe_e', 0), (0, 'action_none_exe', length)])
+                initial = {'帧数': frames, '评分': 0}
+                axis['options'].update(loop_enabled=True, loop_initial_resources={CID: {'personal_resources': initial}})
+                result = self.sim(axis)
+                self.assertEqual(result['details'][0]['warnings'], [warning] if warning else [])
+                clone_ticks = [event['tick'] for event in result['periodic_damage_events']
+                               if event.get('action_id') == 'action_exe_clone']
+                self.assertEqual(clone_ticks, [0] * exports)
+                axis['options']['loop_enabled'] = False
+                single = self.sim(axis, initial)
+                self.assertEqual(result['details'][0]['personal_resources_after'],
+                                 single['details'][0]['personal_resources_after'])
+
     def test_q_clone_frames_feed_back_immediately_with_one_ten_export_budget(self):
         for frames,count,remaining,score in [(0,4,6.48,705),(10,6,6.6,805),(100,10,72.96,1005)]:
             result=self.own([('q',0)],initial={'帧数':frames,'评分':0})

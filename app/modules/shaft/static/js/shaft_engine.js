@@ -1532,6 +1532,11 @@
     return Math.max(0, int(action?.hit_count));
   }
 
+  function canExportRankedDamage(action, snapshot) {
+    return Boolean(snapshot.character?.ranked_resource_system?.export_action)
+      && Math.max(int(action.ranked_export_limit), int(action.ranked_export_limit_empowered)) > 0;
+  }
+
   function actionEnemyDebuffs(action) {
     const out = new Set();
     actionTags(action).forEach((tag) => {
@@ -4675,6 +4680,8 @@
           && buff.definition_id === model.empowered_buff_key && tick >= int(buff.start_tick) && tick < int(buff.end_tick));
         const exportLimit = empowered ? int(action.ranked_export_limit_empowered) : int(action.ranked_export_limit);
         const exportAnchor = {source_step_id: step.id, visual_tick: context.visual_trigger_tick};
+        const exportCost = num(model.export_cost);
+        const settleExports = model.export_action && tick >= 0 && context.loop_prime_only !== true;
         let exported = 0;
         hits.forEach((hit, index) => {
           const before = num(resources[model.frame_resource]);
@@ -4687,28 +4694,17 @@
             healing: gain * num(model.heal_atk_per_frame) * num(context.current_atk, owner.stats.atk),
           });
           const mayExport = action.ranked_export_last_hit !== true || index === int(action.original_hit_count, count) - 1;
-          if (!mayExport || exported >= exportLimit) return;
-          if (action.ranked_export_feedback === true && model.export_action && tick >= 0 && context.loop_prime_only !== true) {
-            // Resolve one summon at a time; its hit can fund another export from this same budget.
-            while (exported < exportLimit && num(resources[model.frame_resource]) >= num(model.export_cost)) {
-              resources[model.frame_resource] -= num(model.export_cost);
-              exported += 1;
-              if (hasAwakeningNode(owner, 6)) addScore(num(model.export_cost) * num(model.score_per_consumed_frame));
+          if (!mayExport) return;
+          // Each summon can return frames before checking the same action's remaining budget.
+          while (exported < exportLimit && num(resources[model.frame_resource]) >= exportCost) {
+            resources[model.frame_resource] -= exportCost;
+            exported += 1;
+            if (hasAwakeningNode(owner, 6)) addScore(exportCost * num(model.score_per_consumed_frame));
+            if (settleExports) {
               enqueueTriggeredDamage(owner, model.export_action, tick, exportAnchor);
               settleReactionDamage(tick);
             }
-            return;
           }
-          const amount = Math.min(exportLimit - exported, Math.floor(num(resources[model.frame_resource]) / num(model.export_cost)));
-          if (amount <= 0) return;
-          resources[model.frame_resource] -= amount * num(model.export_cost);
-          if (model.export_action && tick >= 0) {
-            for (let i = 0; i < amount; i += 1) {
-              enqueueTriggeredDamage(owner, model.export_action, tick, exportAnchor);
-            }
-          }
-          exported += amount;
-          if (hasAwakeningNode(owner, 6)) addScore(amount * num(model.export_cost) * num(model.score_per_consumed_frame));
         });
         Object.keys(resources).forEach((resource) => {
           if (resources[resource] !== beforeResources[resource]) personalResourceStateEvents.push({tick, slot: owner.slot, resource, value: resources[resource]});
@@ -4717,7 +4713,7 @@
     }
 
     function triggerBuffsForEvent(event, triggerTick, step, action, snapshot, isBackground, extraContext = {}) {
-      const feedbackAfterBuffs = action.ranked_export_feedback === true && event === 'action_hit'
+      const feedbackAfterBuffs = canExportRankedDamage(action, snapshot) && event === 'action_hit'
         && extraContext.action_hit_timing !== 'end' && triggerTick >= 0 && extraContext.loop_prime_only !== true;
       if (!feedbackAfterBuffs) updateRankedResources(event, triggerTick, step, action, snapshot, extraContext);
       const triggered = [];
@@ -5903,7 +5899,8 @@
       const hasResolvedHit = action.interrupted_hit_count !== 0;
       const appliedEnemyDebuffs = hasResolvedHit ? applyEnemyDebuffs(enemyDebuffs, action, buffTick, enemyDebuffDurationTicks) : [];
       appliedEnemyDebuffs.forEach((reaction) => recordSelfReaction(reaction, snapshot, buffTick, 'status', action.name, step.id));
-      if (action.ranked_export_feedback === true) recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
+      const hasRankedExports = canExportRankedDamage(action, snapshot);
+      if (hasRankedExports) recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
       if (!action.periodic_damage && hasResolvedHit) {
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
           triggeredBuffs.push(...triggerBuffsForEvent('action_hit', startTick, step, action, snapshot, isBackground, {
@@ -6041,8 +6038,7 @@
       });
       slotEnergy = energyBySlot.get(slot) ?? slotEnergy;
       const displayedEnergyGain = plannedEnergy.get(energyActorSlot) || 0;
-      if (action.ranked_export_feedback !== true) recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
-      // Exported attacks resolve after the source action has registered its cooldown.
+      if (!hasRankedExports) recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
       if (snapshot.character?.ranked_resource_system?.export_action) settleReactionDamage(startTick);
       if (changesForeground) {
         frontEvents.push({

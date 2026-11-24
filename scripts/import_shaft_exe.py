@@ -114,7 +114,6 @@ def build(directory, workbook):
             ranked_export_last_hit=name=='a5')
         if name=='q':
             action['is_time_stop_zero']=True
-            action['ranked_export_feedback']=True
         if name=='数字残像':action['duration_estimated']=False
         if action_type=='援护':action['resonance_skill_level_bonus']=False
         cumulative=[dict(hit_count=0,damage=0,energy=0,harmony=0,stagger=0)]

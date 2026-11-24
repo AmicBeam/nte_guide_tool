@@ -12936,8 +12936,7 @@
     "ranked_export_limit": 10,
     "ranked_export_limit_empowered": 10,
     "ranked_export_last_hit": false,
-    "is_time_stop_zero": true,
-    "ranked_export_feedback": true
+    "is_time_stop_zero": true
   },
   {
     "id": "action_exe_support",

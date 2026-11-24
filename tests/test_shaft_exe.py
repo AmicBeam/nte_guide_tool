@@ -47,7 +47,6 @@ class ExeTest(unittest.TestCase):
                 self.assertEqual(len(a['atk_multipliers_by_level']),13)
         self.assertEqual(actions['q']['energy_cost'],120)
         self.assertTrue(actions['q']['is_time_stop_zero'])
-        self.assertTrue(actions['q']['ranked_export_feedback'])
         self.assertNotIn('数字残像',actions)
         self.assertEqual(char['initial_personal_resources'],{'帧数':0,'评分':0})
         self.assertEqual(char['timeline_personal_resources'],['帧数','评分'])
@@ -194,9 +193,9 @@ class ExeTest(unittest.TestCase):
             self.assertEqual('character_exe_resonance6_interrupt'in self.buffs(detail),6 in resonances)
 
     def test_cooldown_reduction_clamps_two_point_five_seconds_and_never_extends(self):
-        # E exports twice. a5 exports once at 2.5s or 1.5s remaining.
-        for trigger,release,warning in [(105,124,True),(105,125,False),(115,129,True),(115,130,False)]:
-            result=self.own([('e',0),('a5',trigger),('e',release)],initial={'帧数':10})
+        # E exports five. a5 exports once at 2.5s or 1.5s remaining.
+        for trigger,release,warning in [(75,94,True),(75,95,False),(85,99,True),(85,100,False)]:
+            result=self.own([('e',0),('a5',trigger),('e',release)],initial={'帧数':100})
             self.assertEqual(any('CD'in w for w in result['details'][-1]['warnings']),warning)
 
     def test_q_clone_frames_feed_back_immediately_with_one_ten_export_budget(self):
@@ -228,15 +227,21 @@ class ExeTest(unittest.TestCase):
         self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),4)
         self.assertAlmostEqual(result['resources_by_slot'][0]['personal_resources']['帧数'],6.48)
         self.assertFalse(any(e['tick']<0 for e in result['personal_resource_state_events']))
-        # Other sources keep their own export rules; a clone does not export autonomously.
-        result=self.own([('e',0)],initial={'帧数':100,'评分':0})
-        self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),5)
-        result=self.own([('e',0)],initial={'帧数':10,'评分':0})
-        self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone']),2)
-        self.assertGreater(result['resources_by_slot'][0]['personal_resources']['帧数'],10)
         result=self.own([('q',0),('q',205)],initial={'帧数':100,'评分':0})
         for source in ['0','1']:
             self.assertEqual(len([e for e in result['periodic_damage_events']if e.get('action_id')=='action_exe_clone'and e.get('source_step_id')==source]),10)
+
+    def test_e_counter_and_support_reuse_frames_and_keep_their_own_export_limits(self):
+        result = self.own([('e', 0)], initial={'帧数': 25, '评分': 0})
+        self.assertEqual(sum(e.get('action_id') == 'action_exe_clone' for e in result['periodic_damage_events']), 5)
+        self.assertAlmostEqual(result['resources_by_slot'][0]['personal_resources']['帧数'], 7.894)
+        for name, count, remaining in [('e', 4, 6.116), ('counter', 3, 10.68), ('support', 3, 12.48)]:
+            with self.subTest(name=name):
+                result = self.own([('q', 0), (name, 5)], initial={'帧数': 0, '评分': 0})
+                exports = [event for event in result['periodic_damage_events']
+                           if event.get('action_id') == 'action_exe_clone']
+                self.assertEqual([event['source_step_id'] for event in exports], ['0'] * 4 + ['1'] * count)
+                self.assertAlmostEqual(result['details'][-1]['personal_resources_after']['帧数'], remaining)
 
     def test_afterimage_markers_follow_each_action_at_the_same_calculation_tick(self):
         result = self.own([('q', 0), ('e', 5)], nodes=[5], initial={'帧数': 30, '评分': 0})
@@ -246,7 +251,7 @@ class ExeTest(unittest.TestCase):
         events = result['periodic_damage_events']
         for action_id in ('action_exe_clone', 'action_exe_clone_boom'):
             marks = [(event['tick'], event['visual_tick']) for event in events if event['action_id'] == action_id]
-            self.assertEqual(marks, [(0, 0)] * 10 + [(0, 5)] * 2)
+            self.assertEqual(marks, [(0, 0)] * 10 + [(0, 5)] * 4)
         self.assertEqual(result['summary']['duration_ticks'], 16)
 
     def test_triangle_merges_equal_damage_without_hiding_rating_changes(self):

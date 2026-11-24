@@ -23,6 +23,23 @@ class HarmonyTimingTest(unittest.TestCase):
                       if a['character_id'] == cid and a['action_type'] == '援护')
         return dict(id='support', slot=1, action_id=action['id'], start_tick=tick)
 
+    def test_aid_applies_reaction_at_first_hit_with_jiuyuan_legacy_fallback(self):
+        cases = [
+            ('char_076a1f4e53', 'action_none_076a1f4e53', 'char_exe', 0),
+            ('char_dd034941ef', 'action_none_dd034941ef', 'char_bdc43f82c6', 7),
+            ('char_dd034941ef', 'action_none_dd034941ef', 'char_b2e3b2bf7a', 9),
+        ]
+        for previous, noop, support, delay in cases:
+            with self.subTest(support=support):
+                result = self.simulate(previous, [
+                    dict(id='previous', slot=0, action_id=noop, start_tick=0),
+                    self.support(support, 20),
+                ], support)
+                detail = next(row for row in result['details'] if row['step_id'] == 'support')
+                reaction_tick = detail['start_tick'] + delay
+                self.assertEqual(detail['triggered_reaction']['start_tick'], reaction_tick)
+                self.assertEqual(result['reaction_effects'][0]['start_tick'], reaction_tick)
+
     @with_scenario_ticks
     def test_normal_action_accumulates_uniformly_and_only_for_owner(self):
         r = self.simulate('char_heiyu', [dict(id='a', slot=0, action_id='action_heiyu_a2', start_tick=0)], 'char_c78f7a08d5')

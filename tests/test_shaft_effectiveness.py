@@ -136,7 +136,8 @@ class ShaftEffectivenessTest(unittest.TestCase):
             dict(id='hit', character_id='test_a', name='hit', action_type='普攻',
                  damage_type='普攻', duration_ticks=10, harmony=100, hit_count=1, multipliers={'atk': 1}),
             dict(id='support', character_id='test_b', name='support', action_type='援护',
-                 damage_type='援护', duration_ticks=15, hit_count=1, multipliers={'atk': 2}),
+                 damage_type='援护', duration_ticks=15, hit_count=1, multipliers={'atk': 2},
+                 reaction_trigger_offset_ticks=7),
             dict(id='tail', character_id='test_a', name='tail', action_type='无',
                  is_instant_switch=True, duration_ticks=0, hit_count=0),
         ]
@@ -158,6 +159,9 @@ class ShaftEffectivenessTest(unittest.TestCase):
             effects = [e for e in without['reaction_effects'] if e['source_step_id'] == 'b']
             self.assertTrue(effects)
             self.assertEqual(effects[0]['reaction'], '创生')
+            self.assertEqual(
+                next(e for e in effects if not e['loop_primed'])['start_tick'], 27,
+            )
             self.assertEqual(effects[0]['contributor_slot'], 3)
             events = [e for e in without['reaction_damage_events'] if e['damage'] > 0]
             self.assertTrue(events)

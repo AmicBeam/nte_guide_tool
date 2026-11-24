@@ -2817,6 +2817,7 @@
             action_type: scheduled.analysis_keep_reaction ? '援护' : '无', hit_count: 0,
             disable_reaction: scheduled.action.disable_reaction,
             preserve_harmony: scheduled.action.preserve_harmony,
+            reaction_trigger_offset_ticks: scheduled.action.reaction_trigger_offset_ticks,
             is_background_damage: scheduled.is_background,
             is_time_stop_zero: scheduled.action.is_time_stop_zero,
             is_timeline_mask: scheduled.action.is_timeline_mask,
@@ -2938,10 +2939,15 @@
       };
     }
 
-    function reactionTriggerTick(scheduled, offsetTicks = 0) {
+    function reactionTriggerVisualTick(scheduled) {
       const visualStartTick = int(scheduled?.visual_start_tick, int(scheduled?.start_tick));
+      const offset = scheduled.action?.reaction_trigger_offset_ticks;
+      if (offset != null && scheduled.action.lingke_joint_source_slot == null) {
+        const hitTick = int(scheduled.start_tick) + int(offset);
+        return Math.max(visualStartTick, visualTickFromCalculationTick(hitTick, qVirtualIntervals));
+      }
       const visualEndTick = int(scheduled?.visual_end_tick, int(scheduled?.end_tick, visualStartTick));
-      return Math.max(visualStartTick, visualEndTick - 2) + int(offsetTicks);
+      return Math.max(visualStartTick, visualEndTick - 2);
     }
 
     if (options.loop_enabled) {
@@ -5149,13 +5155,14 @@
 
     function triggerRemovedSupportReaction(scheduled, primeLoop = false) {
       if (!scheduled.analysis_keep_reaction) return;
-      const tick = calculationTickFromVisualIntervals(reactionTriggerTick(scheduled), qVirtualIntervals)
+      const visualTick = reactionTriggerVisualTick(scheduled);
+      const tick = calculationTickFromVisualIntervals(visualTick, qVirtualIntervals)
         - (primeLoop ? loopDurationTicks : 0);
       const result = triggerReaction(scheduled, tick, {primeLoop});
       if (result.effect) triggerBuffsForEvent('reaction_trigger', tick, scheduled.step,
         scheduled.action, reactionGhost, scheduled.is_background,
         {reaction: result.effect, loop_prime_only: primeLoop,
-          visual_trigger_tick: reactionTriggerTick(scheduled) - (primeLoop ? loopDurationTicks : 0)});
+          visual_trigger_tick: visualTick - (primeLoop ? loopDurationTicks : 0)});
     }
 
     if (options.loop_enabled && loopDurationTicks > 0) {
@@ -5251,7 +5258,8 @@
           startTick,
           int(scheduled.duration_ticks),
         );
-        const reactionTick = calculationTickFromVisualIntervals(reactionTriggerTick(scheduled), qVirtualIntervals);
+        const reactionVisualTick = reactionTriggerVisualTick(scheduled);
+        const reactionTick = calculationTickFromVisualIntervals(reactionVisualTick, qVirtualIntervals);
         const previousInstances = new Set(activeBuffs);
         const reactionTrigger = triggerReaction(
           scheduled,
@@ -5268,7 +5276,7 @@
             scheduled.is_background,
             {
               reaction: reactionTrigger.effect,
-              visual_trigger_tick: reactionTriggerTick(scheduled),
+              visual_trigger_tick: reactionVisualTick,
               loop_prime_only: true,
             },
           );
@@ -6050,7 +6058,8 @@
           order: frontEvents.length,
         });
       }
-      const reactionTick = calculationTickFromVisualIntervals(reactionTriggerTick(scheduled), qVirtualIntervals);
+      const reactionVisualTick = reactionTriggerVisualTick(scheduled);
+      const reactionTick = calculationTickFromVisualIntervals(reactionVisualTick, qVirtualIntervals);
       const reactionTrigger = triggerReaction(scheduled, reactionTick);
       const triggeredReaction = reactionTrigger.effect;
       if (triggeredReaction) {
@@ -6063,7 +6072,7 @@
           isBackground,
           {
             reaction: triggeredReaction,
-            visual_trigger_tick: reactionTriggerTick(scheduled),
+            visual_trigger_tick: reactionVisualTick,
           },
         ));
       }

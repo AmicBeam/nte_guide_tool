@@ -346,8 +346,8 @@ class AkaneTest(unittest.TestCase):
         r=simulate_shaft_axis(p)['result']
         hits=[e for e in r['periodic_damage_events'] if e['reaction']=='绝对音准']
         self.assertEqual(hits[0]['tick'],60)
-        self.assertAlmostEqual(hits[0]['remaining_seconds'],1.3)
-        self.assertAlmostEqual(hits[0]['atk_multiplier'],1.89)
+        self.assertAlmostEqual(hits[0]['remaining_seconds'],.7)
+        self.assertAlmostEqual(hits[0]['atk_multiplier'],1.71)
         ticks=[e['start_tick'] for e in r['reaction_effects']]
         self.assertNotIn(120,ticks)  # Old single mode cadence was cancelled.
         self.assertIn(130,ticks)

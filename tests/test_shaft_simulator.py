@@ -1933,10 +1933,10 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
         self.assertEqual(effect['support_slot'], 1)
         self.assertEqual(effect['trigger_slot'], effect['contributor_slot'])
         self.assertEqual(effect['trigger_character_name'], effect['contributor_character_name'])
-        self.assertEqual(effect['start_tick'], details['support']['visual_end_tick'] - 2)
+        self.assertEqual(effect['start_tick'], details['support']['start_tick'] + 7)
         self.assertEqual(details['support']['warnings'], [])
         self.assertEqual(result['resources_by_slot'][0]['harmony'], 0)
-        self.assertEqual([event['tick'] for event in result['reaction_damage_events']], [41, 51, 61, 71, 81, 91, 101, 111, 121, 131])
+        self.assertEqual([event['tick'] for event in result['reaction_damage_events']], list(range(37, 128, 10)))
         self.assertTrue(all(event['damage'] > 0 for event in result['reaction_damage_events']))
         reaction_formula = result['reaction_damage_events'][0]['formula_parts']
         self.assertIn('harmony_strength', reaction_formula)
@@ -1971,9 +1971,9 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             event for event in result['reaction_damage_events']
             if event['reaction'] == '创生复制体'
         ]
-        self.assertEqual([event['tick'] for event in genesis_events], [53, 73, 93, 113, 133])
+        self.assertEqual([event['tick'] for event in genesis_events], [48, 68, 88, 108, 128])
         self.assertEqual(len(clone_events), 20)
-        self.assertEqual([event['tick'] for event in clone_events], list(range(68, 168, 5)))
+        self.assertEqual([event['tick'] for event in clone_events], list(range(63, 163, 5)))
         self.assertTrue(all(
             event['contributor_character_name'] == genesis_events[0]['contributor_character_name']
             for event in clone_events
@@ -2474,15 +2474,15 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
 
         primed = [effect for effect in result['reaction_effects'] if effect['loop_primed']]
         self.assertEqual(len(primed), 1)
-        self.assertEqual(primed[0]['start_tick'], -2)
+        self.assertEqual(primed[0]['start_tick'], -6)
         self.assertEqual(len([
             effect for effect in result['reaction_effects']
             if effect['reaction'] == '创生'
         ]), 2)
         self.assertNotIn('refreshed_in_loop', primed[0])
-        self.assertEqual(primed[0]['end_tick'], 98)
+        self.assertEqual(primed[0]['end_tick'], 94)
         self.assertEqual(result['summary']['duration_ticks'], 33)
-        self.assertEqual([event['tick'] for event in result['reaction_damage_events']], [8, 18, 28])
+        self.assertEqual([event['tick'] for event in result['reaction_damage_events']], [4, 14, 24])
 
     @with_scenario_ticks
     def test_loop_axis_turbid_burn_evicts_carried_instance_and_generates_a_new_one(self) -> None:
@@ -2526,12 +2526,12 @@ class ShaftSimulatorValidationTestCase(unittest.TestCase):
             if effect['reaction'] == '浊燃'
         ]
         self.assertEqual(len(turbid_effects), 2)
-        self.assertEqual(turbid_effects[0]['start_tick'], -17)
-        self.assertEqual(turbid_effects[0]['end_tick'], 23)
-        self.assertEqual(turbid_effects[0]['evicted_at_tick'], 23)
+        self.assertEqual(turbid_effects[0]['start_tick'], -21)
+        self.assertEqual(turbid_effects[0]['end_tick'], 19)
+        self.assertEqual(turbid_effects[0]['evicted_at_tick'], 19)
         self.assertTrue(turbid_effects[0]['evicted_by_instance_limit'])
-        self.assertEqual(turbid_effects[1]['start_tick'], 23)
-        self.assertEqual(turbid_effects[1]['end_tick'], 173)
+        self.assertEqual(turbid_effects[1]['start_tick'], 19)
+        self.assertEqual(turbid_effects[1]['end_tick'], 169)
         self.assertFalse(any(
             left['start_tick'] < right['end_tick'] and right['start_tick'] < left['end_tick']
             for index, left in enumerate(turbid_effects)
@@ -9366,7 +9366,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
         self.assertIn(25, [event['tick'] for event in external_dot])
         self.assertIn(175, [event['tick'] for event in external_dot])
         self.assertTrue(all(event['formula_parts']['periodic_scale'] == 1 for event in external_dot))
-        self.assertIn(23, [event['tick'] for event in turbid_burn])
+        self.assertIn(19, [event['tick'] for event in turbid_burn])
         self.assertNotIn(25, [event['tick'] for event in turbid_burn])
         self.assertEqual(len({event['effect_id'] for event in turbid_burn}), 1)
         self.assertTrue(all(event['damage'] > 0 for event in turbid_burn))
@@ -9381,7 +9381,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                 )
                 for effect in turbid_effects
             ],
-            [(13, 165, 3, 3)],
+            [(9, 165, 3, 3)],
         )
 
     @with_scenario_ticks
@@ -9449,7 +9449,7 @@ class ShaftEquipmentBuffTestCase(unittest.TestCase):
                 )
                 for effect in turbid_effects
             ],
-            [(13, 170, 3, 3)],
+            [(9, 170, 3, 3)],
         )
 
     def test_canhong_illusion_attack_adds_and_projects_requiem_nightmare_layer(self) -> None:

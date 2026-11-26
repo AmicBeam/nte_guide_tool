@@ -23,8 +23,9 @@ description: Manage this repository's public/private Git relationship, isolated 
 
 ## 默认推送规则
 
-- 用户只说“提交”或“推送”，且没有明确要求公开时，推送到 `private`，不得推送到 `origin`。
-- 使用显式远端和目标分支，例如 `git push private HEAD:<branch>`；涉及公开发布时更不能依赖当前 upstream 猜测目标。
+- 是否在提交后推送按根目录 `AGENTS.md` 执行。未另行指定时，常规推送直接进入私有仓库的 `main`。用户指定分支、要求走 PR 或已有明确隔离范围时，遵循相应约定。
+- 推送前刷新并核对私有 `main` 和待推送提交，只把当前授权范围内的提交以快进方式推送。默认使用 `git push private HEAD:refs/heads/main`。有分叉或夹带无关提交时，先基于最新私有 `main` 整理本次提交，再推送。
+- 任何推送使用显式远端和目标分支。公开发布继续走获准的公共 PR 流程。
 - 禁止对公共仓库执行 `git push --all`、`git push --mirror`、向 `main` 强推，或把整个私有开发分支直接推到公共仓库。
 - 推送后用远端分支哈希核对结果，并确认公共对应分支没有意外移动。
 

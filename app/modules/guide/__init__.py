@@ -1,5 +1,7 @@
 """Public NTE reference, cultivation calculator and authenticated private imports."""
+from io import BytesIO
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from flask import Blueprint, Response, redirect, jsonify, render_template, request, send_file
 from . import service, cultivation, presentation, arc_cultivation
@@ -270,6 +272,18 @@ def cli_download():
                      download_name='nte-guide.py')
 
 
+@blueprint.get('/guide/skills/nte-wiki-cli.zip')
+def cli_skill_download():
+    directory = Path(__file__).parent
+    bundle = BytesIO()
+    with ZipFile(bundle, 'w', compression=ZIP_DEFLATED) as archive:
+        archive.write(directory / 'skills' / 'nte-wiki-cli' / 'SKILL.md', 'nte-wiki-cli/SKILL.md')
+        archive.write(directory / 'cli.py', 'nte-wiki-cli/nte-guide.py')
+    bundle.seek(0)
+    return send_file(bundle, mimetype='application/zip', as_attachment=True,
+                     download_name='nte-wiki-cli.zip')
+
+
 @blueprint.get('/llms.txt')
 @blueprint.get('/guide/llms.txt')
 def llms():
@@ -290,6 +304,7 @@ def llms():
 - [攻略](/api/guide/beginner)
 - [自建攻略](/api/guide/articles)
 - [CLI 下载](/guide/cli.py)
+- [Wiki CLI 基础技能（ZIP，含 CLI）](/guide/skills/nte-wiki-cli.zip)
 
 检索：GET /api/guide/search?q=关键词&limit=20&offset=0
 详情：GET /api/guide/{characters|arcs|foods|permanent|dungeons|challenges|endless|diyboss|beginner|articles}/{id}

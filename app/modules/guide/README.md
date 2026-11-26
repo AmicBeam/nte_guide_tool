@@ -22,6 +22,8 @@
 
 下载 `/guide/cli.py` 为 `nte-guide.py`，只需 Python 3.10+ 标准库；不会导入 Flask、初始化数据库或要求登录。
 
+基础技能包从 `/guide/skills/nte-wiki-cli.zip` 下载，包含 `nte-wiki-cli/SKILL.md` 和同版 `nte-wiki-cli/nte-guide.py`。将解压后的目录安装到 Agent 的技能目录，或直接读取说明并运行其中的 CLI。CLI 帮助与 `/guide/llms.txt` 都提供下载路径。CLI 作为独立命令运行，技能由 Agent 读取。
+
 ```bash
 python nte-guide.py --base-url http://127.0.0.1:5001 search 黑羽
 python nte-guide.py get characters 1042 --section abilities --format markdown

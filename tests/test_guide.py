@@ -7,6 +7,7 @@ from pathlib import Path
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
+from zipfile import ZipFile
 
 from flask import Flask
 from app.modules.guide import blueprint, service
@@ -629,6 +630,27 @@ class GuideTest(unittest.TestCase):
         self.assertIn('attachment',download.headers['Content-Disposition'])
         self.assertNotIn('from app',download.text)
         download.close()
+
+    def test_cli_skill_download_contains_the_current_standalone_cli(self):
+        path = '/guide/skills/nte-wiki-cli.zip'
+        for discover in ('/llms.txt', '/guide/llms.txt'):
+            self.assertIn(path, self.client.get(discover).text)
+        with self.client.get(path) as download:
+            self.assertEqual(download.status_code, 200)
+            self.assertEqual(download.mimetype, 'application/zip')
+            self.assertIn('nte-wiki-cli.zip', download.headers['Content-Disposition'])
+            with ZipFile(io.BytesIO(download.data)) as archive, self.client.get('/guide/cli.py') as cli:
+                self.assertCountEqual(archive.namelist(), [
+                    'nte-wiki-cli/SKILL.md', 'nte-wiki-cli/nte-guide.py',
+                ])
+                self.assertIn(b'name: nte-wiki-cli', archive.read('nte-wiki-cli/SKILL.md'))
+                self.assertEqual(archive.read('nte-wiki-cli/nte-guide.py'), cli.data)
+
+        cli = load_file('guide_cli_skill_help', 'app/modules/guide/cli.py')
+        with patch('sys.stdout', new_callable=io.StringIO) as output, self.assertRaises(SystemExit) as exit_info:
+            cli.main(['--help'])
+        self.assertEqual(exit_info.exception.code, 0)
+        self.assertIn(path, output.getvalue())
 
     def test_importer_preserves_combat_and_cleans_markup(self):
         importer = load_file('guide_refresh', 'scripts/refresh_guide_data.py')

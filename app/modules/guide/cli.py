@@ -33,7 +33,11 @@ def filter_profiles(payload, role_id=None, character_id=None):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog='Wiki CLI skill (ZIP): /guide/skills/nte-wiki-cli.zip on the site selected by '
+               '--base-url or NTE_GUIDE_URL.',
+    )
     parser.add_argument('--base-url', default=os.environ.get('NTE_GUIDE_URL', 'http://127.0.0.1:5001'))
     parser.add_argument('--timeout', type=float, default=20)
     commands = parser.add_subparsers(dest='command', required=True)

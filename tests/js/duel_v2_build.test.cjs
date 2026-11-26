@@ -27,6 +27,7 @@ function makeEl(id) {
     close() { el.open = false; },
     getAttribute(key) { return Object.prototype.hasOwnProperty.call(el.attrs, key) ? el.attrs[key] : null; },
     addEventListener(type, fn) { el.listeners.push([type, fn]); },
+    querySelectorAll() { return []; },
     click() {
       el.listeners.filter((item) => item[0] === 'click').forEach((item) => {
         item[1]({ target: el, preventDefault() {}, stopPropagation() {} });
@@ -190,7 +191,7 @@ test('character info uses attack/hp icons and energy-cap ultimate label', () => 
 function loadCodexPage() {
   const nodes = {};
   ['v2-codex-banner', 'v2-codex-nav', 'v2-codex-body', 'v2-codex-summary',
-    'v2-codex-glossary', 'v2-codex-help', 'v2-glossary-search', 'v2-glossary-close'].forEach((id) => {
+    'v2-codex-glossary', 'v2-codex-help', 'v2-glossary-search', 'v2-glossary-close', 'v2-glossary-empty'].forEach((id) => {
     nodes[id] = makeEl(id);
   });
   const context = {

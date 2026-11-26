@@ -289,14 +289,34 @@ else:
         self.assertFalse(any('-N' in call for call in calls))
         self.assertTrue(all(f'ControlPath={control}' in call for call in calls))
 
-    def test_unavailable_supplied_master_stops_before_upload(self):
+    def test_unavailable_supplied_master_opens_and_cleans_a_private_master(self):
+        control = self.root / 'missing.sock'
+        self.env['NTE_DEPLOY_SSH_CONTROL_PATH'] = str(control)
+        result = self.client('--deploy')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('Opening a new connection.', result.stderr)
+        calls = [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
+        self.assertIn('check', calls[0])
+        self.assertIn(f'ControlPath={control}', calls[0])
+        masters = [call for call in calls if '-N' in call]
+        self.assertEqual(len(masters), 1)
+        new_option = next(arg for arg in masters[0] if arg.startswith('ControlPath='))
+        self.assertNotEqual(new_option, f'ControlPath={control}')
+        self.assertTrue(all(new_option in call for call in calls[1:]))
+        self.assertIn('exit', calls[-1])
+        self.assertFalse(Path(new_option.split('=', 1)[1]).parent.exists())
+        self.assertFalse(control.exists())
+
+    def test_failed_fallback_authentication_stops_before_upload(self):
         self.env['NTE_DEPLOY_SSH_CONTROL_PATH'] = str(self.root / 'missing.sock')
+        self.env['NTE_MOCK_AUTH_FAIL'] = '1'
         result = self.client('--deploy')
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn('The supplied SSH master is unavailable.', result.stderr)
+        self.assertIn('Could not establish the deployment SSH session. Nothing was uploaded.', result.stderr)
         calls = [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
-        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(calls), 2)
         self.assertIn('check', calls[0])
+        self.assertIn('-N', calls[1])
 
     def test_check_and_offline_prepare_never_contact_server(self):
         self.assertEqual(self.client('--check').returncode, 0)

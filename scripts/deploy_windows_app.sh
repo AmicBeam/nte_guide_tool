@@ -73,7 +73,7 @@ Environment overrides:
   NTE_DEPLOY_LISTEN_PORT
                         Port used to stop and verify Waitress (default: 8000)
   NTE_DEPLOY_SSH_CONTROL_PATH
-                        Reuse an authenticated SSH master for the same target
+                        Try to reuse an authenticated SSH master; connect if unavailable
 
 By default, the script refuses to check, prepare, or deploy while app/ has
 staged, unstaged, or untracked changes. It never uploads files outside the
@@ -210,20 +210,20 @@ ARCHIVE_PATH="$OUTPUT_DIR/$ARCHIVE_NAME"
 
 REMOTE_HELPER="$REMOTE_TEMP/deploy_windows_app_${RELEASE_ID}.ps1"
 if [[ "$MODE" == "deploy" ]]; then
-    if [[ -z "$DEPLOY_SSH_CONTROL_PATH" ]]; then
+    SSH_CONTROL_PATH="$DEPLOY_SSH_CONTROL_PATH"
+    if [[ -n "$SSH_CONTROL_PATH" ]]; then
+        printf 'Checking the supplied SSH master connection...\n'
+        if ! ssh -o "ControlPath=$SSH_CONTROL_PATH" -o ControlMaster=no -o BatchMode=yes \
+            -O check "$DEPLOY_HOST"; then
+            printf 'The supplied SSH master is unavailable. Opening a new connection.\n' >&2
+            SSH_CONTROL_PATH=""
+        fi
+    fi
+    if [[ -z "$SSH_CONTROL_PATH" ]]; then
         # A short private socket path avoids macOS Unix socket length limits.
         SSH_CONTROL_DIR="$(mktemp -d /tmp/nte-deploy-ssh.XXXXXX)"
         chmod 700 "$SSH_CONTROL_DIR"
-    fi
-    SSH_CONTROL_PATH="${DEPLOY_SSH_CONTROL_PATH:-$SSH_CONTROL_DIR/socket}"
-    # A lost socket must fail rather than opening another connection.
-    SSH_OPTIONS=(-o "ControlPath=$SSH_CONTROL_PATH" -o ControlMaster=no -o BatchMode=yes -o ProxyCommand=false
-                 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
-    if [[ -n "$DEPLOY_SSH_CONTROL_PATH" ]]; then
-        printf 'Checking the supplied SSH master connection...\n'
-        ssh "${SSH_OPTIONS[@]}" -O check "$DEPLOY_HOST" ||
-            fail "The supplied SSH master is unavailable. Nothing was uploaded."
-    else
+        SSH_CONTROL_PATH="$SSH_CONTROL_DIR/socket"
         printf 'Connecting (15-second SSH handshake timeout; one authentication for this deployment)...\n'
         if ! ssh -o "ControlPath=$SSH_CONTROL_PATH" -o ControlMaster=yes -o ControlPersist=no \
             -o ConnectTimeout=15 -o ConnectionAttempts=1 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
@@ -232,6 +232,9 @@ if [[ "$MODE" == "deploy" ]]; then
         fi
         SSH_MASTER_STARTED="true"
     fi
+    # A socket lost during deployment must fail rather than opening another connection.
+    SSH_OPTIONS=(-o "ControlPath=$SSH_CONTROL_PATH" -o ControlMaster=no -o BatchMode=yes -o ProxyCommand=false
+                 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
     scp -q "${SSH_OPTIONS[@]}" "$REMOTE_SCRIPT" "$DEPLOY_HOST:$REMOTE_HELPER"
     if [[ "$FORCE_FULL" != "true" ]]; then
         TEMP_BASE_STATE="$(mktemp "${TMPDIR:-/tmp}/nte-deploy-base.XXXXXX")"

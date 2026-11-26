@@ -173,18 +173,30 @@ class EpisodePool:
         pool.batch_repeated_use = int(state.get('batch_repeated_use') or 0)
         return pool
 
-    def policy_pass_batches(self, rng, *, passes, batch_size=128, deadline=None, include_old_replay=True):
+    def policy_pass_batches(self, rng, *, passes, batch_size=128, deadline=None, include_old_replay=True,
+                            batches_per_pass=None):
         """Yield policy-only minibatches. Fresh unused rows first; repeats are not new."""
         if passes not in (1, 4, 8):
             raise ValueError('policy_passes must be 1, 4 or 8')
         if type(batch_size) is not int or batch_size < 1:
             raise ValueError('Invalid policy batch size')
-        yield from self._iter_refs(self._policy_refs(fresh=True, unused_only=True), rng, batch_size, deadline, 'fresh')
+        if batches_per_pass is not None:
+            if type(batches_per_pass) is not int or not 1 <= batches_per_pass <= 128:
+                raise ValueError('Fixed policy batches per pass must be in 1..128')
+            if include_old_replay:
+                raise ValueError('Fixed equal-step adaptation must explicitly exclude old replay')
+            if self.max_row_reuse < passes:
+                raise ValueError('Fixed adaptation passes exceed the declared row reuse bound')
+        fresh = self._policy_refs(fresh=True, unused_only=True)
+        if batches_per_pass is not None and not batches_per_pass <= len(fresh) <= batches_per_pass*batch_size:
+            raise ValueError('Fresh rows cannot fill the fixed bounded adaptation batches')
+        yield from self._iter_refs(fresh, rng, batch_size, deadline, 'fresh', batches_per_pass)
         leftover = self._policy_refs(fresh=True, unused_only=True)
         if leftover:
             return
         for _ in range(1, passes):
-            yield from self._iter_refs(self._policy_refs(fresh=True, unused_only=False), rng, batch_size, deadline, 'fresh_repeat')
+            yield from self._iter_refs(self._policy_refs(fresh=True, unused_only=False), rng, batch_size,
+                                       deadline, 'fresh_repeat', batches_per_pass)
         if include_old_replay and self.fresh_ids and (deadline is None or time.time() < deadline):
             old = self._policy_refs(fresh=False, unused_only=False)
             rng.shuffle(old)
@@ -209,15 +221,23 @@ class EpisodePool:
                 refs.append((episode, index, row_id))
         return refs
 
-    def _iter_refs(self, refs, rng, batch_size, deadline, source):
+    def _iter_refs(self, refs, rng, batch_size, deadline, source, batches_per_pass=None):
         refs = list(refs)
         if not refs:
             return
         rng.shuffle(refs)
-        for start in range(0, len(refs), batch_size):
+        if batches_per_pass is None:
+            chunks = [refs[start:start+batch_size] for start in range(0,len(refs),batch_size)]
+        else:
+            if not batches_per_pass <= len(refs) <= batches_per_pass*batch_size:
+                raise ValueError('Fixed adaptation pass has incomplete or oversized batches')
+            width, extra = divmod(len(refs), batches_per_pass)
+            offsets = [i*width+min(i,extra) for i in range(batches_per_pass+1)]
+            chunks = [refs[offsets[i]:offsets[i+1]] for i in range(batches_per_pass)]
+        for chunk in chunks:
             if deadline is not None and time.time() >= deadline:
                 return
-            rows, chosen, stats = self._take(refs[start:start + batch_size], source)
+            rows, chosen, stats = self._take(chunk, source)
             if rows:
                 yield rows, chosen, stats
 

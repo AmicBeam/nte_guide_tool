@@ -8,6 +8,55 @@ from copy import deepcopy
 from uuid import uuid4
 
 
+_ATOMIC_TYPES = {type(None), bool, int, float, str}
+_MISSING = object()
+
+
+def copy_state_graph(value, memo=None, *, _entity_root=False):
+    """Copy dict/list/atomic graphs with memoized aliases; other types use deepcopy.
+
+    Primitive immutable keys and values are reused. Entity instances share the
+    same memo so live aliases stay aliases. Mutable objects are never shared.
+    """
+    if memo is None:
+        memo = {}
+    atomic = _ATOMIC_TYPES
+    missing = _MISSING
+    memo_get = memo.get
+
+    def copy(item, force_entity=False):
+        cls = type(item)
+        if cls in atomic:
+            return item
+        ident = id(item)
+        cached = memo_get(ident, missing)
+        if cached is not missing:
+            return cached
+        if cls is dict:
+            result = {}
+            memo[ident] = result
+            for key, nested in item.items():
+                copied_key = key if type(key) in atomic else copy(key)
+                result[copied_key] = nested if type(nested) in atomic else copy(nested)
+            return result
+        if cls is list:
+            result = [None] * len(item)
+            memo[ident] = result
+            for index, nested in enumerate(item):
+                result[index] = nested if type(nested) in atomic else copy(nested)
+            return result
+        if isinstance(item, Entity) and (force_entity or cls.__deepcopy__ is Entity.__deepcopy__):
+            result = cls.__new__(cls)
+            memo[ident] = result
+            for key, nested in item.items():
+                copied_key = key if type(key) in atomic else copy(key)
+                result[copied_key] = nested if type(nested) in atomic else copy(nested)
+            return result
+        return deepcopy(item, memo)
+
+    return copy(value, force_entity=_entity_root)
+
+
 class Entity(dict):
     kind = 'entity'
 
@@ -19,11 +68,9 @@ class Entity(dict):
             self['side'] = side
 
     def __deepcopy__(self, memo):
-        result = type(self).__new__(type(self))
-        memo[id(self)] = result
-        for key, value in self.items():
-            result[deepcopy(key, memo)] = deepcopy(value, memo)
-        return result
+        # A subclass may override deepcopy and call super(); copy its base
+        # fields here without re-entering the override through the fallback.
+        return copy_state_graph(self, memo, _entity_root=True)
 
     @property
     def entity_id(self):
@@ -115,7 +162,7 @@ def hydrate_entities(state):
 
 
 def clone_state(state):
-    return hydrate_entities(deepcopy(state))
+    return hydrate_entities(copy_state_graph(state))
 
 
 def character_entity(state, side, template_id):
@@ -193,18 +240,70 @@ def normalize_entity_action(state, side, action):
         if 'card_ids' in result and result['card_ids'] != values:
             raise ValueError('Conflicting mulligan entity IDs')
         result['card_ids'] = values
+    if 'bottom_card_entity_ids' in result:
+        ids = result.pop('bottom_card_entity_ids')
+        if not isinstance(ids, list):
+            raise ValueError('Expected bottom card entity ID list')
+        values = []
+        for eid in ids:
+            try:
+                card = resolve_entity(state, eid)
+            except KeyError as exc:
+                raise ValueError('Unknown bottom card entity ID') from exc
+            if not isinstance(card, CardEntity) or card.side != side:
+                raise ValueError('Expected your bottom card entity')
+            values.append(card['instance_id'])
+        if 'bottom_card_ids' in result and result['bottom_card_ids'] != values:
+            raise ValueError('Conflicting bottom card entity IDs')
+        result['bottom_card_ids'] = values
+    if 'bottom_card_entity_id' in result:
+        eid = result.pop('bottom_card_entity_id')
+        if eid in (None, ''):
+            result['bottom_card_id'] = None
+        else:
+            try:
+                card = resolve_entity(state, eid)
+            except KeyError as exc:
+                raise ValueError('Unknown card entity ID') from exc
+            if not isinstance(card, CardEntity):
+                raise ValueError('Expected a card entity')
+            value = card['instance_id']
+            if result.get('bottom_card_id') not in (None, value):
+                raise ValueError('Conflicting legacy and entity target')
+            result['bottom_card_id'] = value
+    if result.get('type') == 'choose_deck_order':
+        from .flow import deck_order_choice
+        pending = deck_order_choice(state) or {}
+    else:
+        pending = {}
+    if pending.get('multi_bottom'):
+        if 'bottom_card_id' in result:
+            bottom = result.pop('bottom_card_id')
+            values = [bottom] if bottom else []
+            if 'bottom_card_ids' in result and result['bottom_card_ids'] != values:
+                raise ValueError('Conflicting bottom card selection')
+            result['bottom_card_ids'] = values
     return result
 
 
-def entity_action(state, side, action):
-    """Preferred entity-addressed action, alongside the compatible legacy action."""
-    result = deepcopy(action)
-    if 'character_id' in result:
-        result['actor_entity_id'] = state['sides'][side]['characters'][result.pop('character_id')]['entity_id']
+def action_card_index(state):
+    """Card identities for one unchanged snapshot, including pending cards."""
     all_cards = [c for team in state['sides'].values() for zone in ('hand', 'deck', 'discard', 'removed')
                  for c in team.get(zone, [])]
     all_cards += (state.get('pending_choice') or {}).get('cards', [])
-    cards = {c['instance_id']: c for c in all_cards if c.get('instance_id')}
+    return {c['instance_id']: c for c in all_cards if c.get('instance_id')}
+
+
+def entity_action(state, side, action, *, card_index=None):
+    """Preferred entity-addressed action, alongside the compatible legacy action.
+
+    An observation may reuse its snapshot's card index across legal actions.
+    Standalone callers build a fresh index; the index is never mutated.
+    """
+    result = deepcopy(action)
+    if 'character_id' in result:
+        result['actor_entity_id'] = state['sides'][side]['characters'][result.pop('character_id')]['entity_id']
+    cards = action_card_index(state) if card_index is None else card_index
     for legacy, field in (('card_id', 'card_entity_id'), ('choice_id', 'choice_entity_id')):
         if result.get(legacy) in cards:
             result[field] = cards[result.pop(legacy)]['entity_id']
@@ -222,6 +321,12 @@ def entity_action(state, side, action):
                 result.pop('target_id')
     if 'card_ids' in result:
         result['card_entity_ids'] = [cards[cid]['entity_id'] for cid in result.pop('card_ids')]
+    if 'bottom_card_ids' in result:
+        result['bottom_card_entity_ids'] = [cards[cid]['entity_id'] for cid in result.pop('bottom_card_ids')]
+    bottom = result.get('bottom_card_id')
+    if bottom in cards:
+        result['bottom_card_entity_id'] = cards[bottom]['entity_id']
+        result.pop('bottom_card_id')
     return result
 
 

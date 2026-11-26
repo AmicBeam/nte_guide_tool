@@ -1,0 +1,16 @@
+[
+  {
+    "id": "EndlessTrial_Season1",
+    "name": "第一期",
+    "season": 1,
+    "begin_at": "2026-09-28T05:00:00+08:00",
+    "end_at": "2026-11-05T05:59:00+08:00",
+    "status": "ended",
+    "group_ids": [
+      "EndlessTrial_1_50",
+      "EndlessTrial_51_100",
+      "EndlessTrial_101_150",
+      "EndlessTrial_151_200"
+    ]
+  }
+]

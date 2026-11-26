@@ -228,6 +228,122 @@
     "source_row": 7
   },
   {
+    "id": "char_elyms",
+    "initial_harmony_non_loop_by_awakening_node": {
+      "5": 100
+    },
+    "name": "曳尔沐",
+    "element": "光",
+    "adaptation": "固态",
+    "rarity": "S",
+    "level": 80,
+    "avatar": "/static/images/characters/avatar/曳尔沐-square-v2.webp",
+    "portrait": "/static/images/characters/portrait/曳尔沐.webp",
+    "base_stats": {
+      "atk": 660,
+      "hp": 15392,
+      "def": 909
+    },
+    "modifiers": {
+      "crit_rate": 0.05,
+      "crit_dmg": 0.5
+    },
+    "bond_bonus": {
+      "label": "5攻击",
+      "modifiers": {
+        "atk_pct": 0.05
+      }
+    },
+    "self_check_activations": [
+      {
+        "id": "elyms_e2",
+        "name": "不连续的存在",
+        "action_ids": [
+          "action_elyms_skill2"
+        ],
+        "duration_ticks": 120,
+        "grants": [
+          {
+            "action_ids": [
+              "action_elyms_melee5"
+            ],
+            "absent_buff_keys": [
+              "character_elyms_medium",
+              "character_elyms_strong"
+            ],
+            "last_hit_required": true
+          },
+          {
+            "action_ids": [
+              "action_elyms_skill1"
+            ],
+            "absent_buff_keys": [
+              "character_elyms_medium",
+              "character_elyms_strong"
+            ]
+          }
+        ],
+        "absent_buff_keys": [
+          "character_elyms_medium",
+          "character_elyms_strong"
+        ]
+      },
+      {
+        "id": "elyms_e3",
+        "name": "对你说再见",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ],
+        "duration_ticks": 60,
+        "grants": [
+          {
+            "action_ids": [
+              "action_elyms_meleeb3"
+            ],
+            "any_buff_keys": [
+              "character_elyms_medium",
+              "character_elyms_strong"
+            ],
+            "last_hit_required": true
+          },
+          {
+            "triggered_rule_ids": [
+              "character_elyms_signal_b",
+              "character_elyms_signal_strong"
+            ],
+            "awakening_resonance": 3
+          }
+        ],
+        "any_buff_keys": [
+          "character_elyms_medium",
+          "character_elyms_strong"
+        ]
+      }
+    ],
+    "energy_capacity": 100,
+    "personal_resource_integer_resources": [
+      "信号等级"
+    ],
+    "personal_resource_states": {
+      "信号等级": [
+        {
+          "value": 0,
+          "label": "弱信号"
+        },
+        {
+          "value": 1,
+          "label": "中等信号",
+          "buff_rule_id": "character_elyms_signal_medium"
+        },
+        {
+          "value": 2,
+          "label": "强信号",
+          "buff_rule_id": "character_elyms_signal_strong"
+        }
+      ]
+    }
+  },
+  {
     "id": "char_0846d632e0",
     "name": "灵可",
     "element": "灵",
@@ -748,6 +864,165 @@
     "source_row": 16
   },
   {
+    "id": "char_exe",
+    "name": "Exe",
+    "element": "暗",
+    "adaptation": "等离子",
+    "rarity": "S",
+    "level": 80,
+    "avatar": "/static/images/characters/avatar/Exe-square.webp",
+    "portrait": "/static/images/characters/portrait/Exe.webp",
+    "base_stats": {
+      "atk": 676,
+      "hp": 15271,
+      "def": 884
+    },
+    "modifiers": {
+      "crit_rate": 0.05,
+      "crit_dmg": 0.5
+    },
+    "energy_capacity": 120,
+    "initial_personal_resources": {
+      "帧数": 0,
+      "评分": 0
+    },
+    "timeline_personal_resources": [
+      "帧数",
+      "评分"
+    ],
+    "ranked_resource_system": {
+      "frame_resource": "帧数",
+      "score_resource": "评分",
+      "frame_cap": 100.0,
+      "score_cap": 5000.0,
+      "export_cost": 10.0,
+      "promote_reaction": "黯星",
+      "promote_score": 500.0,
+      "reaction_score": 200.0,
+      "empowered_buff_key": "character_exe_equation",
+      "heal_atk_per_frame": 0.02,
+      "score_per_consumed_frame": 10.0,
+      "ranks": [
+        {
+          "label": "B",
+          "threshold": 0.0,
+          "frame_multiplier": 1.0,
+          "decay_per_second": 0.0
+        },
+        {
+          "label": "A",
+          "threshold": 100.0,
+          "frame_multiplier": 1.2,
+          "decay_per_second": 10.0
+        },
+        {
+          "label": "S",
+          "threshold": 300.0,
+          "frame_multiplier": 1.5,
+          "decay_per_second": 30.0
+        },
+        {
+          "label": "SS",
+          "threshold": 500.0,
+          "frame_multiplier": 1.8,
+          "decay_per_second": 100.0
+        },
+        {
+          "label": "SSS",
+          "threshold": 3000.0,
+          "frame_multiplier": 2.0,
+          "decay_per_second": 300.0
+        },
+        {
+          "label": "Ω",
+          "threshold": 5000.0,
+          "frame_multiplier": 3.0,
+          "decay_per_second": 0.0
+        }
+      ],
+      "export_action": {
+        "id": "action_exe_clone",
+        "character_id": "char_exe",
+        "character_name": "Exe",
+        "name": "数字残像",
+        "action_type": "普攻",
+        "damage_type": "普攻",
+        "duration_seconds": 0,
+        "duration_ticks": 0,
+        "duration_implemented": true,
+        "duration_estimated": false,
+        "multipliers": {
+          "atk": 0.776,
+          "hp": 0,
+          "def": 0,
+          "flat": 0
+        },
+        "atk_multipliers_by_level": [
+          0.776,
+          0.838,
+          0.905,
+          0.978,
+          1.056,
+          1.14,
+          1.231,
+          1.33,
+          1.436,
+          1.551,
+          1.675,
+          1.809,
+          1.954
+        ],
+        "energy_gain": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0,
+        "energy_return": 0,
+        "self_modifiers": {},
+        "cooldown_ticks": 0,
+        "energy_cost": 0,
+        "personal_resource_cost": {},
+        "personal_resource_gain": {},
+        "hit_count": 1,
+        "display_order": 11,
+        "can_background_override": false,
+        "tags": [
+          "召唤物",
+          "数字残像"
+        ],
+        "ranked_resource_hits": [
+          {
+            "frames": 3.0,
+            "score": 50.0,
+            "atk_levels": [
+              0.776,
+              0.838,
+              0.905,
+              0.978,
+              1.056,
+              1.14,
+              1.231,
+              1.33,
+              1.436,
+              1.551,
+              1.675,
+              1.809,
+              1.954
+            ]
+          }
+        ],
+        "ranked_export_limit": 0,
+        "ranked_export_limit_empowered": 0,
+        "ranked_export_last_hit": false,
+        "skill_level_category": "basic"
+      }
+    },
+    "bond_bonus": {
+      "label": "8暴伤",
+      "modifiers": {
+        "crit_dmg": 0.08
+      }
+    }
+  },
+  {
     "id": "char_caa6c2e5a8",
     "name": "法帝娅",
     "element": "魂",
@@ -891,7 +1166,9 @@
   {
     "id": "char_heiyu",
     "name": "黑羽",
-    "optional_personal_resource_costs": ["恶意"],
+    "optional_personal_resource_costs": [
+      "恶意"
+    ],
     "element": "魂",
     "adaptation": "气态",
     "rarity": "",
@@ -942,14 +1219,14 @@
     "name": "明音凛",
     "element": "相",
     "adaptation": "液态",
-    "rarity": "",
+    "rarity": "S",
     "level": 80,
     "avatar": "/static/images/characters/avatar/明音凛.webp",
     "portrait": "/static/images/characters/portrait/明音凛.webp",
     "base_stats": {
-      "atk": 660,
-      "hp": 15000,
-      "def": 900
+      "atk": 636,
+      "hp": 15998,
+      "def": 921
     },
     "modifiers": {
       "crit_rate": 0.05,
@@ -973,27 +1250,37 @@
       "ultimate_dmg": 0.0,
       "all_dmg": 0.0
     },
-    "bond_bonus": {},
+    "bond_bonus": {
+      "label": "8暴伤",
+      "modifiers": {
+        "crit_dmg": 0.08
+      }
+    },
     "source_row": 0,
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿定义排轴数值，缺失80级面板暂估660/15000/900，羁绊未实装；2026-09-24以Nanoka NTE 1.4.6角色1057与NTEData核对图片，并在独立空幕规划器接入Ⅲ型驱动每层攻击力+10%，不改本角色排轴估值。",
-    "energy_capacity": 120,
+    "source_note": "80级面板636攻击/15998生命/921防御、终结耗能100、五星来自Nanoka NTE 1.4.6角色1057；映射为项目S稀有度。NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 羁遇加成按用户2026-10-15补充口径提供8%暴击伤害，仅开启羁遇时生效，非Nanoka/NTEData核实数值；空幕仍在独立规划器，不自动叠加。 用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。 非循环开战满弦能由六觉共鸣移至三觉共鸣，循环轴仍读取起始资源。",
+    "energy_capacity": 100,
     "initial_personal_resources": {
       "弦能": 0
     },
     "initial_personal_resources_by_awakening_count": {
-      "6": {
+      "3": {
         "弦能": 30
       }
     },
     "reaction_reapplication": {
       "reaction": "延滞",
       "source": "绝对音准",
-      "atk_multiplier": 2,
+      "atk_multiplier": 1.5,
       "bonus_per_remaining_second": 0.2,
-      "max_bonus": 2,
+      "max_bonus": 1.6,
       "cooldown_ticks": 10,
-      "source_note": "文档X参数暂估：基础200%、每剩余秒20%、上限200%、触发间隔1秒。"
-    }
+      "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。 基础150%，每剩余秒整体+20%，上限160%，同目标1秒间隔及变轨分类沿用现行口径。",
+      "damage_type": "E",
+      "skill_level_category": "none"
+    },
+    "personal_resource_integer_resources": [
+      "弦能"
+    ]
   },
   {
     "id": "char_d38b672525",

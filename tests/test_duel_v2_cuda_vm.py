@@ -4,6 +4,7 @@ import subprocess
 import os,json,hashlib
 import sys
 import unittest
+from decimal import Decimal,ROUND_HALF_UP
 from app.modules.card_game.rl.rule_ir.portable_program import capture_program,FrozenRuleProgram
 from app.modules.card_game.rl.batched_duel.vm_image import lower_program
 from app.modules.card_game.rl.batched_duel.cuda_vm import CudaVm,VmLimits,emit_vm_source,SUPPORTED_OPS,VmCapabilityError
@@ -129,6 +130,57 @@ def random_probe(seed):
     return items,chosen,bits,zero,numbers,repeated
 
 
+def exception_probe(mode):
+    trace=[]
+    try:
+        if mode==0:{}['absent']
+        if mode==1:raise ValueError('bad')
+        if mode==2:
+            try:raise ValueError('first')
+            except ValueError as original:raise KeyError('second') from original
+        if mode==3:[][4]
+        return 'ok',trace
+    except KeyError as caught:
+        return ('key',caught.args,caught.__cause__.args if caught.__cause__ else None,
+            caught.__context__.args if caught.__context__ else None,trace)
+    except (ValueError,IndexError) as caught:
+        return 'other',caught.args,trace
+    finally:trace.append('finally')
+
+
+def bare_rethrow():raise
+
+
+def inherited_exception_probe(value):
+    try:
+        try:raise ValueError('kept')
+        except ValueError:bare_rethrow()
+    except ValueError as caught:return caught.args
+
+
+def bare_generator():
+    yield 1
+    raise
+
+
+def generator_exception_probe(value):
+    generator=bare_generator()
+    try:raise ValueError('caller')
+    except ValueError:first=next(generator)
+    try:next(generator)
+    except RuntimeError as caught:return first,caught.args
+
+
+def stopping_generator():
+    raise StopIteration('ended')
+    yield None
+
+
+def stopping_probe(value):
+    try:next(stopping_generator())
+    except RuntimeError as caught:return caught.args,caught.__cause__.args
+
+
 def equality_probe(value):
     first={'k':[value,1.0]};second={'k':[value,1]}
     items=[value];alias=items;items+=[3]
@@ -163,6 +215,80 @@ def native_probe(value):
             bool(range(0)),bool(range(1)),len('真红🙂'),int(' -32 '),float(3),int(-3.75))
 
 
+
+def string_probe(value):
+    return str(value),f'真红🙂:{value}',f'{value!s}'
+
+
+def signed_string_probe(value):return f'{value:+d}',f'{value:d}'
+
+
+def text_probe(value):
+    return (value.split('🙂',2),value.rsplit('🙂',2),
+            '→'.join(value.split('🙂')),value.startswith(('真','x'),-8),
+            value.endswith(('红','x'),0,-1),value.replace('','🟦',3),
+            value.replace('🙂','红',1),value.rstrip(),value.rstrip('🙂红'),
+            value.count(''),value.count('🙂',1,-1),'0123'.isdigit(),''.isdigit())
+
+
+def remove_affix_probe(value):
+    text,affix=value
+    return text.removeprefix(affix),text.removesuffix(affix)
+
+
+def identity_probe(value):
+    from copy import deepcopy
+    cloned=deepcopy(value)
+    return (id(value)==id(value),id(value[0])==id(value[1]),
+            id(value)!=id(cloned),id(cloned[0])==id(cloned[1]),
+            id(value[0])!=id(cloned[0]))
+
+
+def decimal_probe(value):
+    original=Decimal(value)
+    rounded=original.quantize(Decimal('0.1'),rounding=ROUND_HALF_UP)
+    integer=original.quantize(Decimal('1'),ROUND_HALF_UP)
+    return str(original),str(rounded),float(rounded),int(integer),bool(rounded),original==2,original<2
+
+
+def deepcopy_probe(value):
+    from copy import deepcopy
+    cloned=deepcopy(value)
+    cloned[0]['shared'].append(17)
+    cycle=[]
+    cycle.append(cycle)
+    copied_cycle=deepcopy(cycle)
+    pure=(1,(2,3))
+    return cloned,len(value[0]['shared']),cloned is value,cloned[0] is value[0],copied_cycle[0] is copied_cycle,deepcopy(pure) is pure
+
+
+def context_probe(mode):
+    from app.modules.card_game.engine.duel_v2.simulation import _without_patches,collecting_patches
+    values=[collecting_patches()]
+    try:
+        with _without_patches():
+            values.append(collecting_patches())
+            with _without_patches():
+                values.append(collecting_patches())
+                if mode==1:raise ValueError('inner context failure')
+            values.append(collecting_patches())
+            if mode==2:raise ValueError('outer context failure')
+    except ValueError:
+        values.append(collecting_patches())
+    values.append(collecting_patches())
+    return values
+
+
+def context_reset_probe(value):
+    from contextvars import ContextVar
+    variable=ContextVar('vm_test_binding',default=None)
+    before=variable.get()
+    token=variable.set(value)
+    during=variable.get()
+    variable.reset(token)
+    return before,during,variable.get()
+
+
 def test_program(stem,entry,function,*,own=False):
     if sys.version_info[:2]==(3,10):
         kwargs=dict(scope_character_ids=None,scope_card_ids=None)
@@ -185,10 +311,17 @@ def test_program(stem,entry,function,*,own=False):
     return program
 
 
-ALL_VM_ENTRIES=('add','u','actor','collections','echo','signature','attributes','import','native','construct','numeric','precision','equality','hero','alive','order','exact','reducers','frame_gc','random')
+ALL_VM_ENTRIES=('add','u','actor','collections','echo','signature','attributes','import','native','construct','numeric','precision','equality','hero','alive','order','exact','reducers','frame_gc','random','exceptions','inherit_exc','generator_exc','stopping','strings','signed_strings','text','decimal','deepcopy','contexts','context_reset')
 
 
 class SourceTest(unittest.TestCase):
+    def test_formal_context_entries_have_explicit_supported_capabilities(self):
+        from app.modules.card_game.rl.batched_duel.cuda_vm import SUPPORTED_INTRINSICS
+        for entry,fn in (('contexts',context_probe),('context_reset',context_reset_probe)):
+            program=test_program(entry,entry,fn,own=True)
+            image=lower_program(program)
+            self.assertFalse(any(image.missing_capabilities(entry,opcodes=SUPPORTED_OPS,intrinsics=SUPPORTED_INTRINSICS).values()))
+
     def test_import_does_not_load_torch_and_source_has_no_cpu_runtime(self):
         code="import sys;from app.modules.card_game.rl.batched_duel import cuda_vm;assert 'torch' not in sys.modules"
         subprocess.run([sys.executable,'-c',code],check=True,capture_output=True)
@@ -205,6 +338,27 @@ class SourceTest(unittest.TestCase):
 
 
 class CudaExecutionTest(unittest.TestCase):
+    def test_formal_context_restores_nested_and_exceptional_bindings(self):
+        rows=[0,1,2,0]
+        expected=[context_probe(mode) for mode in rows]
+        program=test_program('contexts','contexts',context_probe,own=True)
+        packed=pack_states(rows,GraphLayout(len(rows),8192,16384,131072))
+        with self.executor(lower_program(program)) as vm:
+            actual=vm.launch(vm.ingest(packed),'contexts').decode()
+        self.assertEqual(actual,expected)
+
+    def test_contextvar_explicit_none_default_and_token_reset_are_row_local(self):
+        rows=[7,-3,True,'value']
+        expected=[context_reset_probe(value) for value in rows]
+        program=test_program('context_reset','context_reset',context_reset_probe,own=True)
+        packed=pack_states(rows,GraphLayout(len(rows),8192,16384,131072))
+        with self.executor(lower_program(program)) as vm:
+            arena=vm.ingest(packed)
+            actual=vm.launch(arena,'context_reset').decode()
+            again=vm.launch(arena,'context_reset').decode()
+        self.assertEqual(actual,expected)
+        self.assertEqual(again,expected)
+
     @classmethod
     def setUpClass(cls):
         import torch
@@ -373,6 +527,92 @@ class CudaExecutionTest(unittest.TestCase):
                 actual=vm.launch(arena,'random').decode()
         self.assertEqual(actual,expected)
         for result in actual:self.assertTrue(any(result[1] is item for item in result[0]))
+
+    def test_exception_handlers_finally_cause_and_context(self):
+        p=test_program('exceptions','exceptions',exception_probe,own=True)
+        values=list(range(5))
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(5,8192,8192,65536))),'exceptions').decode()
+        self.assertEqual(actual,[exception_probe(v) for v in values])
+
+    def test_bare_raise_inherits_active_caller(self):
+        p=test_program('inherit_exc','inherit_exc',inherited_exception_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states([0],GraphLayout(1,8192,8192,65536))),'inherit_exc').decode()
+        self.assertEqual(actual,[inherited_exception_probe(0)])
+
+    def test_generator_exception_context_uses_current_caller(self):
+        p=test_program('generator_exc','generator_exc',generator_exception_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states([0],GraphLayout(1,8192,8192,65536))),'generator_exc').decode()
+        self.assertEqual(actual,[generator_exception_probe(0)])
+
+    def test_generator_stop_iteration_becomes_runtime_error(self):
+        p=test_program('stopping','stopping',stopping_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states([0],GraphLayout(1,8192,8192,65536))),'stopping').decode()
+        self.assertEqual(actual,[stopping_probe(0)])
+
+    def test_exact_scalar_strings_fstrings_and_shortest_binary64(self):
+        import math,random,struct
+        values=[None,True,False,0,-1,2**80,-2**120,'真红🙂',0.0,-0.0,
+                1e-4,1e-5,1e15,1e16,0.1,1.2345678901234567,5e-324,
+                2.2250738585072014e-308,1.7976931348623157e308]
+        rng=random.Random(840017)
+        while len(values)<1200:
+            value=struct.unpack('<d',rng.getrandbits(64).to_bytes(8,'little'))[0]
+            if math.isfinite(value):values.append(value)
+        p=test_program('strings','strings',string_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),512,512,8192))),'strings').decode()
+        self.assertEqual(actual,[string_probe(value) for value in values])
+        signed=[True,False,0,1,-1,2**80,-2**120]
+        p=test_program('signed_strings','signed_strings',signed_string_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(signed,GraphLayout(len(signed),512,512,8192))),'signed_strings').decode()
+        self.assertEqual(actual,[signed_string_probe(value) for value in signed])
+
+    def test_unicode_text_methods_and_empty_substrings(self):
+        values=['','真红🙂a🙂红🙂x','🙂🙂🙂🙂','x真红','红🙂','真红  \u3000\x1f','a→b']
+        p=test_program('text','text',text_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),2048,4096,32768))),'text').decode()
+        self.assertEqual(actual,[text_probe(value) for value in values])
+
+    def test_exact_prefix_suffix_and_zhenhong_description_affix(self):
+        values=[('', ''),('abcabc','abc'),('abc','abcd'),('abc',''),
+                ('真红🙂（当前为0）','（当前为0）'),('🙂真红🙂','🙂'),
+                ('🙂','🙂'),('a\x00b','\x00b'),('é','e\u0301'),('  aa',' ')]
+        p=test_program('remove_affix','remove_affix',remove_affix_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),2048,4096,32768))),'remove_affix').decode()
+        self.assertEqual(actual,[remove_affix_probe(value) for value in values])
+
+    def test_live_row_identity_preserves_aliases_and_independent_copies(self):
+        shared={'trace':[1]};values=[[shared,shared],[{'trace':[1]},{'trace':[1]}]]
+        p=test_program('identity','identity',identity_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),2048,4096,32768))),'identity').decode()
+        self.assertEqual(actual,[identity_probe(value) for value in values])
+
+    def test_decimal_exact_round_half_up_and_conversions(self):
+        values=['0','-0.00','1.25','-1.25','1.15','2.00','2.05','-2.05','999.95',1,0.5,-1.25]
+        p=test_program('decimal','decimal',decimal_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            actual=vm.launch(vm.ingest(pack_states(values,GraphLayout(len(values),2048,4096,32768))),'decimal').decode()
+        self.assertEqual(actual,[decimal_probe(value) for value in values])
+
+    def test_deepcopy_large_graph_aliases_cycles_and_input_unchanged(self):
+        shared=[3,4]
+        value=[{'shared':shared,'id':i} for i in range(1100)]
+        p=test_program('deepcopy','deepcopy',deepcopy_probe,own=True)
+        with self.executor(lower_program(p)) as vm:
+            arena=vm.ingest(pack_states([value],GraphLayout(1,16384,16384,131072)))
+            before=arena.nodes.clone();actual=vm.launch(arena,'deepcopy').decode()[0]
+            self.assertTrue(vm.torch.equal(before,arena.nodes))
+        self.assertEqual(actual,deepcopy_probe(value))
+        self.assertIs(actual[0][0]['shared'],actual[0][-1]['shared'])
+        self.assertEqual(shared,[3,4])
 
     def test_formal_state_helpers_run_from_device_arguments(self):
         from app.modules.card_game.engine.duel_v2 import state,new_game

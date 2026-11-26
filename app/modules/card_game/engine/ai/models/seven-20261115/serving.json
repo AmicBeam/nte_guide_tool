@@ -1,0 +1,23 @@
+{
+  "kind": "explicit_user_candidate",
+  "request": "替换模型吧，先只开放创生、浊燃和真红三队",
+  "quality_approved": false,
+  "runtime_rule_hash": "33a5347b0a921594b21a0bd83e3397a01943ae7d502fcfb70a83bf13ecd55893",
+  "models": {
+    "starter": {
+      "manifest_sha256": "759ad77c56c73614f534778a74f46e78979ff7606bb794b8ecc4870ad0c789d5",
+      "model_sha256": "72cddb304b69a9520d2d9c044ede41e93d43afe5f2a36bf9919a43b7d977fcd5",
+      "build_sha256": "980a0da641a52f27d708c27277988c4413848146ce10c1adbf02558617aac257"
+    },
+    "murk": {
+      "manifest_sha256": "75780031fc9776c4fc2624b6c6131a5bcfaf67581f5dc4fb1773566ceec2e8e0",
+      "model_sha256": "be09d13356b9ab2580434bea473197818b48181406dc7f61e6d1ac3123bbd706",
+      "build_sha256": "f9a748cf4f492fb40368695d37cc4123147e9a16a1cb0106fbc8702e3f6198be"
+    },
+    "zhenhong": {
+      "manifest_sha256": "31afe411967fd1ba7568deed50e4723853256a39fb7fd22147e956220a0cbb59",
+      "model_sha256": "8852afb43b39a232ab5620b70151ca344723324a1290eadb20f899f0cf1899a8",
+      "build_sha256": "5bc3923f78d31ef1d1b4cd0ed87bb97e64944822d4b8a9e0a67116f3e0e93bd1"
+    }
+  }
+}

@@ -44,10 +44,13 @@ class ExperimentalAdvancedRoomTest(RoomFlowTestCase):
                                      {'mode': 'advanced', 'ai_deck': key}, token=self.token)
                 self.assertEqual(started['room']['mode'], 'advanced')
                 self.assertEqual([hero['id'] for hero in started['game']['sides']['b']['characters']], members)
-                self.assertEqual(started['game']['sides']['b']['name'], '实验性高级人机')
+                self.assertEqual(started['game']['sides']['b']['name'], '高级人机')
                 from app.modules.card_game.engine.application import v2_repository, v2_persistence
                 room = v2_repository.room_by_code(started['room']['room_code'])
                 game = v2_persistence.load(room.id)['game']
+                self.assertEqual(game['sides']['b']['name'], '高级人机')
+                resumed = self._get('/api/duel-v2/state', token=self.token)
+                self.assertEqual(resumed['game']['sides']['b']['name'], '高级人机')
                 self.assertTrue(game['ai_profile']['experimental'])
                 self.assertEqual(game['ai_profile']['build_sha256'], load_model(key).serving_build_sha256)
                 if key == 'zhenhong':

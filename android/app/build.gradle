@@ -1,0 +1,69 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The website stays on the server; only its entry address belongs in the APK.
+def gameUrl = providers.gradleProperty('gameUrl').orElse('https://amicbeam.fun/card-game').get()
+def entry = new URI(gameUrl)
+if (!(entry.scheme in ['https', 'http']) || !entry.host || entry.userInfo != null) {
+    throw new GradleException('gameUrl 必须是完整的 HTTP(S) 网址，且不能包含账号密码。')
+}
+def escapedUrl = groovy.json.JsonOutput.toJson(gameUrl)
+def signingPath = System.getenv('NTE_ANDROID_SIGNING_PROPERTIES')
+def signingProperties = new Properties()
+if (signingPath) {
+    file(signingPath).withInputStream { signingProperties.load(it) }
+}
+
+android {
+    namespace 'io.github.amicbeam.esperduel'
+    compileSdk 36
+    buildToolsVersion '36.1.0'
+
+    defaultConfig {
+        applicationId 'io.github.amicbeam.esperduel'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+        buildConfigField 'String', 'GAME_URL', escapedUrl
+    }
+    buildFeatures {
+        buildConfig true
+    }
+    signingConfigs {
+        if (signingPath) {
+            localRelease {
+                storeFile file(signingProperties.getProperty('storeFile'))
+                storePassword signingProperties.getProperty('storePassword')
+                keyAlias signingProperties.getProperty('keyAlias')
+                keyPassword signingProperties.getProperty('keyPassword')
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+            manifestPlaceholders = [allowCleartext: 'true']
+        }
+        release {
+            manifestPlaceholders = [allowCleartext: 'false']
+            if (signingPath) signingConfig signingConfigs.localRelease
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.configureEach {
+    if (name == 'preReleaseBuild') {
+        doFirst {
+            if (entry.scheme != 'https') {
+                throw new GradleException('正式包必须指定 HTTPS 地址：-PgameUrl=https://你的域名/card-game')
+            }
+        }
+    }
+}

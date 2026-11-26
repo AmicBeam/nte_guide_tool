@@ -140,12 +140,14 @@ WDL 仍只预测实际完整终局的胜／平／负，价值带观察者是否�
 
 ### 本机与Windows入口
 
+本节的强制隔离容量预检描述历史五队 `runtime=recovery`。七队 `runtime=seven` 的当前流程见[七队默认学习与按需容量诊断](duel-v2-public-training.md#七队默认学习与按需容量诊断)：默认不采额外容量留出、不自动拟合临时网络，也不以探针 KL 单项阻断实际学习；规则、价值、数值／恢复、P0 和独立互搏验收保留。历史失败与冻结任务不改写。
+
 ```bash
 # 本机五套小预算链路，Gumbel2；不是正式搜索预算验收
-.venv/bin/python scripts/train_duel_v2_current_round.py --smoke --device cpu --teacher-mode covered_expert --workers 2 --hidden 32 --seconds 1800 --output artifacts/rl-evals/NEW/smoke --run
+.venv/bin/python scripts/train_duel_v2_current_round.py --runtime recovery --smoke --device cpu --teacher-mode covered_expert --workers 2 --hidden 32 --seconds 1800 --output artifacts/rl-evals/NEW/smoke --run
 
 # Windows上线后在冻结工作副本执行：五套Gumbel32、实际CUDA梯度/数值/Adam恢复及阶段成本
-python scripts/train_duel_v2_current_round.py --preflight --device cuda --teacher-mode covered_value --covered-value-source QUALIFIED_AUX_DIR --workers 6 --output artifacts/rl-evals/NEW/preflight --run
+python scripts/train_duel_v2_current_round.py --runtime recovery --preflight --device cuda --teacher-mode covered_value --covered-value-source QUALIFIED_AUX_DIR --workers 6 --output artifacts/rl-evals/NEW/preflight --run
 
 # 中断后仅在原学习截止内、原配置与进程已退出时恢复
 python scripts/train_duel_v2_current_round.py --output artifacts/rl-evals/EXISTING --resume --run
@@ -223,3 +225,27 @@ python scripts/train_duel_v2_current_round.py --output artifacts/rl-evals/EXISTI
 截止预算须先预留最终矩阵、对照、回传和校验，按本次真实吞吐及至少25%余量设置实际停学时刻，全部阶段不越过用户截止。未训练够预算、提前停学、缺覆盖、失败／截断分别报告，不能以更新次数或文件名冒称完整质量批准。固定构筑最终至少包含先手为行／后手为列的五队N×N纯网络与搜索表、initial／selected／latest身份、同模型镜像与新旧交叉、真红指导开关和起手全留对照、逐卡／角色／终结／环合原始与真实录像。样本端点在新任务开始前声明；完全相同模型／构筑／推理条件可以显式引用同一实测数据，必须标明别名且不增加独立局数。
 
 已验证的批量推理可先用于父进程WDL校准统计，`value_metric_backend=cuda_batched`只替换数值概率查询，保持观察者行动标志、loss/draw/win顺序及完整局等权；原NumPy后端仍默认。CUDA前须在本轮真实公开观察上与NumPy对拍，TF32关闭，不接受静默CPU回退；初始选择哪个后端需记录。批量推理不等于完整GPU规则并发。另一个任务的GPU后端尚未完成时，已验证Python规则并行链路继续运行；只有同冻结规则／模型／随机与动作语义通过对拍和完整局验证的后端才能在新批次／阶段边界使用，旧在途批次和冻结源码不热改，截止不变。
+
+## 七队版本化适配
+
+`seven_lineup/seven_grounded/seven_policy/seven_runtime` 使用独立的 `cross_seven_decoupled_residual_wdl_v1` 契约，包含既有五队、倾陷和灵可；旧五队模块及数值清单保留原身份。黑羽、达芙蒂尔、灵可及其全部公开牌进入具名列；牌库顶／底分别以四个有序槽位编码，退出终结和多选具有独立类别。个人倾陷上限、灵可连用计数／使用者、洞悉计次、占卜数与玩家生命上限分别来自公开投影／`policy_state`。编码仍是部分可观察原型，不宣称完整历史记忆。
+
+`seven_source.migrate` 先核验源数值SHA、已冻结架构源码和具名列，再映射策略、价值及候选首层。迁入模型的输入归一化以原有列计算均值和方差，新增投影列置零；避免直接扩展LayerNorm改变所有旧输入的尺度。此掩码是新schema的显式数值数组，不原地改写旧网络。前三套的历史教师继续冻结，无法表示的整个根仍只用残差；新队独立初始化。迁移是研究起点，须核对真实根上的数值／动作，并重新通过当前规则预检，不继承网站或质量批准。
+
+`seven_sampler` 在新角色的合法私有选择根保持行动方观察和候选不变，只按公开数量和已公开卡分配对方原牌与生成牌；谕石可以位于手牌或牌库。手牌置顶／置底允许生成牌回到牌库；不使用对方实际暗牌约束采样。完整可见牌库保留其明确可见顺序。未知角色／卡牌／动作或不一致的数量直接失败，不能退回旧五队编码。
+
+`seven_round` 版本化复用既有完整局收集、策略／终局WDL联合更新、逐行通行、价值分支校准、独立两块行为及对局闸门、组合候选复核与两代恢复。`seven_checkpoint` 绑定七队及共享搜索源码；没有七队同源CUDA实际更新、数值／下一步Adam和RNG恢复、价值留出与完整对局证据时，不能宣布正式开训。预检副本丢弃，主学习从未受预检策略更新的起点开始。指定绝对截止的在线任务继续使用既有在线协议的每批一次通行、独立闸门和实测预算，不借用五队ready、不降低默认容量拟合门槛，也不冒称默认CLI批准。
+
+七队专家价值与冷启动准备分别由 `prepare_duel_v2_seven_value.py` 和 `prepare_duel_v2_seven_foundation.py` 执行。后者只用专家TRAINING完整轨迹，为倾陷／灵可做监督初始化，其他五队逐数组保持；不将监督初始化计为正式Gumbel更新。准备、正式搜索学习及最终冻结评估的样本和种子隔离。按角色限定预选仍遵循配牌协议，未评分候选不是预选通过，未完成公平适应和独立确认时保留人工起始牌。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_seven_training tests.test_duel_v2_scoped_preselection tests.test_duel_v2_local_card_search`。CPU检查仅验证工程契约，Windows CUDA数值、恢复、价值、完整轮转与容量须在每轮新冻结源码上执行；不预先承诺训练成功或强度改善。
+
+七队数值导出、固定构筑采样、专家变化构筑及监督重放统一调用 `canonical_build`，仅按卡牌ID排序，不改变四人顺序。原始源清单及原牌列仍保留在迁移来源；新模型清单和实际开局使用同一规范化身份，不能只在最终评估时排序。已冻结源码目录的后续快照从经SHA核验的 `source-manifest.json` 取文件，不依赖其在外层Windows旧Git checkout中是否被跟踪；空文件集也创建清单目录，拒绝已变更或外部符号链接来源。
+
+### 相同候选表示的数值一致性
+
+七队网络对完全相同的可见候选数字向量统一采用该组首次计算的分数，Torch／NumPy使用相同规则；不改变合法动作数，不合并物理动作或策略目标，也不声明卡牌规则等价。它修正批量CUDA矩阵乘法对同一输入产生末位差异、使最高动作与单根NumPy推理不一致的问题。原逐列误差和最高动作一致性闸门保留，不通过放宽阈值放行。相同表示的不可消除KL仍须报告。
+
+仅策略数值一致性修正、且规则／内容／观察／候选／隐藏世界采样源码逐文件SHA相同时，`seven_prepared`可显式迁移此前锁定的准备数组。旧文件和旧通过结论不改写；所有张量逐项保持，优化器与经验重置。专家价值重新使用新留出核验，主价值使用新训练／选择／留出重新校准，随后重新执行同源CUDA32更新、数值、Adam／RNG恢复及独立P0检查；不得迁入被丢弃的预检更新或借用旧ready。
+
+绝对截止的有界在线配置可预声明每块搜索闸门仅1个镜像根、两块独立种子，纯网络仍覆盖5个镜像／跨队根；镜像搜索不宣称全跨队强度确认。最终最新未批准候选单独出完整7×7纯网络／搜索研究矩阵，基线镜像、新旧交叉和起手全留对照单列；被保留的基线与研究候选不混成推荐。按实测搜索、纯网络、校准与闸门成本及25%余量预留终评和回传；不足以完成组合候选复核时保留原best。减少阶段样本不改变P0标准，也不获得完整报告或质量批准。

@@ -166,16 +166,16 @@ class XunReworkTest(unittest.TestCase):
             return next(c['description'] for c in observe(s, 'a')['sides']['a']['hand']
                         if c['card_id'] == 'XF01')
 
-        self.assertEqual(description(), '二选一：视为打出一张「要叫大姐头」；或视为打出一张「探悉天职」。')
+        self.assertEqual(description(), '二选一：视为打出 1 张「要叫大姐头」；或视为打出 1 张「探悉天职」。')
         damage(s, 'a', 'jiuyuan', 99)
-        self.assertEqual(description(), '三选一：视为打出一张「要叫大姐头」；或视为打出一张「探悉天职」；或在战斗区召唤一个 2/4 的塔吉多。')
+        self.assertEqual(description(), '三选一：视为打出 1 张「要叫大姐头」；或视为打出 1 张「探悉天职」；或在战斗区召唤 1 个 2/4 的塔吉多。')
         damage(s, 'a', 'nanali', 99)
-        self.assertEqual(description(), '二选一：视为打出一张「探悉天职」；或在战斗区召唤一个 2/4 的塔吉多。')
+        self.assertEqual(description(), '二选一：视为打出 1 张「探悉天职」；或在战斗区召唤 1 个 2/4 的塔吉多。')
         add_collapse(s, 'a', 'zero', 5)
-        self.assertEqual(description(), '在战斗区召唤一个 2/4 的塔吉多。')
+        self.assertEqual(description(), '在战斗区召唤 1 个 2/4 的塔吉多。')
         for cid in ('jiuyuan', 'nanali'):
             hero(s, 'a', cid).update(hp=4, down_turns=0)
-        self.assertEqual(description(), '视为打出一张「要叫大姐头」。')
+        self.assertEqual(description(), '视为打出 1 张「要叫大姐头」。')
         add_collapse(s, 'a', 'nanali', 5)
         self.assertEqual(description(), '当前无可用选项。')
 

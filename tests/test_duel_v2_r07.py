@@ -25,7 +25,7 @@ class R07Test(unittest.TestCase):
         self.assertEqual(s['sides']['a']['front'], 'zero')
         # Jiuyuan repeats genesis, but the weapon fires once per surplus notification.
         events = [e for e in observe(s, 'a')['presentation']['events'] if e['seq'] > seq]
-        hits = [e for e in events if '「梦的边缘」触发' in e.get('text', '')]
+        hits = [e for e in events if '「地海高校生」触发' in e.get('text', '')]
         self.assertEqual(len(hits), 4)
         self.assertEqual({e['target'] for e in hits}, {'b:' + cid for cid in s['sides']['b']['order']})
         self.assertEqual(hero(s, 'b', 'zero')['hp'], 3)
@@ -45,5 +45,5 @@ class R07Test(unittest.TestCase):
                 s['sides']['a']['front'] = 'zero'
                 seq = s['event_seq']
                 resolve_genesis(operation(s, 'a', 'zero'))
-                self.assertFalse(any('「梦的边缘」触发' in e.get('text', '')
+                self.assertFalse(any('「地海高校生」触发' in e.get('text', '')
                                      for e in s['events'] if e['seq'] > seq))

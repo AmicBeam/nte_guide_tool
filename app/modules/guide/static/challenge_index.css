@@ -1,0 +1,18 @@
+.guide-card.guide-challenge-current {
+  border-color:var(--g-accent);
+  box-shadow:0 0 0 1px #c9f47a55,0 0 24px #c9f47a22;
+}
+.guide-card.guide-challenge-current:hover,
+.guide-card.guide-challenge-current:focus-visible {
+  border-color:var(--g-accent);
+  box-shadow:0 0 0 2px #c9f47a88,0 0 28px #c9f47a33;
+}
+
+.guide-challenge-card{display:flex;flex-direction:column;padding:16px}
+.guide-challenge-card .guide-card-identity{margin:0 0 10px}
+.guide-challenge-label{align-self:flex-start;color:var(--g-dim);font-size:11px}
+.guide-challenge-card .guide-card-bottom{margin-top:auto;padding-top:20px;align-items:baseline;gap:8px;flex-wrap:nowrap}
+.guide-challenge-card .guide-card-bottom code{flex:none;font-size:10px}
+.guide-challenge-card .guide-challenge-dates{display:inline-flex;flex:none;flex-wrap:nowrap;align-items:center;gap:4px;line-height:1.4;margin-left:auto;font-size:10px;text-align:right;white-space:nowrap}
+.guide-challenge-dates span{white-space:nowrap}
+@media(max-width:700px){.guide-challenge-grid{grid-template-columns:minmax(0,1fr)}}

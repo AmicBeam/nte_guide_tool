@@ -18,6 +18,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from app.modules.card_game.content.duel_v2 import STARTER_DECKS
 from app.modules.card_game.rl import recovery_policy, recovery_runtime
@@ -50,6 +51,13 @@ class TestDuelV2BatchedEvaluator(unittest.TestCase):
         self.assertEqual(data["workers"], 16)
         self.assertEqual(data["games"], 1600)
         self.assertEqual(data["seconds"], 900)
+        self.assertEqual(data['search_roots'],32)
+        self.assertEqual(data['requested_resident_games'],1600)
+        self.assertEqual(data['deadline_scope'],'search_admission')
+        self.assertEqual(parse_args(['--workers','2','--games','64']).search_roots,4)
+        self.assertEqual(parse_args(['--search-roots','1']).search_roots,1)
+        for value in ('0','1601'):
+            with self.assertRaises(SystemExit):parse_args(['--search-roots',value])
 
     def test_cli_validation_invalid_args(self) -> None:
         """CLI must reject invalid workers, games, seconds, and missing run parameters."""
@@ -243,6 +251,7 @@ class TestDuelV2BatchedEvaluator(unittest.TestCase):
                     simulations=4,
                     proof_cap=2,
                     max_actions=2,  # Bounded to 2 real physical actions
+                    search_roots=1,
                     output_dir=out_path,
                 )
 
@@ -257,6 +266,12 @@ class TestDuelV2BatchedEvaluator(unittest.TestCase):
             self.assertFalse(res["gpu_rule_execution"])
             self.assertFalse(res["training_workflow_complete"])
             self.assertGreater(res["peak_outstanding_roots"], 0)
+            self.assertEqual(res['peak_outstanding_roots'],1)
+            self.assertEqual(res['stats']['committed_decisions'],4)
+            self.assertEqual(res['stats']['committed_budget_complete_decisions'],4)
+            self.assertFalse(res['fixed_budget_complete'])  # Partial games remain partial.
+            self.assertGreaterEqual(res['stats']['resident_queue_latency_p95'],0)
+            self.assertIn('inference',res['stats']['scheduler']['dispatch_metrics'])
 
             # Verify index.jsonl contains partial records with complete=False and replay_verified=True
             index_file = out_path / "index.jsonl"
@@ -290,6 +305,26 @@ class TestDuelV2BatchedEvaluator(unittest.TestCase):
             self.assertEqual(prog_data["uncompleted_games"], 2)
             self.assertFalse(res["evaluation_accepted"])
             self.assertTrue(res["behavior"]["behavior_approved"])
+
+    def test_fixed_budget_rejects_partial_search_before_physical_commit(self):
+        model=PublicTestPolicy('starter');model.schema=recovery_policy.RESIDUAL_SCHEMA
+        deck=next(d for d in STARTER_DECKS if d['id']=='starter')
+        job=dict(id='partial',cell=0,seed=99801,first='a',decks={'a':deck,'b':deck},
+                 policies={'a':'starter','b':'starter'},replay=True)
+        def partial(*args,**kwargs):
+            if False:yield
+            return dict(selected_action={'type':'end_turn'},actions=[{'type':'end_turn'}],
+                total_simulations=1,proof_checks=0,tree_simulations=1,wall_seconds=0.,
+                budget_complete=False,stop_reason='tree_search')
+        with tempfile.TemporaryDirectory() as directory:
+            with ResidentRuleBackend(workers=1,max_games=1,runtime=recovery_runtime,record_output=directory) as backend:
+                with patch('app.modules.card_game.rl.batched_search.evaluator.serving_search',partial):
+                    result=evaluate_jobs([job],{'starter':model},NumpyOracleInference({'starter':model}),
+                        backend,budget_mode='simulations',simulations=32)
+        self.assertEqual(result['stats']['committed_decisions'],0)
+        self.assertEqual(result['stats']['incomplete_budget_roots'],{'incomplete_search_budget':1})
+        self.assertEqual(result['results'][0]['completion_reason'],'incomplete_search_budget')
+        self.assertFalse(result['evaluation_accepted'])
 
     def test_matrix_summary_and_wilson_ci(self) -> None:
         """Wilson score interval and summary aggregation must correctly compute intervals."""

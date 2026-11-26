@@ -184,8 +184,16 @@ body:has(.shaft-page) .shell {
     text-align: left;
 }
 
-.shaft-build-layout .shaft-member-identity small {
-    grid-column: 3;
+.shaft-build-layout .shaft-member-heading {
+    justify-content: flex-start;
+}
+
+.shaft-build-layout .shaft-member-heading > small {
+    position: absolute;
+    left: max(50%, 160px);
+    bottom: 6px;
+    transform: translateX(-50%);
+    white-space: nowrap;
 }
 
 .shaft-build-layout .shaft-loadout-grid {
@@ -310,6 +318,15 @@ body:has(.shaft-page) .shell {
     object-fit: cover;
     border: 2px solid color-mix(in srgb, var(--slot-color, var(--primary)) 70%, rgba(255,255,255,0.18));
     background: rgba(7, 12, 20, 0.76);
+}
+
+.shaft-member-heading {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 12px;
 }
 
 .shaft-member-identity strong {
@@ -927,8 +944,30 @@ body:has(.shaft-page) .shell {
 }
 
 .shaft-team-bonus-panel {
-    display: grid;
-    gap: 10px;
+    display: block;
+}
+
+.shaft-team-bonus-panel > summary {
+    margin-bottom: 0;
+    cursor: pointer;
+    list-style: none;
+}
+
+.shaft-team-bonus-panel > summary::-webkit-details-marker {
+    display: none;
+}
+
+.shaft-team-bonus-panel > summary::after {
+    content: '▸';
+    color: var(--muted);
+}
+
+.shaft-team-bonus-panel[open] > summary::after {
+    transform: rotate(90deg);
+}
+
+.shaft-team-bonus-panel[open] > .shaft-team-bonus-grid {
+    margin-top: 10px;
 }
 
 .shaft-team-bonus-panel .section-title-row span {
@@ -977,7 +1016,7 @@ body:has(.shaft-page) .shell {
 .shaft-team-bonus-input input {
     width: 100%;
     min-height: 34px;
-    padding: 5px 6px;
+    padding: 5px 3px;
     text-align: center;
     font-weight: 1000;
 }
@@ -1139,11 +1178,6 @@ body:has(.shaft-page) .shell {
 .shaft-contribution-list {
     display: grid;
     gap: 8px;
-}
-
-.shaft-substat-contribution-open {
-    width: 100%;
-    margin-top: 2px;
 }
 
 .shaft-contribution-row {
@@ -1853,6 +1887,97 @@ body:has(.shaft-page) .shell {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     margin: 14px 0 18px;
+}
+
+.shaft-character-effectiveness-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.shaft-character-effectiveness-kpis > .shaft-effectiveness-total {
+    border-color: rgba(103, 213, 213, 0.3);
+    background: linear-gradient(135deg, rgba(103, 213, 213, 0.13), rgba(103, 213, 213, 0.025));
+}
+
+.shaft-effectiveness-breakdown {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.shaft-effectiveness-contribution {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.035);
+}
+
+.shaft-effectiveness-contribution h3 {
+    margin: 0 0 10px;
+    color: var(--text);
+    font-size: 13px;
+}
+
+.shaft-effectiveness-contribution > strong {
+    display: block;
+    font-size: clamp(22px, 4vw, 30px);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.shaft-effectiveness-contribution > span,
+.shaft-effectiveness-contribution dt,
+.shaft-effectiveness-baseline dt {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.shaft-effectiveness-contribution .is-positive { color: #72e6ad; }
+.shaft-effectiveness-contribution .is-negative { color: #ff8e92; }
+
+.shaft-effectiveness-contribution dl {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.shaft-effectiveness-contribution dl > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 8px;
+}
+
+.shaft-effectiveness-contribution dd,
+.shaft-effectiveness-baseline dd {
+    margin: 0;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.shaft-effectiveness-baseline {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0 0 12px;
+    padding: 12px 16px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.025);
+}
+
+.shaft-effectiveness-baseline > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 8px;
+    min-width: 0;
 }
 
 .shaft-action-analysis-kpis > div {
@@ -3743,6 +3868,7 @@ body.shaft-dragging .shaft-action-bar {
 }
 
 .shaft-track-portrait {
+    min-width: 0;
     display: grid;
     justify-items: center;
     gap: 2px;
@@ -3765,6 +3891,14 @@ body.shaft-dragging .shaft-action-bar {
     line-height: 1.05;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.shaft-track-portrait small.shaft-ranked-resource {
+    width: max-content;
+    max-width: none;
+    justify-self: center;
+    overflow: visible;
+    text-overflow: clip;
 }
 
 .shaft-track-name {
@@ -4651,10 +4785,6 @@ body.shaft-dragging .shaft-action-bar {
         align-items: center;
     }
 
-    .shaft-member-identity small {
-        grid-column: 3;
-    }
-
     .shaft-contribution-row {
         grid-template-columns: 68px minmax(0, 1fr) 44px;
     }
@@ -4764,3 +4894,16 @@ body.shaft-dragging .shaft-action-bar {
     width: 16px;
     height: 16px;
 }
+
+/* Fixed-timeline character effectiveness: self-provided harmony scenarios. */
+#shaft-action-contribution-content { min-width: 0; }
+.shaft-effectiveness-variants { min-width: 0; max-width: 100%; margin: 18px 0; }
+.shaft-effectiveness-variants h3 { margin: 0 0 6px; font-size: 13px; }
+.shaft-effectiveness-variants p { margin: 6px 0 10px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.shaft-effectiveness-variants-scroll { min-width: 0; max-width: 100%; max-height: 340px; overflow: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; }
+.shaft-effectiveness-variants table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.shaft-effectiveness-variants th, .shaft-effectiveness-variants td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.07); text-align: right; white-space: nowrap; }
+.shaft-effectiveness-variants th:first-child { text-align: left; }
+.shaft-effectiveness-variants thead th { position: sticky; top: 0; z-index: 1; background: #19232e; color: var(--muted); }
+.shaft-effectiveness-variants tbody tr:first-child { background: rgba(103,213,213,0.06); }
+.shaft-effectiveness-variants td small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }

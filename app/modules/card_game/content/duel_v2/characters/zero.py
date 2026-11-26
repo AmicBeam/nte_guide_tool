@@ -1,4 +1,4 @@
-from app.modules.card_game.content.duel_v2.characters.common import set_shape
+from app.modules.card_game.content.duel_v2.characters.common import fill_harmony_on_battle_release, set_shape
 from app.modules.card_game.content.duel_v2.registry import register
 
 
@@ -8,6 +8,7 @@ def _z01(c):
     if cid:
         h = hero(c.state, c.side, cid)
         heal(c.state, c.side, cid, max(0, h['max_hp'] - h['hp']))
+    c.draw(1)
 
 
 def _z02(c):
@@ -44,8 +45,8 @@ def _weapon_attack(c):
     front = c.state['sides'][c.side]['front']
     if front:
         target = hero(c.state, c.side, front)
-        add_atk_buff(target, 1, source_entity_id=c.entity_id, source_key=c.effect_source_key, label='倾世之雨')
-        log(c.state, f"「倾世之雨」使{target['name']}攻击 +1。", 'effect',
+        add_atk_buff(target, 1, source_entity_id=c.entity_id, source_key=c.effect_source_key, label='学园随想')
+        log(c.state, f"「学园随想」使{target['name']}攻击 +1。", 'effect',
             side=c.side, source=c.cid, actor=f'{c.side}:{c.cid}', target=f'{c.side}:{front}', amount=1)
 
 
@@ -53,13 +54,13 @@ def _weapon_heal(c):
     from app.modules.card_game.engine.duel_v2.state import heal
     front = c.state['sides'][c.side]['front']
     if front:
-        heal(c.state, c.side, front, 2, reason='回合结束，「休息日」触发')
+        heal(c.state, c.side, front, 2, reason='回合结束，「猎人不上班」触发')
 
 
 def _weapon_ap(c):
     team = c.state['sides'][c.side]
     team['ap'] = int(team.get('ap') or 0) + 1
-    c.history('回合结束，「诓定解放」触发：获得 1 点行动力。')
+    c.history('回合结束，「城市漫游者」触发：获得 1 点行动力。')
 
 
 @register
@@ -74,13 +75,7 @@ class Zero:
     }
     target_policies = {'Z01': 'ally_front'}
 
-    @staticmethod
-    def after_card(c, *, actor_id, card):
-        if actor_id != c.cid or not card or card.get('type') != 'battle':
-            return
-        if c.character['hp'] <= 0:
-            return
-        c.grant_harmony(c.cid, 2, reason='零打出战斗牌，触发异能')
+    on_card_released = staticmethod(fill_harmony_on_battle_release)
 
     weapon_hooks = {
         'Z08': {'on_turn_end': _weapon_attack},

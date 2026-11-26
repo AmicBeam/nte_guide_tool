@@ -7,6 +7,14 @@ from pathlib import Path
 
 
 class NTEAccountDatabaseTest(unittest.TestCase):
+    def test_elyms_defaults_to_test_only_in_independent_plugin(self) -> None:
+        self.module.ensure_nte_tables()
+        model = self.module.NTEShaftCharacterPublication
+        publication = model.get(model.character_id == 'char_elyms')
+        self.assertEqual(publication.character_name, '曳尔沐')
+        self.assertEqual(publication.access_level, 'test')
+        self.assertFalse(publication.is_published)
+
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.original_database_path = os.environ.get('NTE_DATABASE_PATH')
@@ -53,7 +61,7 @@ class NTEAccountDatabaseTest(unittest.TestCase):
     def test_released_characters_migrate_existing_test_records(self) -> None:
         self.module.ensure_nte_tables()
         model = self.module.NTEShaftCharacterPublication
-        for name in ('灵可', '黑羽'):
+        for name in ('灵可', '黑羽', '明音凛'):
             with self.subTest(character=name):
                 model.update(is_published=False, access_level='test').where(
                     model.character_name == name
@@ -62,3 +70,40 @@ class NTEAccountDatabaseTest(unittest.TestCase):
                 publication = model.get(model.character_name == name)
                 self.assertTrue(publication.is_published)
                 self.assertEqual(publication.access_level, 'public')
+
+
+    def test_registration_matches_website_nonnull_permission_columns(self) -> None:
+        db = self.module.nte_account_db
+        db.connect(reuse_if_open=True)
+        db.execute_sql('CREATE TABLE player (id INTEGER PRIMARY KEY, player_uid TEXT UNIQUE, nickname TEXT NOT NULL, '
+                       'shaft_invited INTEGER NOT NULL, shaft_test_whitelisted INTEGER NOT NULL, '
+                       'created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)')
+        code, created = self.module.issue_account_register_code('10001', '验证用户')
+        self.assertTrue(created)
+        self.assertEqual(len(code), 6)
+        player = self.module.NTEPlayer.get(self.module.NTEPlayer.player_uid == '10001')
+        self.assertFalse(player.shaft_invited)
+        self.assertFalse(player.shaft_test_whitelisted)
+        player.shaft_invited = True
+        player.shaft_test_whitelisted = True
+        player.save()
+        new_code, created = self.module.issue_account_register_code('10001')
+        self.assertFalse(created)
+        self.assertEqual(len(new_code), 6)
+        player = self.module.NTEPlayer.get_by_id(player.id)
+        self.assertTrue(player.shaft_invited)
+        self.assertTrue(player.shaft_test_whitelisted)
+
+    def test_legacy_plugin_player_table_migrates_without_losing_user(self) -> None:
+        db = self.module.nte_account_db
+        db.connect(reuse_if_open=True)
+        db.execute_sql('CREATE TABLE player (id INTEGER PRIMARY KEY, player_uid TEXT UNIQUE, nickname TEXT NOT NULL, '
+                       'created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)')
+        db.execute_sql("INSERT INTO player VALUES(1, '10001', '原用户', '2026-01-01', '2026-01-01')")
+        code, created = self.module.issue_account_register_code('10001')
+        self.assertFalse(created)
+        self.assertEqual(len(code), 6)
+        player = self.module.NTEPlayer.get_by_id(1)
+        self.assertEqual(player.nickname, '原用户')
+        self.assertFalse(player.shaft_invited)
+        self.assertFalse(player.shaft_test_whitelisted)

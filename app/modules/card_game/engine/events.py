@@ -38,6 +38,20 @@ class GameEvent(str, Enum):
     V2_EFFECT_EXPIRED = 'on_effect_expired'
     V2_LEAVE_FRONT = 'on_leave_front'
     V2_TURN_COUNTDOWN = 'on_turn_countdown'
+    V2_CARD_USED = 'on_card_used'
+    V2_CARD_RELEASED = 'on_card_released'
+    V2_BEFORE_ATTACK_DAMAGE = 'before_attack_damage'
+    V2_COLLAPSE_ENTERED = 'on_collapse_entered'
+    V2_DISSONANCE = 'on_dissonance'
+    V2_OPPONENT_ATTACK = 'on_opponent_attack'
+    V2_OPPONENT_SORTIE_FINISHED = 'on_opponent_sortie_finished'
+    V2_SUPPORT_RESOLVED = 'on_support_resolved'
+    V2_HARMONY_TRIGGERED = 'on_harmony_triggered'
+    V2_HARMONY_APPLIED = 'on_harmony_applied'
+    V2_SURPLUS_ENERGY = 'on_surplus_energy'
+    V2_ALLIED_DAMAGE = 'on_allied_damage'
+    V2_COUNTER_RESOLVED = 'on_counter_resolved'
+    V2_GENESIS_SEGMENT = 'on_genesis_segment'
 
 
 

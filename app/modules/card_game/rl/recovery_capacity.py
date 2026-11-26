@@ -58,10 +58,16 @@ def label_metrics(net, rows, device):
                 candidate_aliases=candidate_alias_metrics(rows))
 
 
-def fit(models,jobs,games,config,deadline,*,steps=200,held_jobs=None,held_games=None,keys=None):
+def fit(models,jobs,games,config,deadline,*,steps=200,held_jobs=None,held_games=None,keys=None,runtime_name="recovery"):
     import torch
-    from . import recovery_runtime as rt
-    from .recovery_round import versions, learning_keys
+    if runtime_name == 'seven':
+        from . import seven_runtime as rt
+        from .seven_round import versions, learning_keys
+    elif runtime_name == 'recovery':
+        from . import recovery_runtime as rt
+        from .recovery_round import versions, learning_keys
+    else:
+        raise ValueError('Known isolation runtime required')
     if type(steps) is not int or not 2<=steps<=400: raise ValueError('Bounded isolation steps required')
     if not jobs or len(jobs)!=len(games):raise ValueError('Training job/result counts differ')
     if (held_jobs is None)!=(held_games is None):raise ValueError('Both heldout jobs and results required')
@@ -118,7 +124,7 @@ def fit(models,jobs,games,config,deadline,*,steps=200,held_jobs=None,held_games=
             gradient_sums=gradients,train_passed=train_passed,heldout_passed=held_passed,
             passed=train_passed and held_passed and completed==steps and all(np.isfinite(v) and v>0 for v in gradients.values()))
     if versions(models)!=signature:raise ValueError('Isolation fit changed frozen source')
-    return dict(schema='five_recovery_isolation_fit_v1',source_models=signature,device=config['device'],
+    return dict(schema=('seven_recovery_isolation_fit_v1' if runtime_name=='seven' else 'five_recovery_isolation_fit_v1'),source_models=signature,device=config['device'],
                 complete=all(r['steps']==steps for r in result.values()),
                 passed=all(r['passed'] for r in result.values()),metrics=result,
                 strength_approved=False,disposable_networks=True,training_heldout_not_independent_strength=True,

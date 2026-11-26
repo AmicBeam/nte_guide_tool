@@ -18,7 +18,7 @@ def other(side):
     return 'b' if side == 'a' else 'a'
 
 CARD_FIELDS = (
-    'entity_id', 'instance_id', 'card_id', 'character_id', 'name', 'type', 'cost', 'terminal',
+    'entity_id', 'instance_id', 'card_id', 'character_id', 'name', 'type', 'cost', 'terminal', 'additional_ap_cost',
     'description', 'copy', 'expires_turn', 'original_character_id',
     'stat', 'stat_value', 'shield', 'attack', 'hp', 'instant', 'response', 'require', 'redeem',
     'derived', 'attack_mode', 'jingu_mark', 'play_options', 'antique_investment',
@@ -38,10 +38,11 @@ def public_card(card, state=None, side=None):
         result['description'] = decide(EffectContext(state, side, card['character_id'], {'side': side}),
             'card_description', result.get('description', ''), actor_only=True, include_down=True, card=card)
     # Independent of the once-per-turn instant discount. Hidden cards never pass here.
-    result['action_point_free'] = int(card.get('cost') or 0) == 0
+    extra_ap = int(card.get('additional_ap_cost') or 0)
+    result['action_point_free'] = int(card.get('cost') or 0) + extra_ap == 0
     if state is not None and side in SIDES:
         from .flow import card_cost
-        result['action_point_free'] = card_cost(state, side, card) == 0
+        result['action_point_free'] = card_cost(state, side, card) + extra_ap == 0
     if card.get('original_character_id'):
         original = text_name(card.get('original_character_id'))
         if original:
@@ -50,6 +51,7 @@ def public_card(card, state=None, side=None):
     physical = card.get('_physical_card')
     if physical is not None:
         # Presentation only: retain the physical face without exposing internal state.
+        physical = public_card(physical, state, side)
         result['hand_face'] = {key: deepcopy(physical[key]) for key in (
             'card_id', 'character_id', 'name', 'type', 'description', 'stat', 'stat_value',
             'shield', 'attack', 'hp', 'attack_mode', 'derived',
@@ -86,37 +88,54 @@ def capture_public_board(state):
         if not source:
             continue
         team = {key: deepcopy(source[key]) for key in ('hp', 'shield', 'ap', 'front', 'last_front', 'front_debuff')}
+        team['max_hp'] = source.get('max_hp', 30)
         if 'entity_id' in source:
             team['entity_id'] = source['entity_id']
         team['life_locked'] = bool(source.get('life_locked'))
+        team['genesis_weave_damage'] = int(source.get('genesis_weave_damage', 0))
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
+        from .genesis import public_beads
+        team['genesis_layers'] = public_beads(state, ps)
+        team['insight_damage'] = 2 + int(source.get('insight_bonus', 0))
+        team['insight_played'] = int(source.get('insight_played', 0))
+        team['support_count'] = int(source.get('support_count', 0)) if source.get('support_turn') == state['turn'] else 0
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
         marks = harmony_marks(state, ps)
         team['harmony_available'] = marks['available']
-        team['effect_markers'] = team_effect_markers(source)
+        team['effect_markers'] = team_effect_markers(source, state, ps)
         team['hand_count'] = len(source['hand'])
         team['deck_count'] = len(source['deck'])
         pending = state.get('pending_choice')
-        if pending and pending.get('side') == ps and pending.get('kind') == 'inspect_top':
+        if pending and pending.get('side') == ps and (pending.get('kind') in ('inspect_top', 'heiyu_divination') or pending.get('deck_cards')):
             team['deck_count'] += len(pending.get('cards') or ())
         from . import state as duel_state
         from .modifiers import public_effects
         from .equipment import stat_layers, public_equipment
+        from app.modules.card_game.content.duel_v2.registry import summon_passive
         characters = []
         for cid in duel_state.team_order(state, ps):
             hero = source['characters'][cid]
             shape_id = hero.get('shape')
+            shape_card = lookup_card(shape_id) if shape_id else None
+            shape_description = (public_card(dict(shape_card, card_id=shape_id), state, ps).get('description')
+                                 if shape_card else None)
             attack_breakdown = duel_state.attack_value(hero, state, ps, explain=True)
             characters.append({
                 'id': cid,
-                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura') if k in hero},
+                **{k: deepcopy(hero[k]) for k in ('name', 'avatar', 'portrait', 'attribute', 'lingke_chain', 'summoned', 'resource_name', 'faction', 'arid', 'truth_keys', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura', 'signal_level') if k in hero},
+                **({'passive': summon_passive(hero), 'awakened_passive': hero.get('awakened_passive', ''),
+                    'flavor': hero.get('flavor', '')} if hero.get('summoned') else {}),
                 'entity_id': hero.get('entity_id'),
                 'effects': public_effects(hero),
                 'stat_layers': stat_layers(hero), 'equipment': public_equipment(hero),
                 'effect_markers': character_effect_markers(hero, state, ps),
                 'damage_immune': duel_state.damage_immune(state, ps, cid),
                 'damage_limit': duel_state.damage_limit(state, ps, cid),
+                **duel_state.protection_state(state, ps, cid),
+                'collapse_count': (hero.get('flags') or {}).get('collapse_count', 0),
+                'collapse_max': duel_state.collapse_max(hero),
+                'collapse': duel_state.collapsed(hero),
                 'hp': hero['hp'],
                 'max_hp': hero['max_hp'],
                 'shield': hero['shield'],
@@ -131,6 +150,7 @@ def capture_public_board(state):
                 'awakened': hero['awakened'],
                 'ultimate_turns': hero.get('ultimate_turns', 0),
                 'ultimate_expires': ultimate_spec(cid)['expires'],
+                'collapse_border_cut': duel_state.collapse_border_cut(hero),
                 'down_turns': hero['down_turns'],
                 'growth': hero.get('growth', 0),
                 'family': hero.get('family', 0),
@@ -139,6 +159,7 @@ def capture_public_board(state):
                 **({'jingu': hero['jingu']} if 'jingu' in hero else {}),
                 'shape': (lookup_card(shape_id) or {}).get('name') if shape_id else None,
                 'shape_id': shape_id,
+                'shape_description': shape_description,
             })
         team['characters'] = characters
         sides[ps] = team
@@ -330,7 +351,8 @@ def project_event(event, viewer):
     }
     for key in ('amount', 'attack', 'counter', 'group_id', 'harmony_delta', 'energy_delta',
                 'hit_index', 'before', 'after', 'source_side', 'card_ids', 'description', 'present',
-                'first_side', 'winner', 'reason', 'counter_immunity', 'actor_entity_id', 'target_entity_id'):
+                'first_side', 'winner', 'reason', 'counter_immunity', 'immunity_kind', 'actor_entity_id', 'target_entity_id', 'response',
+                'card_source', 'attribute', 'additional_attack', 'release_only'):
         if key in event:
             item[key] = deepcopy(event[key])
     if event.get('type') == 'mulligan' and event.get('side') != viewer:
@@ -430,6 +452,9 @@ def interaction_for_action(state, side, action):
     if kind == 'ultimate':
         actor = entity_id(side, action.get('character_id'))
         return {'kind': 'ultimate', 'actor_id': actor, 'target_ids': [actor] if actor else []}
+    if kind == 'exit_ultimate':
+        actor = entity_id(side, action.get('character_id'))
+        return {'kind': 'ultimate', 'actor_id': actor, 'target_ids': [actor] if actor else []}
     if kind == 'play_card':
         card = next(c for c in state['sides'][side]['hand'] if c['instance_id'] == action['card_id'])
         from .state import effective_card
@@ -439,7 +464,7 @@ def interaction_for_action(state, side, action):
         if hint == 'form':
             return {'kind': 'form', 'actor_id': actor, 'target_ids': [actor] if actor else []}
         policy = TARGET_POLICIES.get(card.get('card_id'))
-        if policy == 'other_living_ally':
+        if policy in ('other_living_ally', 'other_living_ally_esper'):
             target = _normalize_entity(None, action.get('target_id'))
             return {'kind': 'target', 'actor_id': actor, 'target_ids': [target] if target else []}
         if policy == 'enemy_front':
@@ -451,7 +476,7 @@ def interaction_for_action(state, side, action):
         if policy in ('enemy_hand', 'own_tactic_discard'):
             return {'kind': 'choice', 'actor_id': actor, 'target_ids': []}
         return {'kind': 'cast', 'actor_id': actor, 'target_ids': []}
-    if kind in ('choose', 'choose_cards', 'mulligan', 'cycle'):
+    if kind in ('choose', 'choose_cards', 'choose_deck_order', 'mulligan', 'cycle'):
         actor = None
         operation = state.get('operation')
         if operation:

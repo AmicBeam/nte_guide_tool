@@ -13,7 +13,7 @@ def table(path,rows):
 
 def write_matrix(out,results,keys,models,config):
     out=Path(out);cells={};seen=set();identities={}
-    names=dict(starter='娜伊零九',**{'weave-rush':'薄白零伊','quick-rush':'吱零薄九'},zhenhong='真红零伊翳',murk='浊燃',midrange='娜白零伊')
+    names=dict(starter='娜伊零九',**{'weave-rush':'薄白零伊','quick-rush':'吱零薄九'},zhenhong='真红零伊翳',murk='浊燃',collapse='倾陷',lingke='灵可',midrange='娜白零伊')
     for k in keys:identities[k]=json.loads((Path(models)/(k+'.json')).read_text(encoding='utf-8'))
     for a in keys:
         for b in keys:
@@ -44,7 +44,8 @@ def write_matrix(out,results,keys,models,config):
         before=initial/(k+'.npz');after=Path(models)/(k+'.npz')
         if not before.exists():changed[k]=None;continue
         with np.load(before,allow_pickle=False) as a,np.load(after,allow_pickle=False) as b:
-            changed[k]=set(a.files)!=set(b.files) or any(not np.array_equal(a[n],b[n]) for n in a.files)
+            checked=[n for n in a.files if not config.get('require_policy_change') or n.startswith(('state_net.','cand_net.','score.'))]
+            changed[k]=set(a.files)!=set(b.files) or any(not np.array_equal(a[n],b[n]) for n in checked)
     verified_new=all(v is True for v in changed.values())
     if not verified_new:
         lines[0]='# 冻结模型互搏报告（不满足全套训练后新模型要求）'
@@ -53,7 +54,7 @@ def write_matrix(out,results,keys,models,config):
     from .quick_adaptation import contribution_events
     for r in results:
         if not r['complete']:continue
-        path=out/'evaluation/raw'/f"{r['id']}.json.gz"
+        path=Path(config.get('raw_directory',out/'evaluation/raw'))/f"{r['id']}.json.gz"
         with gzip.open(path,'rt',encoding='utf-8') as f:raw=json.load(f)
         t=raw['telemetry']
         if r['cell'].startswith('opening/'):

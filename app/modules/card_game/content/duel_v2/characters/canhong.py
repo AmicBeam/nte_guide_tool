@@ -6,7 +6,7 @@ from app.modules.card_game.engine.duel_v2.continuous import (
 )
 from app.modules.card_game.engine.duel_v2.modifiers import add_effect, deadline
 from app.modules.card_game.engine.duel_v2.state import (
-    add_hand, alive, card_instance, damage, discard, force_collapse,
+    add_hand, alive, card_instance, damage, force_collapse,
     front_target, hero, is_esper, other,
 )
 
@@ -18,8 +18,8 @@ def _mirage(c):
 def _enter_mirage(c):
     add_effect(c.character, 'canhong.mirage', 'status.mirage', 1, stacking='replace',
                source_entity_id=c.entity_id, source_key='mirage', label='幻境',
-               expiry=deadline(c.state, c.side, 2, 'turn_start'), clear_on=('down',))
-    c.history('残虹进入幻境，持续 2 个己方回合。')
+               expiry=deadline(c.state, c.side, 3, 'turn_start'), clear_on=('down',))
+    c.history('残虹进入幻境，持续 3 个己方回合。')
 
 
 def _targets(c):
@@ -45,7 +45,7 @@ def _c02(c):
     c.sortie()
     if before - set(living_espers(c.state, foe)):
         add_hand(c.state, c.side, card_instance(c.state, 'C02', c.side))
-        c.history('击倒对方异能者，获得 1 张「渊底之吻」。')
+        c.history('使对方异能者倒地，获得 1 张「渊底之吻」。')
 
 
 def _c03(c):
@@ -68,10 +68,10 @@ def _c04(c):
 
 
 def _c05(c):
-    mirage = _mirage(c)
-    c.sortie(no_counter=mirage)
-    if mirage and alive(c.state, c.side, c.cid):
-        c.energy(1, reason='幻境，「花开见血」')
+    add_effect(c.character, 'canhong.combat_immune', 'rule.combat_immune', True, op='allow',
+               source_entity_id=c.entity_id, source_key='C05', stacking='replace',
+               clear_on=('battle', 'operation_end', 'down'), show_marker=False, label='战斗免伤')
+    c.sortie()
 
 
 def _c06(c):
@@ -83,7 +83,7 @@ def _c07(c):
     set_shape(c)
 
 
-def _play_c07(c):
+def _release_c07(c):
     team = c.state['sides'][c.side]
     card = next((item for item in team['hand'] if item.get('card_id') == 'C07'), None)
     if card is not None:
@@ -95,11 +95,12 @@ def _play_c07(c):
                 break
     if card is None:
         return
-    c.operation['card'] = card
-    # The downed-ally context was built before this card existed on the operation.
-    _c07(c.for_character(c.side, c.cid))
-    discard(c.state, c.side, card)
-    c.history('持续伤害不少于 20 层，自动使用「惑心谲影」。')
+    from app.modules.card_game.engine.duel_v2.flow import resolve_release
+    parent = c.state.get('operation')
+    try:
+        resolve_release(c.state, c.side, card)
+    finally:
+        c.state['operation'] = parent
 
 
 @register
@@ -120,7 +121,7 @@ class Canhong:
     @staticmethod
     def on_game_start(c):
         # User-authored tabletop rule (2026-10-07), granted only during setup.
-        c.grant_harmony(c.cid, 2, reason='对局开始，残虹的异能')
+        c.grant_harmony(c.cid, 3, reason='对局开始，残虹的异能')
 
     @staticmethod
     def on_ultimate(c):
@@ -128,11 +129,15 @@ class Canhong:
         c.history('发动终结：施加 5 层「鸩火」。')
 
     @staticmethod
-    def after_card(c, card=None, actor_id=None, **_data):
+    def on_card_used(c, card=None, actor_id=None, **_data):
         if actor_id != c.cid or not card or card.get('type') != 'battle':
             return
         if alive(c.state, c.side, c.cid):
             _enter_mirage(c)
+
+    @staticmethod
+    def damage_is_additional(c, current=False, **_data):
+        return True if alive(c.state, c.side, c.cid) and _mirage(c) else current
 
     @staticmethod
     def after_hits(c, target_loss=0, **_data):
@@ -155,12 +160,12 @@ class Canhong:
         if c.character.get('shape') != 'C06':
             return
         side, cid = front_target(c.state, c.side)
-        damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='「血染双瞳」')
+        damage(c.state, side, cid, 1, source=f'{c.side}:{c.cid}', reason='「夜幕裁梦」')
 
     @staticmethod
     def on_ally_down(c, downed=None, **_data):
         if downed == c.cid and total_stacks(c.state, c.side) >= 20:
-            _play_c07(c)
+            _release_c07(c)
 
     @staticmethod
     def hp_floor(c, current=0, target_id=None, **_data):

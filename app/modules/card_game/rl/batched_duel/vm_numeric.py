@@ -4,7 +4,9 @@ Integer overflow fails explicitly. Float floor division is currently restricted
 within int64 range, and integer true division to exact float input magnitudes.
 This is a partial VM component, not a complete Python numeric implementation.
 """
-NUMERIC_OPS=frozenset(('BINARY_FLOOR_DIVIDE','BINARY_TRUE_DIVIDE','BINARY_AND','INPLACE_ADD','INPLACE_SUBTRACT','INPLACE_MULTIPLY'))
+NUMERIC_OPS=frozenset(('BINARY_FLOOR_DIVIDE','BINARY_TRUE_DIVIDE','BINARY_AND','BINARY_OR','BINARY_XOR','BINARY_MODULO',
+    'INPLACE_ADD','INPLACE_SUBTRACT','INPLACE_MULTIPLY','INPLACE_OR','INPLACE_AND','INPLACE_XOR',
+    'INPLACE_FLOOR_DIVIDE','INPLACE_TRUE_DIVIDE','INPLACE_MODULO'))
 
 def emit_numeric_source():
     return r'''
@@ -44,7 +46,40 @@ __device__ inline double python_fmod(double a,double b){
  else out.u=sign|(mx>>(1-biased));return out.d;
 }
 __device__ inline int numeric_binary(Context* c,int a,int b,int op){
+ // NumPy uses private arithmetic IDs, distinct from the VM opcode enum.
+ int np_op=0,np_out=MISSING;
+ if(op==OP_BINARY_ADD||op==OP_INPLACE_ADD)np_op=1;
+ else if(op==OP_BINARY_SUBTRACT||op==OP_INPLACE_SUBTRACT)np_op=2;
+ else if(op==OP_BINARY_MULTIPLY||op==OP_INPLACE_MULTIPLY)np_op=3;
+ else if(op==OP_BINARY_TRUE_DIVIDE||op==OP_INPLACE_TRUE_DIVIDE)np_op=4;
+ if(numpy_numeric(c,a,b,np_op,&np_out))return np_out;
  int ta=kind(c,a),tb=kind(c,b);
+ if(op==OP_BINARY_MULTIPLY||op==OP_INPLACE_MULTIPLY){
+  int seq=MISSING,times=MISSING;
+  if((ta==TAG_LIST||ta==TAG_TUPLE)&&(tb==TAG_INT||tb==TAG_BOOL)){seq=a;times=b;}
+  else if((tb==TAG_LIST||tb==TAG_TUPLE)&&(ta==TAG_INT||ta==TAG_BOOL)&&op==OP_BINARY_MULTIPLY){seq=b;times=a;}
+  if(seq!=MISSING){
+   long long repeat=0;if(numeric_int(c,times,&repeat)<0)return MISSING;
+   const int* original=node(c,seq);if(!original)return MISSING;
+   int tag=original[0],count=original[2],offset=original[1];
+   if(count<0){c->error=BAD_PROGRAM;return MISSING;}
+   if(repeat<0)repeat=0;
+   long long available=(long long)c->h.max_edges-c->h.counts[1];
+   if(count&&repeat>available/count){c->h.error=ERROR_EDGE_CAPACITY;return MISSING;}
+   long long total=count?repeat*count:0;
+   int out=op==OP_INPLACE_MULTIPLY&&tag==TAG_LIST?seq:meta(c,tag,0,0,0);
+   if(c->error||c->h.error||out==MISSING)return MISSING;
+   if(out<0){c->h.error=ERROR_CONSTANT_WRITE;return MISSING;}
+   int start=c->h.counts[1];
+   for(long long i=0;i<total;i++){
+    int child=edge(c,seq,(int)(i%count));if(c->error||c->h.error)return MISSING;
+    c->h.edges[((long long)start+i)*2]=child;c->h.edges[((long long)start+i)*2+1]=-1;
+   }
+   c->h.counts[1]+=(int)total;
+   int* target=mutable_node(c,out);if(!target)return MISSING;
+   target[1]=start;target[2]=(int)total;return out;
+  }
+ }
  if(op==OP_BINARY_ADD||op==OP_INPLACE_ADD){
   if(ta==TAG_STR&&tb==TAG_STR){int refs[2]={a,b};return concat_strings(c,refs,2);}
   if((ta==TAG_LIST&&tb==TAG_LIST)||(ta==TAG_TUPLE&&tb==TAG_TUPLE)){
@@ -58,25 +93,28 @@ __device__ inline int numeric_binary(Context* c,int a,int b,int op){
  if((ta!=TAG_BOOL&&ta!=TAG_INT&&ta!=TAG_FLOAT)||(tb!=TAG_BOOL&&tb!=TAG_INT&&tb!=TAG_FLOAT)){
   c->error=UNSUPPORTED_TYPE;return MISSING;
  }
- if(ta==TAG_FLOAT||tb==TAG_FLOAT||op==OP_BINARY_TRUE_DIVIDE){
-  if(op==OP_BINARY_AND){c->error=UNSUPPORTED_TYPE;return MISSING;}
+ if(ta==TAG_FLOAT||tb==TAG_FLOAT||op==OP_BINARY_TRUE_DIVIDE||op==OP_INPLACE_TRUE_DIVIDE){
+  if(op==OP_BINARY_AND||op==OP_INPLACE_AND||op==OP_BINARY_OR||op==OP_INPLACE_OR||op==OP_BINARY_XOR||op==OP_INPLACE_XOR){c->error=UNSUPPORTED_TYPE;return MISSING;}
   double aa=0,bb=0,out=0;if(numeric_double(c,a,&aa)<0||numeric_double(c,b,&bb)<0)return MISSING;
   if(op==OP_BINARY_ADD||op==OP_INPLACE_ADD)out=aa+bb;
   else if(op==OP_BINARY_SUBTRACT||op==OP_INPLACE_SUBTRACT)out=aa-bb;
   else if(op==OP_BINARY_MULTIPLY||op==OP_INPLACE_MULTIPLY)out=aa*bb;
-  else if(op==OP_BINARY_TRUE_DIVIDE){
+  else if(op==OP_BINARY_TRUE_DIVIDE||op==OP_INPLACE_TRUE_DIVIDE){
    if(!bb){c->error=BAD_CALL;return MISSING;}
    // General Python big-integer true division requires separate exact rounding.
    if(ta!=TAG_FLOAT&&tb!=TAG_FLOAT&&(aa>9007199254740992.0||aa< -9007199254740992.0||bb>9007199254740992.0||bb< -9007199254740992.0)){
     c->error=UNSUPPORTED_TYPE;return MISSING;
    }out=aa/bb;
-  }else if(op==OP_BINARY_FLOOR_DIVIDE){
+  }else if(op==OP_BINARY_FLOOR_DIVIDE||op==OP_INPLACE_FLOOR_DIVIDE){
    if(!bb){c->error=BAD_CALL;return MISSING;}double quotient=aa/bb;
    if(quotient>=9223372036854775808.0||quotient< -9223372036854775808.0){c->error=UNSUPPORTED_TYPE;return MISSING;}
    double remainder=python_fmod(aa,bb),div=(aa-remainder)/bb;
    if(remainder && ((bb<0)!=(remainder<0)))div-=1.0;
    if(div){long long truncated=(long long)div;if(div<0&&(double)truncated!=div)truncated--;out=(double)truncated;if(div-out>0.5)out+=1.0;}
-   else{union Bits{double d;unsigned long long u;} zero;zero.d=quotient;zero.u&=0x8000000000000000ULL;out=zero.d;}
+  else{union Bits{double d;unsigned long long u;} zero;zero.d=quotient;zero.u&=0x8000000000000000ULL;out=zero.d;}
+  }else if(op==OP_BINARY_MODULO||op==OP_INPLACE_MODULO){
+   if(!bb){c->error=BAD_CALL;return MISSING;}out=python_fmod(aa,bb);if(out&&((bb<0)!=(out<0)))out+=bb;
+   if(!out){union Bits{double d;unsigned long long u;} zero;zero.d=bb;zero.u&=0x8000000000000000ULL;out=zero.d;}
   }else{c->error=UNSUPPORTED_OP;return MISSING;}
   return make_float64(&c->h,out);
  }
@@ -86,12 +124,18 @@ __device__ inline int numeric_binary(Context* c,int a,int b,int op){
  else if(op==OP_BINARY_MULTIPLY||op==OP_INPLACE_MULTIPLY){
   if((aa==(-9223372036854775807LL-1)&&bb==-1)||(bb==(-9223372036854775807LL-1)&&aa==-1))c->h.error=ERROR_INT_OVERFLOW;
   else{out=(long long)((unsigned long long)aa*(unsigned long long)bb);if(bb&&out/bb!=aa)c->h.error=ERROR_INT_OVERFLOW;}
- }else if(op==OP_BINARY_FLOOR_DIVIDE){
+ }else if(op==OP_BINARY_FLOOR_DIVIDE||op==OP_INPLACE_FLOOR_DIVIDE){
   if(!bb){c->error=BAD_CALL;return MISSING;}
   if(aa==(-9223372036854775807LL-1)&&bb==-1){c->h.error=ERROR_INT_OVERFLOW;return MISSING;}
   out=aa/bb;long long remainder=aa%bb;if(remainder&&((remainder<0)!=(bb<0)))out--;
- }else if(op==OP_BINARY_AND)out=aa&bb;
- else{c->error=UNSUPPORTED_OP;return MISSING;}
+ }else if(op==OP_BINARY_AND||op==OP_INPLACE_AND)out=aa&bb;
+ else if(op==OP_BINARY_OR||op==OP_INPLACE_OR)out=aa|bb;
+ else if(op==OP_BINARY_XOR||op==OP_INPLACE_XOR)out=aa^bb;
+ else if(op==OP_BINARY_MODULO||op==OP_INPLACE_MODULO){
+  if(!bb){c->error=BAD_CALL;return MISSING;}
+  if(aa==(-9223372036854775807LL-1)&&bb==-1)out=0;
+  else{out=aa%bb;if(out&&((out<0)!=(bb<0)))out+=bb;}
+ }else{c->error=UNSUPPORTED_OP;return MISSING;}
  return c->h.error?MISSING:make_int64(&c->h,out);
 }
 __device__ inline int reduce_add(Context* c,int a,int b){return numeric_binary(c,a,b,OP_BINARY_ADD);}
@@ -99,7 +143,11 @@ __device__ inline int vm_equal(Context* c,int left,int right){
  const int capacity=256;int a[capacity],b[capacity],top=1;a[0]=left;b[0]=right;
  while(top && !c->error&&!c->h.error){
   int aa=a[--top],bb=b[top];if(aa==bb)continue;int ta=kind(c,aa),tb=kind(c,bb);
-  if(ta==27){aa=edge(c,aa,1);ta=kind(c,aa);}if(tb==27){bb=edge(c,bb,1);tb=kind(c,bb);}
+  if(ta==27||tb==27){
+   int other=ta==27?tb:ta;if(other>4&&other!=27)return 0;
+   if(!key_equal(&c->h,aa,bb))return 0;continue;
+  }
+  int decimal_result=0;if(decimal_equal(c,aa,bb,&decimal_result)){if(!decimal_result)return 0;continue;}
   int mapping_a=ta>=TAG_DICT&&ta<=TAG_CARD_ENTITY,mapping_b=tb>=TAG_DICT&&tb<=TAG_CARD_ENTITY;
   if(mapping_a&&mapping_b){
    int count=length(c,aa);if(count!=length(c,bb))return 0;

@@ -1,0 +1,34 @@
+{% extends 'guide/layout.html' %}
+{% from 'guide/element_badges.html' import element_list %}
+{% block title %}{{ record.name }} · NTE Tools{% endblock %}
+{% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='diyboss.css') }}"><script defer src="{{ url_for('guide_module.static', filename='diyboss.js') }}"></script>{% endblock %}
+{% block guide_back %}<a class="guide-top-back" href="/guide?kind=diyboss">← 争锋赏宴</a>{% endblock %}
+{% block content %}
+<header class="guide-detail-header"><div><p class="guide-eyebrow">争锋赏宴 / 第 {{ record.season }} 期 / {{ record.stage_count }} 个关卡</p><h1>{{ record.name }}</h1><p class="guide-muted">自由选择难度与敌方强化，挑战更高研究积分。</p></div></header>
+<nav class="guide-links diy-configs" aria-label="争锋配置">{% for config in configurations %}<a href="/guide/diyboss/{{ config.id }}" {% if config.id == record.id %}aria-current="page"{% endif %}>{{ config.name }} · 第{{ config.season }}期</a>{% endfor %}</nav>
+<p class="guide-muted">国服活动时间：{{ record.begin_date }} → {{ record.end_date }}（北京时间）。{{ record.opening_note }}，结束日05:59结束。各关卡保留本期独立词条数值。</p>
+<div data-diy-selector data-default-stage="{{ record.stages[0].id }}">
+<nav class="diy-stage-nav" aria-label="关卡目录">{% for stage in record.stages %}<a href="?stage={{ stage.id }}&difficulty={{ selected_difficulty }}" data-diy-stage-link="{{ stage.id }}" aria-controls="stage-{{ stage.id }}" {% if stage.id == selected_stage %}aria-current="true"{% endif %}>{{ stage.name }}{% if stage.special %}<small>特殊挑战</small>{% endif %}</a>{% endfor %}</nav>
+{% for stage in record.stages %}
+<section class="diy-stage" id="stage-{{ stage.id }}" data-diy-stage="{{ stage.id }}" {% if stage.id != selected_stage %}hidden{% endif %}>
+<div class="diy-stage-heading"><div><p class="guide-eyebrow">{{ '特殊挑战' if stage.special else '常规挑战' }}</p><h2>{{ stage.name }}</h2><p>{{ stage.enemy_label }}</p><p class="guide-muted">{{ stage.unlock }}</p></div>
+<div class="diy-artwork">{% for enemy in stage.enemies %}<figure><img src="{{ enemy.image }}" alt="{{ stage.enemy_label }}敌人立绘" width="464" height="540" loading="lazy" decoding="async"><figcaption>{{ enemy.name }}</figcaption></figure>{% endfor %}</div></div>
+<nav class="diy-difficulties" aria-label="挑战难度">{% for difficulty in stage.difficulties %}<a href="?stage={{ stage.id }}&difficulty={{ difficulty.id }}" data-diy-difficulty-link="{{ difficulty.id }}" data-for-stage="{{ stage.id }}" aria-controls="monsters-{{ stage.id }}-{{ difficulty.id }}" {% if difficulty.id == selected_difficulty %}aria-current="true"{% endif %}><strong>{{ difficulty.name }}</strong><span>基础积分 {{ difficulty.base_score }}</span></a>{% endfor %}</nav>
+<p class="guide-muted">以下为当前难度的敌人基础面板，未计入自选生命、攻击与抗性强化。双阶段或多名敌人分别列出。</p>
+{% for difficulty in stage.difficulties %}<div id="monsters-{{ stage.id }}-{{ difficulty.id }}" data-diy-difficulty="{{ difficulty.id }}" {% if difficulty.id != selected_difficulty %}hidden{% endif %}>
+<div class="diy-monsters">{% for monster in difficulty.monsters %}<article class="diy-monster"><h3>{{ monster.name }}</h3><p>Lv.{{ monster.level }} · ×{{ monster.count }}</p><p class="diy-hp">基础生命 <strong>{{ '{:,.0f}'.format(monster.stats.hp) }}</strong></p><p>属性弱点：{{ element_list(monster.weaknesses, '未指定' if monster.generic_stagger else '未提供') }}</p><details><summary>攻击、防御与抗性</summary><p>攻击 {{ '{:,.0f}'.format(monster.stats.attack) }} · 防御 {{ '{:,.0f}'.format(monster.stats.defense) }}</p><dl class="diy-resistances">{% for element, resistance in monster.stats.resistances.items() %}<div><dt>{{ element|guide_label }}</dt><dd>{{ '{:g}'.format(resistance * 100) }}%</dd></div>{% endfor %}</dl></details></article>{% endfor %}</div>
+</div>{% endfor %}
+<div data-diy-calculator data-stage-id="{{ stage.id }}" data-difficulty="{{ selected_difficulty }}" data-score-url="/api/guide/diyboss/{{ record.id }}/score">
+<h3>自选强化</h3><p class="guide-muted">每行选择一个档位，或选择“不选”；额外挑战目标可以多选。完成条件并挑战成功时获得下方积分。</p>
+<div class="guide-table-scroll"><table class="diy-buffs"><thead><tr><th scope="col">强化类别</th><th scope="col">不选</th>{% set columns = stage.buff_groups|map(attribute='options')|map('length')|max %}{% for index in range(columns) %}<th scope="col">第 {{ index + 1 }} 档</th>{% endfor %}</tr></thead><tbody>
+{% for group in stage.buff_groups %}{% set group_index = loop.index %}<tr><th scope="row">{{ group.name }}</th><td><label class="diy-buff-choice"><input type="radio" name="diy-{{ stage.id }}-buff-{{ group_index }}" value="" checked aria-label="{{ group.name }} 不选"><span>不选</span><small>积分 0</small></label></td>{% for option in group.options %}<td><label class="diy-buff-choice"><input type="radio" name="diy-{{ stage.id }}-buff-{{ group_index }}" value="{{ option.id }}" aria-label="{{ group.name }} {{ '+' if option.unit == '%' else '' }}{{ option.value }}{{ option.unit }} 积分 {{ option.score }}"><strong>{{ '+' if option.unit == '%' else '' }}{{ option.value }}{{ option.unit }}</strong><span>积分 {{ option.score }}</span></label></td>{% endfor %}</tr>{% endfor %}
+</tbody></table></div>
+{% if stage.targets %}<div class="diy-targets"><h3>额外挑战目标</h3><p>已选目标积分 <output data-diy-target-score>0</output> / {{ stage.target_score_limit }}</p><ol class="diy-target-list">{% for target in stage.targets %}<li><label class="diy-target-choice"><input type="checkbox" value="{{ target.id }}" data-diy-target aria-label="目标 {{ loop.index }}：{{ target.description }}" {% if target.score is none %}disabled{% endif %}><span class="diy-target-title">目标 {{ loop.index }} · {{ target.score if target.score is not none else '未提供' }} 分</span><span class="diy-target-copy">{{ target.description }}</span></label></li>{% endfor %}</ol></div>{% endif %}
+<div class="diy-score-summary" role="status" aria-live="polite" aria-atomic="true"><div><span>预计挑战积分</span><strong data-diy-total>{{ '{:,.0f}'.format(scores[stage.id].total) }}</strong><p data-diy-breakdown>（基础 {{ scores[stage.id].base_score }} + 强化 0 + 目标 0）× {{ '{:g}'.format(scores[stage.id].score_rate) }}</p><p data-diy-score-error hidden></p></div><button type="button" data-diy-clear>清空选择</button></div>
+<noscript><p class="guide-muted">启用 JavaScript 后可自动计算所选条件的总分。</p></noscript>
+</div>
+<details class="diy-rewards"><summary>查看奖励积分门槛</summary><div class="diy-score-list">{% for reward in stage.rewards %}<span>{{ reward.score }} 分</span>{% endfor %}</div><p class="guide-muted">这里只列出领取门槛，奖励物品明细暂未提供。</p></details>
+</section>{% endfor %}
+</div>
+<p class="guide-links"><a href="/guide/diyboss/{{ record.id }}.md">Markdown ↗</a><a href="/api/guide/diyboss/{{ record.id }}">JSON ↗</a></p>
+{% endblock %}

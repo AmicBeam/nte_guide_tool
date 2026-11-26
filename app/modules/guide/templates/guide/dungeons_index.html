@@ -1,0 +1,22 @@
+{% extends 'guide/layout.html' %}
+{% block title %}副本与材料掉落 · 攻略数据库{% endblock %}
+{% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='dungeons.css') }}">{% endblock %}
+{% block content %}
+{% include 'guide/tabs.html' %}
+<form class="guide-search" action="/guide" method="get" role="search">
+<input type="hidden" name="kind" value="dungeons">
+{% if selected_material %}<input type="hidden" name="material" value="{{ selected_material }}">{% endif %}
+<label for="guide-query">搜索副本或材料</label>
+<div class="guide-search-row"><input id="guide-query" name="q" type="search" value="{{ request.args.get('q', '') }}" placeholder="副本名、材料名…"><button type="submit">搜索</button></div>
+<nav class="dungeon-categories" aria-label="副本类型"><a href="/guide?kind=dungeons{% if selected_material %}&material={{ selected_material|urlencode }}{% endif %}{% if request.args.get('q') %}&q={{ request.args.get('q')|urlencode }}{% endif %}" {% if not selected_category %}aria-current="page"{% endif %}>全部</a>{% for category in categories %}<a href="/guide?kind=dungeons&category={{ category|urlencode }}{% if selected_material %}&material={{ selected_material|urlencode }}{% endif %}{% if request.args.get('q') %}&q={{ request.args.get('q')|urlencode }}{% endif %}" {% if selected_category == category %}aria-current="page"{% endif %}>{{ category }}</a>{% endfor %}</nav>
+</form>
+<div class="guide-section-heading"><h1>副本与材料掉落</h1><span>{{ records|length }} 个副本</span></div>
+{% if selected_material %}<p class="dungeon-selection">正在查找：<strong>{{ material_name }}</strong> <a href="/guide?kind=dungeons">清除材料筛选</a></p>{% endif %}
+<p class="guide-muted">选择副本后查看关卡、难度、本性像素消耗与材料产量。</p>
+<div class="dungeon-grid">{% for record in records %}<a class="dungeon-card" href="/guide/dungeons/{{ record.id }}{% if selected_material %}?material={{ selected_material|urlencode }}#rewards{% endif %}">
+<h2>{{ record.name }}</h2><p>{{ record.description }}</p>
+<div class="dungeon-card-materials">{% for encounter in record.encounters %}<span>{{ encounter.name }}</span>{% endfor %}</div>
+<footer>{{ record.encounters|length }} 个关卡<span aria-hidden="true">↗</span></footer>
+</a>{% endfor %}</div>
+{% if not records %}<div class="guide-empty"><h2>没有找到对应副本</h2><p>尝试材料或副本名称，或清除筛选条件。</p><a href="/guide?kind=dungeons">查看全部副本</a></div>{% endif %}
+{% endblock %}

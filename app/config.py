@@ -15,3 +15,13 @@ DUEL_SUPPORT_GROUP = os.getenv('NTE_DUEL_SUPPORT_GROUP', '575377480')
 SHAFT_SUPPORT_GROUP = os.getenv('NTE_SHAFT_SUPPORT_GROUP', '1005485948')
 SHAFT_LOGIN_REQUIRED = os.getenv('NTE_SHAFT_LOGIN_REQUIRED', '1').strip().lower() not in {'0', 'false', 'no', 'off'}
 DUEL_AI_MODEL_DIR = Path(os.getenv('NTE_DUEL_AI_MODEL_DIR', str(BASE_DIR / 'app' / 'modules' / 'card_game' / 'engine' / 'ai' / 'models')))
+
+# OpenAI-compatible multimodal chat; never expose credentials to templates or tools.
+GUIDE_CHAT_SETTINGS = {
+    'base_url': os.getenv('NTE_GUIDE_CHAT_BASE_URL', '').rstrip('/'),
+    'api_key': os.getenv('NTE_GUIDE_CHAT_API_KEY', ''),
+    'model': os.getenv('NTE_GUIDE_CHAT_MODEL', ''),
+    'timeout': float(os.getenv('NTE_GUIDE_CHAT_TIMEOUT', '90')),
+    'max_tokens': int(os.getenv('NTE_GUIDE_CHAT_MAX_TOKENS', '4096')),
+    'ca_bundle': os.getenv('NTE_GUIDE_CHAT_CA_BUNDLE', ''),
+}

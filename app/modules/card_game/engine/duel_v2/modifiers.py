@@ -30,6 +30,9 @@ class Effect(TypedDict, total=False):
     stack_limit: int
 
 
+PUBLIC_EFFECT_FIELDS = tuple(Effect.__annotations__)
+
+
 PHASES = ('turn_start', 'turn_end')
 OPS = ('add', 'multiply', 'set', 'allow', 'forbid')
 SCOPES = ('self', 'allies', 'other_allies', 'enemies', 'all')
@@ -121,6 +124,8 @@ def deadline(state, side, turns, phase='turn_start'):
 
 def legacy_effects(holder):
     flags = holder.get('flags') or {}
+    if not flags:
+        return []
     source = holder.get('entity_id')
     result = []
     def make(key, value, property='attack.panel', **kw):
@@ -307,7 +312,7 @@ def tick(state, side, phase):
 
 
 def public_effects(holder):
-    allowed = tuple(Effect.__annotations__)
+    allowed = PUBLIC_EFFECT_FIELDS
     return [{k: deepcopy(e[k]) for k in allowed if k in e}
             for e in all_effects(holder) if e.get('visibility') == 'public']
 
@@ -407,6 +412,11 @@ def consume_applied(state, event, effect_ids):
 @condition('damage_attribute')
 def _damage_attribute(c, args):
     return c['query'].get('attribute') == args.get('attribute')
+
+
+@condition('card_owner_other')
+def _card_owner_other(c, args):
+    return bool(c['source'] and c['subject'].get('entity_id') != c['source'].get('entity_id'))
 
 
 def resistance_values(holder):

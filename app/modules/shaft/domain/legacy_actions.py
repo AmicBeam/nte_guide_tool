@@ -1,10 +1,48 @@
-"""Migrate retired joints and remove steps now handled by automatic settlement."""
+"""Migrate retired actions and remove steps now handled by automatic settlement."""
+from math import floor, isfinite
 from typing import Any
+
+
+def _migrate_form_action_steps(steps: list[dict[str, Any]], actions: dict[str, Any]) -> list[dict[str, Any]]:
+    """Resolve retired shared actions from the latest setup in their own slot."""
+    selectors: dict[str, list[tuple[str, str]]] = {}
+    for action_id, action in actions.items():
+        for form in (action.get('legacy_form_action_migration') or {}).get('forms', []):
+            for setup_id in form.get('setup_action_ids', []):
+                selectors.setdefault(setup_id, []).append((action_id, form['action_id']))
+
+    def number(value: Any) -> float:
+        try:
+            result = float(value or 0)
+            return result if isfinite(result) else 0
+        except (TypeError, ValueError):
+            return 0
+
+    ordered = sorted(enumerate(steps), key=lambda item: (
+        number(item[1].get('start_tick')) if isinstance(item[1], dict) else 0, item[0]))
+    modes: dict[tuple[int, str], str] = {}
+    converted = list(steps)
+    for index, step in ordered:
+        if not isinstance(step, dict):
+            continue
+        slot = floor(number(step.get('slot')) + 0.5)
+        action_id = str(step.get('action_id') or '')
+        for old_id, target_id in selectors.get(action_id, []):
+            modes[(slot, old_id)] = target_id
+        policy = actions.get(action_id, {}).get('legacy_form_action_migration')
+        if not policy:
+            continue
+        target_id = modes.get((slot, action_id), policy.get('default_action_id'))
+        target = actions.get(target_id)
+        if target and not target.get('legacy_only'):
+            converted[index] = {**step, 'action_id': target_id, 'action_name': target['name']}
+    return converted
 
 
 def migrate_lingke_joint_steps(steps: list[dict[str, Any]], team: list[dict[str, Any]],
                                catalog: dict[str, Any]) -> list[dict[str, Any]]:
     actions = {a['id']: a for a in catalog['actions']}
+    steps = _migrate_form_action_steps(steps, actions)
     characters = {c['id']: c for c in catalog['characters']}
     members = sorted(team, key=lambda m: int(m.get('slot', 0)))
     migrated = []

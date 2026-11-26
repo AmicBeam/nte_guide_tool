@@ -55,6 +55,9 @@ class Bohe:
     def combat_overflow(c, current=0, attacker_entity_id=None, defender_entity_id=None, raw_overflow=0, **_data):
         raw = int(raw_overflow or 0)
         if attacker_entity_id == c.entity_id:
+            if raw > 0:
+                from app.modules.card_game.engine.duel_v2.genesis import refresh_layers
+                refresh_layers(c.state, c.side)
             return raw
         flags = c.character.setdefault('flags', {})
         if defender_entity_id == c.entity_id and flags.get('share_overflow'):
@@ -63,8 +66,21 @@ class Bohe:
         return None
 
     @staticmethod
-    def incoming_damage(c, current=0, kind=None, target_id=None, source=None, **_data):
-        if target_id != c.cid or not c.character.get('awakened'):
+    def genesis_targets(c, current=None, **_data):
+        from app.modules.card_game.engine.duel_v2.state import other, hero, team_order, shuffle
+        side = other(c.side)
+        candidates = [cid for cid in team_order(c.state, side) if alive(c.state, side, cid)]
+        candidates.append('player')
+        shuffle(c.state, candidates)
+        return [(side, candidates[0])]
+
+    @staticmethod
+    def noncombat_damage_immune(c, current=False, **_data):
+        return bool(c.character.get('awakened'))
+
+    @staticmethod
+    def incoming_damage_immunity(c, current=None, kind=None, target_id=None, source=None, **_data):
+        if target_id != c.cid or not Bohe.noncombat_damage_immune(c):
             return None
         if kind in ('combat', 'followup', 'penetration'):
             return None
@@ -74,8 +90,12 @@ class Bohe:
         if src_side == c.side:
             return None
         if src_side or kind in ('burn', 'star', 'nightmare', 'overlay', 'genesis', 'delay', 'sync'):
-            return 0
+            return 'noncombat'
         return None
+
+    @staticmethod
+    def incoming_damage(c, current=0, **data):
+        return 0 if Bohe.incoming_damage_immunity(c, **data) else None
 
     @staticmethod
     def after_hits(c, **_data):
@@ -96,7 +116,7 @@ class Bohe:
         if finished(c.state) or not alive(c.state, c.side, c.cid) or collapsed(c.character):
             return
         from app.modules.card_game.engine.duel_v2.flow import finish_operation, operation
-        c.history('回合开始，「开始净空」触发：薄荷自动出击。')
+        c.history('回合开始，「悠闲假日」触发：薄荷自动出击。')
         parent = c.state.get('operation')
         # User balance rule (2026-09-15): automatic attack grants no combat resources.
         operation(c.state, c.side, c.cid).sortie(no_combat_resources=True)

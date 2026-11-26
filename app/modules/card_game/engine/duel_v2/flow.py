@@ -1,7 +1,7 @@
 """Pure immutable public commands and sequential turn/choice orchestration."""
 from copy import deepcopy
-from .entities import PlayerEntity, allocate_entity_id, clone_state, hydrate_entities, normalize_entity_action
-from itertools import combinations
+from .entities import PlayerEntity, allocate_entity_id, clone_state, hydrate_entities, needs_hydration, normalize_entity_action
+from itertools import combinations, permutations
 from random import Random
 
 from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS, STARTER_DECK, validate_deck
@@ -13,7 +13,7 @@ from .state import (SIDES, add_hand, alive, card_instance, clear_harmony_source,
                     draw, effective_card, energy, finished, front_debuff, hero, knockdowns, log, move_out, name,
                     new_character, other, shield, shuffle, team_order, upgrade_harmony_residue)
 
-from .escalation import begin_escalation, clamp_resources, energy_cap, harmony_cap, ultimate_remaining
+from .escalation import begin_escalation, clamp_resources, energy_cap, harmony_cap, turn_action_points, ultimate_remaining
 
 
 def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=None, escalation=True):
@@ -31,17 +31,17 @@ def new_game(seed=0, decks=None, first_side=None, skip_mulligan=False, scenario=
     selected = {s: validate_deck(deepcopy(decks[s] if decks else STARTER_DECK)) for s in SIDES}
     first_side = first_side or SIDES[Random(seed).randrange(2)]
     from .presentation import capture_public_board
-    state = {'rules_version': 'duel_v2', 'design_version': 'V2.5', 'version': 0,
+    state = {'rules_version': 'duel_v2', 'design_version': 'V2.6', 'version': 0,
              'phase': 'mulligan', 'active_side': first_side, 'first_side': first_side,
              'turn': 0, 'winner': None, 'reason': None, 'rng': seed, 'next_instance': 0,
              'event_seq': 0, 'events': [], 'pending_choice': None, 'operation': None,
              'mulligan_done': [], 'current_action_id': 'setup', 'current_action_version': 0,
              'combat_group': 0, 'sides': {}, 'escalation_enabled': bool(escalation),
-             'harmony_residue_version': 1}
+             'harmony_residue_version': 3}
     for side in SIDES:
         order = list(selected[side]['character_ids'])
         state['sides'][side] = PlayerEntity({
-            'name': name(state, side), 'hp': 30, 'shield': 0 if side == first_side else 5,
+            'name': name(state, side), 'hp': 30, 'max_hp': 30, 'shield': 0 if side == first_side else 5,
             'ap': 0, 'normal_attack_available': False, 'ultimate_available': False,
             'front': None, 'last_front': None,
             'order': order,
@@ -97,7 +97,10 @@ def kit_makes_card_instant(state, side, card):
 
 
 def card_plays_instant(state, side, card):
-    return bool(card.get('instant')) or kit_makes_form_instant(state, side, card) or kit_makes_card_instant(state, side, card)
+    from .modifiers import evaluate
+    base = bool(card.get('instant')) or kit_makes_form_instant(state, side, card) or kit_makes_card_instant(state, side, card)
+    return bool(evaluate(state, side, hero(state, side, card['character_id']),
+                         'card.instant', base, query={'card': card})['value'])
 
 
 def card_is_free_instant(state, side, card):
@@ -112,9 +115,20 @@ def card_cost(state, side, card):
     base = min(int(state['sides'][side]['ap']), int(limit)) if limit else int(card.get('cost') or 0)
     if card.get('free_if_surplus') and state['sides'][side].get('surplus'):
         base = 0
+    for cid in (card.get('character_id'), card.get('original_character_id')):
+        free = getattr(KITS.get(cid), 'makes_card_free', None)
+        if free and free(state, side, card):
+            base = 0
+            break
     from .modifiers import evaluate
     return max(0, int(evaluate(state, side, hero(state, side, card['character_id']),
                               'card.cost', base, query={'card': card})['value']))
+
+
+def card_ap_payment(state, side, card):
+    """Instant discounts only the ordinary card cost, never the explicit surcharge."""
+    ordinary = 0 if card_is_free_instant(state, side, card) else card_cost(state, side, card)
+    return ordinary + int(card.get('additional_ap_cost') or 0)
 
 
 def can_afford_card(state, side, card):
@@ -123,8 +137,7 @@ def can_afford_card(state, side, card):
     if not decide(EffectContext(state, side, card['character_id'], {'side': side}),
                   'can_play', True, actor_only=True, card=card):
         return False
-    cost = card_cost(state, side, card)
-    return card_is_free_instant(state, side, card) or int(state['sides'][side].get('ap') or 0) >= cost
+    return int(state['sides'][side].get('ap') or 0) >= card_ap_payment(state, side, card)
 
 
 def card_play_options(state, side, card):
@@ -137,8 +150,7 @@ def card_play_options(state, side, card):
                    for resource, amount in option.get('costs', {}).items())]
 
 
-def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None):
-    from app.modules.card_game.content.duel_v2.characters.common import scale_battle_frame
+def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None, response=False, present=True):
     from .presentation import public_card
     team = state['sides'][side]
     options = card.get('play_options') or []
@@ -157,17 +169,50 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None)
     form_bonus = kit_makes_form_instant(state, side, card)
     ap_paid = 0
     if pay:
+        ap_paid = card_ap_payment(state, side, card)
         if card_is_free_instant(state, side, card):
             team['used']['instant'] = True
-        else:
-            ap_paid = card_cost(state, side, card)
-            team['ap'] -= ap_paid
+        team['ap'] -= ap_paid
+    # The next-card grant is consumed even by an intrinsically zero-cost card;
+    # that card still does not spend the shared instant opportunity.
+    from .modifiers import evaluate, consume_applied
+    instant_grants = evaluate(state, side, hero(state, side, card['character_id']),
+                             'card.instant', False, query={'card': card})
+    consume_applied(state, 'card_use', [e['effect_id'] for e in instant_grants['contributions']])
     log(state, f"{hero(state, side, card['character_id'])['name']}使用「{card['name']}」。",
         'play', side=side, source=card['character_id'],
-        actor=f"{side}:{card['character_id']}", card=public_card(card, state, side))
+        actor=f"{side}:{card['character_id']}", card=public_card(card, state, side), response=response, present=present)
     c = operation(state, side, card['character_id'], card, target_id)
     c.operation['option_id'] = option.get('id')
     c.operation['ap_paid'] = ap_paid
+    from .harmony import pay_harmony
+    pay_harmony(c, ap_paid)
+    fire(c, GameEvent.V2_CARD_USED, actor_id=card['character_id'], card=card)
+    if form_bonus and not finished(state):
+        draw(state, side, 1)
+    _resolve_card_effect(c)
+
+
+def resolve_release(state, side, card, target_id=None, *, present=True, response=False):
+    """Release a physical card without paying or dispatching card-use triggers."""
+    from .presentation import public_card
+    log(state, f"{hero(state, side, card['character_id'])['name']}自动释放「{card['name']}」。",
+        'play', side=side, source=card['character_id'], actor=f"{side}:{card['character_id']}",
+        card=public_card(card, state, side), release_only=True, response=response, present=present)
+    c = operation(state, side, card['character_id'], card, target_id)
+    options = card.get('play_options') or [{}]
+    c.operation.update(release_only=True, ap_paid=0, option_id=options[0].get('id'))
+    _resolve_card_effect(c)
+
+
+def _resolve_card_effect(c):
+    from app.modules.card_game.content.duel_v2.characters.common import scale_battle_frame
+    state, side, card = c.state, c.side, c.card
+    if finished(state):
+        return
+    fire(c, GameEvent.V2_CARD_RELEASED, actor_id=card['character_id'], card=card)
+    if finished(state):
+        return
     if card.get('type') == 'battle' and alive(state, side, card['character_id']):
         attack = int(card.get('attack') or 0)
         value = int(card.get('shield') or 0)
@@ -187,13 +232,11 @@ def resolve_play(state, side, card, target_id=None, *, pay=True, option_id=None)
                 c.operation['card_bonus'] = attack
     from app.modules.card_game.content.duel_v2.effects import EFFECTS
     EFFECTS[card['effect_id']](c)
-    if form_bonus and not finished(state) and alive(state, side, card['character_id']):
-        draw(state, side, 1)
     if state['phase'] != 'choice':
         finish_operation(state)
 
 
-def trigger_responses(state, defending_side, kind, target_id=None):
+def trigger_responses(state, defending_side, kind, target_id=None, attacker_id=None):
     """Auto-play the first affordable response matching this timing. Kinds come from the card."""
     if state.get('_response_lock') or finished(state):
         if state.get('_response_lock') and kind == 'self_downed' and not finished(state):
@@ -209,6 +252,8 @@ def trigger_responses(state, defending_side, kind, target_id=None):
         if (not alive(state, defending_side, owner) and not down_response) or collapsed(hero(state, defending_side, owner)):
             continue
         if kind == 'ally_attacked' and (not target_id or target_id == owner):
+            continue
+        if kind == 'front_attacked' and (team['front'] != target_id or not attacker_id):
             continue
         if kind == 'faction_front_attacked' and (team['front'] != target_id or
                 hero(state, defending_side, target_id).get('faction') != card.get('response_faction')):
@@ -227,7 +272,9 @@ def trigger_responses(state, defending_side, kind, target_id=None):
         state['_response_intercept'] = kind in ('self_attacked', 'ally_attacked', 'self_lethal')
         try:
             response_target = f'{defending_side}:{target_id}' if kind == 'ally_attacked' and target_id else None
-            resolve_play(state, defending_side, card, response_target, pay=True)
+            if kind == 'front_attacked':
+                response_target = f'{other(defending_side)}:{attacker_id}'
+            resolve_play(state, defending_side, card, response_target, pay=True, response=True)
         finally:
             state['_response_lock'] = False
             state.pop('_response_intercept', None)
@@ -260,12 +307,23 @@ def targets(state, side, card):
     if policy == 'living_ally':
         return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
                 if alive(state, side, cid)]
+    if policy == 'ally_esper':
+        return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
+                if not hero(state, side, cid).get('summoned')]
+    if policy == 'other_living_ally_esper':
+        return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
+                if cid != card['character_id'] and alive(state, side, cid)
+                and not hero(state, side, cid).get('summoned')]
     if policy == 'other_living_ally':
         return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
                 if cid != card['character_id'] and alive(state, side, cid)]
     if policy == 'downed_ally':
         return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
                 if hero(state, side, cid)['down_turns'] > 0]
+    if policy == 'other_downed_ally':
+        return [{'target_id': f'{side}:{cid}'} for cid in team_order(state, side)
+                if cid != card['character_id'] and hero(state, side, cid)['down_turns'] > 0
+                and not hero(state, side, cid).get('summoned')]
     if policy == 'downed_enemy':
         foe = other(side)
         return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
@@ -274,11 +332,12 @@ def targets(state, side, card):
         foe = other(side)
         return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
                 if alive(state, foe, cid) and enemy['front'] != cid]
-    if policy in ('living_enemy', 'living_enemy_esper'):
+    if policy in ('living_enemy', 'living_enemy_esper', 'collapsed_enemy_esper'):
         foe = other(side)
         return [{'target_id': f'{foe}:{cid}'} for cid in team_order(state, foe)
                 if alive(state, foe, cid)
-                and (policy != 'living_enemy_esper' or not hero(state, foe, cid).get('summoned'))]
+                and (policy == 'living_enemy' or not hero(state, foe, cid).get('summoned'))
+                and (policy != 'collapsed_enemy_esper' or collapsed(hero(state, foe, cid)))]
     if policy == 'living_enemy_role':
         foe = other(side)
         return [{'target_id': f'{foe}:player'}] + [
@@ -295,7 +354,7 @@ def targets(state, side, card):
         return result
     if policy == 'injured_role':
         result = []
-        if team['hp'] < 30:
+        if team['hp'] < team.get('max_hp', 30):
             result.append({'target_id': f'{side}:player'})
         for cid in team_order(state, side):
             h = hero(state, side, cid)
@@ -338,9 +397,51 @@ def normal_attack_payment(state, side, cid):
         return None
     offer = decide(EffectContext(state, side, cid, {'side': side, 'actor': cid}),
                    'normal_attack_payment', default, actor_only=True)
+    from .modifiers import evaluate
+    instant = evaluate(state, side, hero(state, side, cid), 'rule.normal_attack_instant', False)['value']
+    if (instant and not team['used'].get('instant')
+            and (offer is None or isinstance(offer, dict))):
+        offer = {'ap': 0, 'normal': False, 'resource': 'instant'}
     if isinstance(offer, dict) and hero(state, side, cid).get('flags', {}).get('free_normal_attack_turn') == state['turn']:
         offer = {**offer, 'ap': 0}
     return offer if isinstance(offer, dict) else None
+
+
+def _is_deck_order_choice(pending):
+    return bool(pending and (pending.get('kind') == 'heiyu_divination' or pending.get('deck_order')))
+
+
+def deck_order_choice(state):
+    """Resolve current content constraints without mutating a saved choice."""
+    pending = state.get('pending_choice')
+    if not _is_deck_order_choice(pending):
+        return pending
+    op = state.get('operation') or {}
+    side = pending['side']
+    actor = pending.get('actor') or op.get('actor') or team_order(state, side)[0]
+    return decide(EffectContext(state, side, actor, op), 'deck_order_spec',
+                  deepcopy(pending), actor_only=True, include_down=True)
+
+
+def deck_order_actions(pending):
+    ids = [card['instance_id'] for card in pending['cards']]
+    if pending.get('hand_placement'):
+        return [dict(type='choose_deck_order', card_ids=[] if bottom else [cid],
+                     bottom_card_ids=[cid] if bottom else [])
+                for cid in ids for bottom in (False, True)]
+    minimum = max(0, int(pending.get('min_bottom') or 0))
+    maximum = min(len(ids), int(pending.get('max_bottom', len(ids) if pending.get('multi_bottom') else 1)))
+    actions = []
+    for count in range(minimum, maximum + 1):
+        for order in permutations(ids):
+            split = len(ids) - count
+            action = {'type': 'choose_deck_order', 'card_ids': list(order[:split])}
+            if pending.get('multi_bottom'):
+                action['bottom_card_ids'] = list(order[split:])
+            else:
+                action['bottom_card_id'] = order[split] if count else None
+            actions.append(action)
+    return actions
 
 
 def legal_actions(state, side=None):
@@ -361,10 +462,16 @@ def legal_actions(state, side=None):
         return result
     if side != acting_side(state):
         return result
-    if phase == 'choice' and state['pending_choice']['kind'] == 'hand_redraw':
+    if phase == 'choice' and state['pending_choice']['kind'] in ('hand_redraw', 'kit_multi'):
         ids = [c['instance_id'] for c in state['pending_choice']['cards']]
+        if state['pending_choice']['kind'] == 'kit_multi':
+            count = state['pending_choice']['max_select']
+            return result + [{'type': 'choose_cards', 'card_ids': list(group)}
+                             for group in combinations(ids, count)]
         return result + [{'type': 'choose_cards', 'card_ids': list(group)}
                          for size in range(min(3, len(ids)) + 1) for group in combinations(ids, size)]
+    if phase == 'choice' and _is_deck_order_choice(state['pending_choice']):
+        return result + deck_order_actions(deck_order_choice(state))
     if phase == 'choice':
         return result + [{'type': 'choose', 'choice_id': c['instance_id']}
                          for c in state['pending_choice']['cards']]
@@ -385,10 +492,12 @@ def legal_actions(state, side=None):
                               for target in aimed)
             else:
                 result.append({'type': 'attack', 'character_id': cid})
-        if (ultimate_remaining(state, side) and h['energy'] >= energy_cap(state, h)
+        ctx = EffectContext(state, side, cid, {'side': side})
+        if not h.get('summoned') and decide(ctx, 'can_exit_ultimate', False, actor_only=True):
+            result.append({'type': 'exit_ultimate', 'character_id': cid})
+        elif (ultimate_remaining(state, side) and h['energy'] >= energy_cap(state, h)
                 and h.get('ultimate_used_turn') != state['turn'] and not h.get('summoned')
-                and decide(EffectContext(state, side, cid, {'side': side}),
-                           'can_ultimate', True, actor_only=True)):
+                and decide(ctx, 'can_ultimate', True, actor_only=True)):
             result.append({'type': 'ultimate', 'character_id': cid})
     for physical in team['hand']:
         card = effective_card(state, side, physical)
@@ -501,6 +610,8 @@ def begin_turn(state, side):
     for ps in SIDES:
         state['sides'][ps]['attacked_this_turn'] = []
     upgrade_harmony_residue(state)
+    from .harmony import clear_turn_source
+    clear_turn_source(state, side)
     team['harmony_damage'] = False
     team['genesis_damage_bonus'] = 0
     team['surplus'] = False
@@ -526,12 +637,21 @@ def begin_turn(state, side):
     fire(EffectContext(state, side, carrier, {'side': side}), 'on_turn_begin')
     if finished(state):
         return
-    if team.pop('extra_genesis_pending', False):
+    pending_genesis = team.pop('extra_genesis_pending', False)
+    extra_genesis = team.pop('extra_genesis_queue', [])
+    legacy_actor = team.pop('extra_genesis_actor', None)
+    if not extra_genesis and pending_genesis and legacy_actor:
+        extra_genesis = [{'actor': legacy_actor}]
+    for pending in extra_genesis:
+        if finished(state):
+            break
         from .combat import resolve_genesis
-        actor = team.pop('extra_genesis_actor', None)
-        if actor and alive(state, side, actor):
+        actor = pending.get('actor')
+        entity = pending.get('actor_entity_id')
+        if (actor and alive(state, side, actor)
+                and (not entity or hero(state, side, actor).get('entity_id') == entity)):
             EffectContext(state, side, actor, {'side': side}).history(
-                '回合开始，结算「错误的门」留下的追加创生。')
+                '回合开始，结算伊洛伊异能留下的不占上限【创生】。')
             resolve_genesis(EffectContext(state, side, actor, {'side': side, 'actor': actor}),
                             arm_delay=False)
     other_side = other(side)
@@ -568,12 +688,18 @@ def begin_turn(state, side):
                 state['turn_start_pending'] = side
         else:
             draw(state, side)
+            fire(EffectContext(state, side, carrier, {'side': side}), 'after_turn_draw')
+            if state['phase'] == 'choice':
+                pending = state.get('pending_choice') or {}
+                if not state.get('operation'):
+                    operation(state, side, pending.get('actor') or carrier)
+                state['turn_start_pending'] = side
     if not finished(state):
         extra = int(team.pop('extra_ap', 0) or 0)
         if flags.get('ap_per_turn') is not None:
             team['ap'] = int(flags['ap_per_turn']) + extra
         else:
-            team['ap'] = (1 if state['turn'] == 1 else 2) + extra
+            team['ap'] = turn_action_points(state) + extra
         if extra:
             log(state, f'回合开始，结算延后效果：额外获得 {extra} 点行动力。',
                 'effect', side=side, actor=f'{side}:player', target=f'{side}:player', present=False)
@@ -610,6 +736,12 @@ def tick_front_debuff(state, side):
             status['left'] = max(0, left - 1)
             if status['left'] == 0:
                 zone.pop(kind, None)
+                if kind == 'star' and int(status.get('renewals') or 0) > 0 and not finished(state):
+                    from .combat import apply_dark_star
+                    by = status.get('by') or other(side)
+                    source = status.get('source_cid') or team_order(state, by)[0]
+                    apply_dark_star(EffectContext(state, by, source, {'side': by, 'actor': source}),
+                                    renewals=int(status['renewals']) - 1)
         log(state, '战斗区状态倒计时更新。', 'countdown', side=side,
             actor=f'{side}:front', target=f'{side}:front')
 
@@ -624,6 +756,14 @@ def tick_front_debuff(state, side):
             status['left'] = max(0, int(status['left']) - 1)
             if not status['left']:
                 zone.pop('delay', None)
+                if int(status.get('renewals') or 0) > 0 and not finished(state):
+                    from .combat import apply_delay
+                    by = status.get('by') or side
+                    source = status.get('source_cid')
+                    owner = state['sides'][by]['characters'].get(source)
+                    if owner and owner.get('entity_id') == status.get('source_entity_id'):
+                        apply_delay(EffectContext(state, by, source, {'side': by, 'actor': source}),
+                                    renewals=int(status['renewals']) - 1)
         log(state, '延滞倒计时保持。' if paused else '延滞倒计时更新。', 'countdown',
             side=target_side, actor=f'{target_side}:front', target=f'{target_side}:front')
 
@@ -633,6 +773,10 @@ def expire_turn_zone_states(state, side):
         zone = front_debuff(state, owner)
         for kind in ('delay', 'weave', 'stain'):
             status = zone.get(kind)
+            if status and kind == 'stain' and int(status.get('ends_left') or 0) > 1:
+                status['ends_left'] -= 1
+                status['expires_side'] = other(side)
+                continue
             if status and status.get('expires_side', status.get('by') if kind != 'delay' else None) == side:
                 zone.pop(kind, None)
                 log(state, '本回合战斗区状态结束。', 'countdown', side=owner,
@@ -653,6 +797,8 @@ def _expire_collapse(state, side):
 
 def end_turn(state, side):
     team = state['sides'][side]
+    from .harmony import clear_turn_source
+    clear_turn_source(state, side)
     opponent = other(side)
     for cid in team_order(state, side):
         h = hero(state, side, cid)
@@ -669,6 +815,9 @@ def end_turn(state, side):
         return
     from .continuous import tick_owner_end
     tick_owner_end(state, side)
+    from .genesis import tick_layers
+    if not finished(state):
+        tick_layers(state, side)
     if finished(state):
         return
     _expire_collapse(state, side)
@@ -734,8 +883,9 @@ def finish_operation(state):
             add_hand(state, side, card)
         else:
             discard(state, side, card)
-        fire(c, 'after_card', actor_id=cid, card=card)
-        if op.get('card_mark'):
+        if not op.get('release_only'):
+            fire(c, 'after_card', actor_id=cid, card=card)
+        if op.get('card_mark') and not op.get('release_only'):
             if state.get('_response_intercept') and card.get('type') == 'battle':
                 state.setdefault('_deferred_card_marks', []).append(deepcopy(op))
             else:
@@ -744,40 +894,26 @@ def finish_operation(state):
     from .tutorial import tutorial_flags
     flags = tutorial_flags(state)
     gain_energy = not flags.get('disable_energy_gain')
-    gain_harmony = not flags.get('disable_harmony_gain') and not op.get('skip_combat_harmony')
-    if attackers and (gain_energy or gain_harmony):
+    if attackers and gain_energy:
         share_side = attackers[0][0]
         before = {}
         for ally_id in team_order(state, share_side):
-            if not alive(state, share_side, ally_id):
-                continue
-            h = hero(state, share_side, ally_id)
-            before[ally_id] = {'harmony': h['harmony'], 'energy': h['energy']}
-            if gain_energy:
+            if alive(state, share_side, ally_id):
+                h = hero(state, share_side, ally_id)
+                before[ally_id] = {'harmony': h['harmony'], 'energy': h['energy']}
                 energy(state, share_side, ally_id, 1)
         for ps, pc in attackers:
             h = hero(state, ps, pc)
-            extra = 0
-            kit = KITS.get(pc)
-            hook = getattr(kit, 'combat_harmony_extra', None) if kit else None
-            if hook and gain_harmony:
-                extra = int(hook(EffectContext(state, ps, pc, op)) or 0)
-            snap = before.get(pc) or {'harmony': 0, 'energy': 0}
-            if gain_harmony:
-                h['harmony'] = min(harmony_cap(state), h['harmony'] + 1 + extra)
-            if gain_energy:
-                energy(state, ps, pc, 1)
-            dh, de = h['harmony'] - snap['harmony'], h['energy'] - snap['energy']
-            if gain_harmony and gain_energy:
-                text = f"{h['name']}战斗积累：自己的环合 +{dh}、能量 +{de}；全队存活异能者分享能量 +1。"
-            elif gain_harmony:
-                text = f"{h['name']}战斗积累：自己的环合 +{dh}。"
-            else:
-                text = f"{h['name']}战斗积累：自己的能量 +{de}；全队存活异能者分享能量 +1。"
-            log(state, text, 'resource', side=ps, source=pc, actor=f'{ps}:{pc}', target=f'{ps}:{pc}',
-                harmony_delta=dh, energy_delta=de,
-                before=snap, after={'harmony': h['harmony'], 'energy': h['energy']})
+            snap = before.get(pc) or {'harmony': h['harmony'], 'energy': 0}
+            energy(state, ps, pc, 1)
+            de = h['energy'] - snap['energy']
+            log(state, f"{h['name']}战斗积累：自己的能量 +{de}；全队存活异能者分享能量 +1。",
+                'resource', side=ps, source=pc, actor=f'{ps}:{pc}', target=f'{ps}:{pc}',
+                harmony_delta=0, energy_delta=de, before=snap,
+                after={'harmony': h['harmony'], 'energy': h['energy']})
     fire(c, GameEvent.V2_OPERATION_RESOURCES_RESOLVED, actor_only=True)
+    from .harmony import finish_harmony_action
+    finish_harmony_action(c)
     from .modifiers import clear, entities
     for _, holder in entities(state):
         clear(holder, 'operation_end')
@@ -816,7 +952,52 @@ def choose(state, side, choice_id):
     state['phase'], state['pending_choice'] = 'playing', None
     if kind == 'kit':
         op = state['operation']
+        op['choice_cards'] = pending['cards']
         fire(EffectContext(state, side, op['actor'], op), 'on_choice', actor_only=True, selected=selected)
+    if state['phase'] != 'choice':
+        finish_operation(state)
+        if state.get('turn_start_pending'):
+            from .temporal import save_turn_start
+            save_turn_start(state, state.pop('turn_start_pending'))
+
+
+def resolve_deck_order(state, side, action):
+    pending = deck_order_choice(state)
+    cards = list(pending['cards'])
+    by_id = {card['instance_id']: card for card in cards}
+    top_ids = list(action.get('card_ids') or [])
+    bottom_ids = list(action.get('bottom_card_ids') or ([action['bottom_card_id']] if action.get('bottom_card_id') else []))
+    inspected = [card['instance_id'] for card in cards]
+    chosen = list(top_ids) + bottom_ids
+    hand_placement = bool(pending.get('hand_placement'))
+    valid_selection = ((len(chosen) == 1 and chosen[0] in inspected) if hand_placement
+                       else set(chosen) == set(inspected))
+    if (len(set(chosen)) != len(chosen) or not valid_selection
+            or len(bottom_ids) < int(pending.get('min_bottom') or 0)
+            or len(bottom_ids) > int(pending.get('max_bottom', len(cards)))
+            or any(item not in by_id for item in chosen)):
+        raise ValueError('当前不能执行此操作：请检查回合、行动力、角色状态和目标。')
+    team = state['sides'][side]
+    if hand_placement:
+        selected = next((card for card in team['hand'] if card['instance_id'] == chosen[0]), None)
+        if selected is None:
+            raise ValueError('所选手牌已失效。')
+        by_id[chosen[0]] = selected
+        team['hand'] = [card for card in team['hand'] if card['instance_id'] != chosen[0]]
+    team['deck'][0:0] = [by_id[item] for item in top_ids]
+    bottoms = [by_id[item] for item in bottom_ids]
+    team['deck'].extend(bottoms)
+    actor = pending.get('actor') or (state.get('operation') or {}).get('actor')
+    execute = pending.get('execute_divination')
+    state['phase'], state['pending_choice'] = 'playing', None
+    if actor:
+        context = EffectContext(state, side, actor, state.get('operation') or {'side': side, 'actor': actor})
+        data = dict(bottoms=bottoms, bottom=bottoms[0] if len(bottoms) == 1 else None, execute_divination=execute)
+        if pending.get('continuation'):
+            from app.modules.card_game.content.duel_v2.registry import continue_choice
+            continue_choice(context, pending['continuation'], **data)
+        else:
+            fire(context, 'on_deck_reorder', actor_only=True, **data)
     if state['phase'] != 'choice':
         finish_operation(state)
         if state.get('turn_start_pending'):
@@ -844,10 +1025,17 @@ def redraw_hand(state, side, card_ids):
 def apply_action(state, side, action):
     if side not in SIDES or not isinstance(action, dict):
         raise ValueError('无效的操作格式。')
-    from .tutorial import after_player_action, apply_tutorial_ack, is_tutorial
+    from .tutorial import apply_tutorial_ack, is_tutorial
     if is_tutorial(state) and action.get('type') == 'tutorial_ack':
         return apply_tutorial_ack(state, side)
-    state = clone_state(state)
+    return apply_owned_action(clone_state(state), side, action)
+
+
+def apply_owned_action(state, side, action):
+    """Execute on a caller-owned sandbox. Public apply_action clones first."""
+    from .tutorial import after_player_action, is_tutorial
+    if needs_hydration(state):
+        hydrate_entities(state)
     candidate = normalize_entity_action(state, side, action)
     if candidate.get('type') in ('mulligan', 'choose_cards') and isinstance(candidate.get('card_ids'), list):
         ids = candidate['card_ids']
@@ -885,28 +1073,48 @@ def apply_action(state, side, action):
         if len(result['mulligan_done']) == 2:
             begin_turn(result, result['first_side'])
     elif kind == 'choose_cards':
-        redraw_hand(result, side, candidate['card_ids'])
+        if result['pending_choice']['kind'] == 'kit_multi':
+            pending = result['pending_choice']
+            selected = [c for c in pending['cards'] if c['instance_id'] in candidate['card_ids']]
+            result['phase'], result['pending_choice'] = 'playing', None
+            op = result['operation']
+            fire(EffectContext(result, side, op['actor'], op), 'on_choice_cards',
+                 actor_only=True, selected=selected)
+            if result['phase'] != 'choice':
+                finish_operation(result)
+        else:
+            redraw_hand(result, side, candidate['card_ids'])
     elif kind == 'choose':
         choose(result, side, candidate['choice_id'])
+    elif kind == 'choose_deck_order':
+        resolve_deck_order(result, side, candidate)
     elif kind == 'end_turn':
         end_turn(result, side)
     elif kind == 'ultimate':
         team['ultimates_used'] = int(team.get('ultimates_used', 0)) + 1
         team['ultimate_available'] = bool(ultimate_remaining(result, side))
         start_ultimate(result, side, candidate['character_id'], spent_ap=False)
+    elif kind == 'exit_ultimate':
+        end_ultimate(result, side, candidate['character_id'])
     elif kind == 'attack':
         cid = candidate['character_id']
         payment = normal_attack_payment(result, side, cid)
         team['ap'] -= payment['ap']
         if payment.get('normal'):
             team['normal_attack_available'] = False
+        if payment.get('resource') == 'instant':
+            team['used']['instant'] = True
         c = operation(result, side, cid)
         if candidate.get('target_id'):
             c.operation['target_id'] = candidate['target_id']
         c.operation['normal_attack'] = True
+        c.operation['ap_paid'] = payment['ap']
+        from .harmony import pay_harmony
+        pay_harmony(c, payment['ap'])
         fire(c, 'pay_normal_attack', actor_only=True, payment=payment)
         c.sortie(bonus=payment.get('bonus', 0))
-        finish_operation(result)
+        if result['phase'] != 'choice':
+            finish_operation(result)
     else:
         card = next(c for c in team['hand'] if c['instance_id'] == candidate['card_id'])
         team['hand'].remove(card)

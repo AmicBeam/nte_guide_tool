@@ -75,8 +75,8 @@ class BattleZoneStatusTest(unittest.TestCase):
 
     def test_empty_zone_harmony_is_applied(self):
         s = self.game()
-        s['sides']['a']['front'] = 'zero'
-        hero(s, 'a', 'zero').update(attribute='暗', harmony=2)
+        s['sides']['a'].update(front='zero', last_front='zero')
+        hero(s, 'a', 'zero').update(attribute='暗', harmony=3)
         hero(s, 'a', 'nanali')['attribute'] = '魂'
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'nanali'})
         self.assertEqual(front_debuff(s, 'b')['star']['left'], 2)

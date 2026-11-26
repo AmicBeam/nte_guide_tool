@@ -1,0 +1,14 @@
+{% extends 'guide/layout.html' %}
+{% block title %}{{ record.name }} · 副本 · 攻略数据库{% endblock %}
+{% block head %}{{ super() }}<link rel="stylesheet" href="{{ url_for('guide_module.static', filename='dungeons.css') }}"><script defer src="{{ url_for('guide_module.static', filename='dungeons.js') }}"></script>{% endblock %}
+{% block guide_back %}<a class="guide-back" href="/guide?kind=dungeons">← 副本</a>{% endblock %}
+{% block content %}
+<header class="dungeon-header"><h1>{{ record.name }}</h1><p>{{ record.description }}</p></header>
+<nav class="dungeon-categories" aria-label="选择关卡">{% for encounter in record.encounters %}<a href="/guide/dungeons/{{ record.id }}?encounter={{ encounter.id }}{% if selected_material %}&material={{ selected_material|urlencode }}{% endif %}" {% if encounter.id == selected_encounter.id %}aria-current="page"{% endif %}>{{ encounter.name }}</a>{% endfor %}</nav>
+<h2 class="dungeon-encounter-title">{{ selected_encounter.name }}</h2><p class="guide-muted">{{ selected_encounter.description }}</p>
+<form class="dungeon-stage-form" method="get"><input type="hidden" name="encounter" value="{{ selected_encounter.id }}"><label for="dungeon-stage">{{ '鉴别等级' if record.category == '异象追猎' else '选择难度' }}</label><select id="dungeon-stage" name="stage">{% for stage in selected_encounter.stages %}<option value="{{ stage.id }}" {% if stage.id == selected_stage.id %}selected{% endif %}>{{ stage.name }}{% if record.category != '异象追猎' %} · 鉴别等级 {{ stage.required_level }}{% endif %}</option>{% endfor %}</select>{% if selected_material %}<input type="hidden" name="material" value="{{ selected_material }}">{% endif %}<noscript><button type="submit">查看</button></noscript></form>
+<div class="dungeon-facts"><div><span>鉴别等级{{ '' if record.category == '异象追猎' else '要求' }}</span><strong>{{ selected_stage.required_level }}</strong></div><div><span>领取消耗</span><strong>{% if selected_stage.stamina is not none %}{{ selected_stage.stamina }} <small>本性像素</small>{% else %}<small>未确认</small>{% endif %}</strong></div></div>
+<section id="rewards" class="dungeon-rewards"><h2>主要养成产物</h2><p class="guide-muted">随机产物按单倍领取的约数或数量范围展示，仅供估算。</p>
+<ul class="dungeon-reward-list">{% for reward in rewards %}{% set display=reward|guide_material_display %}<li{% if reward.id == selected_material %} class="dungeon-match"{% endif %}>{% if reward.get("items") %}<span class="dungeon-reward-icons">{% for item in reward["items"] %}{% set part=item|guide_material_display %}{% if part.icon %}<img src="{{ part.icon }}" alt="{{ item.name }}" width="48" height="48" loading="lazy">{% endif %}{% endfor %}</span>{% elif display.icon %}<img src="{{ display.icon }}" alt="" width="48" height="48" loading="lazy">{% endif %}<span>{{ reward.name }}</span><strong>{{ reward.quantity }}</strong></li>{% endfor %}</ul></section>
+<div class="guide-links"><a href="/guide?kind=dungeons">全部副本</a></div>
+{% endblock %}

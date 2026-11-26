@@ -22,7 +22,8 @@ def _allowed_source(name):
             or name.startswith(('scripts/','tests/')) and path.suffix=='.py'
             or name.startswith('docs/duel-v2') and path.suffix=='.md'
             or name=='docs/everness-item-chain-card-design.md'
-            or name in ('AGENTS.md','README.md','requirements.txt','requirements-rl.txt','requirements-ai.txt'))
+            or name in ('AGENTS.md','README.md','app/modules/card_game/README.md',
+                        'requirements.txt','requirements-rl.txt','requirements-ai.txt'))
 
 
 def snapshot_revision(root,output,revision,extra=()):
@@ -75,7 +76,28 @@ def snapshot_revision(root,output,revision,extra=()):
 
 def snapshot(root, output, extra=()):
     root = Path(root).resolve(); output = Path(output)
-    tracked = subprocess.run(['git', 'ls-files', '-z'], cwd=root, check=True, capture_output=True).stdout.decode().split('\0')
+    output.mkdir(parents=True, exist_ok=True)
+    frozen_manifest = root / 'source-manifest.json'
+    frozen_data = {}
+    if frozen_manifest.is_symlink():
+        raise ValueError('Frozen source manifest cannot be a symlink')
+    if frozen_manifest.is_file():
+        # Isolated training copies may be untracked descendants of an older
+        # checkout. Their authenticated source manifest owns the file set.
+        declared = json.loads(frozen_manifest.read_text(encoding='utf-8'))
+        tracked = []
+        for name, entry in declared.items():
+            source = root / name
+            if (not _allowed_source(name) or not source.is_file() or source.is_symlink()
+                    or root not in source.resolve().parents):
+                raise ValueError('Invalid frozen source member: ' + str(name))
+            data = source.read_bytes()
+            if sha256(data).hexdigest() != entry['sha256'] or len(data) != entry['bytes']:
+                raise ValueError('Frozen source changed: ' + name)
+            tracked.append(name)
+            frozen_data[name] = data
+    else:
+        tracked = subprocess.run(['git', 'ls-files', '-z'], cwd=root, check=True, capture_output=True).stdout.decode().split('\0')
     chosen = []
     for name in sorted(set(tracked) | set(extra)):
         parts = Path(name).parts
@@ -90,13 +112,14 @@ def snapshot(root, output, extra=()):
                      or name.startswith(('scripts/', 'tests/')) and path.suffix == '.py'
                      or name.startswith('docs/duel-v2') and path.suffix == '.md'
                      or name == 'docs/everness-item-chain-card-design.md'
-                     or name in ('AGENTS.md', 'README.md', 'requirements.txt', 'requirements-rl.txt', 'requirements-ai.txt'))
+                     or name in ('AGENTS.md', 'README.md', 'app/modules/card_game/README.md',
+                                 'requirements.txt', 'requirements-rl.txt', 'requirements-ai.txt'))
         if not is_source or not path.is_file() or path.is_symlink() or root not in path.resolve().parents:
             continue
         chosen.append(name)
     manifest = {}
     for name in chosen:
-        data = (root / name).read_bytes(); target = output / name
+        data = frozen_data[name] if name in frozen_data else (root / name).read_bytes(); target = output / name
         target.parent.mkdir(parents=True, exist_ok=True); target.write_bytes(data)
         manifest[name] = dict(sha256=sha256(data).hexdigest(), bytes=len(data))
     (output / 'source-manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')

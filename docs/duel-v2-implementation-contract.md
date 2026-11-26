@@ -1,5 +1,11 @@
 # 四人轮替 V2 实现契约
 
+零与基础形态黑羽通过 `V2_CARD_RELEASED` 在战斗牌卡框和卡效之前充满环合值；正常使用、响应使用及直接释放共用这一回调，基础付款获值不再被零覆盖。直接释放不创建用牌来源，黑羽魔女形态仍不充满。
+
+环合时机区分 `V2_HARMONY_TRIGGERED`（实际触发）与 `V2_HARMONY_APPLIED`（效果施加）。黑羽占卜仅监听前者；黯星到期续接只派发施加时机，仍按施加检查失谐，不增加 `dark_star_count`。该计数仅在实际触发黯星时增加。
+
+当前公开投影增加 `collapse_border_cut`（倾陷绿框消退百分比）及阵营 `genesis_weave_damage`（本局实际创生／覆纹伤害）；实时与回放均由后端输出。B03 使用 `other_living_ally_esper` 目标策略，仅选择其他存活己方异能者。黑羽出击占卜使用既有 `pending_sortie` 恢复，不新增动作类型。
+
 状态：2026-09-09 V2 引擎与网页已接入，功能验收见 [验收记录](duel-v2-acceptance.md)。业务规则唯一真源为 [完整手册](everness-item-chain-card-design.md) V2.4；本文件只冻结并行实现、网页与 RL 的接口，不替换规则。**本轮不得运行强化学习训练或自我对弈训练。**
 
 ## 本轮实现分工
@@ -28,7 +34,7 @@ validate_deck(deck: dict) -> dict  # 不合法抛 ValueError，合法返回规�
 
 角色字段：`id, name, attribute`（中文光/灵）, `attack, max_hp, avatar, portrait, passive, awakened_passive`。图片复用共享角色头像和立绘；zero 使用鉴定师图片。
 
-卡牌字段：`id, character_id, name, type`（`battle/tactic/form`）, `cost, terminal, description, effect_id, source`。`cost` 一律为 1。弧盘另有 `stat`（`attack` 或 `hp`）与 `stat_value`；战斗牌另有 `shield`（护盾值，可为 0），并可另有 `attack`（无条件攻击加成，至少为 1）。浔的兑现战斗牌另有 `redeem: true`。可选 `instant`、`response`、`derived`。`derived: true` 为对局内衍生牌，展示「不可构筑」，不能进入构筑。effect_id 默认与卡牌 ID 相同。`terminal` 保留为协议字段，现行卡表一律为 false。**08 固定为专属武备**；**07 优先用官方角色 PV 名**，没有角色 PV 时用官方短片或用户指定名。零另有第 6 张「诓定解放」也是武备。source 至少含 Everness 角色 ID；`type` 为 `awaken`（01–06）、`arc`（专属武备，08）、`pv`（官方角色 PV）或 `ability`（短片或指定名），衍生牌为 `derived`。
+卡牌字段：`id, character_id, name, type`（`battle/tactic/form`）, `cost, terminal, description, effect_id, source`。`cost` 通常为 1，显式零费牌为 0，灵可 K06 为 3。弧盘另有 `stat`（`attack` 或 `hp`）与 `stat_value`；战斗牌另有 `shield`（护盾值，可为 0），并可另有 `attack`（无条件攻击加成，至少为 1）。浔的兑现战斗牌另有 `redeem: true`。可选 `instant`、`response`、`derived`。`derived: true` 为对局内衍生牌，展示「不可构筑」，不能进入构筑。effect_id 默认与卡牌 ID 相同。`terminal` 保留为协议字段，现行卡表一律为 false。**07／08 按已绑定皮肤名命名，未绑定独立皮肤时保留现名**；08 的武备类别不变。零另有第 6 张「诓定解放」也是武备。source 至少含 Everness 角色 ID；`type` 为 `awaken`（01–06）、`fashion`（已绑定皮肤的 07／08）或 `derived`（衍生牌）；未绑定皮肤时保留原 `arc`、`pv` 或 `ability` 来源，具体元数据见文末皮肤命名契约。
 
 标准构筑 JSON：`{id, name, character_ids: [4个ID], card_ids: [32个卡牌ID]}`。card_ids 是重复展开列表。validate_deck 严格验证恰好 4 名不同已实现角色、每人 8 张、总数 32、同名最多 2、没有未知或其他角色卡，不能静默截断。返回独立副本。
 
@@ -77,7 +83,7 @@ observe 的稳定 JSON：
 rules_version, version, phase, active_side, first_side, viewer_side, is_my_turn,
 turn, winner,
 sides: {
-  a/b: {name, hp, shield, ap, normal_attack_available,
+  a/b: {name, hp, max_hp, shield, ap, normal_attack_available,
         front: 角色ID或null,
         characters: [{id,name,attribute,attack,hp,max_hp,shield,
                       harmony,energy,awakened,ultimate_turns,growth,shape,down_turns,
@@ -219,3 +225,132 @@ events: 投影后的公开演出事件
 # 2026-10-07 高级人机逐操作补充契约
 
 高级人机的玩家动作与人机动作分次提交。`POST /api/duel-v2/ai-step` 接受 `room_code`、`expected_version`、`request_id`，仅当前advanced房间的人类成员可调用；服务端决定b方动作，客户端不能指定该动作或冒充b方。每次成功请求仅应用一次正式规则动作并保存公开回放。重复请求返回已有结果；版本或房间冲突返回409；不是人机决策时不推进状态。`room.ai_pending` 表示人机是否仍为当前决策方，前端等本次事件演出完成后才请求下一步。普通人机、教程与PVP保持既有调度。
+
+### 2026-10-08 灵可与追加攻击协议
+
+目录 `cost` 接受非负整数，K06 为 3 费例外。通用卡牌使用时机 `V2_CARD_USED` 包括响应自动使用，发生在支付及公开使用之后、卡效之前；命中前 `V2_BEFORE_ATTACK_DAMAGE` 提供实际目标、属性、援护与追加攻击标记。指定属性通过攻击规格及伤害参数显式传递，不改写异能者固有属性；公开事件可携带 `attribute` 与 `additional_attack`。追加攻击不自动没收资源，是否产生基础资源由操作规格分别决定。
+
+角色公开 `lingke_chain` 包含公开的使用者实体／角色 ID 与 0–2 计数，实时与回放 patch 同步，不包含隐藏牌身份。`pending_choice.kind=kit_multi` 支持 `min_select/max_select` 与既有 `choose_cards` 动作；引擎完整列出固定数量的合法组合，候选仅选择者可见。后续单选仍用 `kind=kit`，从牌库暂取出的候选计入牌库数量。
+
+下一张瞬发用可消费 `card.instant` 效果表示，天然零费使用也消费该效果，但不消费共享瞬发机会。手牌视为沿用实体身份及 `hand_face`，离手恢复物理原牌。玩家限时属性减抗沿用公开 `effect_markers`，清除及到期由后端统一处理。同频合击可携带借用角色与实体 ID，合击后仅向该实体分派其自身援护技回调；其他监听器仍只收到一次实际攻击者灵可的援护技通知。
+
+
+### 2026-10-08 倾陷与援护扩展契约
+
+通用时机新增 `V2_COLLAPSE_ENTERED`、`V2_DISSONANCE`、`V2_OPPONENT_ATTACK`、`V2_SUPPORT_RESOLVED`，由正式引擎派发；达芙蒂尔效果留在其角色包。`collapse_max(character)` 组合临时上限与按来源实体保存的永久减量，永久减量不放入倒地会清空的 flags。援护计数按全局回合与实际释放累计，借用角色回调不重复累计。`front_attacked` 响应将实际攻击者传给牌效，`collapsed_enemy_esper` 提供限定倾陷目标的合法动作。
+
+双方公开阵营补 `insight_damage`、`insight_played`、`support_count`，异能者实时与回放棋盘统一输出 `collapse_count`、`collapse_max`、`collapse` 及永久减益标记。卡牌动态文案仍通过既有 `card_description` 查询，不改变手牌实体或隐藏信息协议。
+
+
+### 2026-10-08 皮肤命名来源
+
+已绑定皮肤的 07／08 使用 `source.type=fashion`，含 `index=7/8`、`fashion_id`、`fashion_name`、`repository`、`commit`、`path`，并保留 `previous_name`／`previous_source` 追溯旧名；未绑定者沿用现有命名来源。卡牌 ID、effect_id、武备绑定与构筑存档不变。静态目录、牌面引用与内容提示同步新名，旧快照及公开回放不按中文名称迁移。
+
+
+### 2026-10-08 同属性减抗与额外武备皮肤
+
+`lingke.resistance` 按目标和属性使用共享 `stack_key`、replace叠加策略；来源实体不同的同类同属性减抗同样只保留一份-1，并刷新原截止时点。不同属性独立，公开标记与回放不会累积重复同属性条目。命中前结算、伤害属性、援护和借用角色回调协议不变。
+
+皮肤来源允许绑定到额外武备槽位03／06，不限定07／08，仍以稳定卡牌ID和fashion_id绑定。Z06／Z08／K03／C06／V07的新图片只影响装备角色外观，不改变实体或卡牌结算身份。
+
+
+### 2026-10-08 黑羽检视重排与退出终结
+
+pending_choice.kind=heiyu_divination提供私有候选与精确顶牌顺序、至多一张底牌的choose_deck_order动作，完整分割校验、实体寻址、幂等及公开牌库数量口径保留。失明症先通过kit选择手牌、置顶后进入检视，原出击待检视结束续行；谕石在底牌收益之后抽1张。嵌套自动释放保留外层操作，坏骨头的魔女释放随延后队列序列化，在原攻击完成后执行。
+
+本方heiyu_divinations在每次开始占卜时递增，烂柯人读取发动本牌之前的次数；计数、手牌选择、继续出击／抽牌字段均随JSON快照保存。魔女每次主动出击先打开占卜，确认后续接原出击，不再自动处理顶牌；不持有旧版逐卡魔女触发或同名成长状态。
+
+目录显式energy_max可覆盖属性默认值，导出energy_max_override供实体快照与状态上限使用；黑羽基础值为5，其余角色维持属性默认，白热化仍按通用上限调整。旧黑羽快照读取现行特别上限，当前手牌规格与说明由角色内容钩子投影。
+
+exit_ultimate动作仍复用同一终结按钮，免费退出、不增加终结次数、不撤销独立加攻，且只能在自己正常行动窗口使用。新内容仍为测试角色，不自动获得训练或服务模型兼容批准。
+
+
+### 2026-10-08 灵可通用回合开始衰减
+
+灵可同频／领域援护减抗沿用 `deadline(state, source_side, 1)`，到来源阵营下次turn_start由现有通用生命周期清除。同类同属性只保留一份-1，不同属性独立；到期不改变领域自身期限。公开标记只说明来源回合开始衰减，现有effect与expiry协议保持。
+
+PF01 谕石为衍生瞬发战术，不能进入构筑。检视选择保存完成后抽牌的续步；确认、沉底收益与武备抽牌后再抽 1 张，重试不得重复抽取。谕石随机插入不洗牌；回合开始先插入再通常抽牌。环合强化以通用决策钩子记录浸染结束次数和黯星一次续接标记，不以变身状态屏蔽，所有计时与随机数随快照保存。
+
+
+### 倾陷公开预组与下一轮请求
+
+collapse为第六套官方预组，四人顺序固定heiyu/dafutier/canhong/lingke，均为公开角色。普通人机沿用公开预组选择，新增高级模型槽位缺数值文件时明确拒绝。catalog.advanced_pending_presets提供待训练槽位状态，前端据此标记与禁用；模型文件存在仅解除待训练显示，真正开局仍严格校验规则／schema／数组与构筑，不代表质量批准。next_training.json与next_training.plan物化六队、42局学习轮转及36格结构，状态为planned_not_started，预检未通过；不修改现行五队模型协议。
+
+
+### 2026-10-08 多张置底动作
+
+新占卜选择携带multi_bottom=true、min_bottom与max_bottom：一般为0..实际检视张数，谕石为1..实际张数。choose_deck_order提交有序card_ids和bottom_card_ids；实体接口对应card_entity_ids和bottom_card_entity_ids。两份列表必须恰好且不重复地分割候选，顺序均有意义；逐张移回牌库后按bottoms顺序派发一次on_deck_reorder，内容层逐张结算并最后恢复抽牌／出击。多张收益不额外增加占卜次数。
+
+兼容旧单张bottom_card_id／bottom_card_entity_id：新选择中可转换为长度0或1的列表，但不得与显式列表冲突；已有黑羽旧待选择通过角色deck_order_spec钩子只读解析为现行多张限制，谕石按原操作卡识别至少一张；其他旧单张选择维持自身限制。私有投影仅向选择者提供人数限制与候选。全置底合法，空库不创建无合法动作的选择。新选择最多4张时一般有120种有序分割、谕石96种；合法动作精确列举，不把任一行当作无序集合。
+
+
+### 2026-10-09 玩家生命上限与噩梦目标
+
+PlayerEntity及双方公开side新增max_hp，初始30；旧快照、旧回放缺失时按30兼容。reduce_max_hp支持玩家，沿用逐点比例与四舍五入、护盾不消耗和终局检查；治疗及受伤目标枚举使用当前上限。公开棋盘和max_hp事件patch同步玩家上限，不添加隐藏信息。噩梦通过分配器的include_roles参数扩展至玩家、存活编队异能者及前排召唤物，其余分配调用维持原范围。残虹幻境改用既有V2_CARD_USED时机，C05沿用rule.combat_immune与battle／operation_end清理；不修改动作格式。
+
+### 2026-10-09 单张手牌置顶／置底
+
+`pending_choice` 的 `hand_placement=true` 配合 `deck_order=true` 表示从当前手牌选择恰好 1 张放至牌库顶或底，候选仍在手牌，不计入待归还牌库张数。复用 `choose_deck_order`：`card_ids=[id], bottom_card_ids=[]` 为置顶，反之为置底；两组总共必须恰好 1 个合法实体。其余手牌不动，采用正常实体 ID 转换与 JSON 恢复。公开投影仅向操作者提供候选与布局标志，对手看不到候选。内容回调恢复原操作；不再次支付行动力，也不默认发动占卜效果。
+
+
+### 2026-10-09 幻境伤害归类
+
+内容包通过源角色专用的 `damage_is_additional` 决策声明伤害是否视为追加攻击；攻击、可执行的反击和独立伤害在追加攻击加成前以 `actor_only=True` 查询来源实体，队友的状态不串到来源。既有 `attack_is_additional` 继续处理队伍援护判定。攻击与反击预先计算各自阵营的加成，伤害入口的 `_additional_bonus_applied` 保留预先确定的归类并防止重复加成；穿透和转移伤害继承原段标记，不再次增伤。不允许反击时，不因来源状态或加成制造伤害。
+
+幻境沿用 `canhong.mirage`／`status.mirage` 与既有到期、倒地清理；目录新增 `mechanism-mirage`，由残虹异能显式引用，不进入构筑。公开演出投影保留事件已有的 `attribute`／`additional_attack` 字段，双方与新回放一致；不改动作格式，不授予旧模型新规则兼容。
+
+### 2026-10-09 灵可随机检索与属性标记
+
+K01 先随机抽取至多三种不同的所属牌，直接进入 pending_choice.kind=kit；只提供单张 choose，不再为新使用产生 kit_multi／choose_cards。候选、随机状态及 deck_cards 计数沿用现有快照契约；旧 kit_multi 待选择兼容仍保留。玩家与异能者的属性抗性 effect_markers 可携带 attribute，取值为六种属性之一；该字段只用于图标展示，规则计算仍从正式效果读取。
+
+### 2026-10-09 额外行动力费用
+
+卡牌可含非负整数 `additional_ap_cost`，与普通 `cost` 分开。主动打出的付款由 `card_ap_payment` 统一提供：首次瞬发仅减免普通 `card_cost`，再加额外费用。合法动作、预览、扣费与不足提示使用同一结果；额外费用不会单独消耗瞬发机会。`public_card` 保留该字段，普通费用减至零但仍有额外费用时，不标为免行动力。明确免费释放与替代牌继续按实际使用的效果结算，不继承物理原牌的额外费用。
+
+
+### 2026-10-09 独立卡牌释放广播
+
+`GameEvent.V2_CARD_RELEASED=on_card_released` 在实际卡框和效果结算前广播。正常使用经过付款、`V2_CARD_USED` 及使用时效果后进入释放；`resolve_release` 直接建立释放操作，只广播释放并结算效果，不广播使用，不支付使用费用，不消费 `card_use` 瞬发授予，也不触发使用后／手牌标注结算。两条路径共用卡框与卡效结算，实体卡结算后的区域行为保留。
+
+C07 条件触发取出一张真实卡牌后调用 `resolve_release`，结束后恢复父操作；手动 C07 沿用普通 `resolve_play`。公开 `play` 事件可带 `release_only=true`，正文使用「自动释放」，`response=false`；使用／响应事件保持原来的时机含义。
+
+### 2026-10-09 对方出击完成时机
+
+纯规则引擎新增 `V2_OPPONENT_SORTIE_FINISHED` 内容回调（`on_opponent_sortie_finished`），携带 `attacker_side` 与 `attacker_id`，在普通／战斗牌／远程的整次出击结算后或独立追加攻击完成后，通知对方角色包。多段出击一次通知，未实际攻击、中途倒地或已结束对局不通知；反击不派发。武备触发仍按回调当刻的存活与装备检查，卡效留在所属角色内容文件。公开事件、动作协议与快照格式不变。
+
+### 七队训练所需公开计次
+
+`policy_state.sides[side].heiyu_divinations` 记录本局公开占卜次数，角色元信息中的 `insight_used_turn` 记录洞悉最后触发的全局回合。这两项只公开既有计次，不携带牌库或暗牌信息。七队观察读取其数值并与角色连用状态、倾陷上限和玩家生命上限分列；实体编号不进入学习特征。网页版不计算这些规则。
+
+`policy_state` 同时提供阵营和角色按属性区分的公开 `resistances` 数值，阵营公开 `effects` 使用既有公有效果白名单；避免训练编码从中文标记猜测减抗量。字段不包含暗牌、牌库或私有贡献。
+
+### 复制异能的生成归属与选择续步
+
+内容工具 `generated_card(c, card_id)` 将跨角色复制异能生成的牌归属实际触发者，并以 `original_character_id` 保留原来源；实体和原卡模板ID不变。黑羽／达芙蒂尔沿用此工具。待选择可携带内容注册的 `continuation` 字符串；排序完成后由 `continue_choice` 派发对应牌效续步，仍使用实际行动角色的上下文，不把Python函数写入快照。没有该字段的旧选择沿用原角色回调。公开 `mimic` 标记进入policy_state白名单和七队具名观察；生成牌采样按公开阵容允许复制来源，并保留己方已知的生成归属，不读取对方真实暗牌。
+
+### 2026-10-09 可恢复出击与瞬发机会付款
+
+`operation.pending_sortie` 保存可 JSON 序列化的出击 spec 与 stay_bench。当出击前回调打开选择时，纯规则层暂停伤害；内容续步调用 resume_sortie，直接结算剩余攻击，不重放入场或 ready 回调。魔女的占卜续步继续使用 heiyu.divination；延后释放 P04 产生选择时保存真实释放操作，不能用外层空操作覆盖它。
+
+通用修正属性 rule.normal_attack_instant 允许全队按 shared instant 付款。normal_attack_payment 优先提供 ap=0、normal=false、resource=instant，仍遵守封锁、召唤物和角色禁止出击的规则。统一付款阶段消费 used.instant，普通出击次数不变。P07 赋予该属性至当前己方回合结束，P08 设置 used.instant=false，仅恢复一次、不累计。占卜检视取至少 2，底牌效果不受形态限制；公开投影仍隐藏候选。
+
+## 行动力环合与创生珠协议
+
+状态的 harmony_residue_version=3。last_front 兼容字段记录本回合最近成功用牌／普通出击角色，last_actor_entity_id 与 last_actor_turn 校验身份和回合；回合开始／结束清除来源，响应不建立跨回合来源。旧跨回合来源记录不作为新行动证据。环合上限固定 3，付款由 action_harmony_gain 改写并一次入账；零战斗牌在此处补满，操作结束不再补环合。
+
+兼容字段 genesis_layers 现在是一组珠。每项含 id、stacks（1／2）、left、used_turn、uncapped、source_entity_id：普通上限 3 珠，每珠单独 2 回合计时、每回合首次出击按 stacks 各结算 1 点。九原不再改珠数或上限，只将新珠 stacks 设为 2；伊洛伊额外珠可超过普通上限。实时旧层记录按相同来源、剩余时限与使用计次成组规范化，公开观察不修改输入，操作前使用同一规范化结果；历史公开回放不重写。
+
+extra_genesis_queue 按触发顺序保存每次伊洛伊额外创生的 actor 与 actor_entity_id，兼容 extra_genesis_pending 数量和 extra_genesis_actor 首项。下个己方回合开始逐项验证实体、存活并施加 1 珠，不递归排队，来源伊洛伊倒地不取消队列；旧布尔等待字段兼容为一项。
+
+观察、policy_state、公开棋盘与回放 patch 同步珠、待触发队列、来源蓝框及当前计次，不包含隐藏牌序或随机状态。白热化增加 short_hint，网页优先显示简写，hint／description 保留完整说明。新机制不自动适配旧训练编码或授权旧权重。
+
+通用时机包括 V2_HARMONY_TRIGGERED、V2_HARMONY_APPLIED、V2_SURPLUS_ENERGY、V2_ALLIED_DAMAGE、V2_COUNTER_RESOLVED 与 V2_GENESIS_SEGMENT；内容私有效果留在角色包。黑羽环合占卜沿用可序列化延后队列，不再生成 PF01。
+
+
+## 曳尔沐测试角色与信号占位
+
+elyms 使用光属性 2/5 面板，保持测试账号过滤；MU01–MU05 为无特殊效果战术，MU06–MU08 为无特殊效果的 2/5 武备，不新增官方预组或模型支持。角色公开字段 signal_level 为整数 0／1／2，对应低／中／高信号；初始化为 0，普通换下与倒地保留，终结重置。实时观察与公开回放棋盘携带相同值，网页不计算信号规则，在个人资源位置用「低／中／高」单字及其右侧 Wi-Fi 图标（一／二／三层弧线）显示，悬停保留完整说明。卡牌条件与失败替换尚未实现，空白牌不提升信号。
+
+延滞通过通用 apply_delay 施加，可保存 renewals、source_cid 和 source_entity_id；自然到期时先移除原状态，再按明确剩余续接数施加，不重新查询并递归授予续接。暂停倒计时保持待续接。额外施加不伪造环合付款、触发或援护事件。普通无续接的旧状态保持原行为。
+
+盈蓄减抗和终结加攻复用通用效果及到期协议，elyms.resistance 标记明确在曳尔沐下个己方回合开始时到期。新角色只接入正式 Python 规则，不授予旧模型、观察编码或冻结训练新兼容身份。

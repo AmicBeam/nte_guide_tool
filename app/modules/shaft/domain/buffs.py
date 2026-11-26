@@ -13,6 +13,7 @@ SUPPORTED_TRIGGER_EVENTS = {
     'reaction_trigger',
     'periodic_damage',
     'full_stack',
+    'energy_gain',
 }
 
 PERMANENT_BUFF_END_TICK = 1_000_000_000
@@ -160,6 +161,17 @@ def _placement(is_background: bool) -> str:
     return 'background' if is_background else 'foreground'
 
 
+def _has_damage_type(action: dict[str, Any], damage_type: str) -> bool:
+    tags = _action_tags(action)
+    if damage_type == '追击':
+        return str(action.get('damage_type') or '') == '追击' or bool(tags & {'追击', '追加攻击'})
+    if damage_type == '附着':
+        return '附着' in tags
+    if damage_type in {'普攻', '闪反', 'E', 'Q', '援护'}:
+        return damage_type in {str(action.get('action_type') or ''), str(action.get('damage_type') or '')}
+    return str(action.get('damage_type') or '') == damage_type
+
+
 def _source_matches(
     source: dict[str, Any],
     rule: dict[str, Any],
@@ -177,7 +189,7 @@ def _source_matches(
     if action_types and str(action.get('action_type') or '') not in action_types:
         return False
     damage_types = _str_set(source.get('damage_types'))
-    if damage_types and str(action.get('damage_type') or '') not in damage_types:
+    if damage_types and not any(_has_damage_type(action, damage_type) for damage_type in damage_types):
         return False
     action_names = _str_set(source.get('action_names'))
     if action_names and str(action.get('name') or '') not in action_names:
@@ -356,6 +368,14 @@ def _conditions_match(conditions: Any, context: dict[str, Any]) -> bool:
             if owner_slot not in {_int(reaction.get('previous_slot'), -2), _int(reaction.get('support_slot'), -2)}:
                 return False
             continue
+        if condition_type == 'energy_source':
+            if str(context.get('energy_source') or '') != str(condition.get('source') or ''):
+                return False
+            continue
+        if condition_type == 'reaction_not_echo':
+            if (context.get('reaction') or {}).get('is_echo') is True:
+                return False
+            continue
         if condition_type == 'reaction_type':
             reaction = context.get('reaction') if isinstance(context.get('reaction'), dict) else {}
             if str(reaction.get('reaction') or '') not in _str_set(condition.get('reactions')):
@@ -439,7 +459,7 @@ def _target_matches(
     if action_ids and str(action.get('id') or '') not in action_ids:
         return False
     damage_types = _str_set(target.get('damage_types'))
-    if damage_types and str(action.get('damage_type') or '') not in damage_types:
+    if damage_types and not any(_has_damage_type(action, damage_type) for damage_type in damage_types):
         return False
     action_names = _str_set(target.get('action_names'))
     if action_names and str(action.get('name') or '') not in action_names:
@@ -549,6 +569,8 @@ def activate_buff(
     definition_id = str(stacking.get('key') or rule.get('id') or '')
     owner_slot = _int(rule.get('owner_slot'))
     for instance in active_buffs:
+        if trigger_tick >= _int(instance.get('end_tick')):
+            continue
         existing_rule = instance.get('rule') if isinstance(instance.get('rule'), dict) else {}
         existing_stacking = existing_rule.get('stacking') if isinstance(existing_rule.get('stacking'), dict) else {}
         existing_definition_id = str(instance.get('definition_id') or existing_stacking.get('key') or existing_rule.get('id') or '')

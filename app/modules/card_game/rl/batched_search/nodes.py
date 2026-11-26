@@ -24,7 +24,7 @@ class BatchedNodePool:
         import torch
         if type(capacity) is not int or type(max_actions) is not int or min(capacity,max_actions)<1:
             raise ValueError('Positive node and full-action capacities required')
-        if q_scale not in ('legacy','natural_wdl'):
+        if q_scale not in ('legacy','natural_wdl','mctx_default'):
             raise ValueError('Explicit completed-Q scale required')
         self.capacity=capacity;self.max_actions=max_actions;self.q_scale=q_scale
         self.device=torch.device(device)
@@ -82,7 +82,7 @@ class BatchedNodePool:
                 raise ValueError('Finite normalized full legal-action prior required')
             if isinstance(value,bool) or not isinstance(value,(int,float,np.floating)) or not math.isfinite(value):
                 raise ValueError('Finite node value required')
-            if self.q_scale=='natural_wdl' and abs(value)>1+1e-6:
+            if self.q_scale in ('natural_wdl','mctx_default') and abs(value)>1+1e-6:
                 raise ValueError('Natural WDL outside [-1,1]')
             if not isinstance(owner,str) or not owner:raise ValueError('Root owner identity required')
             validated.append((p,float(value),owner))
@@ -131,6 +131,8 @@ class BatchedNodePool:
         mixed=(value+visit_sum*mean)/(1+visit_sum)
         q=t.where(seen,q,mixed[:,None])
         gain=.1*(50+visits.max(-1).values.to(t.float64))
+        if self.q_scale=='mctx_default' and bool((q[valid].abs()>1+1e-6).any()):
+            raise ValueError('Fixed-observer WDL estimate outside [-1,1]')
         if self.q_scale=='natural_wdl':
             if bool((q[valid].abs()>1+1e-6).any()):raise ValueError('Natural WDL estimate outside [-1,1]')
         else:
@@ -182,7 +184,7 @@ class BatchedNodePool:
         for path,value in zip(paths,values):
             if isinstance(value,bool) or not isinstance(value,(int,float,np.floating)) or not math.isfinite(value):
                 raise ValueError('Finite backup value required')
-            if self.q_scale=='natural_wdl' and abs(value)>1+1e-6:raise ValueError('Natural WDL backup outside [-1,1]')
+            if self.q_scale in ('natural_wdl','mctx_default') and abs(value)>1+1e-6:raise ValueError('Natural WDL backup outside [-1,1]')
             if not path:continue
             refs=[ref for ref,_ in path];self._slot_numbers(refs)
             owner=refs[0].owner
@@ -243,7 +245,7 @@ class BatchedNodePool:
         if len(refs)!=len(values):raise ValueError('Matching node/value updates required')
         if any(isinstance(v,bool) or not isinstance(v,(int,float,np.floating)) or not math.isfinite(v) for v in values):
             raise ValueError('Finite node values required')
-        if self.q_scale=='natural_wdl' and any(abs(v)>1+1e-6 for v in values):
+        if self.q_scale in ('natural_wdl','mctx_default') and any(abs(v)>1+1e-6 for v in values):
             raise ValueError('Natural WDL estimate outside [-1,1]')
         if len({ref.slot for ref in refs})!=len(refs):raise ValueError('Duplicate raw-value update')
         indices=self._slots(refs)

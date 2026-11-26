@@ -62,7 +62,9 @@ def _character_public(raw: dict[str, Any]) -> dict[str, Any]:
     if missing:
         raise ValueError(f'角色缺少字段: {", ".join(missing)}')
     public = {field: deepcopy(raw[field]) for field in REQUIRED_CHARACTER_FIELDS}
-    public['energy_max'] = energy_max_for_attribute(public['attribute'])
+    public['energy_max'] = int(raw.get('energy_max', energy_max_for_attribute(public['attribute'])))
+    if 'energy_max' in raw:
+        public['energy_max_override'] = public['energy_max']
     for extra in ('everness_id', 'ultimate', 'faction', 'resource_name', 'turn_snapshots'):
         if extra in raw:
             public[extra] = deepcopy(raw[extra])
@@ -93,8 +95,13 @@ def _card_public(raw: dict[str, Any]) -> dict[str, Any]:
     public['starter_copies'] = int(raw.get('starter_copies') or 0)
     card_id = raw.get('id')
     kind = raw.get('type')
-    if type(public['cost']) is not int or public['cost'] not in (0, 1):
-        raise ValueError(f'卡牌 {card_id} 费用必须为 0 或 1')
+    if type(public['cost']) is not int or public['cost'] < 0:
+        raise ValueError(f'卡牌 {card_id} 费用必须为非负整数')
+    if 'additional_ap_cost' in raw:
+        extra = raw['additional_ap_cost']
+        if type(extra) is not int or extra < 0:
+            raise ValueError(f'卡牌 {card_id} 额外行动力费用必须为非负整数')
+        public['additional_ap_cost'] = extra
     if kind == 'form':
         attack = int(raw.get('attack') or 0)
         hp = int(raw.get('hp') or 0)

@@ -6,7 +6,9 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from app.modules.shaft.service import get_shaft_catalog_payload, simulate_shaft_axis
+from tests.shaft_duration_fixtures import with_scenario_ticks
+
+from app.modules.shaft.service import get_shaft_catalog_payload, simulate_shaft_axis, SHAFT_SOURCE_VERSION
 from app.modules.shaft.domain.catalog import get_record_map, load_shaft_catalog
 
 
@@ -154,11 +156,12 @@ class ShaftBuffStatusUiTestCase(unittest.TestCase):
         self.assertNotIn('id="shaft-run-btn"', template)
         self.assertNotIn("$('shaft-run-btn')", source)
 
-    def test_shaft_source_version_is_1_0_6(self) -> None:
+    def test_shaft_source_version_is_1_5_0(self) -> None:
         catalog = get_shaft_catalog_payload()
         template = SHAFT_TEMPLATE.read_text(encoding='utf-8')
 
-        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.0.6')
+        self.assertEqual(catalog['source_meta']['version_label'], '异环云配队 1.5.1')
+        self.assertEqual(SHAFT_SOURCE_VERSION, catalog['source_meta']['version_label'])
         self.assertIn('{% block title %}异环云配队——排轴计算{% endblock %}', template)
         self.assertIn('<h1>异环云配队——排轴计算</h1>', template)
 
@@ -469,7 +472,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('id="shaft-axis-preview-cancel-btn"', template)
         self.assertIn('id="shaft-axis-preview-save-btn"', template)
         self.assertIn('function groupedPreviewActions', source)
-        self.assertIn('return switchesForeground(step, action);', source)
+        self.assertIn('return detail.lingke_joint_source_slot != null || switchesForeground(step, action);', source)
         self.assertIn(".join(' ')", source)
         self.assertIn('previous.durationTicks += detail.durationTicks', source)
         self.assertIn('function damageContributionShares', source)
@@ -548,7 +551,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertNotIn('增益解释', source)
         self.assertNotIn('const appliedBuffs =', source)
         self.assertIn('<strong class="shaft-detail-line-list">${detailLines(appliedBuffExplanations)}</strong>', source)
-        self.assertIn('<div class="shaft-detail-kv"><span>通伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>', source)
+        self.assertIn('<div class="shaft-detail-kv"><span>通用增伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>', source)
         self.assertIn('<div class="shaft-detail-kv"><span>${escapeHtml(actionElement)}属性伤害</span><strong>${formatNumber(actionElementDamage * 100, 1)}%</strong></div>', source)
         self.assertIn('const finalDamageBonus = Number(panelStats.final_dmg || 0);', source)
         self.assertIn('...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : [])', source)
@@ -592,7 +595,8 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const actionBase = Number(detail?.formula_parts?.base || 0) * actionMultiplier;', source)
         self.assertIn('? actionBase / realtimeAtk', source)
         self.assertNotIn('? Number(detail?.direct_damage || 0) / realtimeAtk', source)
-        self.assertIn('`${formatNumber(finalActionAtkMultiplier * 100, 1)}%攻击`', source)
+        self.assertIn("action.id === 'action_exe_counter' && Number(hitCount) > 1", source)
+        self.assertIn('`${formatNumber(finalActionAtkMultiplier * 100 / equalHitCount, 1)}%攻击${multiplierSuffix}`', source)
         self.assertIn('<span>动作倍率</span><strong>${escapeHtml(actionMultiplierText)}</strong>', source)
 
     def test_action_detail_hides_requiem_nightmare_from_applied_buffs(self) -> None:
@@ -692,15 +696,15 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertEqual(actions['血宴']['multipliers']['atk'], 6.999)
 
         self.assertEqual(actions['血宴']['energy_cost'], 120)
-        self.assertEqual(actions['e']['duration_ticks'], 10)
-        self.assertEqual(actions['强化e']['duration_ticks'], 10)
-        self.assertEqual(actions['幻e']['duration_ticks'], 22)
+        self.assertEqual(actions['e']['duration_ticks'], 11)
+        self.assertEqual(actions['强化e']['duration_ticks'], 11)
+        self.assertEqual(actions['幻e']['duration_ticks'], 23)
         self.assertEqual(
             {actions[name]['cooldown_group'] for name in ('e', '强化e', '幻e')},
             {'canhong_e'},
         )
         self.assertEqual(actions['幻a1']['duration_ticks'], 3)
-        self.assertEqual(actions['幻a4']['duration_ticks'], 11)
+        self.assertEqual(actions['幻a4']['duration_ticks'], 9)
         self.assertEqual(actions['援护']['duration_ticks'], 15)
         self.assertEqual(actions['援护']['multipliers']['atk'], 2.0)
         self.assertEqual(actions['援护']['energy_gain'], 5.2)
@@ -811,9 +815,9 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             self.assertEqual(action['energy_gain'], energy)
             self.assertEqual(action['harmony'], harmony)
             self.assertEqual(action['stagger'], stagger)
-            self.assertEqual(action['duration_ticks'], 0)
+            self.assertEqual(action['duration_ticks'], 9 if name == 'a5' else 0)
             self.assertEqual(action['can_background_override'], can_background)
-        self.assertEqual(actions_by_name['援护']['duration_ticks'], 15)
+        self.assertEqual(actions_by_name['援护']['duration_ticks'], 12)
         self.assertEqual(actions_by_name['e']['duration_ticks'], 10)
         self.assertEqual(actions_by_name['e']['multipliers']['atk'], 1.0)
         self.assertEqual(actions_by_name['e']['hit_count'], 4)
@@ -876,7 +880,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
 
         arc = next(arc for arc in catalog['arcs'] if arc['name'] == '远行者之声')
         plasma_arcs = [candidate for candidate in catalog['arcs'] if candidate['adaptation'] == '等离子']
-        self.assertEqual(plasma_arcs[0]['id'], arc['id'])
+        self.assertEqual(plasma_arcs[0]['id'], 'arc_exe_dotted_horizon')
         self.assertEqual(arc['adaptation'], '等离子')
         self.assertEqual(arc['base_atk'], 570)
         self.assertEqual(arc['modifiers']['crit_rate'], 0.24)
@@ -944,7 +948,10 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertLess(template.index('id="shaft-build-panel"'), template.index('<h2>敌人</h2>'))
         self.assertLess(template.index('<h2>敌人</h2>'), loadout)
         self.assertNotIn('<h2>全队面板</h2>', template)
-        self.assertIn('<h2>家具上限</h2>', template)
+        self.assertIn('<h2>家具增益</h2>', template)
+        self.assertLess(template.index('<h2>家具增益</h2>'), template.index('<h2>噗咔特训</h2>'))
+        self.assertLess(template.index('<h2>噗咔特训</h2>'), template.index('<h2>伤害总览</h2>'))
+        self.assertEqual(template.count('id="shaft-training-bonus-grid"'), 1)
 
     def test_character_panel_distinguishes_general_and_element_damage(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
@@ -1109,40 +1116,23 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
         css = SHAFT_CSS.read_text(encoding='utf-8')
 
-        self.assertIn('id="shaft-substat-contribution-btn"', template)
-        self.assertIn('id="shaft-substat-contribution-dialog"', template)
-        self.assertIn('id="shaft-substat-contribution-content"', template)
-        self.assertIn('>副词条贡献度</button>', template)
-        self.assertIn('>副词条贡献度</h2>', template)
-        self.assertNotIn('>计算词条贡献度</button>', template)
-        self.assertIn('以8类主要副词条各 ${formatNumber(analysis.base_count || 0)} 条', source)
-        self.assertIn('纯前端计算，不改配装或对比快照', source)
-        self.assertNotIn('基准临时将每位角色的通伤', source)
+        self.assertNotIn('id="shaft-substat-contribution-btn"', template)
+        self.assertNotIn('id="shaft-substat-contribution-dialog"', template)
+        self.assertIn('data-analysis-dimension="substats"', source)
+        self.assertIn('>副词条贡献度</button>', source)
+        self.assertIn('队友词条保持当前配装', source)
+        self.assertIn('当前角色最高收益为100%', source)
         self.assertIn('.shaft-substat-contribution-table', css)
-        self.assertIn('max-height: calc(100vh - 28px);', css)
-        self.assertIn('overflow-y: auto;', css)
-        self.assertIn('function analyzeSubstatContributions(', engine)
-        self.assertIn("{ key: 'all_dmg', label: '通伤' }", engine)
-        self.assertIn("{ key: 'def_pct', label: '防御%' }", engine)
-        self.assertIn("'flat_atk'", engine)
-        self.assertIn("'flat_hp'", engine)
-        self.assertIn("'flat_def'", engine)
-        self.assertIn('const BASELINE_SUBSTAT_FIELDS = SUBSTAT_CONTRIBUTION_FIELDS.slice(0, 8);', engine)
-        self.assertIn('num(candidateMember.substat_counts[field.key]) + incrementCount', engine)
         self.assertIn('row.increase_damage / maxIncreaseDamage * 100', engine)
-        self.assertIn('const contributionByCell = new Map', source)
-        self.assertIn('const topContributionRanksBySlot = new Map', source)
-        self.assertIn('.slice(0, 4);', source)
-        self.assertIn('contribution-rank-${rank}', source)
-        self.assertIn("contribution > 0 ? `${formatNumber(contribution, 1)}%` : '—'", source)
         for rank in range(1, 5):
             self.assertIn(f'td.contribution-rank-{rank}', css)
 
         open_analysis = source[
-            source.index('async function openSubstatContributionAnalysis'):
-            source.index('function closeSubstatContributionAnalysis')
+            source.index('async function calculateCharacterSubstats'):
+            source.index('function openShortcutHelp')
         ]
         self.assertIn('window.ShaftEngine.analyzeSubstatContributions(state.axis, state.catalog', open_analysis)
+        self.assertIn('slot,', open_analysis)
         self.assertNotIn('shaftRequest(', open_analysis)
         self.assertNotIn('state.compareSnapshot =', open_analysis)
 
@@ -1181,7 +1171,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
                 'operation': 'analyze_substats',
                 'axis': axis,
                 'catalog': catalog,
-                'options': {'base_count': 15, 'increment_count': 5},
+                'options': {'slot': 0, 'base_count': 15, 'increment_count': 5},
             }),
             capture_output=True,
             text=True,
@@ -1251,11 +1241,6 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn("additionalTags.has(damageType)", source)
         self.assertIn("? (actionType || '其他')", source)
         self.assertIn('damage_type: detail.damage_type', SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
-        self.assertIn(
-            "if (damageType === '追击' || tags.has('追击') || tags.has('追加攻击')) total += panelMods.follow_dmg;",
-            SHAFT_ENGINE_JS.read_text(encoding='utf-8'),
-        )
-        self.assertIn("if (tags.has('附着')) total += panelMods.attach_dmg;", SHAFT_ENGINE_JS.read_text(encoding='utf-8'))
         self.assertIn('damage_by_action_by_slot: clone(result.damage_by_action_by_slot || [])', source)
         self.assertIn('function mergeActionAnalysisComparison(', source)
         self.assertIn("'被动': '#ff5aa5'", source)
@@ -1716,7 +1701,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('`频率 ×${formatNumber(formula.frequency_multiplier ?? 1, 2)}`', source)
         self.assertIn('`减防 ${percent(formula.def_down)}　穿防 ${percent(formula.def_ignore)}　减抗 ${percent(formula.res_down)}`', source)
         self.assertIn('lines.push(`最终增伤 ${percent(formula.final_dmg)}`);', source)
-        self.assertIn("const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;", source)
+        self.assertIn("const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害${count} · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;", source)
         self.assertNotIn('最终 ${formatNumber(event?.damage || 0)} 伤害', source)
         self.assertNotIn('const zones = [];', source)
         self.assertNotIn('乘区　${zones.join', source)
@@ -1853,6 +1838,91 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
             source,
         )
 
+    def test_stack_tooltip_snapshots_begin_at_each_trigger_not_source_action(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        functions = source[source.index('  function wrappedTick('):source.index('  function mergedRenderedBuffSegments(')]
+        script = """
+          const calculationTickFromVisual = (v) => v;
+          const visualTickFromCalculation = (v) => v + 5;
+          const shouldDrawBuffLine = () => true;
+          const buffRuleDisplayName = (b) => b.name;
+          const formatNumber = String;
+          const ticksToSeconds = (v) => v / 10;
+          const BUFF_DURATION_LABEL_LIMIT_TICKS = 9000;
+        """ + functions + """
+          const snapshot = (tick, stacks, mode='add_stack') => ({
+            definition_id:'stack', name:'叠层', start_tick:0, visual_start_tick:0,
+            trigger_tick:tick, visual_trigger_tick:tick, end_tick:tick+30,
+            visual_end_tick:tick+30, duration_ticks:30, stacking_mode:mode,
+            stack_count:stacks, max_stacks:8,
+          });
+          const stacksAt = (buffs, ticks) => {
+            const segments = mergedBuffLineSegments([{start_tick:0, triggered_buffs:buffs}], 100);
+            return ticks.map(tick => segments.flatMap(s => s.tooltipItems)
+              .find(i => i.visualStartTick <= tick && tick < i.visualEndTick)?.stackCount ?? 0);
+          };
+          const shared = [snapshot(0,1),snapshot(10,2),snapshot(20,3),snapshot(60,1)];
+          const independent = [snapshot(0,1,'independent'),snapshot(10,1,'independent')];
+          const legacy = snapshot(10,2);
+          delete legacy.visual_trigger_tick;
+          console.log(JSON.stringify({
+            shared:stacksAt(shared,[0,9,10,19,20,49,50,60]),
+            independent:stacksAt(independent,[0,9,10,29,30,39,40]),
+            legacyStart:triggeredBuffLines({start_tick:0,triggered_buffs:[legacy]},100)[0].startTick,
+          }));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertEqual(result['shared'], [1,1,2,2,3,3,0,1])
+        self.assertEqual(result['independent'], [1,1,2,2,1,1,0])
+        self.assertEqual(result['legacyStart'], 15)
+
+    def test_refresh_countdown_keeps_expiry_before_and_after_replacement(self) -> None:
+        source = SHAFT_JS.read_text(encoding='utf-8')
+        engine = SHAFT_ENGINE_JS.read_text(encoding='utf-8')
+        functions = source[source.index('  function wrappedTick('):source.index('  function mergedRenderedBuffSegments(')]
+        truncate = engine[engine.index('  function truncateBuffTimelineAt('):engine.index('  function resetActiveBuffAt(')]
+        script = """
+          const int = (v, fallback = 0) => Number.isFinite(Number(v)) ? Math.trunc(Number(v)) : fallback;
+          const asList = (v) => Array.isArray(v) ? v : [];
+          const calculationTickFromVisual = (v) => v;
+          const shouldDrawBuffLine = () => true;
+          const buffRuleDisplayName = (b) => b.name;
+          const formatNumber = String;
+          const ticksToSeconds = (v) => v / 10;
+          const BUFF_DURATION_LABEL_LIMIT_TICKS = 9000;
+        """ + functions + truncate + """
+          const first = {definition_id:'buff', name:'测试', start_tick:0, end_tick:50,
+            visual_start_tick:0, visual_end_tick:50, duration_ticks:50};
+          truncateBuffTimelineAt({start_tick:0, end_tick:50, timeline_summaries:[first]}, 10);
+          const second = {...first, start_tick:10, end_tick:60, visual_start_tick:10,
+            visual_end_tick:60, duration_ticks:50};
+          delete second.countdown_end_tick;
+          const segments = mergedBuffLineSegments([
+            {start_tick:0, triggered_buffs:[first]},
+            {start_tick:10, triggered_buffs:[second]},
+          ], 30, false);
+          const remaining = (tick) => {
+            const item = segments.flatMap(s => s.tooltipItems)
+              .find(i => i.visualStartTick <= tick && tick < i.visualEndTick);
+            return buffRemainingTicksAtCalculationTick(item, tick);
+          };
+          const carried = {...first, start_tick:25, end_tick:35, countdown_end_tick:75,
+            visual_start_tick:25, visual_end_tick:35};
+          const loopSegments = mergedBuffLineSegments([
+            {start_tick:25, triggered_buffs:[carried]},
+          ], 30, true);
+          const wrappedItem = loopSegments.flatMap(s => s.tooltipItems)
+            .find(i => i.visualStartTick <= 2 && 2 < i.visualEndTick);
+          console.log(JSON.stringify({end:first.end_tick, expiry:first.countdown_end_tick,
+            remaining:[remaining(0), remaining(9), remaining(10), remaining(20)],
+            loopRemaining:buffRemainingTicksAtCalculationTick(wrappedItem, 2)}));
+        """
+        result = json.loads(subprocess.check_output(['node', '-e', script], text=True))
+        self.assertEqual(result['end'], 10)
+        self.assertEqual(result['expiry'], 50)
+        self.assertEqual(result['remaining'], [50, 41, 50, 40])
+        self.assertEqual(result['loopRemaining'], 43)
+
     def test_buff_line_tooltip_follows_pointer_position(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         css = (ROOT / 'app' / 'modules' / 'shaft' / 'static' / 'css' / 'shaft-page.css').read_text(encoding='utf-8')
@@ -1866,7 +1936,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('const cycles = Math.ceil((calculationStartTick - effectivePointerTick) / loopDurationTicks);', source)
         self.assertIn('buff?.end_tick ?? calculationTickFromVisual(endTick)', source)
         self.assertIn('calculationEndTick: buff.calculationEndTick,', source)
-        self.assertIn('calculationEndTick: Number(effect.end_tick || 0),', source)
+        self.assertIn('calculationEndTick: Number(effect.countdown_end_tick ?? effect.end_tick ?? 0),', source)
         self.assertIn('buffRemainingTicksAtCalculationTick(item, pointerCalculationTick)', source)
         self.assertNotIn(
             'calculationTickFromVisual(Number(item.endTick || 0)) - pointerCalculationTick',
@@ -1961,6 +2031,7 @@ class ShaftFrontendTimelineLayoutTestCase(unittest.TestCase):
         self.assertIn('state.cursorTick = timelineTickFromEvent(event);', source)
         self.assertIn('renderTimeline();\n        renderStepDetail();\n        renderEditorActions();', source)
 
+    @with_scenario_ticks
     def test_selection_and_initial_shortcuts_use_display_timeline_coordinates(self) -> None:
         source = SHAFT_JS.read_text(encoding='utf-8')
         catalog = get_shaft_catalog_payload()
@@ -2386,7 +2457,7 @@ process.stdout.write(JSON.stringify([run(true), run(false)]));
         self.assertEqual(yixing['character_name'], '达芙蒂尔')
         self.assertEqual(yixing['name'], '移行')
         self.assertEqual(yixing['action_type'], '普攻')
-        self.assertEqual(yixing['duration_ticks'], 10)
+        self.assertEqual(yixing['duration_ticks'], 17)
         self.assertTrue(yixing['can_background_override'])
 
     def test_market_dislike_uses_authenticated_toggle_and_refreshes_market(self) -> None:
@@ -2597,6 +2668,7 @@ process.stdout.write(JSON.stringify([run(true), run(false)]));
             self.assertEqual(detail['end_tick'], 0)
             self.assertEqual(detail['duration_ticks'], 0)
 
+    @with_scenario_ticks
     def test_yi_q_e_reordering_preserves_total_visual_span(self) -> None:
         team = [{
             'slot': 0,
@@ -2632,6 +2704,7 @@ process.stdout.write(JSON.stringify([run(true), run(false)]));
         self.assertEqual(visual_span(q_then_e), visual_span(e_then_q))
         self.assertEqual(visual_span(q_then_e), 20 * _js_number_constant('TIMELINE_TICK_PX'))
 
+    @with_scenario_ticks
     def test_short_nonzero_action_after_q_keeps_true_timeline_position(self) -> None:
         min_action_card_px = _js_number_constant('MIN_ACTION_CARD_PX')
         payload = {

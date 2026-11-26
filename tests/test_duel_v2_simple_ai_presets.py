@@ -9,7 +9,7 @@ from app.modules.card_game.engine.application import v2_service
 class SimpleAiPresetsTest(unittest.TestCase):
     def test_random_pool_stays_public_even_for_a_test_account(self):
         expected=[p for p in STARTER_DECKS if not deck_uses_test_characters(p)]
-        self.assertEqual({p['id'] for p in expected},{'starter','weave-rush','quick-rush','zhenhong','murk'})
+        self.assertEqual({p['id'] for p in expected},{'starter','weave-rush','quick-rush','zhenhong','murk','collapse','lingke'})
         tester=SimpleNamespace(shaft_test_whitelisted=True)
         for player in (None, tester):
             for selected in expected:

@@ -1,0 +1,2 @@
+# Optional bot-side build-card rendering; the wiki CLI/token bridge use stdlib only.
+Pillow>=10.4,<13.0

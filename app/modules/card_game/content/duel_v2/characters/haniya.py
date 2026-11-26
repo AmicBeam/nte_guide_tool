@@ -51,6 +51,28 @@ def _v05(c):
         damage(c.state, enemy, targets[0], 1, source=f'{c.side}:{c.cid}')
 
 
+def _apply_attack_aura(c, actor_id, response):
+    op, h = c.operation, c.character
+    battle = bool(c.card and c.card.get('type') == 'battle')
+    amount = int(h.get('protagonist_aura', 0))
+    if not amount:
+        return
+    free = h.get('shape') == 'V06' and op.get('harmony') == '黯星'
+    if not free:
+        h['protagonist_aura'] = 0
+    # Applied with the battle frame; set-attack cards overwrite this bonus.
+    if response:
+        flags = hero(c.state, c.side, actor_id)['flags']
+        if not (battle and c.card.get('attack_mode') == 'set') and 'counter_set_attack' not in flags:
+            flags['counter_bonus'] = int(flags.get('counter_bonus', 0)) + amount
+    else:
+        op['sortie_attack_bonus'] = amount
+    overwritten = battle and c.card.get('attack_mode') == 'set'
+    result = '本次攻击由战斗牌覆写' if overwritten else f'本次战斗攻击 +{amount}'
+    cost = '主角光环保留' if free else f'消耗 {amount} 点主角光环'
+    c.history(f'哈尼娅的异能触发：{cost}，{result}。', target_id=actor_id)
+
+
 @register
 class Haniya:
     id = 'haniya'
@@ -61,6 +83,13 @@ class Haniya:
     target_policies = {'V02': 'living_ally', 'V03': 'living_enemy'}
 
     @staticmethod
+    def card_description(c, current, card):
+        if card.get('card_id') == 'V04':
+            count = int(c.state['sides'][c.side].get('dark_star_count', 0))
+            return current.removesuffix('（当前为0）') + f'（当前为{count}）'
+        return current
+
+    @staticmethod
     def on_game_start(c):
         c.character['protagonist_aura'] = 0
 
@@ -69,32 +98,23 @@ class Haniya:
         gain_aura(c, 1)
 
     @staticmethod
+    def on_allied_damage(c, damage_kind=None, amount=0, **_data):
+        if damage_kind == 'star' and amount > 0:
+            gain_aura(c, 1)
+
+    @staticmethod
+    def on_card_used(c, actor_id, card):
+        if card.get('type') == 'battle' and c.character.get('shape') == 'V08':
+            _apply_attack_aura(c, actor_id, bool(c.state.get('_response_intercept')))
+
+    @staticmethod
     def on_sortie_ready(c, actor_id, response):
-        op, h = c.operation, c.character
-        battle = bool(c.card and c.card.get('type') == 'battle')
-        if not (op.get('normal_attack') or (battle and h.get('shape') == 'V08')):
-            return
-        amount = int(h.get('protagonist_aura', 0))
-        if not amount:
-            return
-        free = h.get('shape') == 'V06' and op.get('harmony') == '黯星'
-        if not free:
-            h['protagonist_aura'] = 0
-        # Applied with the battle frame; set-attack cards overwrite this bonus.
-        if response:
-            flags = hero(c.state, c.side, actor_id)['flags']
-            if 'counter_set_attack' not in flags:
-                flags['counter_bonus'] = int(flags.get('counter_bonus', 0)) + amount
-        else:
-            op['sortie_attack_bonus'] = amount
-        overwritten = battle and c.card.get('attack_mode') == 'set'
-        result = '本次攻击由战斗牌覆写' if overwritten else f'本次战斗攻击 +{amount}'
-        cost = '主角光环保留' if free else f'消耗 {amount} 点主角光环'
-        c.history(f'哈尼娅的异能触发：{cost}，{result}。', target_id=actor_id)
+        if c.operation.get('normal_attack'):
+            _apply_attack_aura(c, actor_id, response)
 
     @staticmethod
     def on_ally_attack_resolved(c, actor_id, player_damage):
         if (c.character.get('shape') == 'V07' and player_damage > 0
                 and not hero(c.state, c.side, actor_id).get('summoned')):
-            c.history('「名为哈尼娅的旋律」触发：己方异能者的攻击对对方玩家造成伤害，抽 1 张牌。')
+            c.history('「青春注脚」触发：己方异能者的攻击对对方玩家造成伤害，抽 1 张牌。')
             c.draw(1)

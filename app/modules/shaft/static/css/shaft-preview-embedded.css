@@ -1,0 +1,30 @@
+html,body{margin:0;padding:0;min-height:100%;background:#101923}
+.shaft-page[data-preview-only="true"]{padding:0;margin:0;width:100%;max-width:none}
+.shaft-page[data-preview-only="true"]>:not(#shaft-axis-preview-dialog):not(#shaft-embedded-preview-status){display:none!important}
+#shaft-embedded-preview-status{padding:20px;color:#dce6ef;font-size:14px}
+#shaft-axis-preview-dialog{position:fixed;inset:0;width:100%;max-width:none;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0;box-sizing:border-box}
+#shaft-axis-preview-dialog::backdrop{background:#101923}
+#shaft-axis-preview-footer{display:none!important}
+
+/* Fit all tracks into the iframe instead of stacking two vertical scrollers. */
+#shaft-axis-preview-dialog{overflow:hidden}
+#shaft-axis-preview-dialog .shaft-axis-preview-modal{height:100%;min-height:0;box-sizing:border-box;grid-template-rows:auto minmax(0,1fr) auto;padding:14px;gap:12px;overflow:hidden}
+#shaft-axis-preview-dialog .shaft-axis-preview-header{min-width:0;flex-wrap:wrap;gap:8px}
+#shaft-axis-preview-dialog .shaft-axis-preview-header h2{margin:0;font-size:18px}
+#shaft-axis-preview-dialog .shaft-panel-kicker{display:none}
+#shaft-axis-preview-dialog .shaft-axis-preview-actions{flex-wrap:wrap}
+#shaft-axis-preview-viewport{min-width:0;min-height:0;max-height:none;box-sizing:border-box;overflow-x:auto;overflow-y:hidden}
+#shaft-axis-preview-canvas{height:100%;display:flex;flex-direction:column}
+#shaft-axis-preview-canvas .shaft-axis-preview-ruler{flex:0 0 36px;height:36px;box-sizing:border-box}
+#shaft-axis-preview-canvas .shaft-axis-preview-ruler-label{height:100%}
+#shaft-axis-preview-canvas .shaft-axis-preview-track{flex:1 1 0;min-height:0;height:auto;box-sizing:border-box}
+#shaft-axis-preview-canvas .shaft-axis-preview-member{height:100%}
+#shaft-axis-preview-canvas .shaft-axis-preview-bubble{top:50%;transform:translateY(-50%);height:min(40px,calc(100% - 6px));padding-block:3px}
+#shaft-axis-preview-summary{min-width:0;margin:0}
+@media(max-width:600px){
+ #shaft-axis-preview-dialog .shaft-axis-preview-modal{padding:8px;gap:8px}
+ #shaft-axis-preview-dialog .shaft-axis-preview-hint{display:none}
+ #shaft-axis-preview-summary{padding:6px;gap:4px}
+ #shaft-axis-preview-summary .shaft-axis-preview-stat,#shaft-axis-preview-summary .shaft-axis-preview-contributions{padding:0 6px;gap:4px}
+ #shaft-axis-preview-summary .shaft-axis-preview-contributions>div{gap:4px 8px}
+}

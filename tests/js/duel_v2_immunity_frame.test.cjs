@@ -50,3 +50,26 @@ test('blue damage limit frame is distinct from immunity and follows public patch
     assert.ok(!node.innerHTML.includes('免疫伤害'));
   }
 });
+
+test('protection types coexist and clear on expiry, death and placeholder cards', () => {
+  const context = {window: {matchMedia: () => ({matches: false})}, document: {getElementById: () => null}, requestAnimationFrame() {}};
+  vm.createContext(context);
+  for (const file of ['v2_api.js', 'v2_table/helpers.js', 'v2_table/render.js']) {
+    vm.runInContext(fs.readFileSync('app/modules/card_game/static/js/' + file, 'utf8'), context);
+  }
+  const attrs = {};
+  const node = {style: {}, classList: {toggle() {}, remove() {}},
+    setAttribute(k, v) {attrs[k] = v}, getAttribute(k) {return attrs[k]}, removeAttribute(k) {delete attrs[k]},
+    querySelector() {return null}, querySelectorAll() {return []}};
+  const hero = {id: 'canhong', name: '残虹', hp: 5, max_hp: 5, combat_immune: true, noncombat_immune: true, hp_floor: 1};
+  const frames = ['v2-combat-immunity-frame', 'v2-noncombat-immunity-frame', 'v2-hp-floor-frame'];
+  for (const [patch, options, expected] of [
+    [{}, {}, true], [{combat_immune: false, noncombat_immune: false, hp_floor: 0}, {}, false],
+    [{down_turns: 3, hp: 0}, {}, false], [{}, {placeholder: true}, false],
+    [JSON.parse(JSON.stringify(hero)), {side: 'b'}, true],
+  ]) {
+    context.window.NTE_V2_TABLE.fillCharacterCard(node, {...hero, ...patch}, {side: 'a', usePortrait: true, ...options});
+    for (const frame of frames) assert.equal(node.innerHTML.includes(frame), expected);
+    if (expected) assert.ok(node.innerHTML.includes('--protection-offset:8px'));
+  }
+});

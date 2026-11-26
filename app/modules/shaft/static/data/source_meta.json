@@ -2,7 +2,7 @@
   "source_name": "异环云配队.xlsx",
   "source_hash": "848292d5e8dd441d200d1a9ab3fb203518f3da91eb51bbda346a06f2c0870173",
   "imported_at": "2026-07-05T15:29:33.344226+00:00",
-  "version_label": "异环云配队 1.0.6",
+  "version_label": "异环云配队 1.5.1",
   "sheets": {
     "云配队": {
       "rows": 36,
@@ -105,10 +105,11 @@
     "energy_gain_note": "用户2026-09-22指定所有模组终结能量获取在原值上提升20%，非Nanoka核实数据。",
     "awakening_d_note": "用户2026-09-22指定保留基础20%攻击，仅将额外10%攻击改为12%通伤，持续25秒；非Nanoka核实数据。",
     "normal_multiplier_note": "用户腾讯文档《黑羽资料汇总》2026-09-22新倍率列；仅更新一形态伤害倍率，资源沿用已确认值，非Nanoka核实。",
-    "form_a5_detach_note": "用户2026-09-23指定可选脱手改为0.6秒；2026-09-22曾为0.7秒。普通耗时1.4秒不变，脱手不缩减完整伤害与资源。非Nanoka核实数据。",
+    "form_a5_detach_note": "用户2026-10-15最新指定魔a5基础耗时直接改为0.7秒，取消可选脱手设计，覆盖此前普通1.4秒/脱手0.7秒；完整伤害与资源不变。非Nanoka核实或逐帧实测。",
     "form_q_malice_rebalance_note": "用户2026-09-22最新指定：二形态普攻、分支、下落、闪反基础倍率翻倍，资源量与耗时不变；非Nanoka核实数据。 Q1/Q2基础倍率乘0.7，分别420.21%/630.14%；所有恶意追加每点28%攻击倍率，觉醒倍率增益仍独立应用。",
     "malice_cost_note": "用户2026-09-22最新调整：魔a1–a5恶意消耗按原比例由合计7提高到12，保留8位小数并由末段吸收舍入差；魔E消耗由20降为13。非Nanoka核实数据。",
-    "ntedata": "2026-09-24起，倍率、回能、环合、倾陷和恶意改用NTEData提交43dd106的技能描述、DT_SkillDamageData与DT_BlackBirdEffectFigure的1级值。动作耗时不变。B觉增加魔女防御20%和渡世死焰400%攻击回复；失乐鸟后4点恶意改由F觉提供。"
+    "ntedata": "2026-09-24起，倍率、回能、环合、倾陷和恶意改用NTEData提交43dd106的技能描述、DT_SkillDamageData与DT_BlackBirdEffectFigure的1级值。动作耗时不变。B觉增加魔女防御20%和渡世死焰400%攻击回复；失乐鸟后4点恶意改由F觉提供。",
+    "form_basic_duration_update": "用户2026-10-15最新指定：魔a1–a5基础耗时0.7/0.6/1.0/0.6/0.7秒，完整链3.6秒，魔a5取消可选脱手。非Nanoka核实或逐帧实测，覆盖此前同名耗时；倍率与资源不变。"
   },
   "akane_source": {
     "document_url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y",
@@ -134,23 +135,431 @@
       "31": "通用Reaction GE，不是角色普通动作",
       "38": "占位分支0.1%且文档无对应技能，不导入"
     },
-    "checked_at": "2026-09-21",
+    "checked_at": "2026-10-13",
     "everness": "按明音凛检索无匹配",
     "estimates": {
-      "base_stats": {
-        "atk": 660,
-        "hp": 15000,
-        "def": 900
-      },
-      "string_per_hit": "2026-09-21暂估；2026-09-24改为按整次动作发放",
-      "cadenza_seconds": 20,
-      "delay_interval_seconds": 3,
-      "delay_base_multiplier": 2,
-      "delay_remaining_second_bonus": 0.2,
-      "delay_bonus_cap": 2,
-      "delay_proc_seconds": 1
+      "base_stats": "已由Nanoka 1.4.6的80级实值替换；历史暂估660/15000/900。"
     },
     "interpretation": "2026-09-21当时口径：单敌传导按本次普攻结算一次；长E曾按400%+160%；强化E曾沿用500%。",
-    "ntedata": "2026-09-24起改用NTEData提交43dd106。点按E 500%，音域400%两段；同调共振音域800%、泛音列1000%。弦能按整次动作发放。华彩20秒，第二段后半手动释放。绝对音准的X参数仍用暂估值。烁星激昂按技能描述保持20%，未采用曲线表中的30%。"
+    "ntedata": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
+    "ntedata_revision": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+    "ntedata_version": "1.4.10.566418",
+    "nanoka_url": "https://static.nanoka.cc/nte/1.4.6/zh/character/1057.json",
+    "user_override": "10月11日用户调整覆盖同名值：传导基础40%/60%、E觉64%/90%，弦刃与羽刃回响均可传导；华彩仍不模拟，Q2手动。",
+    "ntedata_sources_sha256": {
+      "DataTable_Skill_GlobalCharacterData_DT_AkaneEffectFigure.json": "0101ab9125b447b41042f44b75b45c791080d24a2f3d09d7dd80d59819c2199e",
+      "DataTable_Skill_DT_SkillDamageData.json": "9c36e94b9b452b88d2160385dc7f6453e1584063c3020e33657e03773f77bf7a",
+      "Text_PlayerSkillDes_Akane_SkillDes.json": "fab95437022f9fd969b05db172c31f3f28a6c104bee97455082e6e74516e18d7",
+      "Text_ST_Fork.json": "68e47f787748c06eaf99bdb1be5fe0bb429f7e2c27d28db7edf371d30e38670f",
+      "DataTable_Fork_CT_ForkBuff.json": "2f45eee61818e86db9a8e2dcdd2a0877906cb14b355e4e384570b5ba28f7a866"
+    },
+    "nanoka_sha256": "1569f5e6f61793d7accd2b95af5ca16d445655fb5ca3d3975d3db4d7394dd5d3",
+    "conflicts": {
+      "area_transmission": "用户10月11日公告：基础40%/60%，E觉64%/90%。",
+      "talent2": "Nanoka1.4.6仍写伤害20%/25秒；用户10月12日公告明确攻击力提升由24%改20%，原20秒与刷新条件保留。",
+      "passive1": "用户10月11日明确基础150%；3秒、每剩余秒20%、上限160%、1秒CD及变轨分类沿用已确认口径。"
+    },
+    "cadenza_source": {
+      "seconds": 20,
+      "first_half_seconds": 10,
+      "second_half_seconds": 10,
+      "revision": "d7fe705451f189cec8447d876e6c31db7ed3d9df",
+      "paths": [
+        "Blueprints/Abilities/Player/Ability_057_Akane/Buff/Buff_Akane_Skill_UltraSkill_Begin.json",
+        "Blueprints/Abilities/Player/Ability_057_Akane/Buff/Buff_Akane_Skill_UltraSkill_Enhanced.json"
+      ],
+      "sha256": {
+        "cadenza_begin": "a26bc198945902692fabe020e1a99b50a21ac8cbbc3aa87938118b3a21c8c3cd",
+        "cadenza_enhanced": "f9b9697b34efe34aa536bd074f3be001e21907cb626ed909b13a8520c888a913",
+        "q2_ability": "7f3789146a55de4bacb259735f77bb58d1f3d1af5ce939d7f80710deb43f214a"
+      },
+      "implemented": false,
+      "implementation_note": "用户2026-10-09最新要求暂不模拟华彩；Q2由用户手动布置，不验证前后半或持续窗口，重复Q2仅按两次Q1之间最多1次自检。",
+      "latest_tencent_unlock_seconds": 4
+    },
+    "curtain_source": "Nanoka NTE1.4.6角色1057：每个Ⅲ型驱动攻击力+10%，2026-10-09启用排轴，fixed属性纠正历史0值及错误属性/类型。",
+    "q2_self_check": "用户2026-10-09：Q1重置序列，Q2手动、最多1次；重复提示但继续计算。独立Q2也可试算。",
+    "latest_tencent_source": {
+      "url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y?p=vwOdEFsBKeWF9RTVzLN68S",
+      "content_sha256": "001085820a0ebfdf6ea7be73da9a6b4aec5808d8835212a0210000625c2ed232",
+      "priority": "2026-10-12文档括号内基础倍率及专武新值；不覆盖用户此前10月11日被动/觉醒、耗时和资源确认。"
+    },
+    "harmony_source_note": "用户2026-10-10按新解包仅更新a4环合为5.847；a1/a2/a3仍为3.56/5.496/9.096，普攻合计23.999，不强行缩放至24。",
+    "latest_awakening_source": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。",
+    "confirmed_action_durations": {
+      "source": "用户2026-10-10提供；2026-10-11普攻前三段各延长0.1秒，其他耗时沿用原确认值。",
+      "seconds": {
+        "a1": 0.5,
+        "a2": 0.5,
+        "a3": 1.1,
+        "a4": 0.7,
+        "e": 0.5,
+        "hold_e": 1.0,
+        "q1": 0.0,
+        "q2": 0.0,
+        "short_enhanced_e": 0.7,
+        "long_enhanced_e": 1.5
+      },
+      "basic_chain_update": {
+        "source": "用户2026-10-11补充，非官方实测帧数",
+        "changed_seconds": {
+          "a1": 0.5,
+          "a2": 0.5,
+          "a3": 1.1
+        },
+        "a4_seconds": 0.7,
+        "full_chain_seconds": 2.8
+      }
+    },
+    "awakening_multiplier_stage": {
+      "source": "用户2026-10-10明确补充，非外部数据源核实",
+      "rule": "C节点与三觉Q2追加1000%、三觉强化追加800%在技能等级换算后加算，不再次乘等级区；两种强化技能的基础倍率按最新腾讯文档分别记录，并随本体等级换算。"
+    },
+    "unpacked_resource_update": {
+      "workbook": "SkillDamageData_Akane.xlsx",
+      "sha256": "7ecbac5678268810dfb063dc4fc2af1931f7082308a6f1cf2541a0c1c4361c46",
+      "sheet": "SkillDamage",
+      "checked_at": "2026-10-10",
+      "scope": "用户仅授权五项资源更新；其余倍率、等级区、动作时间、觉醒、触发时机及烁星激昂保持既有口径。",
+      "actions": {
+        "action_akane_a4": {
+          "row": 6,
+          "cells": [
+            "N6"
+          ],
+          "values": {
+            "harmony": 5.847
+          },
+          "hit_count": 1
+        },
+        "action_akane_counter": {
+          "row": 8,
+          "cells": [
+            "M8",
+            "N8"
+          ],
+          "values": {
+            "energy_gain": 2.5,
+            "harmony": 4.2
+          },
+          "hit_count": 1
+        },
+        "action_akane_e": {
+          "row": 9,
+          "cells": [
+            "M9",
+            "N9",
+            "O9"
+          ],
+          "values": {
+            "energy_gain": 3.6,
+            "harmony": 6.0,
+            "stagger": 0.5
+          },
+          "hit_count": 1
+        },
+        "action_akane_hold_e": {
+          "row": 10,
+          "cells": [
+            "N10"
+          ],
+          "values": {
+            "harmony": 8.2
+          },
+          "hit_count": 2
+        },
+        "action_akane_q1": {
+          "row": 14,
+          "cells": [
+            "O14"
+          ],
+          "values": {
+            "stagger": 1.5
+          },
+          "hit_count": 10
+        }
+      }
+    },
+    "oct9_change_notice": {
+      "source": "用户2026-10-10提供的10月9日改动及待修改清单，非上游解包核实",
+      "applied": {
+        "a_heal_base_atk_ratio": 10,
+        "a_def_pct": 0.5,
+        "b_phase_res_down": 0.1,
+        "c_flat_atk_multiplier_add": 10,
+        "e_single_transmission": 0.6,
+        "f_crit_rate": 0,
+        "f_crit_dmg": 0.25,
+        "three_enhanced_e_flat_add": 7.5,
+        "three_q2_flat_add": 10,
+        "arc_crit_rate_by_refinement": [
+          0.12,
+          0.15,
+          0.18,
+          0.21,
+          0.24
+        ],
+        "arc_phase_damage_by_refinement": [
+          0.2,
+          0.25,
+          0.3,
+          0.35,
+          0.4
+        ],
+        "six_crit_dmg": 0.5
+      },
+      "duration_policy": "A新增防御与既有抗打断共享命中后12秒；F沿用烁星20秒。",
+      "unmodeled": "大招期间抗打断50%、闪反后暂时保留普攻连段、Q2时停与无敌延后：当前不模拟华彩、输入缓存和无敌帧，未提供精确延后时间，不改Q2零秒耗时。战斗音效、BGM与皮肤特效不属于排轴范围。",
+      "energy_pending": "普攻与技能回能略微提高未给逐动作数值，保留已授权解包值；普攻总回能14.299。",
+      "future_changes": {
+        "a3_a4_input_bug": "预输入后切人仍出a4待修复；排轴手工动作不模拟输入缓存"
+      },
+      "arc_six_implementation": "用户2026-10-10要求实装10月9日公告的弧盘与六觉调整；暴击12%–24%、相伤20%–40%，精炼2–4按端点等差换算，六觉暴伤50%；覆盖旧NTEData同名值，不标为新解包实值。 六共鸣沿用强化命中后25秒及返还10弦能，独立共鸣开关保持有效。",
+      "historical_note": "历史记录；同名效果以oct11_change_notice和当前运行配置为准。"
+    },
+    "enhanced_e_manual_split": {
+      "source": "用户2026-10-10要求两个手动动作，长强E1.5秒；倍率沿用现行用户文档，非新的解包数值；2026-10-12基础倍率由最新腾讯文档覆盖，长强E按用户纠正为单次1012.5%。",
+      "short": {
+        "id": "action_akane_short_enhanced_e",
+        "name": "短强E",
+        "base_atk_multiplier": 11.25,
+        "seconds": 0.7,
+        "required_mode": "泛音列"
+      },
+      "long": {
+        "id": "action_akane_long_enhanced_e",
+        "name": "长强E",
+        "base_atk_multiplier": 10.125,
+        "seconds": 1.5,
+        "required_mode": "音域"
+      },
+      "shared": "两者锁定前台，命中支付30弦能、零命中不支付，各自按三觉开关追加800%；A/D/六共鸣的命中增益保留。",
+      "migration": "旧同调共振按同槽位此前最近一次点按E/长E迁移，无前置回退长强E并保持状态自检；步骤ID、时刻及编辑属性不变，重新计算结果，不批量改库。"
+    },
+    "string_energy_first_hit": {
+      "source": "用户2026-10-11确认，不表述为新的官方解包验证",
+      "rule": "弦能无小数，动作第一段命中一次获得完整整数弦能，后续段不增加；0命中不获得。循环起始小数向下取整，其他角色个人资源精度不变。",
+      "gains": {
+        "a1": 1,
+        "a2": 1,
+        "a3": 2,
+        "a4": 6,
+        "plunge": 4,
+        "counter": 2,
+        "support": 4,
+        "e": 6,
+        "hold_e": 6
+      },
+      "unchanged": "短强E/长强E命中支付30弦能，六共鸣返还10，上限30。伤害、回能、环合与倾陷仍按保留命中累计曲线缩减。"
+    },
+    "oct11_change_notice": {
+      "source": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。",
+      "notice_date": "2026-10-11",
+      "received_at": "2026-10-12",
+      "nanoka_check": {
+        "url": "https://static.nanoka.cc/nte/1.4.6/zh/character/1057.json",
+        "checked_at": "2026-10-12",
+        "manifest_latest": "1.4.6",
+        "sha256": "1569f5e6f61793d7accd2b95af5ca16d445655fb5ca3d3975d3db4d7394dd5d3",
+        "boundary": "当前公开1057数据仍为旧版描述；仅作角色与既有机制核对，不能证明10月11日新数值。"
+      },
+      "applied": {
+        "passive1_atk_multiplier": 1.5,
+        "passive2_atk_pct": 0.24,
+        "a_interrupt_resistance": 0.6,
+        "a_def_pct": 0.5,
+        "a_duration_ticks": 150,
+        "b_phase_res_down": 0.12,
+        "d_crit_dmg": 0.3,
+        "d_duration_ticks": 150,
+        "e_single_transmission": 0.64,
+        "f_def_ignore": 0.16,
+        "f_duration_ticks": 200,
+        "initial_resource_resonance": 3,
+        "three_atk_pct_removed": true,
+        "six_crit_dmg": 0.64,
+        "six_duration_ticks": 250,
+        "three_enhanced_e_flat_add": 8
+      },
+      "unmodeled": {
+        "base_sound_field_range": "基础音域范围扩大，未给新半径；单敌伤害轴不模拟空间范围。",
+        "ultimate_interrupt_resistance": 0.75,
+        "enhanced_skill_defense": "短强E和长强E释放期间获得免伤与霸体；当前单敌伤害轴不模拟角色受击或敌方打断，不改前台锁定和手动打断试算。"
+      },
+      "pending": {
+        "skill_text": "部分技能文本优化未给完整原文，不猜测其他文本或时序。"
+      },
+      "unchanged": "A回血1000%基础攻击与防御50%、C追加1000%、音域传导90%、Q2三觉追加1000%、六觉返还10与25秒、F烁星20秒、资源/耗时/CD及循环起始资源保持既有口径。",
+      "enhanced_skill_bonus_confirmation": "用户2026-10-12确认10月11日调整：强化技能追加倍率仍属三觉共鸣，750%改为800%，在技能等级换算后加算；基础倍率下调未给新值，保留现值。",
+      "base_multipliers_followup": "已于2026-10-12按oct11_document_update接入文档括号内值，长强E×2由用户纠正为单次。",
+      "historical_note": "历史记录；烁星攻击24%已由oct12_change_notice覆盖，其他本轮未修改项继续有效。"
+    },
+    "oct11_document_update": {
+      "source": "用户2026-10-12提供的腾讯文档《明音凛资料汇总》括号内10月11日新倍率；仅同步基础倍率及其逐段伤害，资源、耗时、已确认被动/觉醒不由文档旧正文覆盖。非Nanoka/NTEData新版本核实。",
+      "url": "https://docs.qq.com/aio/DVWd1dEhxd1ZEU25Y",
+      "content_sha256": "001085820a0ebfdf6ea7be73da9a6b4aec5808d8835212a0210000625c2ed232",
+      "checked_at": "2026-10-12",
+      "parsing": "括号内为新基础倍率；a3的13.5按所在倍率列解释为13.5%。仅倍率更新，文档动作速度旧值和觉醒/被动旧正文不回写。",
+      "actions": {
+        "a1": {
+          "atk_multiplier": 0.298,
+          "per_hit_atk_multipliers": [
+            0.149,
+            0.149
+          ],
+          "formula": "14.9%*2"
+        },
+        "a2": {
+          "atk_multiplier": 0.438,
+          "per_hit_atk_multipliers": [
+            0.219,
+            0.219
+          ],
+          "formula": "21.9%*2"
+        },
+        "a3": {
+          "atk_multiplier": 0.849,
+          "per_hit_atk_multipliers": [
+            0.103,
+            0.103,
+            0.103,
+            0.135,
+            0.135,
+            0.135,
+            0.135
+          ],
+          "formula": "10.3%*3+13.5%*4"
+        },
+        "a4": {
+          "atk_multiplier": 4.247,
+          "per_hit_atk_multipliers": [
+            4.247
+          ],
+          "formula": "424.7%"
+        },
+        "e": {
+          "atk_multiplier": 3.6,
+          "per_hit_atk_multipliers": [
+            3.6
+          ],
+          "formula": "360%"
+        },
+        "hold_e": {
+          "atk_multiplier": 3.24,
+          "per_hit_atk_multipliers": [
+            1.62,
+            1.62
+          ],
+          "formula": "162%*2"
+        },
+        "short_enhanced_e": {
+          "atk_multiplier": 11.25,
+          "per_hit_atk_multipliers": [
+            11.25
+          ],
+          "formula": "1125%"
+        },
+        "long_enhanced_e": {
+          "atk_multiplier": 10.125,
+          "per_hit_atk_multipliers": [
+            10.125
+          ],
+          "formula": "1012.5%"
+        },
+        "q1": {
+          "atk_multiplier": 6.48,
+          "per_hit_atk_multipliers": [
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648,
+            0.648
+          ],
+          "formula": "64.8%*10"
+        },
+        "q2": {
+          "atk_multiplier": 9.18,
+          "per_hit_atk_multipliers": [
+            9.18
+          ],
+          "formula": "918%"
+        }
+      },
+      "long_enhanced_e_correction": "用户本轮纠正：1012.5%×2为文档笔误，按单次1012.5%，保留1段。",
+      "arc": {
+        "source": "用户2026-10-12腾讯文档括号内新值复核：暴击12%–24%、相伤20%–40%，与此前已接入值一致；2–4精继续按用户已授权端点等差换算，非新解包核实。",
+        "crit_rate": [
+          0.12,
+          0.15,
+          0.18,
+          0.21,
+          0.24
+        ],
+        "phase_damage": [
+          0.2,
+          0.25,
+          0.3,
+          0.35,
+          0.4
+        ],
+        "skill_damage": [
+          0.28,
+          0.35,
+          0.42,
+          0.49,
+          0.56
+        ],
+        "basic_damage": [
+          0.28,
+          0.35,
+          0.42,
+          0.49,
+          0.56
+        ],
+        "seconds": 15,
+        "base_atk": 570,
+        "crit_dmg": 0.48,
+        "already_applied": true
+      },
+      "unchanged": "回能、环合、倾陷、弦能、耗时、冷却与已确认被动/觉醒保留。三共鸣强化追加800%、Q2追加1000%仍在本体等级换算后加算。",
+      "historical_note": "倍率与资源边界继续有效；专武暴击12%–24%已由oct12_change_notice覆盖。"
+    },
+    "oct12_change_notice": {
+      "source": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。",
+      "notice_date": "2026-10-12",
+      "received_at": "2026-10-13",
+      "applied": {
+        "talent2_atk_pct": 0.2,
+        "talent2_duration_ticks": 200,
+        "c_sound_field_range_bonus": 0.3,
+        "arc_crit_rate_by_refinement": [
+          0.15,
+          0.18,
+          0.21,
+          0.24,
+          0.27
+        ]
+      },
+      "arc_middle_level_policy": "沿用用户已授权端点等差换算，2–4档为18%/21%/24%；每档3个百分点。",
+      "recorded_unmodeled": {
+        "base_sound_field_range": "基础音域继续扩大，未提供新半径，不猜测具体空间值。",
+        "sound_field_transmission_knockback": "音域传导攻击不再击退；单敌伤害轴不模拟空间或击退，不改变攻击命中、伤害、前台锁定或手动打断。",
+        "c_sound_field_range": "C觉音域范围25%改30%，同步觉醒说明，不虚构伤害增益。"
+      },
+      "pending_text": "部分技能文本优化未给全文，不补猜测其他机制或时序。",
+      "nanoka_check": {
+        "checked_at": "2026-10-13",
+        "version": "1.4.6",
+        "character_id": 1057,
+        "sha256": "1569f5e6f61793d7accd2b95af5ca16d445655fb5ca3d3975d3db4d7394dd5d3",
+        "boundary": "公开当前角色仍为旧技能/觉醒描述；新值采用用户10月12日公告。"
+      },
+      "unchanged": "基础倍率、回能、环合、倾陷、弦能、耗时、CD、其他觉醒/共鸣、专武基础攻击570/暴伤48%、相伤20%–40%、变轨与普攻增伤28%–56%及15秒刷新窗口保留。"
+    }
   }
 }

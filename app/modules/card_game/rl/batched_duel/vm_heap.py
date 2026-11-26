@@ -136,6 +136,9 @@ enum ErrorCode {
 #ifndef DUEL_VM_MEMO_LIMIT
 #define DUEL_VM_MEMO_LIMIT 512
 #endif
+#ifndef DUEL_VM_MUTABLE_LOOKUP_CACHE
+#define DUEL_VM_MUTABLE_LOOKUP_CACHE 0
+#endif
 
 // Heap ABI structure (per-game independent context, no global mutable state)
 struct Heap {
@@ -149,6 +152,10 @@ struct Heap {
     const unsigned char* constant_payload;
     int constant_node_count, constant_edge_count, constant_payload_count;
     int error;
+#if DUEL_VM_MUTABLE_LOOKUP_CACHE
+    // Per-execution hints only. Every hit rechecks the current graph edge/key.
+    int lookup_owner[32],lookup_key[32],lookup_offset[32],lookup_count[32],lookup_index[32];
+#endif
 };
 
 // Internal node view
@@ -276,6 +283,9 @@ __device__ inline void init_heap(
     heap->constant_edge_count = constant_edge_count;
     heap->constant_payload_count = constant_payload_count;
     heap->error = ERROR_OK;
+#if DUEL_VM_MUTABLE_LOOKUP_CACHE
+    for(int i=0;i<32;i++)heap->lookup_owner[i]=(-2147483647-1);
+#endif
 }
 
 // Internal node resolution (positive: mutable state; negative: constant program graph)
@@ -685,15 +695,36 @@ __device__ inline int key_equal_internal(Heap* heap, int ref_a, int ref_b, int d
     // Check hashability: reject lists, dicts, entities, and unknown tags
     if (na.tag == TAG_LIST || na.tag == TAG_DICT ||
         na.tag == TAG_PLAYER_ENTITY || na.tag == TAG_CHARACTER_ENTITY || na.tag == TAG_CARD_ENTITY ||
-        na.tag < 0 || na.tag > TAG_CARD_ENTITY) {
+        na.tag == 21 || na.tag == 73 ||
+        na.tag < 0 || (na.tag > TAG_CARD_ENTITY && na.tag != 22 && na.tag != 27)) {
         heap->error = ERROR_UNHASHABLE_KEY;
         return 0;
     }
     if (nb.tag == TAG_LIST || nb.tag == TAG_DICT ||
         nb.tag == TAG_PLAYER_ENTITY || nb.tag == TAG_CHARACTER_ENTITY || nb.tag == TAG_CARD_ENTITY ||
-        nb.tag < 0 || nb.tag > TAG_CARD_ENTITY) {
+        nb.tag == 21 || nb.tag == 73 ||
+        nb.tag < 0 || (nb.tag > TAG_CARD_ENTITY && nb.tag != 22 && nb.tag != 27)) {
         heap->error = ERROR_UNHASHABLE_KEY;
         return 0;
+    }
+
+    // Scalar Enum subclasses compare as their scalar values, including dict keys.
+    // Ordinary Enum members compare only with members of the same frozen class.
+    if (na.tag == 27 || nb.tag == 27) {
+        int a=ref_a,b=ref_b,unused=0;
+        if (na.tag==27 && na.extra) {
+            if (!get_edge(heap,&na,1,&a,&unused)) {heap->error=ERROR_INVALID_REF;return 0;}
+        }
+        if (nb.tag==27 && nb.extra) {
+            if (!get_edge(heap,&nb,1,&b,&unused)) {heap->error=ERROR_INVALID_REF;return 0;}
+        }
+        if (a!=ref_a || b!=ref_b) return key_equal_internal(heap,a,b,depth+1);
+        if (na.tag!=27 || nb.tag!=27) return 0;
+        int ca=0,cb=0;
+        if (!get_edge(heap,&na,0,&ca,&unused) || !get_edge(heap,&nb,0,&cb,&unused)) {heap->error=ERROR_INVALID_REF;return 0;}
+        if (ca!=cb) return 0;
+        if (!get_edge(heap,&na,1,&a,&unused) || !get_edge(heap,&nb,1,&b,&unused)) {heap->error=ERROR_INVALID_REF;return 0;}
+        return key_equal_internal(heap,a,b,depth+1);
     }
 
     // 1. None
@@ -723,6 +754,26 @@ __device__ inline int key_equal_internal(Heap* heap, int ref_a, int ref_b, int d
             int eq = key_equal_internal(heap, ca, cb, depth + 1);
             if (heap->error != ERROR_OK) return 0;
             if (!eq) return 0;
+        }
+        return 1;
+    }
+
+    // 3b. Frozenset (tag 22): order-independent set equality. Mutable set 21 stays unhashable.
+    if (na.tag == 22 || nb.tag == 22) {
+        if (na.tag != 22 || nb.tag != 22) return 0;
+        if (na.count != nb.count) return 0;
+        for (int i = 0; i < na.count; i++) {
+            int ca = 0, va = 0;
+            if (!get_edge(heap, &na, i, &ca, &va)) { heap->error = ERROR_INVALID_REF; return 0; }
+            int found = 0;
+            for (int j = 0; j < nb.count; j++) {
+                int cb = 0, vb = 0;
+                if (!get_edge(heap, &nb, j, &cb, &vb)) { heap->error = ERROR_INVALID_REF; return 0; }
+                int eq = key_equal_internal(heap, ca, cb, depth + 1);
+                if (heap->error != ERROR_OK) return 0;
+                if (eq) { found = 1; break; }
+            }
+            if (!found) return 0;
         }
         return 1;
     }
@@ -789,10 +840,32 @@ __device__ inline int dict_find(Heap* heap, int dict_ref, int key_ref) {
         return -1;
     }
     if (node.tag != TAG_DICT && node.tag != TAG_PLAYER_ENTITY &&
-        node.tag != TAG_CHARACTER_ENTITY && node.tag != TAG_CARD_ENTITY) {
+        node.tag != TAG_CHARACTER_ENTITY && node.tag != TAG_CARD_ENTITY &&
+        node.tag != 73) {
         heap->error = ERROR_TYPE_MISMATCH;
         return -1;
     }
+#if DUEL_VM_MUTABLE_LOOKUP_CACHE
+    int cache_slot=-1;
+    if(dict_ref>=0&&key_ref<0&&node.count>=8){
+        NodeView query;
+        if(!get_node(heap,key_ref,&query)){heap->error=ERROR_INVALID_REF;return -1;}
+        if(query.tag==TAG_STR){
+            cache_slot=(int)(((unsigned)dict_ref*2654435761U^(unsigned)key_ref)&31U);
+            if(heap->lookup_owner[cache_slot]==dict_ref&&heap->lookup_key[cache_slot]==key_ref&&
+                heap->lookup_offset[cache_slot]==node.offset&&heap->lookup_count[cache_slot]==node.count){
+                int index=heap->lookup_index[cache_slot];
+                if(index>=0&&index<node.count){
+                    int k=0,v=0;
+                    if(!get_edge(heap,&node,index,&k,&v)){heap->error=ERROR_INVALID_REF;return -1;}
+                    int equal=key_equal(heap,k,key_ref);
+                    if(heap->error)return -1;
+                    if(equal)return index;
+                }
+            }
+        }
+    }
+#endif
     for (int i = 0; i < node.count; i++) {
         int k = 0, v = 0;
         if (!get_edge(heap, &node, i, &k, &v)) {
@@ -801,7 +874,16 @@ __device__ inline int dict_find(Heap* heap, int dict_ref, int key_ref) {
         }
         int eq = key_equal(heap, k, key_ref);
         if (heap->error != ERROR_OK) return -1;
-        if (eq) return i;
+        if (eq){
+#if DUEL_VM_MUTABLE_LOOKUP_CACHE
+            if(cache_slot>=0){
+                heap->lookup_owner[cache_slot]=dict_ref;heap->lookup_key[cache_slot]=key_ref;
+                heap->lookup_offset[cache_slot]=node.offset;heap->lookup_count[cache_slot]=node.count;
+                heap->lookup_index[cache_slot]=i;
+            }
+#endif
+            return i;
+        }
     }
     return -1;
 }
@@ -832,7 +914,8 @@ __device__ inline int dict_set(Heap* heap, int dict_ref, int key_ref, int val_re
         return -1;
     }
     if (node.tag != TAG_DICT && node.tag != TAG_PLAYER_ENTITY &&
-        node.tag != TAG_CHARACTER_ENTITY && node.tag != TAG_CARD_ENTITY) {
+        node.tag != TAG_CHARACTER_ENTITY && node.tag != TAG_CARD_ENTITY &&
+        node.tag != 73) {
         heap->error = ERROR_TYPE_MISMATCH;
         return -1;
     }
@@ -959,7 +1042,10 @@ __device__ inline int list_set(Heap* heap, int list_ref, int index, int val_ref)
     return 0;
 }
 
-// 19. list_append: appends element to list with edge relocation if needed
+// VM-private LIST extra stores a reserved END edge index. Relocation to the
+// monotonic allocation tail invalidates an old end automatically. Canonical
+// exports and deep copies clear it because they allocate only logical edges.
+// This keeps fragmented bound-method appends amortized rather than quadratic.
 __device__ inline int list_append(Heap* heap, int list_ref, int val_ref) {
     if (heap->error != ERROR_OK) return -1;
     if (list_ref < 0) {
@@ -975,34 +1061,42 @@ __device__ inline int list_append(Heap* heap, int list_ref, int val_ref) {
         heap->error = ERROR_TYPE_MISMATCH;
         return -1;
     }
-    if (node.offset + node.count == heap->counts[1]) {
-        if (heap->counts[1] + 1 > heap->max_edges) {
-            heap->error = ERROR_EDGE_CAPACITY;
-            return -1;
-        }
-        int edge_idx = heap->counts[1]++;
-        heap->edges[edge_idx * 2 + 0] = val_ref;
-        heap->edges[edge_idx * 2 + 1] = -1;
-        heap->nodes[list_ref * 4 + 2] = node.count + 1;
-        return 0;
-    } else {
-        int new_count = node.count + 1;
-        if (heap->counts[1] + new_count > heap->max_edges) {
-            heap->error = ERROR_EDGE_CAPACITY;
-            return -1;
-        }
-        int new_offset = heap->counts[1];
-        for (int i = 0; i < node.count; i++) {
-            heap->edges[(new_offset + i) * 2 + 0] = heap->edges[(node.offset + i) * 2 + 0];
-            heap->edges[(new_offset + i) * 2 + 1] = -1;
-        }
-        heap->edges[(new_offset + node.count) * 2 + 0] = val_ref;
-        heap->edges[(new_offset + node.count) * 2 + 1] = -1;
-        heap->counts[1] += new_count;
-        heap->nodes[list_ref * 4 + 1] = new_offset;
-        heap->nodes[list_ref * 4 + 2] = new_count;
-        return 0;
+    long long logical_end=(long long)node.offset+node.count;
+    if(node.offset<0 || node.count<0 || logical_end>heap->counts[1]){
+        heap->error=ERROR_INVALID_REF;return -1;
     }
+    bool reserved=node.extra>0 && node.extra>=logical_end && node.extra<=heap->counts[1];
+    int capacity=reserved?node.extra-node.offset:node.count;
+    long long needed=(long long)node.count+1;
+    if(needed>capacity){
+        bool tail=logical_end==heap->counts[1];
+        long long desired=capacity?2LL*capacity:4;
+        if(desired<needed)desired=needed;
+        long long available=heap->max_edges-heap->counts[1];
+        long long allocation=tail?desired-node.count:desired;
+        if(allocation>available){
+            desired=needed;allocation=tail?1:needed;
+        }
+        if(allocation>available){heap->error=ERROR_EDGE_CAPACITY;return -1;}
+        int offset=tail?node.offset:heap->counts[1];
+        if(!tail){
+            for(int i=0;i<node.count;i++){
+                heap->edges[(offset+i)*2]=heap->edges[(node.offset+i)*2];
+                heap->edges[(offset+i)*2+1]=-1;
+            }
+        }
+        for(int i=node.count;i<desired;i++){
+            heap->edges[(offset+i)*2]=-1;heap->edges[(offset+i)*2+1]=-1;
+        }
+        heap->counts[1]+=(int)allocation;
+        node.offset=offset;
+        heap->nodes[list_ref*4+1]=offset;
+        heap->nodes[list_ref*4+3]=offset+(int)desired;
+    }
+    heap->edges[(node.offset+node.count)*2]=val_ref;
+    heap->edges[(node.offset+node.count)*2+1]=-1;
+    heap->nodes[list_ref*4+2]=(int)needed;
+    return 0;
 }
 
 // 20. list_pop: pops last element from list
@@ -1233,7 +1327,7 @@ __device__ inline int deep_clone(Heap* heap, int root_ref) {
             heap->nodes[new_node_ref * 4 + 0] = node.tag;
             heap->nodes[new_node_ref * 4 + 1] = edge_start;
             heap->nodes[new_node_ref * 4 + 2] = node.count;
-            heap->nodes[new_node_ref * 4 + 3] = node.extra;
+            heap->nodes[new_node_ref * 4 + 3] = node.tag == TAG_LIST ? 0 : node.extra;
 
             memo[memo_count].old_ref = curr_ref;
             memo[memo_count].new_ref = new_node_ref;
@@ -1391,7 +1485,7 @@ __device__ inline int compact_into(Heap* source,Heap* target,int root,int* map,i
                 if(n.tag>=TAG_DICT && !compact_enqueue(source,target,v,map,queue,capacity,&tail))break;
             }
         }
-        int* out=target->nodes+index*4;out[0]=n.tag;out[1]=offset;out[2]=n.count;out[3]=n.extra;
+        int* out=target->nodes+index*4;out[0]=n.tag;out[1]=offset;out[2]=n.count;out[3]=n.tag==TAG_LIST?0:n.extra;
         map[compact_index(source,old)]=index;
     }
     // Fill child edges only after all aliased references have been assigned.

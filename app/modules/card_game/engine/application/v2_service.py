@@ -275,6 +275,9 @@ def catalog(player) -> dict:
     payload = _content().get_catalog(include_test_characters=_player_can_use_test_content(player))
     payload.update(_public_store(_visible_store(_load_store(player), player)))
     payload['tutorial'] = tutorial_progress(player)
+    from app.modules.card_game.engine.ai.advanced_model import pending_strategy_options
+    allowed = {deck['id'] for deck in payload.get('starter_decks', [])}
+    payload['advanced_pending_presets'] = [item for item in pending_strategy_options() if item['id'] in allowed]
     return payload
 
 
@@ -525,7 +528,7 @@ def _response(room, player, envelope: dict | None = None, after_seq=None) -> dic
         if game and entry.side in game['sides']:
             game['sides'][entry.side]['name'] = name
     if game and room.mode in {'solo', 'advanced'} and 'b' in game['sides']:
-        game['sides']['b']['name'] = (('实验性高级人机' if (envelope['game'].get('ai_profile') or {}).get('experimental') else '高级人机') if room.mode == 'advanced' else
+        game['sides']['b']['name'] = ('高级人机' if room.mode == 'advanced' else
                                     ((envelope['game'].get('ai_profile') or {}).get('name', '练习对手')))
     if game and room.mode == 'tutorial' and 'b' in game['sides']:
         game['sides']['b']['name'] = '对手'
@@ -623,7 +626,7 @@ def _initialize_game(room, scenario=None, ai_deck_id=None, ai_model=None, solo_d
             'experimental': bool(getattr(model, 'experimental', False)),
             'capability': dict(getattr(model, 'capability', {}) or {}),
         }
-        game['sides']['b']['name'] = '实验性高级人机' if getattr(model, 'experimental', False) else '高级人机'
+        game['sides']['b']['name'] = '高级人机'
     replay.begin(room, game)
     game = _advance_ai(game, room.mode)
     envelope = {'rules_version': 'duel_v2', 'game': game, 'requests': []}
@@ -666,10 +669,10 @@ def _start_locked(player, payload: dict) -> dict:
         ai_deck_id = requested_ai
         if ai_deck_id == 'random':
             from secrets import choice
-            from app.modules.card_game.engine.ai.advanced_model import RANDOM_PRESETS, UNTRAINED_STRATEGIES
+            from app.modules.card_game.engine.ai.advanced_model import RANDOM_PRESETS, strategy_suspended
             available = []
             for candidate in RANDOM_PRESETS:
-                if candidate in UNTRAINED_STRATEGIES:
+                if strategy_suspended(candidate):
                     continue
                 try:
                     available.append((candidate, load_model(candidate)))

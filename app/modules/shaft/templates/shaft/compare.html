@@ -1,0 +1,34 @@
+{% extends 'common/base.html' %}
+{% block title %}配装收益对比 · NTE Tools{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('shaft_module.static', filename='css/shaft-compare.css', v=compare_asset_version) }}">
+<script src="{{ url_for('shaft_module.static', filename='js/shaft_comparison.js', v=compare_asset_version) }}" defer></script>
+<script src="{{ url_for('shaft_module.static', filename='js/shaft_compare_page.js', v=compare_asset_version) }}" defer></script>
+{% endblock %}
+{% block body %}
+<main class="compare-page" data-axis-id="{{ axis_id }}" data-guide-character-id="{{ record.id }}" data-guide-character-name="{{ record.name }}" data-arc-rarities="{{ arc_rarities|tojson|forceescape }}" data-worker-url="{{ url_for('shaft_module.static', filename='js/shaft_comparison_worker.js', v=compare_asset_version) }}">
+  <nav class="compare-nav"><a href="{{ url_for('guide_module.character_builds_page', identifier=record.id) }}">← {{ record.name }}排轴与配装</a><a href="/shaft/plaza">排轴广场 ↗</a><a id="compare-login" href="/login">登录</a></nav>
+  <header><p class="compare-eyebrow">BUILD LAB</p><h1>配装收益对比</h1><p>沿用已选轴，比较弧盘、卡带与主词条的组合。</p></header>
+  <section class="compare-card" aria-labelledby="source-heading">
+    <h2 id="source-heading">01 · 已选参考轴</h2>
+    <p><a id="compare-source-link" hidden target="_blank" rel="noopener">在排轴页原生预览 ↗</a></p>
+    <p id="compare-source-status" role="status" aria-live="polite">正在读取排轴目录…</p>
+    <div id="compare-axis-info" hidden></div>
+  </section>
+  <form id="compare-form" class="compare-card" hidden>
+    <h2>02 · 选择要比较的组合</h2>
+    <p class="compare-note">比较{{ record.name }}在此轴中的配装。S级弧盘固定1精，A级／B级固定5精；原轴基准保留实际装备和精炼，动作、队友、敌人、觉醒、技能、空幕设置与副词条数均沿用原轴。</p>
+    <div class="compare-options"><fieldset><legend>弧盘 <button type="button" data-select-all="arcs">全选</button><button type="button" data-select-none="arcs">清空</button></legend><div id="compare-arcs" class="compare-checks"></div></fieldset><fieldset><legend>卡带 <button type="button" data-select-all="cartridges">全选</button><button type="button" data-select-none="cartridges">清空</button></legend><div id="compare-cartridges" class="compare-checks"></div></fieldset><fieldset><legend>卡带主词条 <button type="button" data-select-all="stats">全选</button><button type="button" data-select-none="stats">清空</button></legend><div id="compare-stats" class="compare-checks"></div></fieldset></div>
+    <div class="compare-controls"><button class="compare-primary" type="submit" id="compare-run">开始比较</button><button type="button" id="compare-cancel" hidden>取消计算</button><output id="compare-count">0 个组合</output></div>
+    <p id="compare-progress" role="status" aria-live="polite"></p>
+  </form>
+  <section class="compare-card" id="compare-results" hidden aria-labelledby="results-heading">
+    <h2 id="results-heading">03 · 计算结果</h2><div id="compare-baseline"></div>
+    <p class="compare-note">原轴重算结果为100%；表格数值表示该组合全队总伤相对原轴的比例。每种卡带单独成表，点击数字查看组合详情。颜色以100%为中性，数值越低越偏红、越高越偏绿。零伤基准显示“—”。</p>
+    <div id="compare-matrices"></div>
+    <button type="button" id="compare-download" disabled>下载比较结果 CSV</button>
+  </section>
+  <dialog id="compare-detail" aria-labelledby="compare-detail-title"><div class="compare-detail-content"><div class="compare-detail-heading"><h2 id="compare-detail-title">组合详情</h2><button type="button" id="compare-detail-close" aria-label="关闭组合详情">关闭</button></div><div id="compare-detail-body"></div></div></dialog>
+  <noscript>请开启 JavaScript 以读取在线排轴并进行配装比较。角色资料仍可匿名阅读。</noscript>
+</main>
+{% endblock %}

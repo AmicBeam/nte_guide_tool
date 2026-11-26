@@ -1,15 +1,16 @@
 """Viewer-specific projection. Never expose decks, RNG, or private choices."""
 from .modifiers import compatibility_flags, public_effects
 from copy import deepcopy
-from .entities import clone_state, entity_action, needs_hydration
+from contextvars import ContextVar
+from .entities import clone_state, copy_state_graph, entity_action, action_card_index, hydrate_entities, needs_hydration
 
 from .effect_markers import character_effect_markers, team_effect_markers
-from app.modules.card_game.content.duel_v2 import CARDS
-from .flow import acting_side, apply_action, card_plays_instant, card_is_free_instant, legal_actions, normal_attack_payment, ultimate_spec, card_cost
+from app.modules.card_game.content.duel_v2 import CARDS, CHARACTERS
+from .flow import acting_side, apply_owned_action, card_plays_instant, legal_actions, normal_attack_payment, ultimate_spec, card_ap_payment
 from .presentation import (interaction_for_action, presentation_bundle, public_card,
                            sanitize_public_event)
 from .combat import harmony_marks
-from .state import SIDES, attack_value, collapsed, damage_immune, damage_limit, effective_card, hero, name, other, team_order
+from .state import SIDES, attack_value, collapsed, collapse_max, damage_immune, damage_limit, protection_state, effective_card, hero, name, other, team_order
 
 
 def _card(state, side, instance_id):
@@ -33,6 +34,11 @@ def action_label(state, side, action):
         return f"{hero(state, side, action['character_id'])['name']}出击"
     if kind == 'ultimate':
         return f"终结{hero(state, side, action['character_id'])['name']}"
+    if kind == 'exit_ultimate':
+        from app.modules.card_game.content.duel_v2.registry import decide
+        from .context import EffectContext
+        return decide(EffectContext(state, side, action['character_id'], {'side': side}),
+                      'exit_ultimate_label', '退出终结', actor_only=True) or '退出终结'
     if kind == 'play_card':
         text = f"使用「{_card(state, side, action['card_id'])['name']}」"
         option = next((o for o in (_card(state, side, action['card_id']).get('play_options') or []) if o['id'] == action.get('option_id')), None)
@@ -51,11 +57,110 @@ def action_label(state, side, action):
     if kind == 'mulligan':
         return f"替换 {len(action['card_ids'])} 张起手牌" if action['card_ids'] else '保留全部起手牌'
     if kind == 'choose_cards':
+        if (state.get('pending_choice') or {}).get('kind') == 'kit_multi':
+            return f"选择 {len(action['card_ids'])} 张牌"
         return f"调度 {len(action['card_ids'])} 张手牌"
     if kind == 'choose':
         card = next(c for c in state['pending_choice']['cards'] if c['instance_id'] == action['choice_id'])
         return f"选择「{card['name']}」"
+    if kind == 'choose_deck_order':
+        count = len(action.get('bottom_card_ids') or ([action['bottom_card_id']] if action.get('bottom_card_id') else []))
+        if (state.get('pending_choice') or {}).get('hand_placement'):
+            return '将 1 张手牌置于牌库' + ('底' if count else '顶')
+        return f'整理牌库并置底 {count} 张' if count else '整理牌库顶'
     return {'end_turn': '结束回合', 'concede': '认输'}.get(kind, kind)
+
+
+RULE_PREVIEW_SCORE_FIELDS = ('attack', '攻击次数', '创生花伤害', 'counter')
+_PREPARED_PREVIEW = ContextVar('duel_v2_prepared_preview', default=None)
+
+
+def _unknown_preview_card(ps, zone, i):
+    return {'instance_id': f'preview-{ps}-{zone}-{i}', 'card_id': 'unknown',
+            'character_id': 'unknown', 'name': '未公开牌', 'copy': False,
+            'type': 'tactic', 'cost': 999}
+
+
+def _anonymize_preview_hidden(sandbox, side):
+    """Replace unknown decks and opposing hidden hands in an owned sandbox."""
+    for ps in SIDES:
+        team = sandbox['sides'][ps]
+        team['deck'] = [_unknown_preview_card(ps, 'deck', i) for i in range(len(team['deck']))]
+        if ps != side:
+            revealed = set(team.get('revealed_ids') or [])
+            # Keep public hand counts and known cards, but never simulate a
+            # response based on an unrevealed opposing card or private gold mark.
+            team['hand'] = [card if card.get('copy') or card['instance_id'] in revealed
+                            else _unknown_preview_card(ps, 'hand', i)
+                            for i, card in enumerate(team['hand'])]
+            for card in team['hand']:
+                card.pop('jingu_mark', None)
+
+
+def _prepare_preview_template(state, side):
+    template = copy_state_graph(state)
+    _anonymize_preview_hidden(template, side)
+    if needs_hydration(template):
+        hydrate_entities(template)
+    return template
+
+
+class _PreparedPreviewSandbox:
+    """An explicit context class keeps frozen rule capture independent of decorators."""
+    def __init__(self, state, side):
+        self.template = _prepare_preview_template(state, side)
+        self.context = {'side': side, 'source_id': id(state),
+                        'version': state.get('version'), 'event_seq': state.get('event_seq'),
+                        'template': self.template}
+        self.entered = False
+        self.token = None
+
+    def __enter__(self):
+        if self.entered:
+            raise RuntimeError('Preview context cannot be reused')
+        self.entered = True
+        self.token = _PREPARED_PREVIEW.set(self.context)
+        return self.template
+
+    def __exit__(self, exc_type, exc, traceback):
+        _PREPARED_PREVIEW.reset(self.token)
+        return False
+
+
+def prepared_preview_sandbox(state, side):
+    """Anonymize hidden cards once; preview clones only a private sandbox per action."""
+    return _PreparedPreviewSandbox(state, side)
+
+
+def _preview_owned_sandbox(state, side):
+    prepared = _PREPARED_PREVIEW.get()
+    if (prepared and prepared['side'] == side and prepared['source_id'] == id(state)
+            and prepared['version'] == state.get('version')
+            and prepared['event_seq'] == state.get('event_seq')):
+        return copy_state_graph(prepared['template'])
+    return _prepare_preview_template(state, side)
+
+
+def rule_preview_scores(preview_value):
+    value = preview_value if isinstance(preview_value, dict) else {}
+    return {key: value[key] for key in RULE_PREVIEW_SCORE_FIELDS if key in value}
+
+
+def rule_battle_preview(state, side, action):
+    """Exact teacher score fields, without building presentation-only fields."""
+    sandbox = _preview_owned_sandbox(state, side)
+    before = sandbox['event_seq']
+    projected = apply_owned_action(sandbox, side, action)
+    events = [e for e in projected['events'] if e['seq'] > before]
+    attacks = [e for e in events if e['type'] == 'attack']
+    result = {}
+    if attacks:
+        result.update(attack=attacks[0]['amount'], counter=attacks[0]['counter'],
+                      攻击次数=len(attacks))
+    flowers = sum(e['amount'] for e in events if e['type'] == 'flower')
+    if flowers:
+        result['创生花伤害'] = flowers
+    return result
 
 
 def preview(state, side, action):
@@ -63,7 +168,7 @@ def preview(state, side, action):
     cost = 1 if kind in ('attack', 'cycle') else 0
     card = _card(state, side, action['card_id']) if kind == 'play_card' else None
     if card:
-        cost = 0 if card_is_free_instant(state, side, card) else card_cost(state, side, card)
+        cost = card_ap_payment(state, side, card)
     payment = normal_attack_payment(state, side, action['character_id']) if kind == 'attack' else None
     if payment is not None:
         cost = payment['ap']
@@ -79,30 +184,14 @@ def preview(state, side, action):
     cid = action.get('character_id') or card['character_id']
     # Only combat is previewed. Replace private opposing hands and unknown decks;
     # public counts still drive shield, fatigue and hand-limit behavior.
-    sandbox = deepcopy(state)
-    def unknown_card(ps, zone, i):
-        return {'instance_id': f'preview-{ps}-{zone}-{i}', 'card_id': 'unknown',
-                'character_id': 'unknown', 'name': '未公开牌', 'copy': False,
-                'type': 'tactic', 'cost': 999}
-    for ps in SIDES:
-        team = sandbox['sides'][ps]
-        team['deck'] = [unknown_card(ps, 'deck', i) for i in range(len(team['deck']))]
-        if ps != side:
-            revealed = set(team.get('revealed_ids') or [])
-            # Keep public hand counts and known cards, but never simulate a
-            # response based on an unrevealed opposing card or private gold mark.
-            team['hand'] = [card if card.get('copy') or card['instance_id'] in revealed
-                            else unknown_card(ps, 'hand', i)
-                            for i, card in enumerate(team['hand'])]
-            for card in team['hand']:
-                card.pop('jingu_mark', None)
+    sandbox = _preview_owned_sandbox(state, side)
     before = sandbox['event_seq']
-    projected = apply_action(sandbox, side, action)
+    projected = apply_owned_action(sandbox, side, action)
     events = [e for e in projected['events'] if e['seq'] > before]
     attacks = [e for e in events if e['type'] == 'attack']
-    harmony = next((e for e in events if e['type'] == 'harmony'), None)
+    harmony = next((e for e in events if e['type'] == 'harmony' and e.get('harmony_kind')), None)
     previous = state['sides'][side]['front']
-    payer = previous or state['sides'][side].get('last_front')
+    payer = state['sides'][side].get('last_front')
     enters = any(e['type'] == 'enter' and e.get('actor') == f'{side}:{cid}' for e in events)
     value.update(will_switch=enters and previous != cid, harmony=harmony['text'] if harmony else '不触发',
                  入场=hero(state, side, cid)['name'] if enters else '不入场',
@@ -131,13 +220,21 @@ def observe(state, side, after_seq=None, *, include_previews=True):
     if needs_hydration(state):
         state = clone_state(state)
     actions = legal_actions(state, side)
+    card_index = action_card_index(state)
     playable = {a['card_id'] for a in actions if a['type'] == 'play_card'}
     result = {key: deepcopy(state[key]) for key in ('rules_version', 'version', 'phase', 'active_side', 'first_side', 'turn', 'winner', 'reason')}
+    def legal_entry(action, preview_value, interaction):
+        return {'action': deepcopy(action), 'entity_action': entity_action(state, side, action, card_index=card_index),
+                'label': action_label(state, side, action), 'preview': preview_value, 'interaction': interaction}
+    if include_previews:
+        with prepared_preview_sandbox(state, side):
+            legal_entries = [legal_entry(action, preview(state, side, action),
+                                         interaction_for_action(state, side, action)) for action in actions]
+    else:
+        legal_entries = [legal_entry(action, {}, {}) for action in actions]
     result.update(escalation=public_progress(state), viewer_side=side, is_my_turn=(side == acting_side(state) or
                   state['phase'] == 'mulligan' and side not in state['mulligan_done']), sides={},
-                  legal_actions=[{'action': deepcopy(a), 'entity_action': entity_action(state, side, a), 'label': action_label(state, side, a),
-                                  'preview': preview(state, side, a) if include_previews else {},
-                                  'interaction': interaction_for_action(state, side, a) if include_previews else {}} for a in actions],
+                  legal_actions=legal_entries,
                   events=[sanitize_public_event(event, side) for event in deepcopy(state['events'][-200:])] if include_previews else [],
                   logs=[], presentation=presentation_bundle(state, side, after_seq=after_seq) if include_previews else {})
     for event in result['events']:
@@ -150,27 +247,48 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                 'front', 'last_front', 'turn_count', 'fatigue', 'records', 'used', 'harmonized',
                 'extra_flower', 'front_debuff') if k in source}
         team['life_locked'] = bool(source.get('life_locked'))
+        team['max_hp'] = source.get('max_hp', 30)
+        team['genesis_weave_damage'] = int(source.get('genesis_weave_damage', 0))
         team['genesis_player_hits'] = int(source.get('genesis_player_hits', 0))
         team['genesis_turn'] = source.get('genesis_turn')
+        from .genesis import public_beads
+        team['genesis_layers'] = public_beads(state, ps)
+        team['insight_damage'] = 2 + int(source.get('insight_bonus', 0))
+        team['insight_played'] = int(source.get('insight_played', 0))
+        team['support_count'] = int(source.get('support_count', 0)) if source.get('support_turn') == state['turn'] else 0
         if ps == side and source.get('deck_visible_turn') == state['turn'] and state['active_side'] == ps:
-            team['visible_deck'] = [public_card(c) for c in source['deck']]
+            team['visible_deck'] = [public_card(c, state, ps) for c in source['deck']]
         team['ultimate_remaining'] = ultimate_remaining(state, ps)
         team['harmony_available'] = marks['available']
-        team['effect_markers'] = team_effect_markers(source)
+        team['effect_markers'] = team_effect_markers(source, state, ps)
         chars = []
         for cid in team_order(state, ps):
             h = source['characters'][cid]
             flags = compatibility_flags(h, state, ps)
             c = {k: deepcopy(h[k]) for k in ('entity_id', 'id', 'name', 'attribute', 'hp', 'max_hp', 'shield', 'harmony',
-                 'energy', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura', 'jingu', 'arid', 'truth_keys', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
+                 'energy', 'lingke_chain', 'beast_fangs', 'intimidation', 'extra_attacks', 'protagonist_aura', 'signal_level', 'jingu', 'arid', 'truth_keys', 'resource_name', 'faction', 'summoned', 'awakened', 'ultimate_turns', 'growth', 'family', 'gaze', 'dream', 'down_turns',
                  'avatar', 'portrait', 'passive', 'awakened_passive', 'flavor') if k in h}
+            if h.get('summoned'):
+                from app.modules.card_game.content.duel_v2.registry import summon_passive
+                c['passive'] = summon_passive(h)
+            # Live rules run the current kits, so their text must not stay frozen
+            # in a saved room. Tutorial, summons and copied abilities own their text.
+            from .tutorial import is_tutorial
+            template = CHARACTERS.get(cid)
+            if template and not is_tutorial(state) and not h.get('summoned') and not (h.get('flags') or {}).get('mimic'):
+                for field in ('passive', 'awakened_passive'):
+                    c[field] = template[field]
             from app.modules.card_game.content.duel_v2.tutorial import lookup_card
             form = lookup_card(h['shape']) if h['shape'] else None
+            if form:
+                form = public_card(dict(form, card_id=h['shape']), state, ps)
             from .equipment import stat_layers, public_equipment
             c['stat_layers'] = stat_layers(h)
             c['equipment'] = public_equipment(h)
             c['effects'] = public_effects(h)
             c['attack_breakdown'] = attack_value(h, state, ps, explain=True)
+            from .state import collapse_border_cut
+            c['collapse_border_cut'] = collapse_border_cut(h)
             c.update(ultimate_expires=ultimate_spec(cid)['expires'], attack=c['attack_breakdown']['value'], shape=(form or {}).get('name') if form else None,
                      shape_id=h['shape'], shape_description=(form or {}).get('description') if form else None,
                      harmony_max=harmony_cap(state), energy_max=energy_cap(state, h), gaze=h.get('gaze', 0), dream=h.get('dream', 0),
@@ -179,7 +297,7 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                      brand=flags.get('brand', 0),
                      nightmare=flags.get('nightmare', 0),
                      collapse_count=flags.get('collapse_count', 0),
-                     collapse_max=int(flags.get('collapse_max') or 5),
+                     collapse_max=collapse_max(h),
                      collapse=bool(flags.get('collapse')),
                      pact=bool(flags.get('pact')),
                      atk_debuff=int(flags.get('atk_debuff') or 0),
@@ -190,12 +308,13 @@ def observe(state, side, after_seq=None, *, include_previews=True):
             c['effect_markers'] = character_effect_markers(h, state, ps)
             c['damage_immune'] = damage_immune(state, ps, cid)
             c['damage_limit'] = damage_limit(state, ps, cid)
+            c.update(protection_state(state, ps, cid))
             chars.append(c)
         team['characters'] = chars
         team['deck_count'] = len(source['deck'])
         # Cards being inspected remain counted as deck cards until disposition.
         pending = state['pending_choice']
-        if pending and pending['side'] == ps and pending['kind'] == 'inspect_top':
+        if pending and pending['side'] == ps and (pending['kind'] in ('inspect_top', 'heiyu_divination') or pending.get('deck_cards')):
             team['deck_count'] += len(pending['cards'])
         team['hand_count'] = len(source['hand'])
         revealed = set(source.get('revealed_ids') or [])
@@ -219,8 +338,8 @@ def observe(state, side, after_seq=None, *, include_previews=True):
                     reason = '所属角色倒地'
                 elif collapsed(source['characters'][raw['character_id']]):
                     reason = '所属角色倾陷'
-                elif source['ap'] < raw['cost']:
-                    reason = f"还差 {raw['cost'] - source['ap']} 点行动力"
+                elif source['ap'] < card_ap_payment(state, side, raw):
+                    reason = f"还差 {card_ap_payment(state, side, raw) - source['ap']} 点行动力"
                 else:
                     reason = '没有合法目标'
                 card['unavailable_reason'] = reason
@@ -233,9 +352,16 @@ def observe(state, side, after_seq=None, *, include_previews=True):
     pending = state['pending_choice']
     result['pending_choice'] = None
     if pending:
+        from .flow import deck_order_choice
+        pending = deck_order_choice(state) or pending
         result['pending_choice'] = {'side': pending['side'], 'kind': pending['kind'],
             'prompt': pending['prompt'] if pending['side'] == side else '对手正在选择',
             'max_select': pending.get('max_select') if pending['side'] == side else None,
+            'min_select': pending.get('min_select') if pending['side'] == side else None,
+            'max_bottom': pending.get('max_bottom') if pending['side'] == side else None,
+            'min_bottom': pending.get('min_bottom', 0) if pending['side'] == side else None,
+            'multi_bottom': bool(pending.get('multi_bottom')) if pending['side'] == side else None,
+            'hand_placement': bool(pending.get('hand_placement')) if pending['side'] == side else None,
             'choices': [{'id': c['instance_id'], 'label': c['name'], 'card': public_card(c, state, ('b' if pending['side']=='a' else 'a') if pending['kind']=='enemy_hand' else pending['side'])}
                         for c in pending['cards']] if pending['side'] == side else []}
     op = state['operation']
@@ -263,6 +389,12 @@ def choose_action(state, side):
         choice = next((e for e in entries if e['action']['type'] == kind), None)
         if choice:
             return choice['action']
+    orders = [e for e in entries if e['action']['type'] == 'choose_deck_order']
+    if orders:
+        pending = state.get('pending_choice') or {}
+        original = [card['instance_id'] for card in pending.get('cards') or []]
+        keep = next((e for e in orders if e['action'].get('card_ids') == original and not e['action'].get('bottom_card_id') and not e['action'].get('bottom_card_ids')), None)
+        return (keep or orders[0])['action']
     cards = {c['instance_id']: c for c in observation['sides'][side]['hand']}
     def score(entry):
         a, p = entry['action'], entry['preview']
@@ -271,6 +403,8 @@ def choose_action(state, side):
             return -1000
         if kind == 'end_turn':
             return -100
+        if kind == 'exit_ultimate':
+            return -110
         if kind == 'ultimate':
             return 6
         if kind == 'cycle':

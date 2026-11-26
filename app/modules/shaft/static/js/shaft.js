@@ -1,6 +1,6 @@
 (function () {
   const ELEMENTS = ['光', '灵', '咒', '暗', '魂', '相'];
-  const ELEMENT_DAMAGE_KEYS = Object.fromEntries(ELEMENTS.map((element) => [element, `element_dmg_${element}`]));
+  const ELEMENT_DAMAGE_KEYS = {...Object.fromEntries(ELEMENTS.map((element) => [element, `element_dmg_${element}`])), 心灵: 'mind_dmg'};
   const RESISTANCE_ELEMENTS = [...ELEMENTS, '心灵'];
   const SLOT_COLORS = ['#58d8d2', '#ffbf57', '#ff5aa5', '#77e36f'];
   const ACTION_CONTRIBUTION_COLORS = ['#58d8d2', '#ffbf57', '#ff5aa5', '#77e36f', '#b28cff', '#62b7ff', '#ff7a63', '#d8e26a'];
@@ -92,12 +92,53 @@
     furniture_flat_def: 30,
     small_flat_atk: 420,
     small_flat_hp: 5200,
+    // User-specified 噗咔特训 values, 2026-10-09; percentages stored as fractions.
+    training_crit_rate: 0.02,
+    training_crit_dmg: 0.04,
+    training_flat_atk: 23,
+    training_flat_def: 25,
+    training_flat_hp: 340,
+    training_harmony_strength: 10,
+    training_stagger_strength: 10,
+    // User-provided food caps and blessing candidates, 2026-10-13; see module README.
+    food_crit_rate: 0,
+    food_crit_dmg: 0,
+    food_flat_atk: 0,
   };
-  const TEAM_PANEL_BONUS_FIELDS = [
+  const TEAM_FURNITURE_BONUS_FIELDS = [
     { key: 'furniture_crit_dmg', label: '暴伤家具', kind: 'percent', max: 4, step: 0.1 },
     { key: 'furniture_flat_atk', label: '攻击家具', kind: 'flat', max: 20, step: 1 },
     { key: 'furniture_flat_def', label: '防御家具', kind: 'flat', max: 30, step: 1 },
   ];
+  const TEAM_TRAINING_BONUS_FIELDS = [
+    { key: 'training_crit_rate', label: '暴击', kind: 'percent', max: 2.5, step: 0.1 },
+    { key: 'training_crit_dmg', label: '暴伤', kind: 'percent', max: 5, step: 0.1 },
+    { key: 'training_flat_atk', label: '攻击', kind: 'flat', max: 28, step: 1 },
+    { key: 'training_flat_def', label: '防御', kind: 'flat', max: 30, step: 1 },
+    { key: 'training_flat_hp', label: '生命值', kind: 'flat', max: 420, step: 1 },
+    { key: 'training_harmony_strength', label: '环合强度', kind: 'flat', max: 12, step: 1 },
+    { key: 'training_stagger_strength', label: '倾陷强度', kind: 'flat', max: 12, step: 1 },
+  ];
+  const TEAM_FOOD_BONUS_FIELDS = [
+    { key: 'food_crit_rate', label: '暴击率', kind: 'percent', max: 12, step: 0.1 },
+    { key: 'food_crit_dmg', label: '暴伤', kind: 'percent', max: 24, step: 0.1 },
+    { key: 'food_flat_atk', label: '攻击', kind: 'flat', max: 150, step: 1 },
+  ];
+  const TEAM_BLESSING_EFFECTS = {
+    none: {},
+    crit_rate: { crit_rate: 0.10 },
+    crit_dmg: { crit_dmg: 0.20 },
+    all_dmg: { all_dmg: 0.15 },
+    atk_pct: { atk_pct: 0.15 },
+    stagger_strength: { stagger_strength: 60 },
+    harmony_strength: { harmony_strength: 60 },
+  };
+  const TEAM_BLESSING_LABELS = {
+    none: '无', crit_rate: '暴击率 +10%', crit_dmg: '暴伤 +20%',
+    all_dmg: '增伤 +15%', atk_pct: '攻击 +15%',
+    stagger_strength: '倾陷强度 +60', harmony_strength: '环合强度 +60',
+  };
+  const TEAM_PANEL_BONUS_FIELDS = [...TEAM_FURNITURE_BONUS_FIELDS, ...TEAM_TRAINING_BONUS_FIELDS, ...TEAM_FOOD_BONUS_FIELDS];
   const SKILL_LEVEL_FIELDS = [
     { key: 'basic', label: '普攻' },
     { key: 'skill', label: 'E' },
@@ -180,7 +221,6 @@
     previewTickPx: 0,
     axisPreviewPayload: null,
     axisPreviewSaving: false,
-    substatAnalysisInFlight: false,
   };
 
   function $(id) {
@@ -506,6 +546,8 @@
       all_dmg: '伤害',
       final_dmg: '最终伤害',
       base_multiplier_pct: '基础倍率',
+      base_atk_multiplier_add: '额外攻击倍率',
+      interrupt_resistance: '抗打断',
     };
     if (String(key).startsWith('element_dmg_')) return `${String(key).slice('element_dmg_'.length)}属性伤害`;
     return labels[key] || (String(key).startsWith('res_down_') ? `${String(key).slice('res_down_'.length)}属性抗性降低` : '');
@@ -569,17 +611,17 @@
       .map(([key, value]) => {
         const amount = mechanismEffectValue(key, value);
         return stacking.mode === 'add_stack' || stacking.mode === 'independent'
-          ? `${mechanismEffectLabel(key)}每层${Number(value) >= 0 ? '+' : ''}${amount}`
-          : `${mechanismEffectLabel(key)}${Number(value) >= 0 ? '+' : ''}${amount}`;
+          ? `${rule?.display?.effect_labels?.[key] || mechanismEffectLabel(key)}每层${Number(value) >= 0 ? '+' : ''}${amount}`
+          : `${rule?.display?.effect_labels?.[key] || mechanismEffectLabel(key)}${Number(value) >= 0 ? '+' : ''}${amount}`;
       });
     const dynamicEffects = Object.values(rule?.dynamic_effects || {}).map((dynamic) => {
       const key = dynamic?.effect_key || '';
       const perValue = numberValue(dynamic?.per_count, dynamic?.per_interval);
       const maximum = numberValue(dynamic?.max_count);
       if (!mechanismEffectLabel(key) || !perValue) return '';
-      return `${mechanismEffectLabel(key)}每层${perValue >= 0 ? '+' : ''}${mechanismEffectValue(key, perValue)}${maximum > 1 ? `，最多${formatNumber(maximum, 0)}层` : ''}`;
+      return `${rule?.display?.effect_labels?.[key] || mechanismEffectLabel(key)}每层${perValue >= 0 ? '+' : ''}${mechanismEffectValue(key, perValue)}${maximum > 1 ? `，最多${formatNumber(maximum, 0)}层` : ''}`;
     }).filter(Boolean);
-    const parts = [mechanismTriggerText(rule), mechanismTargetText(rule), [...effects, ...dynamicEffects].join('、')].filter(Boolean);
+    const parts = [rule?.trigger?.on_battle_start ? '进入战斗时直接触发' : '', mechanismTriggerText(rule), mechanismTargetText(rule), [...effects, ...dynamicEffects].join('、')].filter(Boolean);
     if (maxStacks > 1 && effects.length) {
       parts.push(`最多${maxStacks}层`);
     }
@@ -793,7 +835,7 @@
     if (version < 2 && furnitureFlatAtk === 20 && smallFlatAtk === 440) {
       smallFlatAtk = 420;
     }
-    return {
+    const bonus = {
       version: DEFAULT_TEAM_PANEL_BONUS.version,
       furniture_crit_dmg: furnitureCritDmg,
       furniture_flat_atk: furnitureFlatAtk,
@@ -801,15 +843,28 @@
       small_flat_atk: smallFlatAtk,
       small_flat_hp: Math.max(0, Math.min(100000, numberValue(source.small_flat_hp, DEFAULT_TEAM_PANEL_BONUS.small_flat_hp))),
     };
+    [...TEAM_TRAINING_BONUS_FIELDS, ...TEAM_FOOD_BONUS_FIELDS].forEach((field) => {
+      const max = field.kind === 'percent' ? field.max / 100 : field.max;
+      const scale = field.kind === 'percent' ? 1000 : 1;
+      bonus[field.key] = Math.round(Math.max(0, Math.min(max,
+        numberValue(source[field.key], DEFAULT_TEAM_PANEL_BONUS[field.key]))) * scale) / scale;
+    });
+    bonus.blessing = typeof source.blessing === 'string' && Object.prototype.hasOwnProperty.call(TEAM_BLESSING_EFFECTS, source.blessing)
+      ? source.blessing : 'none';
+    return bonus;
   }
 
   function teamPanelBonusMods(raw = state.axis?.team_panel_bonus) {
     const bonus = normalizeTeamPanelBonus(raw);
     const mods = emptyPanelMods();
-    mods.crit_dmg += bonus.furniture_crit_dmg;
-    mods.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk;
-    mods.flat_def += bonus.furniture_flat_def;
-    mods.flat_hp += bonus.small_flat_hp;
+    mods.crit_rate += bonus.training_crit_rate + bonus.food_crit_rate;
+    mods.crit_dmg += bonus.furniture_crit_dmg + bonus.training_crit_dmg + bonus.food_crit_dmg;
+    mods.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk + bonus.training_flat_atk + bonus.food_flat_atk;
+    mods.flat_def += bonus.furniture_flat_def + bonus.training_flat_def;
+    mods.flat_hp += bonus.small_flat_hp + bonus.training_flat_hp;
+    mods.harmony_strength += bonus.training_harmony_strength;
+    mods.stagger_strength += bonus.training_stagger_strength;
+    Object.entries(TEAM_BLESSING_EFFECTS[bonus.blessing]).forEach(([key, value]) => { mods[key] += value; });
     return mods;
   }
 
@@ -863,10 +918,11 @@
     const source = raw && typeof raw === 'object' ? raw : {};
     const options = curtainStatOptions();
     const defaultStat = normalizeStatName(defaults.stat) || Object.keys(options)[0] || '';
-    const stat = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+    const fixed = defaults.fixed === true || [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId);
+    const stat = fixed
       ? defaultStat
       : (normalizeStatName(source.stat) || defaultStat);
-    const passiveType = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID].includes(characterId)
+    const passiveType = fixed
       ? (CURTAIN_PASSIVE_TYPES.some((item) => item.key === defaults.passive_type) ? defaults.passive_type : 'type3')
       : (CURTAIN_PASSIVE_TYPES.some((item) => item.key === source.passive_type)
         ? source.passive_type
@@ -1130,14 +1186,34 @@
       : resource.initial_personal_resources && typeof resource.initial_personal_resources === 'object'
         ? resource.initial_personal_resources
       : {};
-    return { energy, harmony, personalResources };
+    const cursorPersonalResources = {...personalResources};
+    const character = getCharacterMap().get(memberBySlot(slotNumber)?.character_id) || {};
+    [...Object.keys(character.personal_resource_states || {}), ...(character.timeline_personal_resources || [])].forEach((name) => {
+      const configured = state.axis?.options?.loop_enabled
+        ? state.axis.options.loop_initial_resources?.[character.id]?.personal_resources?.[name] : 0;
+      const emptyAxis = Array.isArray(state.axis?.steps) && state.axis.steps.length === 0;
+      const initialValue = Number((emptyAxis ? configured : resource.initial_personal_resources?.[name]) ?? configured ?? 0);
+      if (!Array.isArray(result?.personal_resource_state_events)) {
+        if (!result || emptyAxis) cursorPersonalResources[name] = initialValue;
+        return;
+      }
+      cursorPersonalResources[name] = initialValue;
+      result.personal_resource_state_events.forEach((event) => {
+        if (Number(event.slot) === slotNumber && event.resource === name && Number(event.tick) <= calculationCursorTick) {
+          cursorPersonalResources[name] = Number(event.value);
+        }
+      });
+    });
+    return { energy, harmony, personalResources: cursorPersonalResources };
   }
 
   function timelinePersonalResourceEntries(character, personalResources) {
     const resources = personalResources && typeof personalResources === 'object'
       ? personalResources
       : {};
-    const fixedNames = TIMELINE_FIXED_PERSONAL_RESOURCES[String(character?.id || '')] || [];
+    const fixedNames = [...(TIMELINE_FIXED_PERSONAL_RESOURCES[String(character?.id || '')] || []),
+      ...(character?.timeline_personal_resources || []),
+      ...Object.keys(character?.personal_resource_states || {})];
     const entries = fixedNames.map((name) => [name, Number(resources[name] || 0)]);
     const fixedNameSet = new Set(fixedNames);
     Object.entries(resources).forEach(([name, value]) => {
@@ -1684,6 +1760,10 @@
     const configuredPersonal = configured?.personal_resources && typeof configured.personal_resources === 'object'
       ? configured.personal_resources
       : {};
+    const integerResources = new Set(character.personal_resource_integer_resources || []);
+    const normalizedPersonal = Object.fromEntries(Object.entries(configuredPersonal).map(([name, value]) => [
+      name, integerResources.has(name) ? Math.max(0, Math.floor(numberValue(value))) : value,
+    ]));
     const configuredDotLayers = configured?.dot_layers && typeof configured.dot_layers === 'object'
       ? configured.dot_layers
       : {};
@@ -1699,7 +1779,7 @@
         : '',
       energyCapacity,
       usesEnergy,
-      personalResources: configuredPersonal,
+      personalResources: normalizedPersonal,
       dotLayers: String(member?.character_id || '') === CANHONG_CHARACTER_ID
         ? {
           '蚀心': Math.max(0, Math.min(10, Number(configuredDotLayers['蚀心'] || 0))),
@@ -1709,13 +1789,27 @@
     };
   }
 
+  function timelinePersonalResourceLabel(character, member, name, value) {
+    const stateLabel = character.personal_resource_states?.[name]?.find((item) => Number(item.value) === value)?.label;
+    if (stateLabel) return stateLabel;
+    const model = character.ranked_resource_system;
+    if (model?.score_resource === name && model.ranks?.length) {
+      const ranks = model.ranks.slice(0, normalizeAwakeningResonances(member).includes(6) ? undefined : -1);
+      const rank = ranks.filter((item) => Number(value) >= Number(item.threshold)).at(-1) || ranks[0];
+      const amount = Number(value).toLocaleString('en-US', {useGrouping: false, maximumFractionDigits: 1});
+      return `${name}${amount} (${rank.label})`;
+    }
+    return `${name} ${formatNumber(value, (character.personal_resource_integer_resources || []).includes(name) ? 0 : 1)}`;
+  }
+
   function loopPersonalResourceDefinitions(member) {
     const characterId = String(member?.character_id || '');
     const hidden = new Set([
       ...TIMELINE_HIDDEN_PERSONAL_RESOURCES,
       ...(state.catalog?.formula_constants?.hidden_personal_resources || []).map(String),
     ]);
-    const names = new Set();
+    const character = getCharacterMap().get(characterId) || {};
+    const names = new Set([...Object.keys(character.personal_resource_states || {}), ...(character.timeline_personal_resources || [])]);
     (state.catalog?.actions || [])
       .filter((action) => String(action?.character_id || '') === characterId)
       .forEach((action) => {
@@ -1731,6 +1825,7 @@
     return Array.from(names).sort((left, right) => left.localeCompare(right, 'zh-CN')).map((name) => ({
       name,
       max: Number.isFinite(Number(caps[name])) ? Math.max(0, Number(caps[name])) : null,
+      states: character.personal_resource_states?.[name] || [],
     }));
   }
 
@@ -1753,6 +1848,12 @@
       const personalResourceFields = loopPersonalResourceDefinitions(member).map((definition) => {
         const maximum = definition.max == null ? '' : ` max="${definition.max}"`;
         const value = Math.max(0, Number(resources.personalResources?.[definition.name] || 0));
+        if (definition.states.length) return `<label>
+          <span>起始${escapeHtml(definition.name)}</span>
+          <select data-loop-initial-personal-resource="${escapeHtml(definition.name)}" max="${definition.max}">
+            ${definition.states.map((item) => `<option value="${item.value}"${Number(item.value) === value ? ' selected' : ''}>${escapeHtml(item.label)}</option>`).join('')}
+          </select>
+        </label>`;
         return `<label>
           <span>起始${escapeHtml(definition.name)}</span>
           <input data-loop-initial-personal-resource="${escapeHtml(definition.name)}" type="number" min="0"${maximum} step="1" value="${value}">
@@ -1834,11 +1935,15 @@
       const harmony = Math.max(0, Math.min(100, Number(row.querySelector('[data-loop-initial-harmony]')?.value || 0)));
       const reaction = String(row.querySelector('[data-loop-initial-reaction]')?.value || '');
       const personalResources = {};
+      const integerResources = new Set(character.personal_resource_integer_resources || []);
       row.querySelectorAll('[data-loop-initial-personal-resource]').forEach((input) => {
         const name = String(input.dataset.loopInitialPersonalResource || '');
-        const maximum = input.max === '' ? Number.POSITIVE_INFINITY : Math.max(0, Number(input.max));
+        const maximumAttribute = input.getAttribute('max');
+        const maximum = maximumAttribute == null || maximumAttribute === ''
+          ? Number.POSITIVE_INFINITY : Math.max(0, Number(maximumAttribute));
         if (name) {
           personalResources[name] = Math.max(0, Math.min(maximum, Number(input.value || 0)));
+          if (integerResources.has(name)) personalResources[name] = Math.floor(personalResources[name]);
         }
       });
       const dotLayers = {};
@@ -2486,11 +2591,14 @@
           <section class="shaft-member-identity">
             <span class="shaft-member-slot">0${Number(member.slot) + 1}</span>
             <img class="shaft-member-avatar" src="${escapeHtml(character.avatar || member.character_avatar || '')}" alt="">
-            <strong>${escapeHtml(character.name || member.character_name || '未选择')}</strong>
-            <small>角色80 · 弧盘80 · 精炼${arcRefinement}</small>
+            <div class="shaft-member-heading">
+              <strong>${escapeHtml(character.name || member.character_name || '未选择')}</strong>
+              <small>角色80 · 弧盘80 · 精炼${arcRefinement}</small>
+            </div>
             ${mechanismTooltip}
           </section>
           <section class="shaft-member-editor">
+            ${character.data_note ? `<p role="note">${escapeHtml(character.data_note)}</p>` : ''}
             <div class="shaft-loadout-grid">
               <div class="shaft-character-select shaft-build-character-picker" data-build-character-picker>
                 <span>角色</span>
@@ -2655,7 +2763,16 @@
     }
     state.axis.team_panel_bonus = normalizeTeamPanelBonus(state.axis.team_panel_bonus);
     const bonus = state.axis.team_panel_bonus;
-    node.innerHTML = TEAM_PANEL_BONUS_FIELDS.map((field) => {
+    renderTeamBonusGrid(node, TEAM_FURNITURE_BONUS_FIELDS, bonus);
+    renderTeamBonusGrid($('shaft-training-bonus-grid'), TEAM_TRAINING_BONUS_FIELDS, bonus);
+    renderTeamBonusGrid($('shaft-food-bonus-grid'), TEAM_FOOD_BONUS_FIELDS, bonus);
+    $('shaft-blessing-select').innerHTML = Object.entries(TEAM_BLESSING_LABELS).map(([key, label]) =>
+      `<option value="${key}" ${key === bonus.blessing ? 'selected' : ''}>${label}</option>`).join('');
+  }
+
+  function renderTeamBonusGrid(node, fields, bonus) {
+    if (!node) return;
+    node.innerHTML = fields.map((field) => {
       const rawValue = bonus[field.key];
       const value = field.kind === 'percent' ? formatNumber(rawValue * 100, 1) : formatNumber(rawValue, 0);
       const suffix = field.kind === 'percent' ? '%' : '';
@@ -2859,7 +2976,7 @@
         <span>${escapeHtml(item.label)}</span>
         <div class="shaft-contribution-bar"><span style="width: ${Math.max(0, Math.min(100, Number(item.percent || 0)))}%; --contribution-color:${SLOT_COLORS[Number(item.slot) % SLOT_COLORS.length]}"></span></div>
         <span>${formatNumber(item.percent || 0, 1)}%</span>
-        <button class="secondary-btn shaft-action-contribution-btn" data-action-contribution-slot="${Number(item.slot)}" type="button" ${Number(item.damage || 0) > 0 ? '' : 'disabled'}>分析详情</button>
+        <button class="secondary-btn shaft-action-contribution-btn" data-action-contribution-slot="${Number(item.slot)}" type="button">分析详情</button>
       </div>
     `).join('');
     const independentRows = contributionShares.filter((item) => item.kind !== 'character').map((item) => `
@@ -3029,15 +3146,15 @@
   function actionAnalysisRelativePercent(current, baseline) {
     const currentDamage = Number(current || 0);
     const baselineDamage = Number(baseline || 0);
-    if (baselineDamage <= 0) return currentDamage > 0 ? null : 0;
-    return (currentDamage - baselineDamage) / baselineDamage * 100;
+    if (baselineDamage <= 0) return currentDamage > 0 ? null : 100;
+    return currentDamage / baselineDamage * 100;
   }
 
   function actionAnalysisRelativePercentText(current, baseline) {
     const relativePercent = actionAnalysisRelativePercent(current, baseline);
     return relativePercent === null
       ? '新增'
-      : actionAnalysisDeltaText(relativePercent, 1, '%');
+      : `${formatNumber(relativePercent, 1)}%`;
   }
 
   function polarPoint(radius, angle) {
@@ -3114,15 +3231,45 @@
     `;
   }
 
+  function actionAnalysisToolbar() {
+    return `
+      <div class="shaft-action-analysis-toolbar">
+        <div class="shaft-action-analysis-switch" role="tablist" aria-label="分析维度">
+          <button class="${actionAnalysisState.dimension === 'action' ? 'is-active' : ''}" data-analysis-dimension="action" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'action'}">动作明细</button>
+          <button class="${actionAnalysisState.dimension === 'type' ? 'is-active' : ''}" data-analysis-dimension="type" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'type'}">合并伤害类型</button>
+          <button class="${actionAnalysisState.dimension === 'substats' ? 'is-active' : ''}" data-analysis-dimension="substats" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'substats'}">副词条贡献度</button>
+          <button class="${actionAnalysisState.dimension === 'effectiveness' ? 'is-active' : ''}" data-analysis-dimension="effectiveness" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'effectiveness'}">角色效能</button>
+        </div>
+        ${!['substats', 'effectiveness'].includes(actionAnalysisState.dimension) ? `<div class="shaft-action-analysis-switch shaft-action-analysis-view-switch" aria-label="图表类型">
+          <button class="${actionAnalysisState.view === 'donut' ? 'is-active' : ''}" data-analysis-view="donut" type="button">环形占比</button>
+          <button class="${actionAnalysisState.view === 'bars' ? 'is-active' : ''}" data-analysis-view="bars" type="button">排行条形</button>
+        </div>` : ''}
+      </div>
+    `;
+  }
+
   function renderActionContributionAnalysis() {
     const content = $('shaft-action-contribution-content');
     const contribution = actionContributionForSlot(actionAnalysisState.slot);
     if (!content || !contribution) {
       return;
     }
+    const toolbar = actionAnalysisToolbar();
+    const requestId = (actionAnalysisState.requestId || 0) + 1;
+    actionAnalysisState.requestId = requestId;
+    if (actionAnalysisState.dimension === 'effectiveness') {
+      content.innerHTML = `${toolbar}<div data-effectiveness-analysis aria-live="polite"><div class="shaft-empty">正在计算角色效能…</div></div>`;
+      calculateCharacterEffectiveness(actionAnalysisState.slot, requestId);
+      return;
+    }
+    if (actionAnalysisState.dimension === 'substats') {
+      content.innerHTML = `${toolbar}<div data-substat-analysis aria-live="polite"><div class="shaft-empty">正在计算11组副词条方案…</div></div>`;
+      calculateCharacterSubstats(actionAnalysisState.slot, requestId);
+      return;
+    }
     const currentGroups = actionContributionGroups(contribution, actionAnalysisState.dimension);
     if (!currentGroups.length) {
-      content.innerHTML = '<div class="shaft-empty">该角色当前没有造成动作伤害</div>';
+      content.innerHTML = `${toolbar}<div class="shaft-empty">该角色当前没有造成动作伤害</div>`;
       return;
     }
     const snapshotHasDetails = Array.isArray(state.compareSnapshot?.damage_by_action_by_slot);
@@ -3152,16 +3299,7 @@
       ? new Date(state.compareSnapshot.saved_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
       : '';
     content.innerHTML = `
-      <div class="shaft-action-analysis-toolbar">
-        <div class="shaft-action-analysis-switch" role="tablist" aria-label="分析维度">
-          <button class="${actionAnalysisState.dimension === 'action' ? 'is-active' : ''}" data-analysis-dimension="action" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'action'}">动作明细</button>
-          <button class="${actionAnalysisState.dimension === 'type' ? 'is-active' : ''}" data-analysis-dimension="type" type="button" role="tab" aria-selected="${actionAnalysisState.dimension === 'type'}">合并伤害类型</button>
-        </div>
-        <div class="shaft-action-analysis-switch shaft-action-analysis-view-switch" aria-label="图表类型">
-          <button class="${actionAnalysisState.view === 'donut' ? 'is-active' : ''}" data-analysis-view="donut" type="button">环形占比</button>
-          <button class="${actionAnalysisState.view === 'bars' ? 'is-active' : ''}" data-analysis-view="bars" type="button">排行条形</button>
-        </div>
-      </div>
+      ${toolbar}
       ${hasComparison ? `
         <div class="shaft-action-analysis-snapshot">
           <div>
@@ -3227,7 +3365,7 @@
     if (!dialog || !contribution) {
       return;
     }
-    $('shaft-action-contribution-title').textContent = `${contribution.character_name || memberName(slot)} · 动作贡献`;
+    $('shaft-action-contribution-title').textContent = `${contribution.character_name || memberName(slot)} · 分析详情`;
     actionAnalysisState.slot = Number(slot);
     actionAnalysisState.dimension = 'action';
     actionAnalysisState.view = 'donut';
@@ -3391,8 +3529,7 @@
     }
   }
 
-  function renderSubstatContributionAnalysis(analysis) {
-    const content = $('shaft-substat-contribution-content');
+  function renderSubstatContributionAnalysis(analysis, content) {
     if (!content) return;
     const rows = analysis?.rows || [];
     const fields = (analysis?.fields || []).filter((field) => (
@@ -3420,7 +3557,7 @@
     }));
     content.innerHTML = `
       <div class="shaft-substat-contribution-note">
-        以8类主要副词条各 ${formatNumber(analysis.base_count || 0)} 条、小攻击/生命/防御为 0 作基准，逐角色测试11类副词条各 +${formatNumber(analysis.increment_count || 0)}。最高收益为100%，—表示无提升；纯前端计算，不改配装或对比快照。
+        仅将当前角色的8类主要副词条各设为 ${formatNumber(analysis.base_count || 0)} 条、小攻击/生命/防御设为 0，逐项增加 ${formatNumber(analysis.increment_count || 0)} 条并比较全队总伤；队友词条保持当前配装。当前角色最高收益为100%，—表示无提升。
       </div>
       ${characters.length && fields.length ? `
         <div class="shaft-substat-contribution-table-wrap">
@@ -3444,50 +3581,84 @@
     `;
   }
 
-  async function openSubstatContributionAnalysis(trigger = null) {
-    if (state.substatAnalysisInFlight) return;
-    if (!Array.isArray(state.axis?.steps) || !state.axis.steps.length) {
-      showToast('请先在动作轴中添加动作', 'warning');
-      return;
-    }
-    if (!window.ShaftEngine || typeof window.ShaftEngine.analyzeSubstatContributions !== 'function') {
-      showToast('副词条贡献度计算引擎未加载', 'warning');
-      return;
-    }
-    const button = $('shaft-substat-contribution-btn');
-    const originalText = button?.textContent || '副词条贡献度';
-    state.substatAnalysisInFlight = true;
-    if (button) {
-      button.disabled = true;
-      button.textContent = `正在计算 ${Math.max(0, (state.axis.team || []).length * 11)} 组方案…`;
-    }
+  async function calculateCharacterEffectiveness(slot, requestId) {
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    const isCurrent = () => actionAnalysisState.requestId === requestId
+      && actionAnalysisState.slot === slot && actionAnalysisState.dimension === 'effectiveness'
+      && $('shaft-action-contribution-dialog')?.open;
+    if (!isCurrent()) return;
+    const content = $('shaft-action-contribution-content').querySelector('[data-effectiveness-analysis]');
     try {
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
-      const analysis = window.ShaftEngine.analyzeSubstatContributions(state.axis, state.catalog, {
-        base_count: 15,
-        increment_count: 5,
-      });
-      renderSubstatContributionAnalysis(analysis);
-      const dialog = $('shaft-substat-contribution-dialog');
-      dialog._returnFocus = trigger || button;
-      dialog.showModal();
+      const result = window.ShaftEngine.analyzeCharacterEffectiveness(state.axis, state.catalog, {slot});
+      if (!isCurrent()) return;
+      const percentText = (value) => value == null ? '—' : `${value > 0 ? '+' : ''}${formatNumber(value, 1)}%`;
+      const contributionCard = (title, percent, dps, damage) => `
+        <article class="shaft-effectiveness-contribution">
+          <h3>${title}</h3>
+          <strong class="${percent > 0 ? 'is-positive' : percent < 0 ? 'is-negative' : ''}">${percentText(percent)}</strong>
+          <span>占原队 DPS</span>
+          <dl><div><dt>DPS 收益</dt><dd>${formatNumber(dps)}</dd></div><div><dt>伤害收益</dt><dd>${formatNumber(damage)}</dd></div></dl>
+        </article>`;
+      const groups = result.reaction_variant_groups || [];
+      const combinationText = (retained) => retained.length ? retained.join('＋') : '全部移除';
+      const reactionVariants = groups.length > 1 ? `
+        <section class="shaft-effectiveness-variants" aria-label="自带环合组合对照">
+          <h3>自带环合组合对照</h3>
+          <p>已试算 ${result.reaction_variants.length} 组白板自带环合组合；普通援护环合照常保留。结果相同的组合合并。</p>
+          <div class="shaft-effectiveness-variants-scroll" role="region" aria-label="环合组合结果，可横向滚动" tabindex="0">
+            <table>
+              <thead><tr><th>白板保留</th><th>白板 DPS</th><th>角色 RDPS</th><th>效能涨幅</th><th>伤害贡献</th><th>拐力</th></tr></thead>
+              <tbody>${groups.map(({combinations, result: row}) => `
+                <tr>
+                  <th scope="row">${combinations.map((retained) => escapeHtml(combinationText(retained))).join('<br>')}</th>
+                  <td>${formatNumber(row.without_dps)}</td><td>${formatNumber(row.rdps)}</td><td>${percentText(row.increase_percent)}</td>
+                  <td>${percentText(row.direct_contribution_percent)}<small>DPS ${formatNumber(row.direct_contribution_dps)}</small></td>
+                  <td>${percentText(row.support_percent)}<small>DPS ${formatNumber(row.support_dps)}</small></td>
+                </tr>`).join('')}</tbody>
+            </table>
+          </div>
+          <p>伤害贡献与拐力的比例均以原队 DPS 为基准；上方总览采用全部移除自带环合的白板。</p>
+        </section>` : (result.self_reaction_types?.length
+          ? '<div class="shaft-substat-contribution-note">自带环合保留与移除的效能结果一致。</div>' : '');
+      content.innerHTML = `
+        <div class="shaft-substat-contribution-note">保证原轴不变，对比同属性白板，计算该角色带来的队伍 DPS 增幅。</div>
+        <div class="shaft-action-analysis-kpis shaft-character-effectiveness-kpis">
+          <div class="shaft-effectiveness-total"><span>角色 RDPS</span><strong>${formatNumber(result.rdps)}</strong><small>相对白板增加的队伍 DPS</small></div>
+          <div><span>角色效能 · DPS 涨幅</span><strong>${percentText(result.increase_percent)}</strong><small>以白板队 DPS 为基准</small></div>
+        </div>
+        <section class="shaft-effectiveness-breakdown" aria-label="细分贡献">
+          ${contributionCard('伤害贡献', result.direct_contribution_percent, result.direct_contribution_dps, result.direct_contribution_damage)}
+          ${contributionCard('拐力', result.support_percent, result.support_dps, result.support_damage)}
+        </section>
+        <dl class="shaft-effectiveness-baseline">
+          <div><dt>原队 DPS</dt><dd>${formatNumber(result.full_dps)}</dd></div>
+          <div><dt>白板队 DPS</dt><dd>${formatNumber(result.without_dps)}</dd></div>
+        </dl>
+        ${reactionVariants}
+        <div class="shaft-substat-contribution-note">白板为80级、0环合强度；轴长 ${formatNumber(result.duration_seconds, 1)} 秒。${result.increase_percent == null ? '白板队 DPS 为0，涨幅显示 —。' : ''}${result.full_dps === 0 ? '原队 DPS 为0，细分比例显示 —。' : ''}</div>`;
     } catch (error) {
-      showToast(error.message || '副词条贡献度计算失败', 'warning');
-    } finally {
-      state.substatAnalysisInFlight = false;
-      if (button) {
-        button.disabled = false;
-        button.textContent = originalText;
-      }
+      if (isCurrent()) content.innerHTML = `<div class="shaft-empty">${escapeHtml(error.message || '角色效能计算失败')}</div>`;
     }
   }
 
-  function closeSubstatContributionAnalysis() {
-    const dialog = $('shaft-substat-contribution-dialog');
-    if (!dialog?.open) return;
-    const returnFocus = dialog._returnFocus;
-    dialog.close();
-    if (returnFocus?.isConnected) returnFocus.focus();
+  async function calculateCharacterSubstats(slot, requestId) {
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    const isCurrent = () => actionAnalysisState.requestId === requestId
+      && actionAnalysisState.slot === slot
+      && actionAnalysisState.dimension === 'substats'
+      && $('shaft-action-contribution-dialog')?.open;
+    if (!isCurrent()) return;
+    const content = $('shaft-action-contribution-content').querySelector('[data-substat-analysis]');
+    try {
+      const analysis = window.ShaftEngine.analyzeSubstatContributions(state.axis, state.catalog, {
+        slot,
+        base_count: 15,
+        increment_count: 5,
+      });
+      if (isCurrent()) renderSubstatContributionAnalysis(analysis, content);
+    } catch (error) {
+      if (isCurrent()) content.innerHTML = `<div class="shaft-empty">${escapeHtml(error.message || '副词条贡献度计算失败')}</div>`;
+    }
   }
 
   function openShortcutHelp() {
@@ -3532,7 +3703,7 @@
       .filter((detail) => {
         const step = stepById.get(detail.step_id) || { action_id: detail.action_id };
         const action = actionForStep(step);
-        return switchesForeground(step, action);
+        return detail.lingke_joint_source_slot != null || switchesForeground(step, action);
       })
       .map((detail) => {
         const step = stepById.get(detail.step_id) || { action_id: detail.action_id };
@@ -3650,7 +3821,7 @@
 
   function previewMinimumTickPx(details = previewDetails()) {
     const viewport = $('shaft-axis-preview-viewport');
-    const availableWidth = Math.max(PREVIEW_MIN_BODY_PX, Number(viewport?.clientWidth || 0) - PREVIEW_LABEL_PX - 20);
+    const availableWidth = Math.max(PREVIEW_MIN_BODY_PX, Number(viewport?.clientWidth || 0) - PREVIEW_LABEL_PX - 40);
     return Math.min(PREVIEW_MAX_TICK_PX, availableWidth / previewEndTick(details));
   }
 
@@ -4186,7 +4357,9 @@
       .map((buff) => {
         const startTick = Math.max(
           Number(detail?.display_start_tick ?? detail?.visual_start_tick ?? detail?.start_tick ?? 0),
-          Number(buff?.visual_start_tick ?? buff?.trigger_tick ?? buff?.start_tick ?? detail?.display_start_tick ?? 0),
+          Number(buff?.visual_start_tick ?? buff?.start_tick ?? detail?.display_start_tick ?? 0),
+          Number(buff?.visual_trigger_tick ?? (buff?.trigger_tick != null
+            ? visualTickFromCalculation(Number(buff.trigger_tick)) : 0)),
         );
         const endTick = Math.max(
           startTick + 1,
@@ -4203,7 +4376,7 @@
             buff?.start_tick ?? calculationTickFromVisual(startTick),
           ),
           calculationEndTick: Number(
-            buff?.end_tick ?? calculationTickFromVisual(endTick),
+            buff?.countdown_end_tick ?? buff?.end_tick ?? calculationTickFromVisual(endTick),
           ),
           loopDurationTicks: loopEnabled
             ? Math.max(1, calculationTickFromVisual(Number(axisEndTick || 0)))
@@ -4687,8 +4860,38 @@
       if (Number(formula.non_fuwen_amplification || 1) !== 1) lines.push(`环合增幅 ×${formatNumber(formula.non_fuwen_amplification, 3)}`);
     }
     if (event?.kind === 'passive_settlement') lines.unshift(`延滞持续 ${ticksToSeconds(event.delay_duration_ticks)}s`);
-    const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害 · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
+    const count = event?.display_count > 1 ? ` × ${event.display_count}次` : '';
+    const heading = `${event?.reaction || '伤害'} · ${formatNumber(event?.damage || 0)} 伤害${count} · ${event?.contributor_character_name || memberName(event?.contributor_slot)}`;
     return `${heading}\n${lines.join('\n')}`;
+  }
+
+  function isDigitalAfterimageDamage(event) {
+    return event.kind === 'triggered_damage'
+      && ['action_exe_clone', 'action_exe_clone_boom'].includes(event.action_id);
+  }
+
+  function summarizeTimelineDamageEvents(events) {
+    const groups = new Map();
+    const entries = [];
+    for (const event of events) {
+      if (!isDigitalAfterimageDamage(event)) {
+        entries.push(event);
+        continue;
+      }
+      const key = JSON.stringify([
+        event.action_id, event.tick, event.damage_element, event.damage,
+        event.formula_parts, event.panel,
+      ]);
+      const entry = groups.get(key);
+      if (entry) {
+        entry.display_count += 1;
+      } else {
+        const first = {...event, display_count: 1};
+        groups.set(key, first);
+        entries.push(first);
+      }
+    }
+    return entries;
   }
 
   function groupedTimelineDamageEvents(events) {
@@ -4709,6 +4912,7 @@
       const primary = group.events.find((event) => !event?.kind) || group.events[0] || {};
       return {
         ...group,
+        events: summarizeTimelineDamageEvents(group.events),
         reaction: primary.reaction,
         resource_damage_marker: Boolean(primary.resource_damage_marker),
         kind: group.events.every((event) => Boolean(event?.kind)) ? 'periodic_group' : '',
@@ -4852,6 +5056,9 @@
         };
       });
     const buffTimelineDetails = [...details, ...damageTriggeredBuffDetails];
+    if (result?.initial_buffs?.length) buffTimelineDetails.unshift({
+      start_tick: 0, display_start_tick: 0, triggered_buffs: result.initial_buffs,
+    });
     const loopEnabled = Boolean(state.axis?.options?.loop_enabled);
     const actionAxisEndTick = foregroundAxisEndTick;
     const buffAxisEndTick = loopEnabled
@@ -4967,7 +5174,11 @@
       const energyLabel = formatNumber(resources.energy || 0, 1);
       const harmonyLabel = formatNumber(resources.harmony || 0, 1);
       const personalResourceLabels = timelinePersonalResourceEntries(character, resources.personalResources)
-        .map(([name, value]) => `<small>${escapeHtml(name)} ${formatNumber(value, 1)}</small>`)
+        .map(([name, value]) => {
+          const label = timelinePersonalResourceLabel(character, member, name, value);
+          const ranked = character.ranked_resource_system?.score_resource === name;
+          return `<small${ranked ? ' class="shaft-ranked-resource"' : ''}>${escapeHtml(label)}</small>`;
+        })
         .join('');
       const slotDetails = details
         .filter((detail) => Number(detail.slot) === Number(member.slot))
@@ -5038,7 +5249,7 @@
                 name: effect.reaction,
                 endTick: segment.endTick,
                 calculationStartTick: Number(effect.start_tick || 0),
-                calculationEndTick: Number(effect.end_tick || 0),
+                calculationEndTick: Number(effect.countdown_end_tick ?? effect.end_tick ?? 0),
                 loopDurationTicks: loopEnabled
                   ? Math.max(1, calculationTickFromVisual(Number(buffAxisEndTick || 0)))
                   : 0,
@@ -5178,6 +5389,24 @@
     };
   }
 
+  function damageTriggerCounts(events) {
+    const groups = new Map();
+    (events || []).filter((event) => event.kind === 'triggered_damage' && !isDigitalAfterimageDamage(event)).forEach((event) => {
+      const key = event.action_id || event.reaction;
+      const group = groups.get(key) || {name: String(event.reaction || '自动伤害'), count: 0};
+      group.count += 1;
+      groups.set(key, group);
+    });
+    return Array.from(groups.values());
+  }
+
+  function renderDamageTriggerCounts(events) {
+    const counts = damageTriggerCounts(events);
+    if (!counts.length) return '';
+    return `<div class="shaft-detail-hero"><strong>自动伤害触发次数</strong>${counts.map((item) =>
+      `<div class="shaft-detail-kv"><span>${escapeHtml(item.name)}</span><strong>${item.count}次</strong></div>`).join('')}</div>`;
+  }
+
   function renderStepDetail() {
     const selectionCount = selectedStepIds().length;
     const step = selectedStep();
@@ -5188,7 +5417,8 @@
     const selectedDamage = state.timelineDamageMarkers.get(state.selectedDamageMarkerKey);
     if (selectedDamage) {
       badge.textContent = `${ticksToSeconds(selectedDamage.tick)}s`;
-      panel.innerHTML = (selectedDamage.events || [selectedDamage]).map(renderDamageEventDetail).join('');
+      const events = selectedDamage.events || [selectedDamage];
+      panel.innerHTML = renderDamageTriggerCounts(events) + events.map(renderDamageEventDetail).join('');
       return;
     }
     if (selectionCount > 1) {
@@ -5213,7 +5443,10 @@
   function damageEventSummaryRows(event) {
     const formula = event.formula_parts || {};
     const rows = [['结算时间', `${ticksToSeconds(event.tick)}s`]];
-    if (event.damage != null) rows.push(['伤害', formatNumber(event.damage)]);
+    if (event.damage != null) {
+      const damage = formatNumber(event.damage);
+      rows.push(['伤害', event.display_count > 1 ? `${damage} × ${event.display_count}次` : damage]);
+    }
     if (event.stagger_amount != null) rows.push(['削减倾陷值', formatNumber(event.stagger_amount, 2)]);
     if (event.reaction === '失谐') {
       rows.push(['失谐削条', formatNumber(event.dissonance_stagger, 2)], ['等级差', formatNumber(event.level_gap)]);
@@ -5260,14 +5493,16 @@
 
   function renderActionDetail(step, detail, action, damageEvent = null) {
     const panelStats = detail?.panel || {};
-    const actionElement = String(detail?.damage_element || action?.damage_element || getCharacterMap().get(memberBySlot(step.slot)?.character_id || '')?.element || '');
+    const actionElement = String(detail?.damage_element || ((action?.extra_tag === '心灵' || action?.tags?.includes('心灵')) ? '心灵' : '') || action?.damage_element || getCharacterMap().get(memberBySlot(step.slot)?.character_id || '')?.element || '');
     const actionElementDamage = elementDamageValue(panelStats, actionElement);
     const finalDamageBonus = Number(panelStats.final_dmg || 0);
+    const actionDamageBonus = Number(panelStats.action_dmg || 0);
     const otherDamageBonus = Number(
       panelStats.other_dmg
       ?? (
         Number(detail?.formula_parts?.dmg_bonus || 0)
         - Number(panelStats.all_dmg || 0)
+        - actionDamageBonus
         - actionElementDamage
       )
     );
@@ -5296,8 +5531,9 @@
       realtimePanelRows.push(
         `<div class="shaft-detail-kv"><span>暴击</span><strong>${formatNumber((panelStats.crit_rate || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>暴伤</span><strong>${formatNumber((panelStats.crit_dmg || 0) * 100, 1)}%</strong></div>`,
-        `<div class="shaft-detail-kv"><span>通伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>`,
+        `<div class="shaft-detail-kv"><span>通用增伤</span><strong>${formatNumber((panelStats.all_dmg || 0) * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>${escapeHtml(actionElement)}属性伤害</span><strong>${formatNumber(actionElementDamage * 100, 1)}%</strong></div>`,
+        `<div class="shaft-detail-kv"><span>动作增伤</span><strong>${formatNumber(actionDamageBonus * 100, 1)}%</strong></div>`,
         `<div class="shaft-detail-kv"><span>其他增伤</span><strong>${formatNumber(otherDamageBonus * 100, 1)}%</strong></div>`,
         ...(finalDamageBonus ? [`<div class="shaft-detail-kv"><span>最终伤害</span><strong>${formatNumber(finalDamageBonus * 100, 1)}%</strong></div>`] : []),
         `<div class="shaft-detail-kv"><span>敌人结算属抗</span><strong>${formatNumber(Number(detail?.formula_parts?.settled_resistance || 0) * 100, 1)}%</strong></div>`,
@@ -5323,13 +5559,14 @@
       dodge_counter_dmg: '闪反增伤',
       skill_dmg: '变轨增伤', ultimate_dmg: '终结增伤', follow_dmg: '追击增伤',
       mind_dmg: '心灵增伤', attach_dmg: '附着增伤',
-      all_dmg: '全伤增伤', other_dmg: '其他增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升',
+      all_dmg: '通用增伤', action_dmg: '动作增伤', other_dmg: '其他增伤', final_dmg: '最终增伤', base_multiplier_pct: '基础倍率提升', base_atk_multiplier_add: '额外攻击倍率', interrupt_resistance: '抗打断',
     };
     const flatBuffEffects = new Set(['flat_atk', 'flat_hp', 'flat_def', 'harmony_strength', 'stagger_strength']);
     const describeBuff = (buff) => {
+      const effectLabels = (state.catalog?.buffs || []).find((rule) => rule.id === buff?.rule_id)?.display?.effect_labels || {};
       const effects = Object.entries(buff?.effects || {}).filter(([, value]) => Number(value));
       const effectText = effects.map(([key, value]) => {
-        const label = buffEffectLabels[key]
+        const label = effectLabels[key] || buffEffectLabels[key]
           || (key.startsWith('element_dmg_') ? `${key.slice('element_dmg_'.length)}属性增伤` : '')
           || (key.startsWith('res_down_') ? `${key.slice('res_down_'.length)}抗降低` : key);
         return `${label} ${Number(value) >= 0 ? '+' : ''}${flatBuffEffects.has(key) ? formatNumber(value, 1) : `${formatNumber(Number(value) * 100, 1)}%`}`;
@@ -5408,7 +5645,9 @@
     const finalActionAtkMultiplier = realtimeAtk > 0
       ? actionBase / realtimeAtk
       : 0;
-    const actionMultiplierText = `${formatNumber(finalActionAtkMultiplier * 100, 1)}%攻击`;
+    const equalHitCount = action.id === 'action_exe_counter' && Number(hitCount) > 1 ? Number(hitCount) : 1;
+    const multiplierSuffix = equalHitCount > 1 ? ` × ${equalHitCount}` : '';
+    const actionMultiplierText = `${formatNumber(finalActionAtkMultiplier * 100 / equalHitCount, 1)}%攻击${multiplierSuffix}`;
     specialStats.push(`<div class="shaft-detail-kv"><span>动作倍率</span><strong>${escapeHtml(actionMultiplierText)}</strong></div>`);
     if (hitCount !== undefined && hitCount !== null) {
       specialStats.push(`<div class="shaft-detail-kv"><span>伤害段数</span><strong>${formatNumber(hitCount, 0)}</strong></div>`);
@@ -5429,7 +5668,7 @@
     return `
       <div class="shaft-detail-hero">
         <strong>${escapeHtml(action.name)}</strong>
-        <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${isStepBackground(step, action) ? (isInstantSwitchAction(action) ? '后台切人' : (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害')) : '前台动作'}</span>
+        <span class="shaft-detail-muted">${escapeHtml(memberName(step.slot))} · ${escapeHtml(action.action_type || '动作')} · ${damageEvent?.kind === 'triggered_damage' ? '自动触发伤害' : isStepBackground(step, action) ? (isInstantSwitchAction(action) ? '后台切人' : (isBasicBackgroundOverride(step, action) ? '后台普攻' : '后台伤害')) : '前台动作'}</span>
       </div>
       ${!damageEvent && isBackgroundAction(action) && action.lingke_joint_source_slot == null ? `
         <div class="shaft-detail-multiplier">
@@ -6640,6 +6879,10 @@
       state.axis.team_panel_bonus || {},
       { [field.key]: storedValue },
     ));
+    if (rawValue < 0 || rawValue > field.max) {
+      const normalized = state.axis.team_panel_bonus[field.key];
+      input.value = field.kind === 'percent' ? normalized * 100 : normalized;
+    }
     renderBuildPanel();
     scheduleSimulation();
   }
@@ -8658,6 +8901,17 @@
     }
   }
 
+  async function openAxisPreviewFromUrl() {
+    const axisId = new URLSearchParams(window.location.search).get('preview') || '';
+    if (!/^\d+$/.test(axisId)) return;
+    try {
+      const payload = await shaftRequest(`/api/shaft/axes/${axisId}`);
+      openAxisPreview(null, payload);
+    } catch (error) {
+      setStatus(error.message, 'error');
+    }
+  }
+
   async function deleteAxis(axisId, title) {
     if (!getToken()) {
       persistAxisDraft();
@@ -9095,10 +9349,19 @@
       state.axis.enemy.track_outside = event.target.checked;
       scheduleSimulation();
     });
-    $('shaft-team-bonus-grid').addEventListener('input', handleTeamBonusInput);
-    $('shaft-team-bonus-grid').addEventListener('change', (event) => {
-      handleTeamBonusInput(event);
-      renderTeamBonus();
+    ['shaft-team-bonus-grid', 'shaft-training-bonus-grid', 'shaft-food-bonus-grid'].forEach((id) => {
+      $(id).addEventListener('input', handleTeamBonusInput);
+      $(id).addEventListener('change', (event) => {
+        handleTeamBonusInput(event);
+        renderTeamBonus();
+      });
+    });
+    $('shaft-blessing-select').addEventListener('change', (event) => {
+      state.axis.team_panel_bonus = normalizeTeamPanelBonus({
+        ...state.axis.team_panel_bonus, blessing: event.target.value,
+      });
+      renderBuildPanel();
+      scheduleSimulation();
     });
     $('shaft-weakness-row').addEventListener('change', () => {
       state.axis.enemy.weakness_elements = Array.from($('shaft-weakness-row').querySelectorAll('input:checked')).map((input) => input.value);
@@ -9115,14 +9378,6 @@
     $('shaft-compare-controls').addEventListener('click', handleCompareControls);
     $('shaft-compare-controls').addEventListener('change', handleCompareControlChange);
     $('shaft-contribution-list').addEventListener('click', handleContributionClick);
-    $('shaft-substat-contribution-btn').addEventListener('click', (event) => {
-      openSubstatContributionAnalysis(event.currentTarget);
-    });
-    $('shaft-substat-contribution-dialog').addEventListener('click', (event) => {
-      if (event.target === event.currentTarget || event.target.closest('[data-close-substat-contribution]')) {
-        closeSubstatContributionAnalysis();
-      }
-    });
     $('shaft-stagger-analysis-dialog').addEventListener('click', (event) => {
       if (event.target === event.currentTarget || event.target.closest('[data-close-stagger-analysis]')) {
         closeStaggerAnalysis();
@@ -9144,7 +9399,8 @@
       }
       const dimensionButton = event.target.closest('[data-analysis-dimension]');
       if (dimensionButton) {
-        actionAnalysisState.dimension = dimensionButton.dataset.analysisDimension === 'type' ? 'type' : 'action';
+        actionAnalysisState.dimension = ['type', 'substats', 'effectiveness'].includes(dimensionButton.dataset.analysisDimension)
+          ? dimensionButton.dataset.analysisDimension : 'action';
         renderActionContributionAnalysis();
         return;
       }
@@ -9225,7 +9481,29 @@
     $('shaft-my-axis-list').addEventListener('click', handleMarketClick);
   }
 
+  async function initEmbeddedPreview() {
+    const status = $('shaft-embedded-preview-status');
+    const close = () => window.parent.postMessage({type: 'shaft-preview-close'}, location.origin);
+    $('shaft-axis-preview-fit-btn').addEventListener('click', fitAxisPreview);
+    $('shaft-axis-preview-viewport').addEventListener('wheel', handleAxisPreviewWheel, {passive:false});
+    $('shaft-axis-preview-dialog').addEventListener('cancel', event => { event.preventDefault(); close(); });
+    $('shaft-axis-preview-dialog').querySelector('[data-close-axis-preview]').addEventListener('click', close);
+    window.addEventListener('resize', () => { if ($('shaft-axis-preview-dialog').open) fitAxisPreview(); });
+    try {
+      state.catalog = await shaftRequest('/api/shaft/catalog');
+      const axisId = new URLSearchParams(location.search).get('preview');
+      const payload = await shaftRequest(`/api/shaft/axes/${axisId}`);
+      state.axis = JSON.parse(JSON.stringify(payload.axis));
+      openAxisPreview(null, payload);
+      status.hidden = true;
+    } catch (error) { status.textContent = error.message; }
+  }
+
   async function init() {
+    if (document.querySelector('.shaft-page')?.dataset.previewOnly === 'true') {
+      await initEmbeddedPreview();
+      return;
+    }
     const active = document.querySelector('.shaft-page')?.dataset.activePage || 'rotation';
     state.page = active;
     window.NTE_BEFORE_LOGIN_REDIRECT = persistAxisDraft;
@@ -9247,6 +9525,7 @@
       renderAll();
       await runSimulation();
       await openSharedAxisFromUrl();
+      await openAxisPreviewFromUrl();
       await loadMarket(true);
       await loadMyAxes();
     } catch (error) {

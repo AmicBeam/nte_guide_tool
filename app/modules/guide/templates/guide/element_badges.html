@@ -1,0 +1,6 @@
+{% macro element_badge(element) -%}
+{% set name = element|guide_label %}<span class="guide-element-badge">{% if name in ['光', '灵', '咒', '暗', '魂', '相'] %}<img src="/static/images/elements/{{ name }}.png" alt="" width="22" height="22" decoding="async">{% endif %}{{ name }}</span>
+{%- endmacro %}
+{% macro element_list(elements, empty='未提供') -%}
+{% for element in elements %}{{ element_badge(element) }}{% else %}{{ empty }}{% endfor %}
+{%- endmacro %}

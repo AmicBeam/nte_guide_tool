@@ -50,6 +50,10 @@ class CPUOracleBackend:
             return 0.0
         return 1.0 if winner == viewer else -1.0
 
+    def rule_decision(self,state,side):
+        from app.modules.card_game.rl.covered_rollout import rule_decision
+        return rule_decision(state,side)
+
     def decision(self, state: Any, side: str) -> Tuple[List[Any], Tuple[np.ndarray, np.ndarray]]:
         if self.runtime is not None and hasattr(self.runtime, 'decision'):
             return self.runtime.decision(state, side)

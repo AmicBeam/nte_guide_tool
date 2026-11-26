@@ -15,6 +15,14 @@ class ModuleRoutesTest(RoomFlowTestCase):
         finally:
             response.close()
 
+    def test_guide_module_is_public_and_linked_from_portal(self) -> None:
+        self.assertIn('guide_module', self.app.blueprints)
+        self.assertIn('href="/guide"', self.client.get('/').get_data(as_text=True))
+        self.assertEqual(self.client.get('/guide').status_code, 200)
+        self.assertEqual(self.client.get('/api/guide/characters').status_code, 200)
+        self.assertEqual(self.client.get('/guide/characters/1042.md').status_code, 200)
+        self._assert_asset('/static/guide/guide.css')
+
     def test_card_game_module_page_and_asset(self) -> None:
         page = self.client.get('/card-game')
         self.assertEqual(page.status_code, 200)
@@ -34,6 +42,10 @@ class ModuleRoutesTest(RoomFlowTestCase):
         catalog = self.client.get('/api/kongmu/catalog')
         self.assertEqual(catalog.status_code, 200)
         self.assertTrue(catalog.is_json)
+        for character in catalog.get_json()['characters']:
+            with self.subTest(character=character['name']):
+                self.assertTrue(character['element_icon'].startswith('/static/images/elements/'))
+                self._assert_asset(character['element_icon'])
         zero = next(character for character in catalog.get_json()['characters'] if character['name'] == '「零」')
         self.assertEqual(zero['avatar'], '/static/images/characters/avatar/男主.webp')
         avatar = self.client.get(zero['avatar'])
@@ -113,14 +125,16 @@ class ModuleRoutesTest(RoomFlowTestCase):
         invited_catalog = self.client.get('/api/kongmu/catalog', headers=invited_headers).get_json()
         self.assertIn('残虹', [character['name'] for character in invited_catalog['characters']])
 
-    def test_preteam_module_page_and_asset(self) -> None:
-        page = self.client.get('/preteam')
-        self.assertEqual(page.status_code, 200)
-        page_text = page.get_data(as_text=True)
-        self.assertIn('异环预配队', page_text)
-        self.assertIn('预配队即将下线', page_text)
-        self.assertIn('排轴模块', page_text)
-        self._assert_asset('/static/preteam/单位.jpg')
+    def test_preteam_module_is_removed(self) -> None:
+        self.assertFalse((ROOT / 'app' / 'modules' / 'preteam').exists())
+        self.assertNotIn('preteam_module', self.app.blueprints)
+        for path in ('/preteam', '/static/preteam/单位.jpg', '/static/preteam/element/光.png'):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                try:
+                    self.assertEqual(response.status_code, 404)
+                finally:
+                    response.close()
 
     def test_portal_shows_community_links_record_without_preteam_entry(self) -> None:
         page = self.client.get('/')
@@ -156,9 +170,11 @@ class ModuleRoutesTest(RoomFlowTestCase):
             ROOT / 'app' / 'templates' / 'kongmu',
             ROOT / 'app' / 'templates' / 'preteam',
             ROOT / 'app' / 'templates' / 'shaft',
+            ROOT / 'app' / 'templates' / 'guide',
             ROOT / 'app' / 'static' / 'card_game',
             ROOT / 'app' / 'static' / 'kongmu',
             ROOT / 'app' / 'static' / 'preteam',
             ROOT / 'app' / 'static' / 'shaft',
+            ROOT / 'app' / 'static' / 'guide',
         ):
             self.assertFalse(legacy_path.exists(), str(legacy_path))

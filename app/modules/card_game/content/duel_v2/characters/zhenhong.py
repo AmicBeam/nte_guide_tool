@@ -30,7 +30,7 @@ def _redraw(c):
     for card in cards:
         team['hand'].remove(card)
         discard(c.state, c.side, card)
-    c.draw(len(cards))
+    c.draw(len(cards) + 1)
 
 
 def _shape(c):
@@ -46,8 +46,18 @@ def _hand_changed(c):
                                          for card in c.state['sides'][c.side]['hand']])
 
 
+def _weapon_surplus(c, **_data):
+    foe = other(c.side)
+    for cid in team_order(c.state, foe):
+        if finished(c.state):
+            break
+        if alive(c.state, foe, cid) and not hero(c.state, foe, cid).get('summoned'):
+            damage(c.state, foe, cid, 2, source=f'{c.side}:{c.cid}', reason='「地海高校生」触发')
+
+
 @register
 class Zhenhong:
+    weapon_hooks = {'R07': {'on_surplus': _weapon_surplus}}
     id = 'zhenhong'
     text_name = '真红'
     effects = {'R01': _draw_team, 'R02': _battle, 'R03': _battle, 'R04': _battle,
@@ -56,12 +66,15 @@ class Zhenhong:
 
     @staticmethod
     def on_game_start(c):
-        c.grant_harmony(c.cid, 1, reason='开局异能')
+        c.grant_harmony(c.cid, 2, reason='开局异能')
 
     @staticmethod
     def on_surplus(c, **_data):
         if finished(c.state) or not alive(c.state, c.side, c.cid):
             return
+        if c.character.get('surplus_passive_turn') == c.state['turn']:
+            return
+        c.character['surplus_passive_turn'] = c.state['turn']
         # User tabletop mechanism 「独行」, 2026-10-07. Count the trigger,
         # even if the queued attack later becomes invalid.
         c.character['surplus_passive_triggers'] = int(c.character.get('surplus_passive_triggers', 0)) + 1
@@ -73,27 +86,20 @@ class Zhenhong:
         add_effect(c.character, 'zhenhong.surplus_damage_limit', 'damage.limit', 1, op='set',
                    source_entity_id=c.entity_id, source_key='passive', label='真红伤害限制', show_marker=False,
                    stacking='refresh', expiry=deadline(c.state, c.side, 1, 'turn_start'))
-        c.history('己方触发盈蓄，真红触发「独行」：直到下个己方回合开始时攻击 +1，单次至多受到 1 点伤害，将发起额外攻击。')
-        c.heal(c.character['max_hp'], reason='「独行」触发')
+        c.history('己方触发盈蓄，真红触发「独行」：直到下个己方回合开始时攻击 +1，单次至多受到 1 点伤害，将额外造成 2 点伤害。')
+        c.shield(4, reason='「独行」触发')
+        for cid in team_order(c.state, c.side):
+            c.for_character(c.side, cid).energy(1, reason='「独行」触发')
         if finished(c.state):
             return
         enqueue(c, 'surplus')
-        if c.character.get('shape') == 'R07':
-            foe = other(c.side)
-            for cid in team_order(c.state, foe):
-                if finished(c.state):
-                    break
-                if alive(c.state, foe, cid) and not hero(c.state, foe, cid).get('summoned'):
-                    damage(c.state, foe, cid, 2, source=f'{c.side}:{c.cid}', reason='「梦的边缘」触发')
-
     @staticmethod
     def on_deferred_action(c, action):
         if action.get('kind') != 'surplus':
             return
-        c.character['extra_attacks'] = int(c.character.get('extra_attacks', 0)) + 1
-        c.operation['skip_combat_harmony'] = True
-        c.history('「独行」：真红发起额外攻击。')
-        c.sortie(support_allows_counter=True)
+        c.history('「独行」：造成 2 点伤害，前排优先。')
+        c.enter_front()
+        c.hit_front(2)
 
     @staticmethod
     def aura_effects(c, property, query):
@@ -153,6 +159,13 @@ class Zhenhong:
         c.character['intimidation'] = 0
 
     @staticmethod
+    def card_description(c, current, card):
+        if card.get('card_id') == 'R06':
+            count = int(c.character.get('surplus_passive_triggers', 0))
+            return current.removesuffix('（当前为0）') + f'（当前为{count}）'
+        return current
+
+    @staticmethod
     def battle_frame(c, attack, shield):
         if c.card and c.card['card_id'] == 'R06':
             count = int(c.character.get('surplus_passive_triggers', 0))
@@ -164,7 +177,7 @@ class Zhenhong:
         team = c.state['sides'][c.side]
         if c.character.get('shape') == 'R08' and c.entity_id not in team.get('attacked_this_turn', []):
             c.character['intimidation'] = min(2, int(c.character.get('intimidation', 0)) + 1)
-            c.history(f"「穿过胭红蜃景」触发：威慑凝视 {c.character['intimidation']} 点。")
+            c.history(f"「迷宫屋主」触发：威慑凝视 {c.character['intimidation']} 点。")
 
     @staticmethod
     def on_sortie_ready(c, actor_id, **_data):

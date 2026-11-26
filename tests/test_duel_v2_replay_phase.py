@@ -18,6 +18,7 @@ function node() {
       contains: x => classes.has(x), toggle: (x, yes) => yes ? classes.add(x) : classes.delete(x)},
     addEventListener(type, fn) { this.listeners[type] = fn; },
     setAttribute() {}, replaceChildren() {}, appendChild() {}, querySelectorAll: () => [],
+    getBoundingClientRect: () => ({width:0, height:0, left:0, top:0}),
   };
 }
 async function scenario(animated) {
@@ -33,7 +34,7 @@ async function scenario(animated) {
     {seq: 2, side: 'a', type: 'turn', text: '我方 · 我方玩家的第一回合', patch: {phase: 'playing', turn: 1}},
     {seq: 3, type: 'draw', text: '抽牌', patch: {}},
   ];
-  const window = {NTE_V2: {
+  const window = {addEventListener() {}, requestAnimationFrame(fn) { fn(); }, NTE_V2: {
     setHidden: (el, hidden) => { if (el) el.hidden = hidden; },
     getReplay: async () => ({room: {room_code: 'TEST', status: 'finished'},
       replay: {opening_board: opening, events}}),
@@ -41,7 +42,13 @@ async function scenario(animated) {
     opponentSide: game => game.viewer_side === 'b' ? 'a' : 'b',
     sideState: (game, side) => game.sides[side],
   }};
-  const sandbox = vm.createContext({window, document, console});
+  const sandbox = vm.createContext({window, document, console,
+    MutationObserver: class { observe() {} disconnect() {} },
+    ResizeObserver: class { observe() {} disconnect() {} },
+  });
+  const replayApi = window.NTE_V2;
+  vm.runInContext(fs.readFileSync('app/modules/card_game/static/js/v2_api.js', 'utf8'), sandbox);
+  Object.assign(window.NTE_V2, replayApi);
   for (const file of ['helpers', 'render', 'sync', 'replay']) {
     vm.runInContext(fs.readFileSync('app/modules/card_game/static/js/v2_table/' + file + '.js', 'utf8'), sandbox);
   }
@@ -50,7 +57,7 @@ async function scenario(animated) {
     emptyState: node(), roomPanel: node(), tableLayout: node(), handDock: node()};
   for (const key of ['playerHand', 'opponentHand', 'mulliganRail', 'mulliganStage',
     'roomChip', 'phaseChip', 'connectionChip', 'endTurnBtn', 'concedeBtn', 'mulliganBtn',
-    'mulliganStageCopy', 'turnCopy', 'waitChip']) ctx.nodes[key] = node();
+    'mulliganStageCopy', 'turnCopy', 'waitChip', 'logList', 'playHistoryDetail']) ctx.nodes[key] = node();
   const frames = [];
   // Keep the actual hand renderer: its phase drives panel visibility and card placement.
   table.renderGame = renderCtx => {
@@ -58,6 +65,7 @@ async function scenario(animated) {
     frames.push({phase: renderCtx.game.phase, visible: !ctx.nodes.mulliganStage.hidden, viewer: renderCtx.viewer, opponent: renderCtx.opponent});
   };
   table.bindSync(ctx);
+  ctx.renderEmpty = (title, message) => { throw new Error(title + ': ' + message); };
   if (animated) {
     table.createPlayer = options => ({cancel() {}, setOptions() {}, async play(batch) {
       for (const event of batch) options.applyPatch(event.patch, event);

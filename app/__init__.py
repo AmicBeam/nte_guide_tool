@@ -1,6 +1,6 @@
 from flask import Flask, g, request
 
-from app.config import DUEL_SUPPORT_GROUP, IS_DEV_ENV, SECRET_KEY, SHAFT_LOGIN_REQUIRED, SHAFT_SUPPORT_GROUP
+from app.config import DUEL_SUPPORT_GROUP, GUIDE_CHAT_SETTINGS, IS_DEV_ENV, SECRET_KEY, SHAFT_LOGIN_REQUIRED, SHAFT_SUPPORT_GROUP
 from app.db import init_db
 from app.models import (
     AccessToken,
@@ -37,8 +37,15 @@ def create_app() -> Flask:
     app.config['DUEL_SUPPORT_GROUP'] = DUEL_SUPPORT_GROUP
     app.config['SHAFT_SUPPORT_GROUP'] = SHAFT_SUPPORT_GROUP
     app.config['SHAFT_LOGIN_REQUIRED'] = SHAFT_LOGIN_REQUIRED
+    app.config['GUIDE_CHAT_SETTINGS'] = dict(GUIDE_CHAT_SETTINGS)
+    from app.modules.guide.user_data import GuideGameProfile
+    from app.modules.guide.chat_quota import GuideChatQuota
+    from app.modules.guide.articles import GuideArticle
     init_db([
         Player,
+        GuideGameProfile,
+        GuideArticle,
+        GuideChatQuota,
         PlayerTutorial,
         LoginCode,
         AccessToken,
@@ -60,8 +67,12 @@ def create_app() -> Flask:
         ShaftAxisDislike,
         ShaftAxisFavorite,
     ])
+    app.extensions['guide_articles_ready'] = True
     from app.modules.shaft.service import initialize_shaft_character_publications
     initialize_shaft_character_publications()
+    # Composition root supplies a read-only adapter; guide never imports shaft services.
+    from app.modules.shaft.read_tools import ShaftReader
+    app.extensions['guide_axis_reader'] = ShaftReader()
 
     @app.before_request
     def attach_log_id():
@@ -87,15 +98,17 @@ def create_app() -> Flask:
     from app.modules.card_game import blueprint as card_game_module
     from app.modules.card_game.v2_routes import blueprint as duel_v2_api
     from app.modules.kongmu import blueprint as kongmu_module
-    from app.modules.preteam import blueprint as preteam_module
     from app.modules.shaft import blueprint as shaft_module
+    from app.modules.overlap import blueprint as overlap_module
+    from app.modules.guide import blueprint as guide_module
     from .routes import main_bp
 
     app.register_blueprint(card_game_module)
     app.register_blueprint(duel_v2_api)
     app.register_blueprint(kongmu_module)
-    app.register_blueprint(preteam_module)
     app.register_blueprint(shaft_module)
+    app.register_blueprint(overlap_module)
+    app.register_blueprint(guide_module)
     app.register_blueprint(main_bp)
     logger.info('Flask app initialized successfully.')
     return app

@@ -6,6 +6,7 @@
 {% endblock %}
 {% block body %}
 <main class="v2-home-page" id="v2-home-page">
+    <div class="v2-home-backdrop" id="v2-home-backdrop" aria-hidden="true"></div>
     <header class="v2-home-nav">
         <a class="v2-home-logo" href="{{ url_for('main.card_game_home') }}">
             <img src="{{ url_for('static', filename='images/brand/esper-duel-logo.webp') }}" alt="异能对决" width="1086" height="362">
@@ -42,16 +43,7 @@
             <p class="v2-home-deckline" id="v2-build-summary">尚未读取牌组。</p>
         </section>
 
-        <aside class="v2-home-play" aria-label="开始对局">
-            <section class="v2-home-tutorial" id="v2-home-tutorial">
-                <p class="eyebrow">新手教学</p>
-                <div class="v2-tutorial-picker">
-                    <button class="secondary-btn v2-tutorial-flip" id="v2-tutorial-prev" type="button" aria-label="上一关">‹</button>
-                    <strong id="v2-tutorial-level-title">第一关 牌桌与回合</strong>
-                    <button class="primary-btn" id="v2-tutorial-start" type="button">进入</button>
-                    <button class="secondary-btn v2-tutorial-flip" id="v2-tutorial-next" type="button" aria-label="下一关">›</button>
-                </div>
-            </section>
+        <aside class="v2-home-play" id="v2-home-play" data-view="menu" aria-label="开始对局">
             <section class="v2-resume-card" id="v2-resume-card" hidden>
                 <div>
                     <p class="eyebrow" id="v2-resume-eyebrow">进行中</p>
@@ -65,50 +57,67 @@
                 </div>
             </section>
 
+            <div class="v2-home-menu-heading"><p class="eyebrow">选择玩法</p></div>
             <div class="v2-play-modes" role="group" aria-label="对局模式">
-                <button class="v2-play-mode selected" id="v2-mode-solo" type="button" aria-pressed="true">
-                    <strong>普通人机</strong>
-                    <span>使用已保存构筑立即开局</span>
+                <button class="v2-play-mode selected" id="v2-mode-solo" type="button" aria-pressed="true" aria-controls="v2-home-detail">
+                    <span class="v2-mode-symbol" aria-hidden="true">◇</span>
+                    <strong>普通人机</strong><span>自由练习，熟悉编队</span>
                 </button>
-                <button class="v2-play-mode" id="v2-mode-advanced" type="button" aria-pressed="false">
-                    <strong>高级人机</strong>
-                    <span>挑战训练后的对手</span>
+                <button class="v2-play-mode" id="v2-mode-advanced" type="button" aria-pressed="false" aria-controls="v2-home-detail">
+                    <span class="v2-mode-symbol" aria-hidden="true">✦</span>
+                    <strong>高级人机</strong><span>挑战训练后的对手</span>
                 </button>
-                <button class="v2-play-mode" id="v2-mode-pvp" type="button" aria-pressed="false">
-                    <strong>创建 1v1</strong>
-                    <span>生成房间码等待对手</span>
+                <button class="v2-play-mode" id="v2-mode-pvp" type="button" aria-pressed="false" aria-controls="v2-home-detail">
+                    <span class="v2-mode-symbol" aria-hidden="true">⇄</span>
+                    <strong>好友对战</strong><span>创建房间或输入房间码</span>
+                </button>
+                <button class="v2-play-mode" id="v2-mode-tutorial" type="button" aria-pressed="false" aria-controls="v2-home-detail">
+                    <span class="v2-mode-symbol" aria-hidden="true">▤</span>
+                    <strong>新手教学</strong><span>从第一场出击开始</span>
                 </button>
             </div>
 
-            <div class="field-label v2-advanced-picker" id="v2-solo-picker">
-                <label for="v2-solo-deck">普通人机 · 对手预组</label>
-                <select id="v2-solo-deck"><option value="random">随机</option><option value="mirror">镜像对局</option></select>
-                <small class="subtle">随机挑战公开预组；镜像对局采用你的构筑，不能携带人机不支持的牌。</small>
-            </div>
+            <section class="v2-home-detail" id="v2-home-detail" aria-labelledby="v2-home-detail-title">
+                <div class="v2-home-detail-heading">
+                    <button class="secondary-btn v2-home-back" id="v2-home-back" type="button" aria-label="返回玩法选择">‹ 返回</button>
+                    <h2 id="v2-home-detail-title" tabindex="-1">普通人机</h2>
+                </div>
+                <div class="field-label v2-advanced-picker" id="v2-solo-picker">
+                    <label for="v2-solo-deck">普通人机 · 对手预组</label>
+                    <select id="v2-solo-deck"><option value="random">随机</option><option value="mirror">镜像对局</option></select>
+                    <small class="subtle">随机挑战公开预组；镜像对局采用你的构筑，不能携带人机不支持的牌。</small>
+                </div>
 
-            <div class="field-label v2-advanced-picker" id="v2-advanced-picker" hidden>
-                <label for="v2-ai-deck">高级人机 · 对手预组</label>
-                <select id="v2-ai-deck">
-                    <option value="random" selected>随机（实验性策略）</option>
-                    <option value="starter">实验性 · 创生预组</option>
-                    <option value="weave-rush">实验性 · 覆纹预组</option>
-                    <option value="quick-rush">实验性 · 小吱预组</option>
-                    <option value="zhenhong">实验性 · 真红预组</option>
-                    <option value="murk">实验性 · 浊燃预组</option>
-                </select>
-                <small class="subtle" id="v2-ai-deck-hint">使用当前保存的构筑对战，仅支持公开角色。五套高级人机均已启用新模型与搜索，属于尚未通过新规则完整强度验收的实验性策略。</small>
-            </div>
+                <div class="field-label v2-advanced-picker" id="v2-advanced-picker" hidden>
+                    <label for="v2-ai-deck">高级人机 · 对手预组</label>
+                    <select id="v2-ai-deck">
+                        <option value="random" selected>随机</option>
+                        <option value="starter">创生预组</option>
+                        <option value="murk">浊燃预组</option>
+                        <option value="zhenhong">真红预组</option>
+                    </select>
+                    <small class="subtle" id="v2-ai-deck-hint">使用当前保存的构筑对战，支持除哈尼娅外的公开角色。当前开放创生、浊燃和真红。</small>
+                </div>
 
-            <div class="v2-join-row">
-                <label class="field-label">
-                    <span>输入房间码加入</span>
-                    <input id="v2-room-code-input" type="text" maxlength="6" spellcheck="false" autocomplete="off" placeholder="6 位房间码">
-                </label>
-                <button class="secondary-btn" id="v2-join-btn" type="button">加入</button>
-            </div>
+                <div class="v2-join-row" id="v2-join-row" hidden>
+                    <label class="field-label">
+                        <span>输入房间码加入</span>
+                        <input id="v2-room-code-input" type="text" maxlength="6" spellcheck="false" autocomplete="off" placeholder="6 位房间码">
+                    </label>
+                    <button class="secondary-btn" id="v2-join-btn" type="button">加入</button>
+                </div>
 
-            <button class="primary-btn v2-home-start" id="v2-start-btn" type="button">开始人机对局</button>
-            <a class="v2-home-build-link" href="{{ url_for('main.build_page') }}">调整构筑</a>
+                <button class="primary-btn v2-home-start" id="v2-start-btn" type="button">开始人机对局</button>
+                <section class="v2-home-tutorial" id="v2-home-tutorial" hidden>
+                    <p class="eyebrow">新手教学</p>
+                    <div class="v2-tutorial-picker">
+                        <button class="secondary-btn v2-tutorial-flip" id="v2-tutorial-prev" type="button" aria-label="上一关">‹</button>
+                        <strong id="v2-tutorial-level-title">第一关 牌桌与回合</strong>
+                        <button class="primary-btn" id="v2-tutorial-start" type="button">进入</button>
+                        <button class="secondary-btn v2-tutorial-flip" id="v2-tutorial-next" type="button" aria-label="下一关">›</button>
+                    </div>
+                </section>
+            </section>
         </aside>
     </section>
 </main>

@@ -66,6 +66,85 @@ class ContinuousCastTest(unittest.TestCase):
             self.assertFalse(any(e['type'] == 'effect' and e.get('present')
                                  for e in s['events'] if e['seq'] > seq))
 
+    def test_s05_hits_allied_front_and_opposing_espers_without_requiring_gulang(self):
+        from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
+        from app.modules.card_game.engine.duel_v2.summons import summon_front
+        for front in (None, 'nanali', 'zaowu', 'gulang', 'other_summon'):
+            with self.subTest(front=front):
+                s = self.game()
+                if front == 'gulang':
+                    s = self.play(s, 'S01')
+                elif front == 'other_summon':
+                    summon_front(s, 'a', name='塔吉多', attack=2, hp=4)
+                else:
+                    s['sides']['a']['front'] = front
+                own_front = s['sides']['a']['front']
+                foe_summon = summon_front(s, 'b', name='对方召唤物', attack=2, hp=4)
+                hero(s, 'b', 'jiuyuan').update(hp=0, down_turns=3)
+                before = {(side, cid): h['hp'] for side in ('a', 'b')
+                          for cid, h in s['sides'][side]['characters'].items()}
+                s['sides']['a']['ap'] = 10
+                held = card_instance(s, 'S05', 'a')
+                s['sides']['a']['hand'] = [held]
+                action = {'type': 'play_card', 'card_id': held['instance_id']}
+                self.assertIn(action, legal_actions(s, 'a'))
+                opening, seq = capture_public_board(s), s['event_seq']
+                s = apply_action(s, 'a', action)
+                replay = replay_public_board(opening, [e for e in s['events'] if e['seq'] > seq])
+                for (side, cid), hp in before.items():
+                    hit = (side == 'a' and cid == own_front or
+                           side == 'b' and cid != foe_summon and hp > 0)
+                    expected = hp - 2 if hit else hp
+                    self.assertEqual(hero(s, side, cid)['hp'], expected)
+                    shown = next(h for h in replay['sides'][side]['characters'] if h['id'] == cid)
+                    self.assertEqual(shown['hp'], expected)
+                self.assertEqual(s['sides']['a']['hp'], 30)
+                self.assertEqual(s['sides']['b']['hp'], 30)
+                if front == 'gulang':
+                    self.assertEqual(len(s['sides']['b']['hand']), 4)
+                if front != 'gulang':
+                    s['sides']['a']['hand'] = [card_instance(s, 'S06', 'a')]
+                    self.assertFalse(any(a['type'] == 'play_card' for a in legal_actions(s, 'a')))
+
+    def test_s05_finishes_enemy_damage_after_its_own_front_falls(self):
+        s = self.game()
+        s['sides']['a']['front'] = 'zaowu'
+        s['sides']['b']['front'] = 'zero'
+        hero(s, 'a', 'zaowu')['hp'] = 1
+        before = {cid: h['hp'] for cid, h in s['sides']['b']['characters'].items()}
+        s = self.play(s, 'S05')
+        self.assertEqual(hero(s, 'a', 'zaowu')['hp'], 0)
+        self.assertIsNone(s['sides']['a']['front'])
+        for cid, hp in before.items():
+            self.assertEqual(hero(s, 'b', cid)['hp'], hp - 2)
+
+    def test_gulang_details_describe_each_item_in_live_legacy_snapshot_and_replay(self):
+        from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
+        cases = (
+            ('S01', '黑胶唱片', '随机弃置对方 1 张手牌'),
+            ('S02', '好狗狗的项圈', '随机使 1 名对方异能者进入倾陷'),
+            ('S03', '气味奇怪的液体', '随机对 1 名对方异能者造成等同于本次所受伤害的伤害'),
+        )
+        for card_id, item, effect in cases:
+            with self.subTest(card_id=card_id):
+                s = self.game()
+                opening, seq = capture_public_board(s), s['event_seq']
+                s = self.play(s, card_id)
+                cid = s['sides']['a']['front']
+                replay = replay_public_board(opening, [e for e in s['events'] if e['seq'] > seq])
+                h = hero(s, 'a', cid)
+                self.assertIn(effect, h['passive'])
+                # Existing rooms stored only an opaque trigger sentence.
+                h['passive'] = f'吞噬了{item}。受到伤害时触发。倒地或离开战斗区时消失。'
+                s = json.loads(json.dumps(s))
+                views = [observe(s, side, include_previews=False) for side in ('a', 'b')]
+                views += [capture_public_board(s), replay]
+                for view in views:
+                    shown = next(h for h in view['sides']['a']['characters'] if h['id'] == cid)
+                    self.assertIn(item, shown['passive'])
+                    self.assertIn(effect, shown['passive'])
+                    self.assertNotIn('受到伤害时触发', shown['passive'])
+
     def test_keyword_text_reaches_catalog_and_public_hand(self):
         from app.modules.card_game.content.duel_v2 import CARDS
         for card in CARDS.values():
@@ -103,15 +182,18 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertNotIn('nightmare', front_debuff(s, 'b')['dots'])
         self.assertFalse(s['sides']['a']['used'].get('instant'))
 
-    def test_icecream_triggers_nightmare_kill_weapon(self):
+    def test_nightmare_kill_no_longer_adds_player_damage_with_gilded_symphony(self):
         s = self.play(self.game(), 'A07')
         for cid in ('zero', 'jiuyuan', 'adler'):
             hero(s, 'b', cid)['hp'] = 0
         hero(s, 'b', 'iloy').update(hp=1, shield=0)
         s['sides']['b']['shield'] = 0
+        s['rng'] = 0  # Both nightmare points hit the sole living esper.
         before = s['sides']['b']['hp']
         s = self.play(s, 'A03')
-        self.assertEqual(s['sides']['b']['hp'], before - 2)
+        self.assertEqual(hero(s, 'b', 'iloy')['hp'], 0)
+        self.assertEqual(s['sides']['b']['hp'], before)
+        self.assertFalse(any('「噩梦」消灭了对方异能者' in e['text'] for e in s['events']))
 
     def test_rose_still_heals_when_nightmare_kills_target(self):
         s = self.play(self.game(), 'A08')
@@ -180,6 +262,27 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertEqual(s['sides']['a']['ap'], before - 1)
         self.assertTrue(any(c['instance_id'] == held['instance_id'] for c in s['sides']['a']['hand']))
 
+    def test_mirage_lasts_three_friendly_turns_and_refreshes_after_battle_card(self):
+        from app.modules.card_game.content.duel_v2.characters.canhong import _mirage
+        from app.modules.card_game.engine.duel_v2.context import EffectContext
+        for refresh in (False, True):
+            with self.subTest(refresh=refresh):
+                s = self.play(self.game(), 'C04')
+                self.assertIn('残虹进入幻境，持续 3 个己方回合。', [e['text'] for e in s['events']])
+                s = json.loads(json.dumps(s))
+                for step in range(1, 4):
+                    begin_turn(s, 'b')
+                    self.assertTrue(_mirage(EffectContext(s, 'a', 'canhong', {'side': 'a'})))
+                    begin_turn(s, 'a')
+                    self.assertEqual(_mirage(EffectContext(s, 'a', 'canhong', {'side': 'a'})),
+                                     step < 3 or refresh)
+                    if refresh and step == 1:
+                        s = self.play(s, 'C04')
+                if refresh:
+                    begin_turn(s, 'b')
+                    begin_turn(s, 'a')
+                    self.assertFalse(_mirage(EffectContext(s, 'a', 'canhong', {'side': 'a'})))
+
     def test_mirage_dot_damage_grows_all_dots_without_splitting_animation(self):
         from app.modules.card_game.content.duel_v2.characters.canhong import _enter_mirage
         from app.modules.card_game.engine.duel_v2.context import EffectContext
@@ -203,7 +306,7 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertEqual(attack_value(hero(s, 'a', 'canhong'), s, 'a'), attack)
 
     def test_canhong_initial_harmony_is_visible_for_both_sides_before_mulligan(self):
-        # The initial 2 harmony is a user-authored tabletop rule (2026-10-07).
+        # The initial 3 harmony is a user-authored tabletop rule (2026-10-07).
         deck = _deck(('anhunqu', 'canhong', 'zaowu', 'adler'), ('A', 'C', 'S', 'D'))
         for first in ('a', 'b'):
             with self.subTest(first=first):
@@ -212,12 +315,12 @@ class ContinuousCastTest(unittest.TestCase):
                 for side in ('a', 'b'):
                     for cid in deck['character_ids']:
                         h = hero(s, side, cid)
-                        self.assertEqual(h['harmony'], 2 if cid == 'canhong' else 0)
+                        self.assertEqual(h['harmony'], 3 if cid == 'canhong' else 0)
                         self.assertEqual(h['energy'], 0)
                     public = observe(s, side)['sides'][side]['characters']
-                    self.assertEqual(next(h for h in public if h['id'] == 'canhong')['harmony'], 2)
+                    self.assertEqual(next(h for h in public if h['id'] == 'canhong')['harmony'], 3)
                     opening = s['_public_board']['sides'][side]['characters']
-                    self.assertEqual(next(h for h in opening if h['id'] == 'canhong')['harmony'], 2)
+                    self.assertEqual(next(h for h in opening if h['id'] == 'canhong')['harmony'], 3)
 
     def test_canhong_burn_can_stack_three_times_in_one_turn_without_attack_growth(self):
         s = self.game()
@@ -244,9 +347,9 @@ class ContinuousCastTest(unittest.TestCase):
     def test_canhong_initial_harmony_pays_for_first_replacement_and_does_not_refill(self):
         s = self.game()
         s = apply_action(s, 'a', {'type': 'attack', 'character_id': 'canhong'})
-        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 2)
+        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 3)
         self.assertNotIn('burn', front_debuff(s, 'b'))  # No partner on first entry.
-        s = self.play(s, 'A06')
+        s = self.play(s, 'AF01')
         self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 0)
         self.assertEqual(front_debuff(s, 'b')['burn']['stacks'], 1)
         self.assertEqual(attack_value(hero(s, 'a', 'canhong'), s, 'a'), 2)
@@ -256,12 +359,12 @@ class ContinuousCastTest(unittest.TestCase):
         s = clone_state(json.loads(json.dumps(s)))
         s = self.play(s, 'C08')
         h = hero(s, 'a', 'canhong')
-        self.assertEqual(h['harmony'], 0)
+        self.assertEqual(h['harmony'], 1)
         h['hp'] = 0
         knockdowns(s)
         s = self.play(s, 'C07')
         h = hero(s, 'a', 'canhong')
-        self.assertEqual(h['harmony'], 0)
+        self.assertEqual(h['harmony'], 1)
         attack = attack_value(h, s, 'a')
         apply_dot(s, 'b', 'venom', by='a', source_cid='canhong', stacks=1)
         self.assertEqual(attack_value(h, s, 'a'), attack)
@@ -269,19 +372,19 @@ class ContinuousCastTest(unittest.TestCase):
     def test_canhong_existing_harmony_survives_json_and_revival(self):
         s = clone_state(json.loads(json.dumps(self.game())))
         h = hero(s, 'a', 'canhong')
-        self.assertEqual(h['harmony'], 2)
+        self.assertEqual(h['harmony'], 3)
         h['hp'] = 0
         knockdowns(s)
-        self.assertEqual(h['harmony'], 2)
+        self.assertEqual(h['harmony'], 3)
         s = self.play(s, 'C07')
-        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 2)
+        self.assertEqual(hero(s, 'a', 'canhong')['harmony'], 3)
 
     def test_copied_canhong_neither_grants_initial_harmony_nor_dot_attack(self):
         ours = _deck(('anhunqu', 'zero', 'zaowu', 'adler'), ('A', 'Z', 'S', 'D'))
         theirs = _deck(('nanali', 'canhong', 'iloy', 'jiuyuan'), ('N', 'C', 'Y', 'J'))
         s = new_game(seed=3, first_side='a', skip_mulligan=True, decks={'a': ours, 'b': theirs})
         s = self.play(s, 'A01', target='b:canhong')
-        self.assertEqual(hero(s, 'a', 'anhunqu')['harmony'], 0)
+        self.assertEqual(hero(s, 'a', 'anhunqu')['harmony'], 1)
         for kind in ('etch', 'venom'):
             apply_dot(s, 'b', kind, by='a', source_cid='anhunqu', stacks=1)
             for side, cid in (('a', 'anhunqu'), ('b', 'canhong')):
@@ -315,7 +418,39 @@ class ContinuousCastTest(unittest.TestCase):
         self.assertEqual(h['shield'], 2)
         self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 4)
         fire(EffectContext(s, 'a', 'anhunqu', {'side':'a'}), 'on_ultimate', actor_only=True)
-        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 9)
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 7)
+
+    def test_early_shift_has_no_attack_penalty_and_ignores_harmony_fullness(self):
+        for attribute in ('魂', '咒'):
+            for harmony in (0, 1, 2):
+                with self.subTest(attribute=attribute, harmony=harmony):
+                    s = self.game()
+                    s['sides']['a']['front'] = 'canhong'
+                    payer = hero(s, 'a', 'canhong')
+                    payer.update(attribute=attribute, harmony=harmony)
+                    s['sides']['b']['front'] = 'zero'
+                    hero(s, 'b', 'zero').update(hp=20, max_hp=20, shield=0)
+                    s = self.play(s, 'A06')
+                    hit = next(e for e in reversed(s['events']) if e['type'] == 'attack')
+                    self.assertEqual(hit['attack'], 2)
+                    self.assertEqual(hit['counter'], 0)
+                    self.assertEqual(hero(s, 'a', 'anhunqu')['hp'], 5)
+                    self.assertEqual(hero(s, 'a', 'canhong')['harmony'], harmony)
+                    self.assertEqual(s['sides']['a']['support_count'], 1)
+                    zone = front_debuff(s, 'b')
+                    self.assertIn('star' if attribute == '魂' else 'burn', zone)
+                    self.assertNotIn('nightmare', zone.get('dots') or {})
+
+    def test_gilded_symphony_adds_two_nightmare_on_equip_and_turn_start(self):
+        s = self.play(self.game(), 'A07')
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 2)
+        apply_dot(s, 'b', 'nightmare', by='a', source_cid='anhunqu', stacks=3)
+        begin_turn(s, 'b')
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 5)
+        begin_turn(s, 'a')
+        # The shared nightmare clock halves five before the weapon adds two.
+        self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 4)
+        self.assertIn('己方回合开始，「鎏金交响诗」施加 2 层「噩梦」。', [e['text'] for e in s['events']])
 
     def test_distribution_merges_one_number_per_character(self):
         s = self.game()
@@ -359,6 +494,43 @@ class ContinuousCastTest(unittest.TestCase):
         end_turn(s, 'b')
         self.assertEqual(front_debuff(s, 'b')['dots']['nightmare']['stacks'], 5)
 
+    def test_etch_and_venom_keep_stacks_without_damage_even_in_old_snapshots(self):
+        from app.modules.card_game.engine.duel_v2.continuous import kind_count, total_stacks, trigger_dot, tick_owner_end
+        for legacy in (False, True):
+            with self.subTest(legacy=legacy):
+                s = self.game()
+                for kind in ('etch', 'venom'):
+                    apply_dot(s, 'b', kind, by='a', source_cid='canhong', stacks=10)
+                    if legacy:
+                        front_debuff(s, 'b')['dots'][kind]['mode'] = 'every5'
+                s = json.loads(json.dumps(s))
+                before = [(side, cid, h['hp'], h['shield']) for side in ('a', 'b')
+                          for cid, h in s['sides'][side]['characters'].items()]
+                rng, seq = s['rng'], s['event_seq']
+                for kind in ('etch', 'venom'):
+                    self.assertEqual(trigger_dot(s, 'b', kind, front_debuff(s, 'b')['dots'][kind]), [])
+                tick_owner_end(s, 'a')
+                for side, cid, hp, shield in before:
+                    self.assertEqual((hero(s, side, cid)['hp'], hero(s, side, cid)['shield']), (hp, shield))
+                self.assertEqual(s['rng'], rng)
+                self.assertFalse(any(e['type'] == 'damage' for e in s['events'] if e['seq'] > seq))
+                self.assertEqual(kind_count(s, 'a'), 2)
+                self.assertEqual(total_stacks(s, 'a'), 20)
+                end_turn(s, 'a')
+                self.assertEqual(total_stacks(s, 'a'), 20)
+                self.assertTrue(all(hero(s, side, cid)['hp'] == hp for side, cid, hp, _ in before))
+
+    def test_non_damaging_dots_still_enable_canhong_card_scaling(self):
+        from app.modules.card_game.engine.duel_v2.continuous import kind_count, total_stacks
+        s = self.game()
+        for kind in ('etch', 'venom'):
+            apply_dot(s, 'b', kind, by='a', source_cid='canhong', stacks=5)
+        self.assertEqual((kind_count(s, 'a'), total_stacks(s, 'a')), (2, 10))
+        s = self.play(s, 'C04')
+        hit = next(e for e in reversed(s['events']) if e['type'] == 'attack')
+        self.assertEqual(hit['attack'], 4)
+        self.assertEqual(hero(s, 'a', 'canhong')['shield'], 2)
+
     def test_collapse_lasts_until_applier_next_turn_end(self):
         s = self.game()
         force_collapse(s, 'b', 'zero', by='a')
@@ -369,12 +541,12 @@ class ContinuousCastTest(unittest.TestCase):
         end_turn(s, 'a')
         self.assertNotIn('collapse', hero(s, 'b', 'zero').get('flags') or {})
 
-    def test_adler_attack_matches_shield(self):
+    def test_adler_attack_is_one_independent_of_shield(self):
         s = self.game()
         end_turn(s, 'a')
         adler = hero(s, 'b', 'adler')
         from app.modules.card_game.engine.duel_v2.state import attack_value
-        self.assertEqual(attack_value(adler, s, 'b'), adler['shield'])
+        self.assertEqual(attack_value(adler, s, 'b'), 1)
         self.assertEqual(adler['shield'], 2)
 
     def test_adler_ultimate_strips_all_enemy_shields_and_guard_ticks_twice(self):
@@ -438,6 +610,79 @@ class ContinuousCastTest(unittest.TestCase):
         s = apply_action(s, 'b', {'type': 'ultimate', 'character_id': 'adler'})
         guard = front_debuff(s, 'a')['dots']['guard']
         self.assertEqual((guard['stacks'], guard['left'], guard['source']), (1, 2, 'b:adler'))
+
+    def test_zaowu_ultimate_buffs_allied_summons_in_live_state_and_replay(self):
+        from app.modules.card_game.engine.duel_v2.presentation import capture_public_board, replay_public_board
+        from app.modules.card_game.engine.duel_v2.state import energy_max
+        from app.modules.card_game.engine.duel_v2.summons import summon_front
+        for summon_kind in ('gulang', 'other'):
+            for equipped, bonus in ((False, 2), (True, 3)):
+                with self.subTest(summon=summon_kind, equipped=equipped):
+                    s = self.game()
+                    if summon_kind == 'gulang':
+                        s = self.play(s, 'S01')
+                        cid = s['sides']['a']['front']
+                    else:
+                        cid = summon_front(s, 'a', name='塔吉多', attack=2, hp=4)
+                    if equipped:
+                        s = self.play(s, 'S08')
+                    foe = summon_front(s, 'b', name='对方召唤物', attack=2, hp=4)
+                    hero(s, 'a', 'canhong').update(hp=0, down_turns=3)
+                    targets = [('a', cid), ('a', 'nanali'), ('a', 'anhunqu'),
+                               ('a', 'zaowu'), ('a', 'canhong'), ('b', foe), ('b', 'zero')]
+                    before = {(side, target): attack_value(hero(s, side, target), s, side)
+                              for side, target in targets}
+                    hero(s, 'a', 'zaowu')['energy'] = energy_max(hero(s, 'a', 'zaowu'))
+                    opening, seq = capture_public_board(s), s['event_seq']
+                    s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zaowu'})
+                    s = clone_state(json.loads(json.dumps(s)))
+                    replay = replay_public_board(opening, [e for e in s['events'] if e['seq'] > seq])
+                    views = [observe(s, viewer, include_previews=False) for viewer in ('a', 'b')] + [replay]
+                    for side, target in targets:
+                        expected = before[side, target] + (bonus if side == 'a' and target in
+                                   (cid, 'nanali', 'anhunqu') else 0)
+                        self.assertEqual(attack_value(hero(s, side, target), s, side), expected)
+                        for view in views:
+                            shown = next(h for h in view['sides'][side]['characters'] if h['id'] == target)
+                            self.assertEqual(shown['attack'], expected)
+                    self.assertTrue(any('己方召唤物' in e['text'] for e in s['events'] if e['seq'] > seq))
+
+    def test_zaowu_ultimate_does_not_transfer_bonus_to_later_summons(self):
+        from app.modules.card_game.engine.duel_v2.state import energy_max
+        s = self.play(self.game(), 'S01')
+        old = s['sides']['a']['front']
+        hero(s, 'a', 'zaowu')['energy'] = energy_max(hero(s, 'a', 'zaowu'))
+        s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zaowu'})
+        self.assertEqual(attack_value(hero(s, 'a', old), s, 'a'), 2)
+        s = self.play(s, 'S02')
+        new = s['sides']['a']['front']
+        self.assertNotEqual(new, old)
+        self.assertNotIn(old, s['sides']['a']['order'])
+        self.assertEqual(attack_value(hero(s, 'a', new), s, 'a'), 0)
+
+    def test_zaowu_summon_bonus_refreshes_without_stacking_and_expires(self):
+        from app.modules.card_game.engine.duel_v2.state import energy_max
+        s = self.play(self.game(), 'S01')
+        cid = s['sides']['a']['front']
+        base = attack_value(hero(s, 'a', cid), s, 'a')
+        hero(s, 'a', 'zaowu')['energy'] = energy_max(hero(s, 'a', 'zaowu'))
+        s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zaowu'})
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base + 2)
+        end_turn(s, 'a')
+        end_turn(s, 'b')
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base + 2)
+        s = self.play(s, 'S08')
+        hero(s, 'a', 'zaowu')['energy'] = energy_max(hero(s, 'a', 'zaowu'))
+        s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zaowu'})
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base + 3)
+        s = clone_state(json.loads(json.dumps(s)))
+        end_turn(s, 'a')
+        end_turn(s, 'b')
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base + 3)
+        end_turn(s, 'a')
+        end_turn(s, 'b')
+        self.assertEqual(s['sides']['a']['front'], cid)
+        self.assertEqual(attack_value(hero(s, 'a', cid), s, 'a'), base)
 
     def test_zaowu_bonus_floors_per_kind(self):
         s = self.game()

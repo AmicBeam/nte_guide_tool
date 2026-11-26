@@ -34,9 +34,12 @@ for (const delta of [{shape_id:null},{shape_id:'unknown'},{shape_id:'J08'},{down
 }
 // Reconstructed historical public state and current state use identical selection.
 assert.equal(api.battlePortrait(JSON.parse(JSON.stringify(equipped))),api.battlePortrait(equipped));
-assert.equal(api.battlePortrait({...original,shape:'预备备'}),'/default.webp'); // No guessed ID in old replays.
+assert.equal(api.battlePortrait({...original,shape:'绵绵飞虎'}),'/default.webp'); // No guessed ID in old replays.
 assert.match(api.battlePortrait({id:'anhunqu',shape_id:'A07'}),/Fashion_1004_1.webp/);
 assert.match(api.battlePortrait({id:'lingke',shape_id:'K07'}),/Fashion_1072_school.webp/);
+assert.match(api.battlePortrait({id:'heiyu',shape_id:'P07'}),/Fashion_1042_1.webp/);
+assert.match(api.battlePortrait({id:'heiyu',shape_id:'P08'}),/Fashion_1042_nighty.webp/);
+assert.equal(api.battlePortrait({id:'heiyu',shape_id:'P08',down_turns:3,portrait:'/default.webp'}),'/default.webp');
 assert.match(api.characterAsset({avatar:'/static/images/characters/avatar/灵可.png'}), /灵可.png\?nte_art=/);
 assert.equal(api.characterAsset({avatar:'/static/kongmu/images/characters/player_yiluoyi_256.webp'}), '/static/kongmu/images/characters/player_yiluoyi_256.webp');
 // Real renderer: updates the same node on equip/change/down, preserving fallback on asset failure.
@@ -49,7 +52,27 @@ for (const [shape,expected] of [['N08','Fashion_1010_nighty.webp'],['N07','Fashi
  assert.ok(node.innerHTML.includes(expected));
  if (shape) {image.onerror();assert.equal(image.src,'/default.webp');assert.equal(image.onerror,null);}
 }
+// Both Heiyu outfits switch on the same node for each side and JSON replay.
+const heiyu={id:'heiyu',name:'黑羽',portrait:'/heiyu-default.webp',hp:6,max_hp:6};
+for (const side of ['a','b']) {
+ for (const [shape,expected,down] of [['P07','Fashion_1042_1.webp',0],['P08','Fashion_1042_nighty.webp',0],[null,'/heiyu-default.webp',0],['P08','/heiyu-default.webp',3]]) {
+  const state=JSON.parse(JSON.stringify({...heiyu,shape_id:shape,down_turns:down}));
+  table.fillCharacterCard(node,state,{side,usePortrait:true});
+  assert.ok(node.innerHTML.includes(expected));
+  if (shape && !down) {image.onerror();assert.equal(image.src,'/heiyu-default.webp');}
+ }
+}
 const hand=table.handCardHtml({character_id:'nanali',name:'测试',type:'form',id:'N08'},{legal:true});
+const elyms={id:'elyms',name:'曳尔沐',portrait:'/elyms-default.webp',hp:5,max_hp:5,signal_level:0};
+for (const side of ['a','b']) {
+ for (const [shape,expected,down] of [['MU06','Fashion_1090_1.webp',0],['MU07','Fashion_1090_2.webp',0],['MU08','Fashion_1090_nighty.webp',0],[null,'/elyms-default.webp',0],['MU08','/elyms-default.webp',3]]) {
+  const state=JSON.parse(JSON.stringify({...elyms,shape_id:shape,down_turns:down}));
+  table.fillCharacterCard(node,state,{side,usePortrait:true});
+  assert.ok(node.innerHTML.includes(expected));
+  if (shape && !down) {image.onerror();assert.equal(image.src,'/elyms-default.webp');}
+ }
+}
+assert.equal(api.battlePortrait({...elyms,shape_id:'P08'}),'/elyms-default.webp');
 assert.ok(!hand.includes('Fashion_'));
 assert.ok(!table.handCardHtml({character_id:'nanali',hidden:true}).includes('Fashion_'));
 // Every selected fashion belongs to its card owner and exists; also covers test-only characters.

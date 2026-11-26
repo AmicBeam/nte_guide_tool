@@ -1,0 +1,1725 @@
+"""Seven-team recovery orchestration. No training or Torch import on import.
+
+All samples come from complete official games. Selection and value checks
+are newly reserved, never replayed into policy training. Readiness is separate
+from strength and from the complete-report specification.
+"""
+from copy import deepcopy
+from hashlib import sha256
+from pathlib import Path
+import json
+import math
+import time
+
+from .seven_schedule import ROSTER, learning_schedule, matrix_schedule, coverage
+
+from .training_config import (
+    COLLECTION_GAMES_PER_REPLICA,
+    COLLECTION_HISTORICAL_GAMES_PER_REPLICA,
+    COLLECTION_REPLICA_SEED_STRIDE,
+    DEFAULT_COLLECTION_REPLICAS,
+    collection_episode_pool_limit,
+    collection_replicas as configured_collection_replicas,
+    collection_uses_historical,
+    planned_complete_games,
+    validate_collection_option,
+)
+
+
+def learning_keys(config):
+    keys = tuple(config.get('learning_keys', ROSTER))
+    if not keys or len(set(keys)) != len(keys) or not set(keys) <= set(ROSTER):
+        raise ValueError('Distinct known learning keys required')
+    return keys
+
+
+def write(path, data):
+    path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + '.tmp')
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2)); tmp.replace(path)
+
+
+def fingerprint():
+    from .seven_checkpoint import algorithm_identity
+    boundary = Path(__file__).parent/'batched_search/device_learning_context.py'
+    return sha256((algorithm_identity()+Path(__file__).read_text()+boundary.read_text()).encode()).hexdigest()
+
+
+def rollout_contract(config):
+    """Frozen sampler parameters and actual GPU parity evidence, independent of optimizer device."""
+    from .batched_search.training_rollout import MAX_SEARCH_ROOTS
+    backend = config.get('rule_backend', 'serial_cpu')
+    if backend not in ('serial_cpu','resident_cpu','cuda_vm'):
+        raise ValueError('Known training rule backend required')
+    roots = config.get('search_roots', MAX_SEARCH_ROOTS)
+    rows = config.get('query_batch_rows', 32)
+    if type(roots) is not int or not 1 <= roots <= MAX_SEARCH_ROOTS or type(rows) is not int or not 1 <= rows <= 32:
+        raise ValueError('Bounded root and query capacities required')
+    result = dict(rule_backend=backend, search_roots=roots, query_batch_rows=rows,
+                  gpu_memory_budget_mib=config.get('gpu_memory_budget_mib'),
+                  guard_standalone_entities=config.get('guard_standalone_entities',False))
+    statistics_device=config.get('search_statistics_device')
+    if statistics_device not in (None,'cuda') or (statistics_device=='cuda' and
+            (backend=='serial_cpu' or config.get('device')!='cuda')):
+        raise ValueError('Explicit CUDA statistics require a cooperative CUDA training path')
+    result['search_statistics_device']=statistics_device
+    async_rules=config.get('async_rule_dispatch')
+    if async_rules is not None and type(async_rules) is not bool:
+        raise ValueError('Boolean or automatic async rule dispatch required')
+    if async_rules is True and backend!='resident_cpu':
+        raise ValueError('Explicit async rules require resident_cpu')
+    result['async_rule_dispatch']=async_rules
+    buffer_mib=config.get('training_buffer_mib',8192)
+    if type(buffer_mib) is not int or buffer_mib < 1:
+        raise ValueError('Positive training trajectory buffer budget required')
+    result['training_buffer_mib']=buffer_mib
+    replicas=configured_collection_replicas(config)
+    historical=collection_uses_historical(config)
+    validate_collection_option(
+        replicas, search_roots=roots, training_buffer_mib=buffer_mib,
+        gpu_memory_budget_mib=config.get('gpu_memory_budget_mib'),
+        rule_backend=backend, runtime=config.get('runtime','seven'), historical=historical)
+    result['collection_replicas']=replicas
+    result['planned_complete_games']=planned_complete_games(replicas)
+    result['planned_historical_complete_games']=planned_complete_games(replicas, historical=True)
+    if backend == 'cuda_vm':
+        from .batched_duel.gpu_rule_program import load_program
+        if config.get('device') != 'cuda' or not config.get('gpu_rule_program'):
+            raise ValueError('Explicit CUDA device and frozen program required')
+        program = load_program(config['gpu_rule_program'],runtime='seven')
+        if 'rule_decision' not in program.entries:
+            raise ValueError('Frozen GPU program lacks the training rule teacher')
+        result['program_identity'] = program.identity
+        evidence = config.get('gpu_validation_report')
+        if not evidence:
+            raise ValueError('Same-program CUDA rule/teacher parity report required')
+        path = Path(evidence); report = json.loads(path.read_text())
+        cases = report.get('cases',[])
+        required = {(key,mulligan) for key in ROSTER for mulligan in (True,False)}
+        if (report.get('device_verified') is not True or report.get('runtime') != 'seven'
+                or report.get('program_identity') != program.identity or report.get('error')
+                or len(cases)!=14 or {(r.get('key'),r.get('mulligan')) for r in cases} != required
+                or not all(r.get('passed') is True and r.get('teacher_passed') is True for r in cases)):
+            raise ValueError('Complete same-source seven-team GPU teacher parity required')
+        result['gpu_validation_sha256'] = sha256(path.read_bytes()).hexdigest()
+    return result
+
+
+def collect_search_batch(pool, jobs, folder, config, **kwargs):
+    from .batched_search.device_learning_context import ClosedDeviceLearningContext
+    if isinstance(pool, ClosedDeviceLearningContext):
+        games = collect(pool, jobs, folder, rollout=pool.collector, **kwargs)
+        diagnostics = getattr(pool.collector, 'last_diagnostics', None)
+        if diagnostics:
+            write(Path(folder)/'search-diagnostics.json', diagnostics)
+        if config.get('preflight'):
+            from .batched_search.training_rollout import verify_training_replay
+            checks = [verify_training_replay(job, game) for job, game in zip(jobs, games)]
+            write(Path(folder)/'gpu-replay-check.json', checks)
+        return games
+    from .batched_search.training_rollout import gpu_training_requested, models_for_jobs, rollout_from_config
+    if not gpu_training_requested(config):
+        return collect(pool,jobs,folder,**kwargs)
+    models = models_for_jobs(jobs)
+    if not jobs:
+        raise ValueError('Non-empty collection batch required')
+    # Live Gumbel roots are a window. Do not drop pending complete games to fit it.
+    bounded = dict(config, max_games=len(jobs), search_roots=min(config['search_roots'],len(jobs)))
+    collector = rollout_from_config(bounded,models)
+    try:
+        games=collect(pool,jobs,folder,rollout=collector,**kwargs)
+    finally:
+        diagnostics = getattr(collector, 'last_diagnostics', None)
+        if diagnostics:
+            write(Path(folder)/'search-diagnostics.json', diagnostics)
+    if config.get('preflight') and config.get('rule_backend')=='cuda_vm':
+        from .batched_search.training_rollout import verify_training_replay
+        checks=[verify_training_replay(job,game) for job,game in zip(jobs,games)]
+        write(Path(folder)/'gpu-replay-check.json',checks)
+    return games
+
+
+def play(job):
+    from .policy_runtime import search_game
+    return search_game(job)
+
+
+def versions(folder):
+    from .policy_runtime import model
+    return {key: model(folder, key).version for key in ROSTER}
+
+
+def jobs_for(models, decks, base, deadline, *, pure=True, cycle=0, mirrors=True, report=None,
+             simulations=32, historical=None,teacher_mode='network',covered_value_source=None,
+             keys=None,q_scale='natural_wdl'):
+    if type(q_scale) is not str or q_scale not in ('natural_wdl','mctx_default'):
+        raise ValueError('Known seven-team Q profile required')
+    from .build_acceptance import canonical_build
+    decks={key:canonical_build(build) for key,build in decks.items()}
+    selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
+    plan = learning_schedule()
+    if mirrors:
+        plan += [dict(left=k, right=k, first=f) for k in ROSTER for f in ('a', 'b')]
+    jobs = []
+    for i, item in enumerate(plan):
+        sides = [s for s, key in (('a', item['left']), ('b', item['right'])) if key in selected]
+        if not sides:
+            continue
+        j = dict(item, id=f'cycle-{cycle}-{i}', seed=base+i//2, pure=pure,
+                 policies={'a': (str(models), item['left']), 'b': (str(models), item['right'])},
+                 decks={'a': decks[item['left']], 'b': decks[item['right']]},
+                 deadline=deadline, training=not pure, train_sides=sides,
+                 q_scale=q_scale, value_precheck=report, simulations=simulations,teacher_mode=teacher_mode,
+                 covered_value_source=covered_value_source,
+                 gumbel_candidates=16, terminal_horizon=0 if teacher_mode in ('covered_terminal','covered_expert') else 3, max_actions=800)
+        if historical:
+            for learner in sides:
+                clone = deepcopy(j); enemy = 'b' if learner == 'a' else 'a'
+                clone['id'] += learner; clone['train_sides'] = [learner]
+                clone['policies'][enemy] = (str(historical), clone['policies'][enemy][1])
+                jobs.append(clone)
+        else:
+            jobs.append(j)
+    return jobs
+
+
+def collection_jobs(models, decks, base, deadline, *, replicas=DEFAULT_COLLECTION_REPLICAS, **kwargs):
+    """One frozen snapshot, unique complete games. Replica 0 keeps the default ids/seeds."""
+    replicas = configured_collection_replicas(value=replicas)
+    jobs = []
+    for replica in range(replicas):
+        replica_jobs = jobs_for(models, decks, base + replica * COLLECTION_REPLICA_SEED_STRIDE, deadline, **kwargs)
+        for job in replica_jobs:
+            job['collection_replica'] = replica
+            if replica:
+                job['id'] = '%s-r%s' % (job['id'], replica)
+        jobs.extend(replica_jobs)
+    return jobs
+
+
+def learning_collection_jobs(models, decks, config, cycle, deadline, *, historical=None, report=None):
+    replicas = configured_collection_replicas(config)
+    jobs = collection_jobs(
+        models, decks, config['seeds']['foundation'] + cycle * 10000, deadline,
+        replicas=replicas, pure=False, cycle=cycle, report=report,
+        simulations=config['simulations'], historical=historical,
+        teacher_mode=config.get('teacher_mode', 'network'),
+        covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl'))
+    if config.get('preflight'):
+        for replica in range(1, config.get('preflight_replicas', 1)):
+            jobs += jobs_for(
+                models, decks, config['seeds']['foundation'] + cycle * 10000 + replica * 100,
+                deadline, pure=False, cycle=replica + 1000, report=report,
+                simulations=config['simulations'], teacher_mode=config.get('teacher_mode', 'network'),
+                covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl'))
+        # Extra collection groups must not enter the existing independent
+        # capacity seed block when callers supply their own reservation.
+        held_base=config['seeds']['probes']+10000
+        held_seeds={held_base+replica*100+index//2
+                    for replica in range(config.get('preflight_replicas',1))
+                    for index in range(COLLECTION_GAMES_PER_REPLICA)}
+        if held_seeds & {job['seed'] for job in jobs}:
+            raise ValueError('Collection and independent capacity seed blocks overlap')
+    return jobs
+
+
+def capacity_heldout_jobs(models, decks, config, deadline, report=None):
+    jobs = jobs_for(
+        models, decks, config['seeds']['probes'] + 10000, deadline,
+        pure=False, cycle=100, report=report, simulations=config['simulations'],
+        teacher_mode=config.get('teacher_mode', 'network'),
+        covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl'))
+    for replica in range(1, config.get('preflight_replicas', 1)):
+        jobs += jobs_for(
+            models, decks, config['seeds']['probes'] + 10000 + replica * 100,
+            deadline, pure=False, cycle=replica + 2000, report=report,
+            simulations=config['simulations'], teacher_mode=config.get('teacher_mode', 'network'),
+            covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl'))
+    for job in jobs:
+        job.update(training=False, exploration=True, data_partition='capacity_heldout')
+    return jobs
+
+
+def collection_pool_limit(config):
+    return collection_episode_pool_limit(configured_collection_replicas(config))
+
+
+def expected_preflight_learning_games(config_or_receipt):
+    replicas = configured_collection_replicas(config_or_receipt)
+    extra = max(0, config_or_receipt.get('preflight_replicas', 1) - 1)
+    return COLLECTION_GAMES_PER_REPLICA * (replicas + extra)
+
+
+def projected_learning_work(config, receipt, *, resume=False, completed_batches=0):
+    replicas = configured_collection_replicas(config)
+    games = COLLECTION_GAMES_PER_REPLICA * replicas
+    planned = config['planned_batches']
+    if type(completed_batches) is not int or not 0 <= completed_batches <= planned:
+        raise ValueError('Validated completed batch count required')
+    if not resume and completed_batches:
+        raise ValueError('Fresh learning cannot inherit completed batches')
+    batches = planned - completed_batches
+    historical_batches = planned // 4 - completed_batches // 4
+    per_cycle = (
+        games * receipt['search_seconds_per_game']
+        + receipt['update_and_numeric_seconds']
+        + config['gate_roots'] / receipt['gate_roots'] * receipt['pure_gate_seconds']
+        + 2 * receipt['selected_value_seconds']
+        + config['search_gate_roots'] * 224 * receipt['search_seconds_per_game'])
+    needed = (receipt['selected_value_seconds'] + per_cycle * batches
+              + games * receipt['search_seconds_per_game'] * historical_batches) * 1.25
+    needed_eval = receipt['search_seconds_per_game'] * 49 * config['matrix_games'] * 2 * 1.25
+    return dict(
+        collection_replicas=replicas,
+        planned_complete_games=games,
+        planned_historical_complete_games=COLLECTION_HISTORICAL_GAMES_PER_REPLICA * replicas,
+        per_cycle=per_cycle, needed=needed, needed_eval=needed_eval)
+
+
+def collect(pool, jobs, folder, *, learning=False, require_search=False, rollout=None):
+    from .episode_replay import dump_episode
+    from .batched_search.device_learning_context import ClosedDeviceLearningContext
+    from .batched_search.device_learning_context import DeviceValueCalibrationContext
+    folder = Path(folder); records = []; games = []
+    if isinstance(pool, (ClosedDeviceLearningContext, DeviceValueCalibrationContext)):
+        if rollout is not None and rollout is not pool.collector:
+            raise ValueError('Closed collection cannot substitute a cooperative rollout')
+        rollout = pool.collector
+    results = list(rollout.collect(jobs) if rollout is not None else pool.map(play, jobs))
+    if len(results) != len(jobs):
+        raise ValueError('Collection omitted or duplicated jobs')
+    for job, result in zip(jobs, results):
+        record = {k: job[k] for k in ('id', 'seed', 'first', 'left', 'right') if k in job}
+        record.update(complete=result['complete'], winner=result.get('winner'), reason=result.get('reason'),
+                      rule_backend=result.get('rule_backend','serial_cpu'),
+                      final_state_sha256=result.get('final_state_sha256'))
+        records.append(record)
+        if result['complete']:
+            if (learning and not result['learning_eligible']) or ((learning or require_search) and
+                    (result['decisions'] != result['searched'] or result['searched'] != len(result['rows']))):
+                raise ValueError('Complete search labels required')
+            dump_episode(folder / 'episodes' / f"{job['id']}.json.gz", job, result)
+        games.append(result)
+    write(folder / 'games.json', records)
+    if not games or not all(g['complete'] for g in games):
+        raise ValueError('Incomplete phase; no partial result grants readiness')
+    return games
+
+
+def value_metrics(games, policies, *, backend='numpy', device=None):
+    if backend == 'cuda_batched':
+        if device != 'cuda':
+            raise ValueError('CUDA metrics cannot silently use a CPU device')
+        from .seven_value_metrics import compute
+        return compute(games, policies, device=device)
+    if backend != 'numpy':
+        raise ValueError('Unknown WDL metric backend')
+    from scripts.check_duel_v2_value_calibration import probability_metrics
+    result = {}
+    for key, policy in policies.items():
+        probabilities = []; labels = []; weights = []; count = 0
+        for game in games:
+            rows = [r for r in game['value_rows'] if r['key'] == key]
+            if not rows: continue
+            count += 1
+            for row in rows:
+                probabilities.append(policy.wdl(row['x'], row['value_actor']))
+                labels.append(int(row['z'])+1); weights.append(1/len(rows))
+        result[key] = dict(**probability_metrics(probabilities, labels, weights), normal_games=count)
+    return result
+
+
+def value_calibration_protocol(config):
+    """A readiness receipt binds the exact calibration method and sample budget."""
+    full = config.get('value_full_tower', False)
+    return dict(full_tower=full, train_replicas=config.get('value_replicas', 2),
+                check_replicas=config.get('value_check_replicas', 1),
+                epoch_candidates=[1, 2, 4, 8] if full else [config.get('value_passes', 16)],
+                temperature_candidates=[1., 2., 4.])
+
+
+def _value_fit_bank_hash(folder):
+    folder=Path(folder)
+    return {key+ext:sha256((folder/(key+ext)).read_bytes()).hexdigest()
+            for key in ROSTER for ext in('.json','.npz')}
+
+
+def _value_fit_digest(value):
+    from .device_auxiliary_continuation import auxiliary_content_sha256
+    return auxiliary_content_sha256(value)
+
+
+def _value_fit_new_json(path,data):
+    """One owned writer, atomic new final receipt; never overwrite evidence."""
+    import os
+    from uuid import uuid4
+    path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+    lock=path.with_name(path.name+'.lock')
+    claim=os.open(lock,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);temporary=None
+    try:
+        os.close(claim)
+        if path.exists():raise ValueError('Existing value-fit receipt cannot be overwritten')
+        temporary=path.with_name(path.name+'.'+uuid4().hex+'.tmp')
+        with temporary.open('x',encoding='utf8')as stream:
+            json.dump(data,stream,ensure_ascii=False,indent=2,allow_nan=False);stream.flush();os.fsync(stream.fileno())
+        os.replace(temporary,path);temporary=None
+    finally:
+        if temporary is not None:temporary.unlink(missing_ok=True)
+        lock.unlink(missing_ok=True)
+
+
+def _value_fit_binding(models,nets,decks,origins,config,protocol,cycle,seed_offset,games):
+    import numpy as np
+    from . import policy_runtime as rt
+    from .build_acceptance import SEED_PHASES,canonical_build
+    from .seven_lineup import identity
+    if (set(config['seeds'])!=set(SEED_PHASES)or any(type(v)is not int or v<0 for v in config['seeds'].values())
+            or config['rule_hash']!=identity()):
+        raise ValueError('Complete actual seed reservation and current rule identity required')
+    if set(nets)!=set(ROSTER)or set(decks)!=set(ROSTER)or set(origins)!=set(ROSTER):
+        raise ValueError('All seven actual value-fit heads/builds/origins required')
+    sources={str(Path(models).resolve()):_value_fit_bank_hash(models)}
+    if config.get('recovery_source'):
+        directory=Path(config['recovery_source']).resolve();sources[str(directory)]=_value_fit_bank_hash(directory)
+    for key,net in nets.items():
+        model=rt.model(models,key)
+        if canonical_build(model.serving_deck)!=canonical_build(decks[key]):
+            raise ValueError('Value-fit explicit starting build differs from actual source')
+        if set(net.state_dict())!=set(model.weights):raise ValueError('Value-fit input tensor schema differs from source bank')
+        for name,tensor in net.state_dict().items():
+            # Initial value tensors may already be selected when callers retry
+            # in the same live process; policy inputs must always stay frozen.
+            if not name.startswith(('wdl.','value_net.')):
+                np.testing.assert_array_equal(tensor.detach().cpu().numpy(),model.weights[name])
+    return dict(schema='seven_value_fit_binding_v1',source_banks=sources,
+        source_versions=versions(models),starting_decks=deepcopy(decks),origins=deepcopy(origins),
+        seeds=deepcopy(config['seeds']),cycle=cycle,seed_offset=seed_offset,protocol=deepcopy(protocol),
+        rule_hash=config['rule_hash'],metric_backend=config.get('value_metric_backend','numpy'),
+        device=config['device'],train_evidence_sha256=_value_fit_digest(games))
+
+
+def _value_fit_read(folder,binding,nets,selection,full):
+    import numpy as np
+    import torch
+    from . import policy_runtime as rt
+    path=folder/'value-fit-checkpoint.json';start=folder/'value-fit-start.json'
+    if not path.exists():
+        if start.exists()or any((folder/name).exists()for name in('models','candidates','uncalibrated','value-precheck.json')):
+            raise ValueError('Incomplete/orphan value fitting cannot be replayed or overwritten')
+        _value_fit_new_json(start,dict(binding=binding,status='fitting'))
+        return None
+    marker=json.loads(path.read_text());expected=marker.pop('receipt_sha256',None)
+    if expected!=sha256(json.dumps(marker,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest():
+        raise ValueError('Value-fit checkpoint receipt changed')
+    marker['receipt_sha256']=expected
+    if (marker.get('schema')!='seven_value_fit_checkpoint_v1'or marker.get('status')!='complete'
+            or marker.get('binding')!=binding or not start.exists()
+            or json.loads(start.read_text())!=dict(binding=binding,status='fitting')
+            or marker.get('models')!=_value_fit_bank_hash(folder/'models')):
+        raise ValueError('Value-fit source/seeds/build/protocol/evidence or selected bank changed')
+    if set(marker.get('temperatures',{}))!=set(ROSTER)or set(marker.get('updates',{}))!=set(ROSTER):
+        raise ValueError('All seven original chosen heads and counts required')
+    if full:
+        if set(marker.get('selected_epochs',{}))!=set(ROSTER)or marker['selection_evidence_sha256']!=_value_fit_digest(selection):
+            raise ValueError('Value-fit selection evidence/epoch choices changed')
+    elif marker.get('uncalibrated_models')!=_value_fit_bank_hash(folder/'uncalibrated'):
+        raise ValueError('Value-fit original uncalibrated bank changed')
+    for key,net in nets.items():
+        if marker['temperatures'][key]not in binding['protocol']['temperature_candidates']:
+            raise ValueError('Original value-fit temperature outside protocol')
+        count=marker['updates'][key]
+        if (set(count)!={'total_attempted','selected'}or any(type(v)is not int or v<1 for v in count.values())
+                or count['selected']>count['total_attempted']):raise ValueError('Actual original optimizer counts required')
+        if full and marker['selected_epochs'][key]not in binding['protocol']['epoch_candidates']:
+            raise ValueError('Original value-fit epoch outside protocol')
+        selected=rt.model(folder/'models',key)
+        origin=selected.manifest['origin']
+        if (origin.get('value_temperature')!=marker['temperatures'][key]
+                or(full and(origin.get('value_epoch')!=marker['selected_epochs'][key]
+                             or origin.get('value_calibration')!=binding['protocol']))):
+            raise ValueError('Selected bank differs from original fit epoch/temperature protocol')
+        with torch.no_grad():
+            for name,tensor in net.state_dict().items():
+                if name.startswith(('wdl.','value_net.')):
+                    tensor.copy_(torch.as_tensor(selected.weights[name].copy(),device=tensor.device,dtype=tensor.dtype))
+                else:np.testing.assert_array_equal(tensor.detach().cpu().numpy(),selected.weights[name])
+    return marker
+
+
+def _value_fit_finish(folder,binding,selection,chosen,epochs,counts,full):
+    for directory,signature in binding['source_banks'].items():
+        if _value_fit_bank_hash(directory)!=signature:raise ValueError('Original value-fit source bank changed')
+    marker=dict(schema='seven_value_fit_checkpoint_v1',status='complete',binding=binding,
+        models=_value_fit_bank_hash(folder/'models'),temperatures=chosen,selected_epochs=epochs,updates=counts,
+        selection_evidence_sha256=_value_fit_digest(selection),
+        uncalibrated_models=None if full else _value_fit_bank_hash(folder/'uncalibrated'))
+    marker['receipt_sha256']=sha256(json.dumps(marker,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+    _value_fit_new_json(folder/'value-fit-checkpoint.json',marker)
+    return marker
+
+
+class ValueFitPaused(RuntimeError):
+    """A clean numeric value-fit boundary; never partial heldout qualification."""
+    def __init__(self,folder,checkpoint,progress):
+        self.folder=Path(folder);self.checkpoint=str(checkpoint);self.progress=progress
+        super().__init__('Value fitting paused at durable numeric boundary: '+self.checkpoint)
+
+
+def _value_fit_cpu(value):
+    import torch
+    if isinstance(value,torch.Tensor):return value.detach().cpu().clone()
+    if isinstance(value,dict):return{k:_value_fit_cpu(v)for k,v in value.items()}
+    if isinstance(value,list):return[_value_fit_cpu(v)for v in value]
+    if isinstance(value,tuple):return tuple(_value_fit_cpu(v)for v in value)
+    return deepcopy(value)
+
+
+class _ValueFitProcess:
+    """One Adam batch, temperature, epoch, export, or heldout-key per unit.
+
+    READY snapshots use the safe numerical NPZ codec. RUNNING before effects,
+    then a new immutable snapshot and atomic head, prevents duplicate updates.
+    A killed/failed unit remains rejected, never retried from an older head.
+    """
+    def __init__(self,folder,binding,nets,decks,origins,games,selection,metric_fn,deadline,stop,authorization,frozen):
+        import torch
+        from .batched_search.pure_checkpoint import read_payload,write_payload
+        self.t=torch;self.read_payload=read_payload;self.write_payload=write_payload
+        self.folder=folder;self.root=folder/'value-fit-process';self.head=self.root/'head.json'
+        self.running=self.root/'RUNNING.json';self.rejected=self.root/'REJECTED.json';self.owner=self.root/'OWNER'
+        self.binding=binding;self.nets=nets;self.decks=decks;self.origins=origins;self.games=games;self.frozen=frozen
+        self.selection=selection;self.metric_fn=metric_fn;self.deadline=deadline;self.stop=stop
+        import inspect
+        self.contract=dict(schema='main_value_fit_units_v1',binding=binding,
+            selection_evidence_sha256=_value_fit_digest(selection),teams=list(nets),
+            updater='seven_runtime.update_value_only_Adam_lr0.0003_batch128_equal_games',
+            implementation=sha256(inspect.getsource(type(self)).encode()).hexdigest())
+        self.contract=json.loads(json.dumps(self.contract,sort_keys=True,allow_nan=False))
+        self._active=None;self._opt=None;self._rng=None;self._rows=None;self._owned=False
+        if self.head.exists():
+            if self.running.exists()or self.rejected.exists()or self.owner.exists():
+                raise ValueError('Uncertain/rejected value-fit unit cannot be replayed')
+            self.record=json.loads(self.head.read_text())
+            if self.record.get('status')!='READY':raise ValueError('Value-fit process head is not an actual READY boundary')
+            if self.record['contract']!=self.contract:raise ValueError('Value-fit process input/protocol/evidence changed')
+            previous=self.record['deadline']
+            if deadline!=previous:
+                if deadline<=previous or not isinstance(authorization,str)or not authorization.strip():
+                    raise ValueError('Explicit future value-fit budget authorization required')
+                self.record['budgets'].append(dict(before=previous,after=deadline,authorization=authorization.strip()))
+                self.record['deadline']=deadline
+            revisions=sorted(self.root.glob('revision-*'))
+            if not revisions or revisions[-1].name!=self.record['checkpoint']:
+                raise ValueError('Value-fit process checkpoint rewind/orphan rejected')
+            path=self.root/self.record['checkpoint']
+            if sha256((path/'manifest.json').read_bytes()).hexdigest()!=self.record['manifest_sha256']:
+                raise ValueError('Value-fit numeric checkpoint head changed')
+            self.state=read_payload(path,self.contract,kind='main_value_fit')
+            if self._inventory()!=self.state['outputs']:raise ValueError('Completed value-fit artifacts changed')
+            self._restore_rng();write(self.head,self.record)
+        else:
+            if self.root.exists():raise ValueError('Incomplete value-fit numeric journal cannot be restarted')
+            final=folder/'value-fit-checkpoint.json'
+            if not final.exists()and any((folder/name).exists()for name in('value-fit-start.json','models','candidates','value-precheck.json')):
+                raise ValueError('Legacy uncertain value fitting cannot become a numeric resume')
+            self.root.mkdir(parents=True)
+            if not final.exists():_value_fit_new_json(folder/'value-fit-start.json',dict(binding=binding,status='fitting'))
+            self.record=dict(contract=self.contract,deadline=deadline,budgets=[],revision=-1)
+            self.state=dict(phase='fit',team=0,epoch=1,offset=0,permutation=None,temperature=0,
+                net=None,optimizer=None,numpy_rng=None,best=None,updates=0,chosen={},epochs={},counts={},
+                metrics={},metric_cursor=0,held_evidence=None,torch_rng=torch.get_rng_state(),
+                cuda_rng=[v.cpu()for v in torch.cuda.get_rng_state_all()]if torch.cuda.is_initialized()else[],outputs=self._inventory())
+            if final.exists():
+                marker=_value_fit_read(folder,binding,nets,selection,True)
+                self.state.update(phase='fit_complete',team=len(nets),chosen=marker['temperatures'],
+                                  epochs=marker['selected_epochs'],counts=marker['updates'])
+            self._commit()
+        self._restore_completed()
+
+    def _inventory(self):
+        paths=[]
+        for name in('models','candidates'):
+            if(self.folder/name).exists():paths.extend(p for p in(self.folder/name).rglob('*')if p.is_file())
+        paths.extend(self.folder/name for name in('value-fit-start.json','value-fit-checkpoint.json',
+                     'value-precheck.json','value-precheck-complete.json')if(self.folder/name).is_file())
+        return{p.relative_to(self.folder).as_posix():sha256(p.read_bytes()).hexdigest()for p in paths}
+
+    def _register(self,paths):
+        for path in paths:self.state['outputs'][path.relative_to(self.folder).as_posix()]=sha256(path.read_bytes()).hexdigest()
+
+    def _restore_rng(self):
+        self.t.set_rng_state(self.state['torch_rng'])
+        if self.state['cuda_rng']:
+            if not self.t.cuda.is_initialized():raise ValueError('Recorded CUDA RNG requires actual existing CUDA context')
+            self.t.cuda.set_rng_state_all(self.state['cuda_rng'])
+
+    def _restore_completed(self):
+        from . import policy_runtime as rt
+        for key in self.state['chosen']:
+            model=rt.model(self.folder/'models',key)
+            self._copy_heads(self.nets[key],model.weights)
+
+    def _copy_heads(self,net,values):
+        with self.t.no_grad():
+            for name,tensor in net.state_dict().items():
+                if name.startswith(('wdl.','value_net.')):
+                    value=values[name]
+                    if not isinstance(value,self.t.Tensor):value=self.t.as_tensor(value.copy())
+                    tensor.copy_(value.to(device=tensor.device,dtype=tensor.dtype))
+
+    def _progress(self):
+        return dict(phase=self.state['phase'],team=self.state['team'],epoch=self.state['epoch'],
+            offset=self.state['offset'],temperature=self.state['temperature'],metric_cursor=self.state['metric_cursor'],
+            actual_value_updates=sum(v['total_attempted']for v in self.state['counts'].values())+self.state['updates'])
+
+    def _pause(self):raise ValueFitPaused(self.folder,self.root/self.record['checkpoint'],self._progress())
+
+    def _admit(self,label,reserve=5.):
+        import os
+        if min(self.stop-time.monotonic(),self.deadline-time.time())<reserve+5:self._pause()
+        claim=os.open(self.owner,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(claim)
+        if json.loads(self.head.read_text())!=self.record:
+            self.owner.unlink();raise ValueError('Concurrent/stale value-fit worker rejected before effects')
+        self._owned=True
+        write(self.running,dict(checkpoint=self.record['checkpoint'],unit=label,status='RUNNING'))
+
+    def _commit(self):
+        if self._owned and(time.monotonic()>=self.stop or time.time()>=self.deadline):
+            raise TimeoutError('Started value-fit unit exceeded its explicit process/absolute budget')
+        self.state['torch_rng']=self.t.get_rng_state()
+        self.state['cuda_rng']=[v.cpu()for v in self.t.cuda.get_rng_state_all()]if self.t.cuda.is_initialized()else[]
+        self.record['revision']+=1;name='revision-%06d'%self.record['revision']
+        self.write_payload(self.root/name,self.state,self.contract,kind='main_value_fit')
+        self.record.update(checkpoint=name,status='READY',manifest_sha256=sha256((self.root/name/'manifest.json').read_bytes()).hexdigest())
+        write(self.head,self.record)
+        self.running.unlink(missing_ok=True);self.owner.unlink(missing_ok=True);self._owned=False
+
+    def _reject(self,error):
+        if self._owned:
+            write(self.rejected,dict(status='REJECTED',error=repr(error),checkpoint=self.record['checkpoint']))
+            self.owner.unlink(missing_ok=True);self._owned=False
+
+    def _activate(self,key):
+        import numpy as np
+        if self._active==key:return
+        net=self.nets[key];self._opt=self.t.optim.Adam(list(net.wdl.parameters())+list(net.value_net.parameters()),lr=.0003)
+        rows=[r for game in self.games for r in game['value_rows']if r['key']==key]
+        represented=[game for game in self.games if any(r['key']==key for r in game['value_rows'])]
+        if not rows:raise ValueError('Missing complete value-fit rows')
+        self._rows=[dict(r,sample_weight=len(rows)/len(represented)/len(own))
+            for game in represented for own in[[r for r in game['value_rows']if r['key']==key]]for r in own]
+        self._rng=np.random.default_rng(self.binding['seeds']['adaptation']+self.binding['cycle']*10000)
+        if self.state['net']is not None:
+            self._copy_heads(net,self.state['net']);self._opt.load_state_dict(self.state['optimizer'])
+            self._rng.bit_generator.state=self.state['numpy_rng']
+        self._active=key
+
+    def _save_net(self,net):
+        self.state.update(net=_value_fit_cpu({n:t for n,t in net.state_dict().items()if n.startswith(('wdl.','value_net.'))}),
+            optimizer=_value_fit_cpu(self._opt.state_dict()),numpy_rng=deepcopy(self._rng.bit_generator.state))
+
+    def _export(self,net,target,key,origin):
+        from . import policy_runtime as rt
+        paths=[target/(key+ext)for ext in('.json','.npz')]
+        if any(p.exists()for p in paths):raise ValueError('Completed numerical value-fit artifact cannot be overwritten')
+        rt.export(net,target,key,self.decks[key],origin);self._register(paths)
+
+    def fit(self):
+        from . import policy_runtime as rt
+        try:
+            while self.state['phase']=='fit':
+                s=self.state
+                if s['team']==len(self.nets):
+                    self._admit('selected-seven-bank',5)
+                    marker=_value_fit_finish(self.folder,self.binding,self.selection,s['chosen'],s['epochs'],s['counts'],True)
+                    self._register([self.folder/'value-fit-checkpoint.json']);s['phase']='fit_complete';self._commit();break
+                key=list(self.nets)[s['team']];self._activate(key);net=self.nets[key]
+                if s['epoch']>max(self.binding['protocol']['epoch_candidates']):
+                    self._admit('selected-'+key,5)
+                    best=s['best'];self._copy_heads(net,best['heads'])
+                    if any(not self.t.equal(value,self.frozen[key][name])
+                           for name,value in net.state_dict().items()if not name.startswith(('wdl.','value_net.'))):
+                        raise ValueError('Value fitting changed frozen policy tensors')
+                    self._export(net,self.folder/'models',key,dict(self.origins[key],value_temperature=best['score'][2],
+                        value_epoch=best['score'][1],value_calibration=self.binding['protocol']))
+                    s['chosen'][key]=best['score'][2];s['epochs'][key]=best['score'][1]
+                    s['counts'][key]=dict(total_attempted=s['updates'],selected=best['updates'])
+                    s.update(team=s['team']+1,epoch=1,offset=0,permutation=None,temperature=0,net=None,
+                        optimizer=None,numpy_rng=None,best=None,updates=0)
+                    self._active=None;self._commit();continue
+                if s['offset']<len(self._rows):
+                    self._admit('batch-'+key,3)
+                    if s['permutation']is None:s['permutation']=self._rng.permutation(len(self._rows))
+                    indexes=s['permutation'][s['offset']:s['offset']+128]
+                    net.zero_grad(set_to_none=True);rt.update(net,self._opt,[self._rows[int(i)]for i in indexes],value_only=True)
+                    s['offset']+=len(indexes);s['updates']+=1;self._save_net(net);self._commit();continue
+                if s['epoch']in self.binding['protocol']['epoch_candidates']and s['temperature']<3:
+                    self._admit('temperature-'+key,15)
+                    temperature=self.binding['protocol']['temperature_candidates'][s['temperature']]
+                    weight,bias=net.wdl.weight.detach().clone(),net.wdl.bias.detach().clone()
+                    with self.t.no_grad():net.wdl.weight.copy_(weight/temperature);net.wdl.bias.copy_(bias/temperature)
+                    target=self.folder/'candidates'/f"epoch-{s['epoch']}-temperature-{temperature}"
+                    self._export(net,target,key,self.origins[key]);metric=self.metric_fn(self.selection,{key:rt.model(target,key)})[key]
+                    if not math.isfinite(metric['log_loss']):raise ValueError('Nonfinite original selection metric')
+                    score=(metric['log_loss'],s['epoch'],temperature)
+                    if s['best']is None or score<tuple(s['best']['score']):
+                        s['best']=dict(score=score,heads=_value_fit_cpu({n:t for n,t in net.state_dict().items()
+                            if n.startswith(('wdl.','value_net.'))}),updates=s['updates'])
+                    with self.t.no_grad():net.wdl.weight.copy_(weight);net.wdl.bias.copy_(bias)
+                    s['temperature']+=1;self._save_net(net);self._commit();continue
+                self._admit('epoch-'+key,1);s.update(epoch=s['epoch']+1,offset=0,permutation=None,temperature=0)
+                self._save_net(net);self._commit()
+            return _value_fit_read(self.folder,self.binding,self.nets,self.selection,True)
+        except ValueFitPaused:raise
+        except BaseException as error:self._reject(error);raise
+
+    def heldout_metrics(self,held,policies):
+        digest=_value_fit_digest(held)
+        if self.state['held_evidence']is None:
+            self._admit('heldout-input',1);self.state.update(held_evidence=digest,phase='heldout_metrics');self._commit()
+        elif self.state['held_evidence']!=digest:raise ValueError('Original heldout evidence changed during value-fit resume')
+        try:
+            while self.state['metric_cursor']<len(ROSTER):
+                key=ROSTER[self.state['metric_cursor']];self._admit('heldout-'+key,15)
+                self.state['metrics'][key]=self.metric_fn(held,{key:policies[key]})[key]
+                self.state['metric_cursor']+=1;self._commit()
+            return deepcopy(self.state['metrics'])
+        except ValueFitPaused:raise
+        except BaseException as error:self._reject(error);raise
+
+    def begin_report(self):self._admit('value-precheck-report',3)
+
+    def finish_report(self):
+        try:
+            self._register([self.folder/'value-precheck.json',self.folder/'value-precheck-complete.json'])
+            self.state['phase']='complete';self._commit()
+        except BaseException as error:self._reject(error);raise
+
+
+class ValueFitReady(RuntimeError):
+    """Collection-only boundary; no optimizer or fit receipt has been started."""
+    def __init__(self,folder,phase_games):
+        self.folder=Path(folder);self.phase_games=phase_games
+        super().__init__('Value calibration collection is ready for fitting: '+str(folder))
+
+
+def warm_value(pool, nets, decks, origins, models, folder, config, cycle, deadline,*,seed_offset=0,
+               keys=None):
+    """Separate value training, selection, and heldout; policy arrays are frozen."""
+    entered=time.monotonic()
+    import numpy as np
+    import torch
+    from . import policy_runtime as rt
+    checkpoint_enabled=config.get('value_fit_checkpoint',False)
+    if type(checkpoint_enabled)is not bool:raise TypeError('Explicit value-fit checkpoint boolean required')
+    if seed_offset not in (0,6000):raise ValueError('Declared disjoint value seed slot required')
+    protocol = value_calibration_protocol(config)
+    selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
+    if set(nets) != set(selected):
+        raise ValueError('Value calibration networks must match the explicit selected keys')
+    if set(selected) != set(ROSTER) and checkpoint_enabled:
+        raise ValueError('Scoped value fitting requires a fresh once-only stage; persistent seven-head fit is separate')
+    process_seconds=config.get('value_fit_process_seconds')
+    process_stop=None
+    if process_seconds is not None:
+        if (type(process_seconds)not in(int,float)or not 0<process_seconds<=150
+                or not checkpoint_enabled or not protocol['full_tower']):
+            raise ValueError('Bounded persistent value fitting requires full tower/checkpoint and at most150seconds')
+        process_stop=entered+process_seconds
+        if config.get('value_fit_process_stop')is not None:
+            stop=config['value_fit_process_stop']
+            if type(stop)not in(int,float)or not math.isfinite(stop):raise ValueError('Finite process monotonic stop required')
+            process_stop=min(process_stop,stop)
+    collect_only=config.get('value_fit_collect_only',False)
+    if type(collect_only)is not bool or (collect_only and not(checkpoint_enabled and protocol['full_tower'])):
+        raise ValueError('Collection-only fit boundary requires persistent full-tower calibration')
+    metric_fn = value_metrics
+    if config.get('value_metric_backend', 'numpy') != 'numpy':
+        from functools import partial
+        metric_fn = partial(value_metrics, backend=config['value_metric_backend'], device=config['device'])
+    full = protocol['full_tower']
+    folder = Path(folder); before = {k: {n: t.detach().clone() for n, t in net.state_dict().items()
+                                       if not n.startswith(('wdl.', 'value_net.'))} for k, net in nets.items()}
+    if set(selected) != set(ROSTER):
+        import shutil
+        (folder/'models').mkdir(parents=True, exist_ok=True)
+        for key in set(ROSTER) - set(selected):
+            for extension in ('.json', '.npz'):
+                target = folder/'models'/(key+extension)
+                if target.exists():
+                    raise ValueError('Scoped value calibration requires a new frozen-bank output')
+                shutil.copyfile(Path(models)/(key+extension), target)
+    if not checkpoint_enabled and any((folder/name).exists()for name in
+            ('value-fit-start.json','value-fit-checkpoint.json','value-precheck-complete.json')):
+        raise ValueError('Persistent value-fit evidence cannot be bypassed by disabling its checkpoint')
+    if full and any(not hasattr(n, 'value_net') for n in nets.values()):
+        raise ValueError('Full calibration requires a separate value tower')
+    # Disjoint per-cycle 10k blocks; each phase uses fewer than 1k roots.
+    train_jobs = []
+    for replica in range(config['value_replicas']):
+        train_jobs += jobs_for(models, decks, config['seeds']['adaptation']+cycle*10000+replica*100+seed_offset,
+                              deadline, cycle=replica,q_scale=config.get('q_scale','natural_wdl'))
+    games = collect(pool, train_jobs, folder / 'train')
+    def check_jobs(source, base):
+        return [j for replica in range(protocol['check_replicas'])
+                for j in jobs_for(source, decks, base+replica*100, deadline, cycle=replica,q_scale=config.get('q_scale','natural_wdl'))]
+    # Argmax trajectories depend only on unchanged policy arrays. Collect once;
+    # neither the epoch grid nor temperature grid can change these opponents.
+    selection = collect(pool, check_jobs(models,
+        config['seeds']['selection']+cycle*10000+seed_offset), folder / 'selection') if full else None
+    fit_binding=(_value_fit_binding(models,nets,decks,origins,config,protocol,cycle,seed_offset,games)
+                 if checkpoint_enabled else None)
+    if collect_only and not(folder/'value-fit-checkpoint.json').exists():
+        if (folder/'value-fit-start.json').exists():
+            raise ValueError('Uncertain value fitting cannot become a collection-only pause')
+        raise ValueFitReady(folder,dict(training=len(games),selection=len(selection),heldout=0))
+    fit_process=None
+    if process_stop is not None:
+        fit_process=_ValueFitProcess(folder,fit_binding,nets,decks,origins,games,selection,metric_fn,
+            deadline,process_stop,config.get('value_fit_resume_authorization'),before)
+        fit_marker=fit_process.fit()
+    else:
+        if(folder/'value-fit-process').exists():raise ValueError('Persistent numeric value fitting cannot be bypassed')
+        fit_marker=(_value_fit_read(folder,fit_binding,nets,selection,full)if checkpoint_enabled else None)
+    if fit_marker is not None:
+        chosen=deepcopy(fit_marker['temperatures']);chosen_epochs=deepcopy(fit_marker['selected_epochs'])
+        update_counts=deepcopy(fit_marker['updates'])
+        if not full:
+            selection=collect(pool,check_jobs(folder/'uncalibrated',
+                config['seeds']['selection']+cycle*10000+seed_offset),folder/'selection')
+            if _value_fit_digest(selection)!=fit_marker['selection_evidence_sha256']:
+                raise ValueError('Value-fit original selection cache evidence changed')
+    else:
+        chosen = {}; chosen_epochs = {}; update_counts = {}
+        for key, net in nets.items():
+            parameters = list(net.wdl.parameters()) + (list(net.value_net.parameters()) if full else [])
+            opt = torch.optim.Adam(parameters, lr=.0003 if full else .003)
+            rows = [r for g in games for r in g['value_rows'] if r['key'] == key]
+            if not rows: raise ValueError('Missing complete calibration training rows')
+            if full:
+                # Give complete games equal total weight, as in heldout metrics.
+                represented = [g for g in games if any(r['key'] == key for r in g['value_rows'])]
+                rows = [dict(r, sample_weight=len(rows)/len(represented)/len(own))
+                        for g in represented for own in [[r for r in g['value_rows'] if r['key']==key]] for r in own]
+            rng = np.random.default_rng(config['seeds']['adaptation']+cycle*10000)
+            best = None; updates = 0
+            for epoch in range(1, max(protocol['epoch_candidates'])+1):
+                indexes = rng.permutation(len(rows))
+                for start in range(0, len(rows), 128):
+                    if time.time() >= deadline: raise TimeoutError('Value warmup deadline')
+                    # The dedicated optimizer does not own policy tensors. Clear
+                    # their previous joint-step gradients before global clipping.
+                    net.zero_grad(set_to_none=True)
+                    rt.update(net, opt, [rows[int(i)] for i in indexes[start:start+128]],
+                              warmup=not full, value_only=full)
+                    updates += 1
+                if full and epoch in protocol['epoch_candidates']:
+                    original_w = net.wdl.weight.detach().clone(); original_b = net.wdl.bias.detach().clone()
+                    for temperature in protocol['temperature_candidates']:
+                        with torch.no_grad():
+                            net.wdl.weight.copy_(original_w/temperature); net.wdl.bias.copy_(original_b/temperature)
+                        target=folder/'candidates'/f'epoch-{epoch}-temperature-{temperature}'
+                        rt.export(net,target,key,decks[key],origins[key])
+                        metric=metric_fn(selection,{key:rt.model(target,key)})[key]
+                        score=(metric['log_loss'],epoch,temperature)
+                        if best is None or score < best[0]:
+                            best=(score,{n:t.detach().clone() for n,t in net.state_dict().items()
+                                         if n.startswith(('wdl.','value_net.'))},updates)
+                    with torch.no_grad():
+                        net.wdl.weight.copy_(original_w); net.wdl.bias.copy_(original_b)
+            update_counts[key]=dict(total_attempted=updates,selected=updates)
+            if full:
+                for n,t in best[1].items():net.state_dict()[n].copy_(t)
+                chosen_epochs[key]=best[0][1];chosen[key]=best[0][2]
+                update_counts[key]['selected']=best[2]
+                rt.export(net,folder/'models',key,decks[key],dict(origins[key],value_temperature=chosen[key],
+                          value_epoch=chosen_epochs[key],value_calibration=protocol))
+            if any(not torch.equal(t, net.state_dict()[n]) for n, t in before[key].items()):
+                raise ValueError('Value calibration changed policy')
+            if not full: rt.export(net, folder / 'uncalibrated', key, decks[key], origins[key])
+        if not full:
+            selection = collect(pool, check_jobs(folder / 'uncalibrated',
+                config['seeds']['selection']+cycle*10000+seed_offset), folder / 'selection')
+        # Temperature selection is confined to selection, never the heldout check.
+        for key, net in ([] if full else nets.items()):
+            scores = []
+            original_w = net.wdl.weight.detach().clone(); original_b = net.wdl.bias.detach().clone()
+            for temperature in (1., 2., 4.):
+                with torch.no_grad():
+                    net.wdl.weight.copy_(original_w/temperature); net.wdl.bias.copy_(original_b/temperature)
+                rt.export(net, folder / f'temperature-{temperature}', key, decks[key], origins[key])
+                metric = metric_fn(selection, {key: rt.model(folder / f'temperature-{temperature}', key)})[key]
+                scores.append((metric['log_loss'], temperature))
+            chosen[key] = min(scores)[1]
+            with torch.no_grad():
+                net.wdl.weight.copy_(original_w/chosen[key]); net.wdl.bias.copy_(original_b/chosen[key])
+            rt.export(net, folder / 'models', key, decks[key], dict(origins[key], value_temperature=chosen[key]))
+        if checkpoint_enabled:
+            fit_marker=_value_fit_finish(folder,fit_binding,selection,chosen,chosen_epochs,update_counts,full)
+    if checkpoint_enabled:
+        for key,net in nets.items():
+            if any(not torch.equal(t,net.state_dict()[n])for n,t in before[key].items()):
+                raise ValueError('Cached value-fit restoration changed policy')
+        for directory,signature in fit_binding['source_banks'].items():
+            if _value_fit_bank_hash(directory)!=signature:raise ValueError('Original value-fit source bank changed')
+    if checkpoint_enabled and (folder/'value-precheck.json').exists()!=(folder/'value-precheck-complete.json').exists():
+        raise ValueError('Incomplete/orphan value-precheck report cannot be regenerated or overwritten')
+    held = collect(pool, check_jobs(folder / 'models',
+                   config['seeds']['selection']+cycle*10000+1000+seed_offset), folder / 'heldout')
+    policies = {k: rt.model(folder / 'models', k) for k in selected}
+    if checkpoint_enabled:
+        if _value_fit_bank_hash(folder/'models')!=fit_marker['models']:
+            raise ValueError('Frozen heldout changed the selected value bank')
+        for directory,signature in fit_binding['source_banks'].items():
+            if _value_fit_bank_hash(directory)!=signature:raise ValueError('Heldout changed original value-fit source bank')
+        if any(not torch.equal(t,nets[key].state_dict()[n])for key in nets for n,t in before[key].items()):
+            raise ValueError('Heldout changed original policy arrays')
+    if checkpoint_enabled and(folder/'value-precheck.json').exists():
+        finished=folder/'value-precheck-complete.json'
+        if not finished.is_file():raise ValueError('Uncommitted value-precheck report cannot be overwritten')
+        cached=json.loads(finished.read_text())
+        if (cached.get('fit_receipt_sha256')!=fit_marker['receipt_sha256']
+                or cached.get('held_evidence_sha256')!=_value_fit_digest(held)
+                or cached.get('report_sha256')!=sha256((folder/'value-precheck.json').read_bytes()).hexdigest()
+                or _value_fit_bank_hash(folder/'models')!=fit_marker['models']):
+            raise ValueError('Original value-precheck heldout evidence/report changed')
+        report=json.loads((folder/'value-precheck.json').read_text())
+        if report.get('updates')!=update_counts or report.get('temperatures')!=chosen or report.get('selected_epochs')!=chosen_epochs:
+            raise ValueError('Original value-precheck fit accounting changed')
+        if report.get('passed')!=rt.value_precheck_ok(report,policies):raise ValueError('Original value-precheck qualification changed')
+        return folder/'models',report
+    report = dict(schema='seven_value_precheck_v1', complete=True, heldout=True,
+                  passed=True, rule_hash=config['rule_hash'], models=versions(folder / 'models'),
+                  metrics=(fit_process.heldout_metrics(held,policies)if fit_process is not None else metric_fn(held,policies)), temperatures=chosen,
+                  independent_current_rule_seeds=True, policy_preserved=True,
+                  calibration=protocol, selected_epochs=chosen_epochs, updates=update_counts,
+                  phase_games=dict(training=len(games),selection=len(selection),heldout=len(held)))
+    report['passed'] = rt.value_precheck_ok(report, policies)
+    if checkpoint_enabled:
+        if fit_process is not None:fit_process.begin_report()
+        if _value_fit_bank_hash(folder/'models')!=fit_marker['models']:
+            raise ValueError('Value metrics changed the selected model bank')
+        for directory,signature in fit_binding['source_banks'].items():
+            if _value_fit_bank_hash(directory)!=signature:raise ValueError('Value metrics changed original source bank')
+        if any(not torch.equal(t,nets[key].state_dict()[n])for key in nets for n,t in before[key].items()):
+            raise ValueError('Value metrics changed original policy arrays')
+        _value_fit_new_json(folder/'value-precheck.json',report)
+        _value_fit_new_json(folder/'value-precheck-complete.json',dict(fit_receipt_sha256=fit_marker['receipt_sha256'],
+            held_evidence_sha256=_value_fit_digest(held),report_sha256=sha256((folder/'value-precheck.json').read_bytes()).hexdigest()))
+        if fit_process is not None:fit_process.finish_report()
+    else:
+        write(folder / 'value-precheck.json', report)
+    return folder / 'models', report
+
+
+def compare_jobs(candidate, reference, decks, seed, deadline, roots, *, search=False, reports=None,
+                 simulations=32,teacher_mode='network',covered_value_source=None,keys=None,q_scale='natural_wdl'):
+    """Compare both versions against identical frozen opponents in both seats/initiatives."""
+    if type(q_scale) is not str or q_scale not in ('natural_wdl','mctx_default'):
+        raise ValueError('Known seven-team Q profile required')
+    jobs = []
+    selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
+    for k, key in enumerate(ROSTER):
+        if key not in selected:
+            continue
+        for replica in range(roots):
+            foe = ROSTER[(k+replica) % len(ROSTER)]
+            for learner in ('a', 'b'):
+                for first in ('a', 'b'):
+                    for label, folder in (('candidate', candidate), ('reference', reference)):
+                        enemy = 'b' if learner == 'a' else 'a'
+                        jobs.append(dict(id=f'{key}-{replica}-{learner}-{first}-{label}', key=key,
+                            left=key if learner == 'a' else foe, right=foe if learner == 'a' else key,
+                            replica=replica, label=label, learner=learner, first=first,
+                            seed=seed+k*100+replica, pure=not search, training=False,
+                            policies={learner:(str(folder),key), enemy:(str(reference),foe)},
+                            references={learner:(str(reference),key)}, train_sides=['a','b'],
+                            decks={learner:decks[key],enemy:decks[foe]}, deadline=deadline,
+                            value_precheck=reports, q_scale=q_scale, simulations=simulations,teacher_mode=teacher_mode,
+                            covered_value_source=covered_value_source))
+    for job in jobs:job['terminal_horizon']=0 if teacher_mode in ('covered_terminal','covered_expert') else 3
+    return jobs
+
+
+def comparison(pool, jobs, folder):
+    games = collect(pool, jobs, folder)
+    result = {k: dict(candidate=0., reference=0., games=0, changed=0, decisions=0,
+                      plays=0, reference_plays=0, legal_play=0, unsupported_legacy=0, entropy_sum=0.,
+                      root_differences=[]) for k in ROSTER}
+    grouped = {}
+    for job, game in zip(jobs, games):
+        r = result[job['key']]; winner = game['winner']
+        score = 1. if winner == job['learner'] else 0.
+        r[job['label']] += score
+        cluster = grouped.setdefault((job['key'],job['replica']), {'candidate': [], 'reference': []})
+        cluster[job['label']].append(score)
+        if job['label'] == 'candidate':
+            r['games'] += 1
+            for n, v in game.get('behavior', {}).get(job['learner'], {}).items():
+                if n in r: r[n] += v
+    for (key, _), row in grouped.items():
+        if len(row['candidate']) != 4 or len(row['reference']) != 4:
+            raise ValueError('Incomplete paired root')
+        result[key]['root_differences'].append(sum(row['candidate'])/4-sum(row['reference'])/4)
+    for row in result.values():
+        row['play_top1']=row['plays']/row['legal_play'] if row['legal_play'] else None
+        row['reference_play_top1']=row['reference_plays']/row['legal_play'] if row['legal_play'] else None
+        row['mean_entropy']=row['entropy_sum']/row['decisions'] if row['decisions'] else None
+    write(Path(folder) / 'comparison.json', result)
+    return result
+
+
+def gate_decision(pure, confirmed, health, *, no_gain, search=None, search_confirm=None,
+                  minimum_gain=.02,keys=None):
+    """Fail before promotion; unchanged policies never become new best."""
+    reasons = []
+    selected = learning_keys({'learning_keys': keys}) if keys is not None else ROSTER
+    for key in selected:
+        h = health[key]; p = pure[key]; c = confirmed[key]
+        if not h['finite'] or not h['gradient'] or h['coverage'] != 1 or not h['policy_rows']:
+            reasons.append(dict(key=key, reason='learning_health'))
+        if (p['legal_play'] >= 8 and p['plays'] == 0) or (
+                c['legal_play'] >= 8 and c['plays'] == 0):
+            reasons.append(dict(key=key, reason='no_play'))
+        if (p['candidate']+p['games']*.25 < p['reference'] and
+                c['candidate']+c['games']*.25 < c['reference']):
+            reasons.append(dict(key=key, reason='confirmed_regression'))
+    if reasons: return dict(decision='p0', reasons=reasons)
+    # Each promoted team needs its own confirmed gain; another unchanged team
+    # must not discard that gain. Unqualified teams retain their reference.
+    improved = [k for k in selected if pure[k]['changed'] > 0 and confirmed[k]['changed'] > 0 and
+                   pure[k]['candidate']-pure[k]['reference'] >= minimum_gain*pure[k]['games'] and
+                   confirmed[k]['candidate']-confirmed[k]['reference'] >= minimum_gain*confirmed[k]['games']]
+    qualified = [k for k in improved if search is not None and search_confirm is not None
+                 and search[k]['candidate']>=search[k]['reference']
+                 and search_confirm[k]['candidate']>=search_confirm[k]['reference']]
+    if qualified:return dict(decision='promote',reasons=[],promoted_keys=qualified,
+                              retained_keys=[k for k in ROSTER if k not in qualified])
+    return dict(decision='plateau' if no_gain else 'keep', reasons=['no_confirmed_improvement'])
+
+
+def select_models(candidate,reference,keys,folder):
+    """Copy approved team arrays; do not average models or alter other teams."""
+    from . import policy_runtime as rt
+    import shutil
+    if not keys or not set(keys)<=set(ROSTER) or len(set(keys))!=len(keys):
+        raise ValueError('Distinct qualified team keys required')
+    folder=Path(folder)
+    if folder.exists():raise ValueError('New selective-best output required')
+    folder.mkdir(parents=True)
+    chosen={}
+    for key in ROSTER:
+        source=Path(candidate if key in keys else reference)
+        policy=rt.model(source,key)
+        if policy.serving_deck!=rt.model(reference,key).serving_deck:
+            raise ValueError('Selective candidate changed frozen build')
+        for extension in ('.json','.npz'):shutil.copyfile(source/(key+extension),folder/(key+extension))
+        chosen[key]=dict(source=str(source),sha256=policy.version,promoted=key in keys)
+        if rt.model(folder,key).version!=policy.version:raise ValueError('Selective arrays changed')
+    write(folder.parent/'selection.json',chosen)
+    return folder
+
+
+def numeric_check(nets, folder, rows, device):
+    import numpy as np
+    import torch
+    from . import policy_runtime as rt
+    from .league_learning import tensors
+    result = {}
+    for key, net in nets.items():
+        sample = rows[key][:32]
+        if not sample: raise ValueError('No real policy roots for numeric check')
+        numeric = rt.model(folder, key)
+        with torch.no_grad():
+            x,c,mask = tensors([(r['x'],r['c']) for r in sample],device)
+            logits,_ = net(x,c,mask)
+            h = getattr(net,'value_net',net.state_net)(x)
+            actor = torch.tensor([[r.get('value_actor',1)] for r in sample], device=device,dtype=h.dtype)
+            wdl = net.wdl(torch.cat((h,actor),-1)).softmax(-1).cpu().numpy()
+        for i,r in enumerate(sample):
+            a = logits[i,:len(r['c'])].cpu().numpy(); b = numeric.scores(r['x'],r['c'])
+            np.testing.assert_allclose(a,b,atol=2e-4,rtol=2e-4)
+            np.testing.assert_allclose(wdl[i],numeric.wdl(r['x'],r.get('value_actor',1)),atol=2e-4,rtol=2e-4)
+            if int(a.argmax()) != int(b.argmax()): raise ValueError('Export changed action')
+        result[key] = dict(rows=len(sample), policy_wdl_equal=True, actions_equal=True)
+    return result
+
+
+def update_batch(nets, opts, pools, jobs, games, rng, config, deadline, out):
+    from . import policy_runtime as rt
+    from .episode_replay import dump_episode
+    health = {}; rows_by_key = {}
+    selected = learning_keys(config)
+    policy_batch_size = config.get('policy_batch_size', 128)
+    value_batch_size = config.get('value_batch_size', 128)
+    for size in (policy_batch_size, value_batch_size):
+        if type(size) is not int or not 1 <= size <= 8192:
+            raise ValueError('Joint minibatch sizes must be integers in 1..8192')
+    if any(job['policies'][s][1] not in selected for job in jobs for s in job['train_sides']):
+        raise ValueError('Frozen opponent cannot contribute learning rows')
+    for pool in pools.values(): pool.begin_fresh_batch()
+    for job, game in zip(jobs,games):
+        data = dump_episode(Path(out) / 'episodes' / f"{job['id']}.json.gz",job,game)
+        for key in set(job['policies'][s][1] for s in job['train_sides']):
+            rows = [r for r in data['rows'] if r['key'] == key]
+            pools[key].add(job['id'],dict(rows=rows))
+    for key in selected:
+        stats = []; pool = pools[key]
+        rows_by_key[key] = [r for job,g in zip(jobs,games) for r in g['rows']
+                            if r['key']==key and r['side'] in job['train_sides']]
+        for rows,refs,sampling in pool.policy_pass_batches(rng,passes=config['policy_passes'],
+                batch_size=policy_batch_size,deadline=deadline,
+                batches_per_pass=config.get('policy_batches_per_pass'),
+                include_old_replay=config.get('include_old_replay',True)):
+            metric = rt.update(nets[key],opts[key],rows)
+            stats.append(dict(metric, refs=refs, sampling=sampling))
+        values = [r for job,g in zip(jobs,games) for r in g['value_rows']
+                  if r['key']==key and r['side'] in job['train_sides'] and r['value_actor']==0]
+        value_updates = 0
+        for start in range(0,len(values),value_batch_size):
+            if time.time() >= deadline: raise TimeoutError('Update deadline')
+            rt.update(nets[key],opts[key],values[start:start+value_batch_size],value_only=True)
+            value_updates += 1
+        cov = pool.coverage_report()
+        health[key] = dict(finite=bool(stats) and all(math.isfinite(m[n]) for m in stats for n in ('policy_loss','value_loss')),
+                           gradient=all(any(m['policy_gradient_norms'].get(prefix,0)>0 for m in stats)
+                                        for prefix in ('state_net','cand_net','score')),
+                           coverage=cov['first_use_coverage'],policy_rows=cov['fresh_policy_rows'],
+                           updates=len(stats),value_updates=value_updates,value_rows=len(values))
+        write(Path(out) / f'{key}-updates.json',stats)
+    return health, rows_by_key
+
+
+def save_round(out, nets, opts, pools, models, rng, config, cycle, best, no_gain):
+    from .seven_checkpoint import save
+    folder = Path(out) / 'recovery' / str(cycle%2)
+    for key in ROSTER:
+        save(folder / f'{key}.pt',nets[key],opts[key],directory=models,key=key,
+             rng_state=rng.bit_generator.state,metadata=dict(cycle=cycle,config=config,best=str(best),
+             no_gain=no_gain,model_folder=str(models)))
+    # Pools are numeric JSON, separate from safe weights_only checkpoints.
+    from .episode_replay import dump_episode
+    import numpy as np
+    state = {k:p.export_state() for k,p in pools.items()}
+    path = folder / 'pools.json'
+    path.write_text(json.dumps(state,default=lambda a:a.tolist() if isinstance(a,np.ndarray) else a.item()))
+    files = {p.name:sha256(p.read_bytes()).hexdigest() for p in folder.iterdir() if p.is_file()}
+    write(Path(out)/'recovery/pointer.json',dict(cycle=cycle,models=str(models),best=str(best),
+          folder=str(folder),files=files,original_train_until=config['train_until'],
+          hard_deadline=config['hard_deadline'],algorithm_sha256=fingerprint()))
+
+
+
+
+def merged_reports(*reports):
+    from .seven_lineup import identity
+    result=dict(schema='seven_value_precheck_v1',complete=True,heldout=True,passed=True,rule_hash=identity(),by_version={})
+    for report in reports:
+        if not report['passed']:raise ValueError('Cannot merge failed value check')
+        for key,version in report['models'].items():result['by_version'][version]=dict(version=version,metrics=report['metrics'][key])
+    return result
+
+
+def initialize(folder, hidden, device, seed, source=None, *, starting_decks=None):
+    import torch
+    from . import policy_runtime as rt
+    from .next_training import plan
+    torch.manual_seed(seed)
+    decks = plan()['builds'] if starting_decks is None else deepcopy(starting_decks)
+    if set(decks) != set(ROSTER):
+        raise ValueError('Seven-team declared builds required')
+    nets = {}; origins = {}
+    for key in ROSTER:
+        if source:
+            net, build, origin = rt.restore(source, key, device)
+            from .build_acceptance import canonical_build
+            matches = (build == decks[key] if starting_decks is None else
+                       canonical_build(build) == canonical_build(decks[key]))
+            if not matches:
+                raise ValueError('Seven source must match this fixed build')
+            origin = dict(origin, recovery_source=str(source),
+                          recovery_source_sha=rt.model(source,key).version)
+        else:
+            net = rt.create_network(key, hidden, device)
+            origin = dict(initialization='fresh_seven_untrained', optimizer_reset=True,
+                          experience_reset=True, quality_approved=False)
+        rt.export(net,folder,key,decks[key],origin)
+        nets[key]=net; origins[key]=origin
+    return nets,decks,origins
+
+def immutable_receipt_files(out):
+    root=Path(out)
+    # The parent guard changes after worker exit. A receipt must not hash
+    # itself or mutable status; numerical and raw evidence remain mandatory.
+    excluded={'status.json','guard.json','readiness.json','delivery-manifest.json'}
+    return {p.relative_to(root).as_posix():sha256(p.read_bytes()).hexdigest()
+            for p in root.rglob('*') if p.is_file() and p.relative_to(root).as_posix() not in excluded}
+
+
+def validate_launch(config, *, resume=False, completed_batches=0):
+    """Formal launches require actual current-source CUDA preflight, not flags."""
+    from .seven_lineup import identity
+    if type(config.get('q_scale','natural_wdl')) is not str or config.get('q_scale','natural_wdl') not in ('natural_wdl','mctx_default'):
+        raise ValueError('Known seven-team Q profile required')
+    if config.get('runtime') != 'seven' or config.get('rule_hash') != identity():
+        raise ValueError('Recovery rule/runtime mismatch')
+    if set(learning_keys(config)) != set(ROSTER):
+        raise ValueError('Current seven-round orchestration requires all seven learners')
+    validate_collection_option(
+        config.get('collection_replicas', DEFAULT_COLLECTION_REPLICAS),
+        search_roots=config.get('search_roots'),
+        training_buffer_mib=config.get('training_buffer_mib'),
+        gpu_memory_budget_mib=config.get('gpu_memory_budget_mib'),
+        rule_backend=config.get('rule_backend'),
+        runtime=config.get('runtime'),
+        historical=collection_uses_historical(config))
+    if config.get('teacher_mode','network') not in ('network','covered_terminal','covered_expert','covered_value'):
+        raise ValueError('Unknown frozen teacher mode')
+    if (type(config.get('value_full_tower',False)) is not bool
+            or type(config.get('value_replicas',2)) is not int or config.get('value_replicas',2) not in (2,6,12)
+            or type(config.get('value_check_replicas',1)) is not int or config.get('value_check_replicas',1) not in (1,2,3)):
+        raise ValueError('Bounded value calibration protocol required')
+    scope_sha=None
+    if config.get('teacher_mode')=='covered_value':
+        from .seven_covered_value import load_scope
+        if not config.get('covered_value_source'):raise ValueError('Qualified covered-value-source required')
+        load_scope(config['covered_value_source'])
+        scope_sha=sha256((Path(config['covered_value_source'])/'scope.json').read_bytes()).hexdigest()
+    contract=rollout_contract(config)
+    if config.get('smoke') is True:
+        replicas=config.get('preflight_replicas',1)
+        if type(replicas) is not int or replicas not in (1,2,3):
+            raise ValueError('Bounded preflight replica count required')
+        max_seconds=7200.1 if config.get('preflight') and replicas>1 else 1800.1
+        if (config.get('planned_batches',0) not in (1,2,3) or config.get('workers',0) not in range(1,17)
+                or config.get('simulations') not in (2,32)
+                or config.get('hard_deadline',0)-config.get('started_at',0)>max_seconds
+                or config.get('train_until',0)>config.get('hard_deadline',0)
+                or config.get('max_row_reuse',0)<config.get('policy_passes',1)):
+            raise ValueError('Bounded recovery configuration required')
+        return
+    if not config.get('recovery_source'):
+        raise ValueError('CUDA recovery preflight receipt required with matching recovery-source')
+    if (config.get('simulations')!=32 or config.get('gumbel_candidates')!=16
+            or config.get('terminal_horizon')!=(0 if config.get('teacher_mode') in ('covered_terminal','covered_expert') else 3) or config.get('rewards')!=0
+            or config.get('planned_batches') not in (4,5,6)
+            or not 5<=config.get('gate_roots',0)<=64
+            or not 1<=config.get('search_gate_roots',0)<=8):
+        raise ValueError('Formal recovery protocol mismatch')
+    from .five_cross_gates import schedule_gates
+    if config.get('gates')!=schedule_gates(config['planned_batches']):
+        raise ValueError('Formal gate schedule must match frozen planned batches')
+    path = Path(config.get('readiness_report') or 'missing-readiness-report')
+    if not path.is_file(): raise ValueError('CUDA recovery preflight receipt required')
+    receipt = json.loads(path.read_text())
+    if (receipt.get('schema') != 'seven_recovery_readiness_v1' or receipt.get('device') != 'cuda'
+            or receipt.get('algorithm_sha256') != fingerprint() or receipt.get('rule_hash') != identity()
+            or receipt.get('simulations') != 32 or receipt.get('gumbel_candidates') != 16
+            or receipt.get('terminal_horizon') != config['terminal_horizon']
+            or receipt.get('q_scale') != config.get('q_scale','natural_wdl') or receipt.get('workers') != config['workers']
+            or receipt.get('teacher_mode','network') != config.get('teacher_mode','network')
+            or receipt.get('covered_value_sha')!=scope_sha
+            or not 0 <= time.time()-receipt.get('measured_at',0) < 86400
+            or receipt.get('ready') is not True or set(receipt.get('health',{})) != set(ROSTER)
+            or receipt.get('initial_models') != versions(config['recovery_source'])
+            or receipt.get('rollout_contract') != contract):
+        raise ValueError('Recovery CUDA readiness identity/age/config mismatch')
+    if config.get('teacher_mode','network')=='network':
+        raise ValueError('Fixed-build network teacher lacks sampled-build rollout coverage qualification')
+    required=('initial-value/value-precheck.json','cycles/1/numeric.json','cycles/1/restore-check.json',
+              'cycles/1/gate.json','cycles/1/sampling/games.json')
+    if contract['rule_backend']=='cuda_vm':
+        required+=('cycles/1/sampling/gpu-replay-check.json',)
+    if not all(name in receipt.get('files',{}) for name in required):
+        raise ValueError('Readiness raw evidence is incomplete')
+    for relative,digest in receipt['files'].items():
+        file = (path.parent/relative).resolve()
+        if not file.is_relative_to(path.parent.resolve()) or sha256(file.read_bytes()).hexdigest()!=digest:
+            raise ValueError('Readiness raw evidence changed')
+    for h in receipt['health'].values():
+        if not (h['finite'] and h['gradient'] and h['coverage']==1 and h['policy_rows']>0):
+            raise ValueError('All-seven CUDA gradient and coverage evidence required')
+    from .policy_runtime import value_precheck_ok,model
+    initial_check=json.loads((path.parent/'initial-value/value-precheck.json').read_text())
+    if not value_precheck_ok(initial_check,{k:model(config['recovery_source'],k) for k in ROSTER}):
+        raise ValueError('Readiness initial value arrays mismatch')
+    if (receipt.get('policy_passes')!=config['policy_passes']
+            or receipt.get('learning_rate')!=config['learning_rate']
+            or receipt.get('value_calibration',value_calibration_protocol({}))!=value_calibration_protocol(config)):
+        raise ValueError('Readiness optimizer protocol mismatch')
+    numeric=json.loads((path.parent/'cycles/1/numeric.json').read_text())
+    restored=json.loads((path.parent/'cycles/1/restore-check.json').read_text())
+    gate=json.loads((path.parent/'cycles/1/gate.json').read_text())
+    records=json.loads((path.parent/'cycles/1/sampling/games.json').read_text())
+    if contract['rule_backend']=='cuda_vm':
+        replay=json.loads((path.parent/'cycles/1/sampling/gpu-replay-check.json').read_text())
+        if (len(replay)!=len(records) or not all(r.get('passed') is True for r in replay)
+                or {r['id']:r.get('final_state_sha256') for r in replay} !=
+                   {r['id']:r.get('final_state_sha256') for r in records}
+                or not all(r.get('rule_backend')=='cuda_vm' and r.get('final_state_sha256') for r in records)):
+            raise ValueError('Complete real GPU trajectories and formal CPU replay evidence required')
+    if (len(records)!=expected_preflight_learning_games(receipt) or not all(r['complete'] for r in records)
+            or set(numeric)!=set(ROSTER) or set(restored)!=set(ROSTER)
+            or not all(numeric[k]['actions_equal'] and numeric[k]['policy_wdl_equal']
+                       and restored[k]['adam_next_step_equal'] and restored[k]['rng_equal'] for k in ROSTER)
+            or gate['decision']=='p0'):
+        raise ValueError('All-seven numeric/restore/independent behavior evidence required')
+    # Price the actual measured full batch, repeated value/gates and both
+    # matrices before launching; retain 25% capacity slack and 15min delivery.
+    # The short receipt has small gates; explicitly expand the actual
+    # formal pure/search gate counts and the historical 60-game round.
+    # Disposable isolation fitting is an explicit diagnostic, not part of
+    # preflight, recurring learning work or readiness/strength acceptance.
+    work=projected_learning_work(config, receipt, resume=resume, completed_batches=completed_batches)
+    if work['needed'] > config['train_until']-time.time(): raise ValueError('Insufficient staged learning capacity')
+    if work['needed_eval'] > config['evaluate_until']-config['train_until']:
+        raise ValueError('Insufficient frozen matrix capacity')
+    if config['hard_deadline']-config['evaluate_until']<900 or config['device']!='cuda':
+        raise ValueError('CUDA and 15min delivery reserve required')
+
+
+def restore_round(out, device, config):
+    """Exact in-budget resume; no new deadline, seed reservation, or hidden continuation."""
+    import numpy as np
+    import torch
+    from .episode_replay import EpisodePool
+    from .seven_checkpoint import restore
+    out = Path(out); pointer=json.loads((out/'recovery/pointer.json').read_text())
+    if (pointer['algorithm_sha256']!=fingerprint() or pointer['hard_deadline']!=config['hard_deadline']
+            or pointer['original_train_until']!=config['train_until'] or time.time()>=config['train_until']):
+        raise ValueError('Resume source/deadline mismatch or learning expired')
+    terminal=json.loads((out/'status.json').read_text()) if (out/'status.json').exists() else {}
+    if (pointer['cycle']>=config.get('planned_batches',float('inf'))
+            or terminal.get('stop_reason') in ('p0','plateau','candidate_value_failed','isolation_fit_failed')
+            or terminal.get('phase') in ('complete','evaluation_incomplete','preflight_complete','preflight_failed')):
+        raise ValueError('Learning already stopped; refuse to reuse confirmation seeds or restart optimization')
+    if (terminal.get('cycle',pointer['cycle'])>pointer['cycle']
+            and terminal.get('phase') in ('candidate_value_check','independent_gate',
+                                          'selected_value_check','selected_independent_gate')):
+        raise ValueError('Independent seeds consumed in an uncommitted cycle; optimization resume is forbidden')
+    folder=Path(pointer['folder'])
+    if not folder.resolve().is_relative_to(out.resolve()):
+        raise ValueError('Recovery folder must belong to this output')
+    for name,digest in pointer['files'].items():
+        if sha256((folder/name).read_bytes()).hexdigest()!=digest: raise ValueError('Recovery file changed')
+    nets={};opts={}; saved=None
+    for key in ROSTER:
+        nets[key],opts[key],data=restore(folder/f'{key}.pt',directory=pointer['models'],key=key,device=device)
+        if data['metadata']['config']!=config: raise ValueError('Resume config changed')
+        if data['metadata']['cycle']!=pointer['cycle']:
+            raise ValueError('Resume pointer cycle differs from the actual checkpoint')
+        saved=data
+    pools={k:EpisodePool.from_state(v) for k,v in json.loads((folder/'pools.json').read_text()).items()}
+    # JSON replay arrays must regain numeric type for tensors/update.
+    for pool in pools.values():
+        for episode in pool.episodes:
+            for row in episode['rows']:
+                for name in ('x','c','pi'):
+                    if name in row: row[name]=np.asarray(row[name],dtype=np.float32)
+    rng=np.random.default_rng();rng.bit_generator.state=saved['rng_state']
+    torch.set_rng_state(saved['torch_rng'])
+    if device=='cuda' and saved.get('cuda_rng') is not None: torch.cuda.set_rng_state_all(saved['cuda_rng'])
+    return nets,opts,pools,rng,pointer,saved['metadata']['no_gain']
+
+
+def evaluate_frozen(pool, out, selected, initial, decks, report, config):
+    from .full_cycle_experiment import evaluate_job
+    from .new_model_report import write_matrix
+    signatures=versions(selected); plan=matrix_schedule(config['matrix_games']); all_complete=True
+    for mode in ('argmax','search'):
+        folder=Path(out)/mode
+        for name in ('raw','replays'): (folder/'evaluation'/name).mkdir(parents=True,exist_ok=True)
+        jobs=[]
+        for i,item in enumerate(plan):
+            jobs.append(dict(item,id=f'{mode}-{i}',runtime='seven',
+                cell=('mirror/' if item['left']==item['right'] else 'cross/')+item['row']+'/'+item['column'],
+                seed=config['seeds']['confirmation']+i,deadline=config['evaluate_until'],
+                decks={'a':decks[item['left']],'b':decks[item['right']]},
+                policies={'a':(str(selected),item['left']),'b':(str(selected),item['right'])},
+                output=str(folder/'evaluation'),replay=item['replica']==0,
+                search_sides=['a','b'] if mode=='search' else [],simulations=config['simulations'],
+                value_precheck=report,q_scale=config.get('q_scale','natural_wdl'),gumbel_candidates=16,
+                terminal_horizon=0 if config.get('teacher_mode') in ('covered_terminal','covered_expert') else 3,
+                teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source')))
+        write(folder/'planned-jobs.json',jobs)
+        results=[]
+        from .batched_search.device_learning_context import ClosedDeviceLearningContext
+        if isinstance(pool, ClosedDeviceLearningContext):
+            if time.time() < config['evaluate_until']:
+                results = pool.evaluate_jobs(jobs)
+        else:
+            for offset in range(0,len(jobs),config['workers']):
+                if time.time()>=config['evaluate_until']: break
+                results.extend(pool.map(evaluate_job,jobs[offset:offset+config['workers']]))
+        write(folder/'evaluation/index.json',results)
+        write_matrix(folder,results,ROSTER,selected,dict(config,smoke=False,initial_models=str(initial),inference=mode))
+        cells=coverage(results,plan);write(folder/'coverage.json',cells)
+        all_complete &= all(c['complete'] for c in cells)
+    if versions(selected)!=signatures: raise ValueError('Weights changed during frozen evaluation')
+    return bool(all_complete)
+
+
+def resume_completed_batches(out, config):
+    """Read source/deadline-bound progress; checkpoint metadata is verified on restore."""
+    pointer=json.loads((Path(out)/'recovery/pointer.json').read_text())
+    if (pointer['algorithm_sha256']!=fingerprint()
+            or pointer['hard_deadline']!=config['hard_deadline']
+            or pointer['original_train_until']!=config['train_until']):
+        raise ValueError('Resume source/deadline mismatch')
+    completed=pointer['cycle']
+    if type(completed) is not int or not 0 <= completed < config['planned_batches']:
+        raise ValueError('Valid incomplete checkpoint progress required')
+    return completed
+
+
+def run_device_value_calibration(out, config, *, collector, resume=False, cache_dir=None,
+                                 continuation=None, max_segments=None, max_new_batches=None,
+                                 resume_authorization=None):
+    """Run existing train/selection/heldout value calibration with live GPU games.
+
+    This explicit bootstrap precedes formal Gumbel readiness. It neither calls
+    the historical CPU collector nor qualifies a later policy-learning run.
+    """
+    from .batched_search.device_learning_context import DeviceValueCalibrationContext
+    config=dict(config)
+    if cache_dir is not None:config.setdefault('value_fit_checkpoint',True)
+    context = DeviceValueCalibrationContext(collector, cache_dir=cache_dir,
+        continuation=continuation, max_segments=max_segments, max_new_batches=max_new_batches)
+    if config.get('runtime') != 'seven' or config.get('device') != 'cuda':
+        raise ValueError('Explicit seven-team CUDA value calibration required')
+    deadline = config['train_until']
+    if type(deadline) not in (int, float) or not math.isfinite(deadline) or deadline <= time.time():
+        raise ValueError('Future original value-calibration deadline required')
+    import torch
+    torch.set_num_threads(1)
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    out = Path(out)
+    if out.exists() and not resume:
+        raise FileExistsError('Fresh value-calibration output required')
+    from .next_training import plan
+    source = config.get('recovery_source')
+    fixed = dict(runtime=config['runtime'],device=config['device'],hidden=config['hidden'],
+        source=None if source is None else str(Path(source).resolve()),
+        source_versions=None if source is None else versions(source),
+        starting_decks=config.get('starting_decks') or plan()['builds'],
+        seeds=config['seeds'],rule_hash=config['rule_hash'],protocol=value_calibration_protocol(config),
+        value_fit_checkpoint=config.get('value_fit_checkpoint',False),
+        collection_cache_dir=None if cache_dir is None else str(Path(cache_dir).resolve()))
+    binding_file = out/'input-binding.json'
+    if resume:
+        if not binding_file.is_file() or json.loads(binding_file.read_text()) != fixed:
+            raise ValueError('Current-policy preparation source/build/seed/protocol changed')
+        if not isinstance(resume_authorization,str) or not resume_authorization.strip():
+            raise ValueError('Explicit current-policy preparation resume authorization required')
+        windows=json.loads((out/'budget-windows.json').read_text())
+        if deadline < windows[-1]['deadline']:
+            raise ValueError('Current-policy preparation cannot shorten its bound budget')
+        windows.append(dict(deadline=deadline,authorization=resume_authorization.strip()))
+    else:
+        out.mkdir(parents=True)
+        write(binding_file,fixed)
+        windows=[dict(deadline=deadline,authorization='initial explicit calibration budget')]
+    write(out/'budget-windows.json',windows)
+    initial=out/'uncalibrated-initial'
+    def initial_hashes():
+        return {key+suffix:sha256((initial/(key+suffix)).read_bytes()).hexdigest()
+                for key in ROSTER for suffix in('.json','.npz')}
+    if resume:
+        if initial_hashes()!=json.loads((out/'initial-bank-sha.json').read_text()):
+            raise ValueError('Frozen initial calibration bank changed')
+        from . import policy_runtime as rt
+        restored={key:rt.restore(initial,key,config['device'])for key in ROSTER}
+        nets={key:value[0]for key,value in restored.items()}
+        decks={key:value[1]for key,value in restored.items()}
+        origins={key:value[2]for key,value in restored.items()}
+    else:
+        nets, decks, origins = initialize(initial, config['hidden'], config['device'],
+            config['seeds']['foundation'], config.get('recovery_source'),
+            starting_decks=config.get('starting_decks'))
+        write(out/'initial-bank-sha.json',initial_hashes())
+    from .batched_search.device_pure_segments import PureSegmentPaused
+    try:
+        with context:
+            models, report = warm_value(context, nets, decks, origins, out/'uncalibrated-initial',
+                out/'value', config, 0, deadline)
+    except ValueFitPaused as paused:
+        result=dict(stage='value_fit_planned_pause',ready=False,formal_policy_updates=0,
+            formal_training_complete=False,checkpoint=paused.checkpoint,fit_directory=str(paused.folder),
+            progress=paused.progress,diagnostics=deepcopy(context.last_diagnostics))
+        write(out/'value-calibration-progress.json',result)
+        return result
+    except ValueFitReady as paused:
+        result=dict(stage='value_calibration_ready_to_fit',ready=False,
+            formal_policy_updates=0,formal_training_complete=False,
+            phase_games=paused.phase_games,fit_directory=str(paused.folder),
+            diagnostics=deepcopy(context.last_diagnostics))
+        write(out/'value-calibration-progress.json',result)
+        return result
+    except PureSegmentPaused as paused:
+        result=dict(stage='value_calibration_planned_pause',ready=False,
+            formal_policy_updates=0,formal_training_complete=False,checkpoint=str(paused.checkpoint),
+            diagnostics=deepcopy(context.last_diagnostics))
+        write(out/'value-calibration-progress.json',result)
+        return result
+    result = dict(models=str(models), value_precheck=report, formal_policy_updates=0,
+                  formal_training_complete=False, stage='value_calibration')
+    write(out/'value-calibration-result.json', result)
+    return result
+
+
+def run_device_value_smoke(out, *, collector, models, train_jobs, evaluation_jobs, deadline):
+    """Bootstrap value collection before full-search qualification, without granting it.
+
+    This bounded stage never enters the formal policy-learning loop. Complete
+    GPU argmax games feed the existing value optimizer and frozen evaluation.
+    """
+    from .device_value_training import run_value_training_smoke
+    return run_value_training_smoke(out, collector=collector, models=models,
+        train_jobs=train_jobs, evaluation_jobs=evaluation_jobs, deadline=deadline)
+
+
+def run_device_joint_smoke(out, *, collector, pure_collector, source, train_jobs,
+                           evaluation_jobs, deadline, policy_passes=4, **persistent_options):
+    """Real full-budget H3 Gumbel episodes feed the existing joint updater."""
+    from .device_joint_training import run_joint_training_smoke
+    return run_joint_training_smoke(out, collector=collector, pure_collector=pure_collector,
+        source=source, train_jobs=train_jobs, evaluation_jobs=evaluation_jobs,
+        deadline=deadline, policy_passes=policy_passes, **persistent_options)
+
+
+def run(out, config, *, resume=False, device_driver=None):
+    """Current training must own a qualified closed GPU service before writes.
+
+    The legacy CPU/cooperative implementation remains a historical reference,
+    not a fallback. Static planning and separate parity diagnostics are not
+    this execution entry and cannot manufacture a service from config flags.
+    """
+    from .batched_search.device_execution_contract import require_closed_device_driver
+    driver=require_closed_device_driver(device_driver,purpose='training',q_scale=config.get('q_scale','natural_wdl'))
+    driver.validate_frozen_inputs(config)
+    return driver.run_device_batch(config,output=out,resume=resume)
+
+
+def run_closed_device_learning(out, config, *, device_driver, resume=False):
+    """Reuse the learning core only after the real device service is qualified."""
+    from .batched_search.device_learning_context import ClosedDeviceLearningContext
+    context = ClosedDeviceLearningContext(device_driver,q_scale=config.get('q_scale','natural_wdl'))
+    context.driver.validate_frozen_inputs(config)
+    return _run_learning_core(out, config, resume=resume, device_context=context)
+
+
+def _historical_cooperative_run(out, config, *, resume=False):
+    """Explicit historical diagnostics only; never a formal-entry fallback."""
+    return _run_learning_core(out, config, resume=resume)
+
+
+def _run_learning_core(out, config, *, resume=False, device_context=None):
+    """Complete fixed-build seven-team learning path; supplemental release eval stays explicit."""
+    completed_batches=resume_completed_batches(out,config) if resume else 0
+    validate_launch(config,resume=resume,completed_batches=completed_batches)
+    import numpy as np
+    import torch
+    from concurrent.futures import ProcessPoolExecutor
+    from multiprocessing import get_context
+    from . import policy_runtime as rt
+    from .episode_replay import EpisodePool
+    from .seven_checkpoint import save,restore
+    from .offline_sources import snapshot
+    from scripts.prepare_duel_v2_offline_readiness import EXTRA
+    out=Path(out);started=time.time();torch.set_num_threads(1)
+    if config['device']=='cuda':
+        if not torch.cuda.is_available(): raise ValueError('CUDA unavailable; no fallback')
+        torch.backends.cuda.matmul.allow_tf32=False
+        torch.backends.cudnn.allow_tf32=False
+    cycle=0;no_gain=False;stop_reason=None;health={};search_wall=0.;search_games=0;pure_gate_wall=0.;value_wall=0.;update_wall=0.
+    frozen_algorithm=fingerprint()
+    if resume:
+        nets,opts,pools,rng,pointer,no_gain=restore_round(out,config['device'],config)
+        cycle=pointer['cycle'];current=Path(pointer['models']);best=Path(pointer['best'])
+        decks={k:rt.model(current,k).serving_deck for k in ROSTER}
+        origins={k:rt.model(current,k).manifest['origin'] for k in ROSTER}
+        report=json.loads((current.parent/'value-precheck.json').read_text())
+        best_report=json.loads((best.parent/'value-precheck.json').read_text())
+        initial=Path(json.loads((out/'initial-pointer.json').read_text())['models'])
+    else:
+        nets,decks,origins=initialize(out/'uncalibrated-initial',config['hidden'],config['device'],
+                                    config['seeds']['foundation'],config.get('recovery_source'))
+        current=out/'uncalibrated-initial';best=None
+        rng=np.random.default_rng(config['seeds']['foundation'])
+        opts={k:torch.optim.Adam(net.parameters(),lr=config['learning_rate']) for k,net in nets.items()}
+        pools={k:EpisodePool(limit=collection_pool_limit(config),max_row_reuse=config['max_row_reuse']) for k in ROSTER}
+        snapshot(Path(__file__).resolve().parents[4],out/'source',(*EXTRA,
+            'app/modules/card_game/rl/batched_search/training_rollout.py'))
+    def status(phase,**extra):
+        write(out/'status.json',dict(phase=phase,cycle=cycle,latest=str(current),best=str(best),
+            hard_deadline=config['hard_deadline'],runtime='seven',roster=list(ROSTER),
+            **dict(dict(full_matrix=False,complete_report=False,quality_approved=False,website_approval=False),**extra)))
+        print(phase,cycle,extra,flush=True)
+    collection_context = (device_context if device_context is not None else
+        ProcessPoolExecutor(max_workers=config['workers'],mp_context=get_context('spawn')))
+    with collection_context as pool:
+        if not resume:
+            status('value_preflight')
+            value_started=time.time()
+            current,report=warm_value(pool,nets,decks,origins,current,out/'initial-value',config,0,config['train_until'])
+            value_wall=max(value_wall,time.time()-value_started)
+            if not report['passed']:
+                status('blocked_value_precheck',metrics=report['metrics']);return
+            best=current;initial=current;best_report=report
+            write(out/'initial-pointer.json',dict(models=str(initial),sha256=versions(initial)))
+        while cycle<config['planned_batches'] and time.time()<config['train_until']-30:
+            if fingerprint()!=frozen_algorithm: raise ValueError('Frozen training source changed')
+            cycle+=1;folder=out/'cycles'/str(cycle);status('searching')
+            historical=cycle%4==0
+            combined=merged_reports(report,best_report) if historical else report
+            jobs=learning_collection_jobs(current,decks,config,cycle,config['train_until']-20,
+                                          historical=best if historical else None,report=combined)
+            start=time.time();games=collect_search_batch(pool,jobs,folder/'sampling',config,learning=True)
+            search_wall+=time.time()-start;search_games+=len(games)
+            # Learn the completed search games directly. A disposable network
+            # overfitted to this small batch cannot veto the actual candidate.
+            status('updating')
+            update_started=time.time()
+            health,rows=update_batch(nets,opts,pools,jobs,games,rng,config,config['train_until'],folder)
+            for key in ROSTER: rt.export(nets[key],folder/'updated',key,decks[key],dict(origins[key],cycle=cycle))
+            numeric=numeric_check(nets,folder/'updated',rows,config['device']);write(folder/'numeric.json',numeric)
+            # Restore tests on copies also verify the next actual Adam step;
+            # candidates remain unchanged. CUDA RNG is saved by checkpoint.
+            checks={}
+            for key in ROSTER:
+                path=folder/'restore'/f'{key}.pt'
+                save(path,nets[key],opts[key],directory=folder/'updated',key=key,rng_state=rng.bit_generator.state,metadata={'cycle':cycle})
+                copy_net,copy_opt,data=restore(path,directory=folder/'updated',key=key,device=config['device'])
+                control=deepcopy(nets[key]);control_opt=torch.optim.Adam(control.parameters())
+                control_opt.load_state_dict(deepcopy(opts[key].state_dict()))
+                sample=rows[key][:32];rt.update(control,control_opt,sample);rt.update(copy_net,copy_opt,sample)
+                if any(not torch.equal(t,copy_net.state_dict()[n]) for n,t in control.state_dict().items()):
+                    raise ValueError('Next Adam step did not restore')
+                checks[key]=dict(adam_next_step_equal=True,rng_equal=data['rng_state']==rng.bit_generator.state)
+            write(folder/'restore-check.json',checks)
+            update_wall=max(update_wall,time.time()-update_started)
+            if any(not h['finite'] or not h['gradient'] or h['coverage']!=1 or not h['policy_rows'] for h in health.values()):
+                write(folder/'gate.json',dict(decision='p0',health=health,reason='learning_health'))
+                stop_reason='p0';current=best;report=best_report
+                nets={k:rt.restore(best,k,config['device'])[0] for k in ROSTER}
+                opts={k:torch.optim.Adam(n.parameters(),lr=config['learning_rate']*.1) for k,n in nets.items()}
+                pools={k:EpisodePool(limit=collection_pool_limit(config),max_row_reuse=config['max_row_reuse']) for k in ROSTER}
+                save_round(out,nets,opts,pools,current,rng,config,cycle,best,no_gain)
+                break
+            # No candidate can search again with its starting-value receipt.
+            status('candidate_value_check')
+            value_started=time.time()
+            candidate,new_report=warm_value(pool,nets,decks,origins,folder/'updated',folder/'value',
+                                            config,cycle,config['train_until'])
+            value_wall=max(value_wall,time.time()-value_started)
+            current=candidate
+            for key in ROSTER:
+                for name,parameter in nets[key].named_parameters():
+                    if name.startswith('wdl.') or (config.get('value_full_tower') and name.startswith('value_net.')):
+                        opts[key].state.pop(parameter,None)
+            if not new_report['passed']:
+                stop_reason='candidate_value_failed';current=best;report=best_report
+                nets={k:rt.restore(best,k,config['device'])[0] for k in ROSTER}
+                opts={k:torch.optim.Adam(n.parameters(),lr=config['learning_rate']) for k,n in nets.items()}
+                pools={k:EpisodePool(limit=collection_pool_limit(config),max_row_reuse=config['max_row_reuse']) for k in ROSTER}
+                save_round(out,nets,opts,pools,current,rng,config,cycle,best,no_gain)
+                break
+            report=new_report
+            status('independent_gate')
+            deadline=min(config['train_until'],time.time()+config['gate_seconds'])
+            pure_gate_started=time.time()
+            pure=comparison(pool,compare_jobs(candidate,best,decks,config['seeds']['selection']+cycle*10000+2000,
+                            deadline,config['gate_roots'],q_scale=config.get('q_scale','natural_wdl')),folder/'pure-screen')
+            confirmed=comparison(pool,compare_jobs(candidate,best,decks,config['seeds']['selection']+cycle*10000+3000,
+                            deadline,config['gate_roots'],q_scale=config.get('q_scale','natural_wdl')),folder/'pure-confirm')
+            pure_gate_wall+=time.time()-pure_gate_started
+            designated=config['smoke'] or cycle in (config['gates']['mid'],config['gates']['late'])
+            decision=gate_decision(pure,confirmed,health,no_gain=no_gain and designated)
+            search_screen=search_confirm=None
+            if not config['smoke'] and decision['decision']!='p0':
+                combined=merged_reports(report,best_report)
+                search_screen=comparison(pool,compare_jobs(candidate,best,decks,
+                    config['seeds']['selection']+cycle*10000+4000,deadline,config['search_gate_roots'],search=True,
+                    reports=combined,simulations=32,teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl')),folder/'search-screen')
+                search_confirm=comparison(pool,compare_jobs(candidate,best,decks,
+                    config['seeds']['selection']+cycle*10000+5000,deadline,config['search_gate_roots'],search=True,
+                    reports=combined,simulations=32,teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl')),folder/'search-confirm')
+                decision=gate_decision(pure,confirmed,health,no_gain=no_gain and designated,search=search_screen,search_confirm=search_confirm)
+            proposal=dict(decision)
+            if proposal['decision']=='promote':proposal['decision']='pending_mixed_validation'
+            write(folder/'gate.json',dict(**proposal,pure=pure,confirmed=confirmed,health=health,
+                  independent_selection=True,strength_approved=False))
+            if decision['decision']=='promote':
+                status('selected_value_check')
+                selected=select_models(candidate,best,decision['promoted_keys'],folder/'selected-uncalibrated'/'models')
+                selected_nets={k:rt.restore(selected,k,config['device'])[0] for k in ROSTER}
+                selected_origins={k:rt.model(selected,k).manifest['origin'] for k in ROSTER}
+                selected,selected_report=warm_value(pool,selected_nets,decks,selected_origins,selected,
+                    folder/'selected',config,cycle,config['train_until'],seed_offset=6000)
+                if selected_report['passed']:
+                    status('selected_independent_gate')
+                    selected_reports=merged_reports(selected_report,best_report)
+                    selected_checks=[]
+                    for offset,label in ((8000,'screen'),(9000,'confirm')):
+                        selected_checks.append(comparison(pool,compare_jobs(selected,best,decks,
+                            config['seeds']['selection']+cycle*10000+offset,config['train_until'],
+                            config['search_gate_roots'],search=True,reports=selected_reports,
+                            simulations=config['simulations'],teacher_mode=config.get('teacher_mode','network'),covered_value_source=config.get('covered_value_source'),q_scale=config.get('q_scale','natural_wdl')),
+                            folder/('selected-search-'+label)))
+                    safe=all(check[k]['candidate']>=check[k]['reference'] for check in selected_checks for k in ROSTER)
+                    if safe:best=selected;best_report=selected_report;no_gain=False
+                    else:decision.update(decision='keep',reasons=['selected_search_regression'],promoted_keys=[],retained_keys=list(ROSTER))
+                else:
+                    decision.update(decision='keep',reasons=['selected_value_failed'],promoted_keys=[],retained_keys=list(ROSTER))
+                if decision['decision']!='promote' and designated:no_gain=True
+                write(folder/'gate.json',dict(**decision,pure=pure,confirmed=confirmed,health=health,
+                    independent_selection=True,strength_approved=False))
+            elif decision['decision'] in ('p0','plateau'):
+                stop_reason=decision['decision']
+                # Actual in-memory rollback as well as exported pointer rollback.
+                nets={k:rt.restore(best,k,config['device'])[0] for k in ROSTER}
+                opts={k:torch.optim.Adam(n.parameters(),lr=config['learning_rate']*.1) for k,n in nets.items()}
+                pools={k:EpisodePool(limit=collection_pool_limit(config),max_row_reuse=config['max_row_reuse']) for k in ROSTER}
+                current=best;report=best_report
+            elif designated: no_gain=True
+            save_round(out,nets,opts,pools,current,rng,config,cycle,best,no_gain)
+            if stop_reason: break
+        if not cycle: raise ValueError('No complete learning batch before deadline')
+        if stop_reason is None:
+            stop_reason='planned_batches' if cycle==config['planned_batches'] else 'learning_deadline'
+        # A preflight is not formal quality approval. Only complete CUDA32
+        # records can create readiness for a separate newly seeded trial.
+        if fingerprint()!=frozen_algorithm: raise ValueError('Frozen training source changed')
+        if config.get('preflight'):
+            ready=stop_reason=='planned_batches' and config['device']=='cuda' and config['simulations']==32 and config['gumbel_candidates']==16 and config.get('teacher_mode','network')!='network' and bool(health) and all(h['finite'] and h['gradient'] and h['coverage']==1 for h in health.values())
+            receipt=dict(schema='seven_recovery_readiness_v1',device=config['device'],ready=ready,
+                rule_hash=config['rule_hash'],algorithm_sha256=fingerprint(),simulations=config['simulations'],
+                gumbel_candidates=config['gumbel_candidates'],terminal_horizon=config['terminal_horizon'],q_scale=config.get('q_scale','natural_wdl'),
+                teacher_mode=config.get('teacher_mode','network'),
+                covered_value_sha=sha256((Path(config['covered_value_source'])/'scope.json').read_bytes()).hexdigest() if config.get('covered_value_source') else None,
+                selected_value_seconds=value_wall,
+                preflight_replicas=config.get('preflight_replicas',1),
+                collection_replicas=configured_collection_replicas(config),
+                planned_complete_games=planned_complete_games(configured_collection_replicas(config)),
+                planned_historical_complete_games=planned_complete_games(configured_collection_replicas(config), historical=True),
+                update_and_numeric_seconds=update_wall,
+                workers=config['workers'],health=health,measured_at=time.time(),initial_models=versions(initial),
+                rollout_contract=rollout_contract(config),
+                initial_folder=str(initial),cycle_seconds=time.time()-started,
+                search_seconds_per_game=search_wall/max(1,search_games),
+                gate_roots=config['gate_roots'],pure_gate_seconds=pure_gate_wall,
+                policy_passes=config['policy_passes'],learning_rate=config['learning_rate'],quality_approved=False,
+                value_calibration=value_calibration_protocol(config),
+                files=immutable_receipt_files(out))
+            write(out/'readiness.json',receipt)
+            status('preflight_complete' if ready else 'preflight_failed',stop_reason=stop_reason)
+            return
+        status('evaluating',stop_reason=stop_reason or 'planned_batches')
+        complete=evaluate_frozen(pool,out,best,initial,decks,best_report,config)
+        status('complete' if complete else 'evaluation_incomplete',full_matrix=complete,
+               stop_reason=stop_reason or 'planned_batches',selected=str(best),
+               retained_baseline=versions(best)==versions(initial))
+    if fingerprint()!=frozen_algorithm: raise ValueError('Frozen training source changed during evaluation')
+    write(out/'delivery-manifest.json',{p.relative_to(out).as_posix():sha256(p.read_bytes()).hexdigest()
+        for p in out.rglob('*') if p.is_file() and p.name!='delivery-manifest.json'})

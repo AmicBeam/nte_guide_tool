@@ -1,0 +1,18 @@
+{% macro bonus_list(bonuses) %}<div class="guide-permanent-bonuses">{% for bonus in bonuses %}<span>{{ bonus.text }}</span>{% endfor %}</div>{% endmacro %}
+{% if key == 'notes' %}{% for note in value %}<p class="guide-text">{{ note }}</p>{% endfor %}
+{% elif key == 'entries' %}
+{% for furniture in value %}<article class="guide-permanent-furniture" id="furniture-{{ furniture.id }}">
+<header class="guide-furniture-heading"><img class="guide-furniture-image" src="{{ furniture.image }}" alt="{{ furniture.name }}" width="128" height="128" loading="lazy" decoding="async"><div><h3>{{ furniture.name }}{% if furniture.max_level_name != furniture.name %}<small>满级：{{ furniture.max_level_name }}</small>{% endif %}</h3>
+<p>{{ furniture.description }}</p><p class="guide-muted">解锁：{{ furniture.unlock|join('；') }}</p></div></header>
+<div class="guide-permanent-summary"><strong>Lv.{{ furniture.max_level }} 满级加成</strong>{{ bonus_list(furniture.levels[-1].bonuses) }}</div>
+<details class="guide-notes"><summary>查看1–{{ furniture.max_level }}级加成与升级要求</summary>
+<div class="guide-table-scroll" tabindex="0" role="region" aria-label="{{ furniture.name }}逐级加成与升级要求"><table class="guide-data-table"><thead><tr><th scope="col">当前等级</th><th scope="col">当前加成</th><th scope="col">升至下一级要求</th></tr></thead><tbody>
+{% for row in furniture.levels %}<tr><th scope="row">Lv.{{ row.level }}</th><td>{{ bonus_list(row.bonuses) }}</td><td>{% if row.next_level %}{% for item in row.upgrade_costs %}{{ item.name }} × {{ item.amount }}{% if not loop.last %}<br>{% endif %}{% endfor %}<small class="guide-muted"> → Lv.{{ row.next_level }}</small>{% else %}已满级{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></details></article>{% endfor %}
+{% elif key == 'levels' %}
+<div class="guide-permanent-summary"><strong>Lv.{{ value[-1].level }} 满级加成</strong>{{ bonus_list(value[-1].bonuses) }}<p>累计方斯：{{ '{:,}'.format(value[-1].total_fons) }}</p></div>
+<p class="guide-muted">属性列为本级总加成；窄屏可左右滑动查看完整表格。</p>
+<div class="guide-table-scroll" tabindex="0" role="region" aria-label="噗咔特训逐级加成与方斯消耗"><table class="guide-data-table guide-training-table"><thead><tr><th scope="col">特训等级</th><th scope="col">噗卡计划等级</th><th scope="col">单次方斯</th><th scope="col">累计方斯</th><th scope="col">本级总加成</th></tr></thead><tbody>
+{% for row in value %}<tr><th scope="row">Lv.{{ row.level }}</th><td>Lv.{{ row.required_puka_level }}</td><td>{{ '{:,}'.format(row.fons_cost) }}</td><td>{{ '{:,}'.format(row.total_fons) }}</td><td>{{ bonus_list(row.bonuses) }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}

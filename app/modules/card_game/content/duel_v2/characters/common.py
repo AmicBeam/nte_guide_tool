@@ -21,6 +21,16 @@ def draw_owned_card(c, character_id=None, *, reveal=True):
             return
 
 
+def generated_card(c, card_id):
+    """A copied ability generates for its acting entity, keeping the original kit."""
+    from app.modules.card_game.engine.duel_v2.state import card_instance
+    card = card_instance(c.state, card_id, c.side)
+    if card['character_id'] != c.cid:
+        card['original_character_id'] = card['character_id']
+        card['character_id'] = c.cid
+    return card
+
+
 def grant_seed(c, limit=3, *, reason=None):
     from app.modules.card_game.content.duel_v2.registry import KITS
     from app.modules.card_game.engine.duel_v2.state import add_hand, card_instance
@@ -35,10 +45,7 @@ def grant_seed(c, limit=3, *, reason=None):
     if gained >= limit:
         return
     team[key] = gained + 1
-    card = card_instance(c.state, card_id, c.side)
-    if mimic.get('id'):
-        card['original_character_id'] = card['character_id']
-        card['character_id'] = c.cid
+    card = generated_card(c, card_id)
     add_hand(c.state, c.side, card, reason=reason)
 
 
@@ -80,7 +87,8 @@ def deal_combat_followup(c, extra=0):
     amount = extra
     reasons = []
     if c.character.get('awakened'):
-        amount += 1
+        from app.modules.card_game.content.duel_v2.registry import decide
+        amount += int(decide(c, 'combat_followup_ultimate', 1, actor_only=True) or 0)
         reasons.append('终结')
     pending = int(c.character.get('flags', {}).pop('next_followup', 0) or 0)
     amount += pending
@@ -182,3 +190,13 @@ def settle_nightmare_on(character, layers=1) -> int:
     else:
         flags.pop('nightmare', None)
     return take
+
+
+def fill_harmony_on_battle_release(c, *, actor_id, card, **_data):
+    if actor_id != c.cid or not card or card.get('type') != 'battle':
+        return
+    from app.modules.card_game.engine.duel_v2.tutorial import tutorial_flags
+    if tutorial_flags(c.state).get('disable_harmony_gain'):
+        return
+    from app.modules.card_game.engine.duel_v2.escalation import harmony_cap
+    c.grant_harmony(c.cid, harmony_cap(c.state), reason=f'{c.character["name"]}释放战斗牌，触发异能')

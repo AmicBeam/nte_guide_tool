@@ -150,6 +150,10 @@ def raw_completed_q(prior: np.ndarray, visits: np.ndarray, total: np.ndarray, va
 
 
 def completed_q(node: Node, mode: str) -> np.ndarray:
+    if mode == 'mctx_default':
+        from ..mctx_q import completed_q as mctx_completed_q
+        return mctx_completed_q(node.prior, node.visits, node.total, node.raw_value,
+                                np.ones(len(node.prior), dtype=bool))
     if mode == 'legacy':
         return legacy_completed_q(node.prior, node.visits, node.total, node.raw_value)
     if mode != 'natural_wdl':
@@ -309,7 +313,7 @@ def _unpack_response(response: Any, query: InferenceQuery, q_scale: str = 'natur
             raise ValueError('WDL must be a normalized nonnegative probability vector')
         val = float(wdl[2] - wdl[0])
 
-    if q_scale == 'natural_wdl' and abs(val) > 1.0 + 1e-6:
+    if q_scale in ('natural_wdl', 'mctx_default') and abs(val) > 1.0 + 1e-6:
         raise ValueError(f'Natural WDL search requires values in [-1,1], got {val}')
 
     return logits, val
@@ -400,6 +404,74 @@ def _short_terminal_value_generator(
     return None
 
 
+def _teacher_terminal_generator(world, viewer, rng, *, backend, query_factory, deadline, clock, own_rule, q_scale):
+    """Same bounded real-terminal teacher as covered_rollout. No guessed outcome."""
+    for step in range(513):
+        if backend.finished(world):
+            return backend.terminal_value(world,viewer), True
+        if deadline is not None and clock() >= deadline:
+            raise _DeadlineReached('Covered terminal deadline')
+        if step == 512:
+            return None, False
+        actor=backend.acting_side(world)
+        if actor == viewer and not own_rule:
+            legal,(x,c)=backend.decision(world,actor)
+            query=query_factory(actor,x,c)
+            response=yield query
+            if deadline is not None and clock() >= deadline:
+                raise _DeadlineReached('Covered inference deadline')
+            scores,_=_unpack_response(response,query,q_scale=q_scale)
+            chosen=int(rng.choice(len(legal),p=softmax(scores)))
+        else:
+            legal,chosen=backend.rule_decision(world,actor)
+        world=backend.clean(backend.step(world,actor,legal[chosen]))
+
+
+def _can_fuse_covered_value(backend):
+    return (getattr(backend,'supports_covered_value_continuation',False) is True
+            and getattr(backend,'supports_gpu',False) is not True)
+
+
+def _teacher_value_generator(world, viewer, *, backend, query_factory, deadline, clock, horizon, q_scale):
+    """Public-rule continuation, then the qualified fixed-observer auxiliary WDL."""
+    if _can_fuse_covered_value(backend):
+        if backend.finished(world):
+            return backend.terminal_value(world,viewer), True
+        payload=backend.covered_value_continuation(world,viewer,horizon,deadline=deadline)
+        if not isinstance(payload,tuple) or not payload:
+            raise _DeadlineReached('Covered value deadline')
+        if payload[0]=='terminal':
+            return payload[1], True
+        if payload[0]!='observation' or len(payload)!=4:
+            raise ValueError('Invalid covered value continuation result')
+        _,x,c,viewer_is_actor=payload
+        query=query_factory(viewer,x,c,value_actor=bool(viewer_is_actor),
+                            value_only=True,auxiliary=True)
+        response=yield query
+        if deadline is not None and clock() >= deadline:
+            raise _DeadlineReached('Covered value inference deadline')
+        _,value=_unpack_response(response,query,q_scale=q_scale)
+        return value, True
+    for step in range(horizon+1):
+        if backend.finished(world):
+            return backend.terminal_value(world,viewer), True
+        if deadline is not None and clock() >= deadline:
+            raise _DeadlineReached('Covered value deadline')
+        if step == horizon:
+            break
+        actor=backend.acting_side(world)
+        legal,chosen=backend.rule_decision(world,actor)
+        world=backend.clean(backend.step(world,actor,legal[chosen]))
+    x,c=backend.value_observation(world,viewer)
+    query=query_factory(viewer,x,c,value_actor=backend.acting_side(world)==viewer,
+                        value_only=True,auxiliary=True)
+    response=yield query
+    if deadline is not None and clock() >= deadline:
+        raise _DeadlineReached('Covered value inference deadline')
+    _,value=_unpack_response(response,query,q_scale=q_scale)
+    return value, True
+
+
 def search_traversal(
     root_state: Any,
     viewer: str,
@@ -420,6 +492,8 @@ def search_traversal(
     statistics: Optional[Any] = None,
     collect_diagnostics: bool = True,
     root_evaluation: Optional[RootEvaluation] = None,
+    teacher_mode: str = 'network',
+    value_policy_identities_by_side: Any = None,
 ) -> Generator[InferenceQuery, Any, dict]:
     """Collaborative Gumbel search traversal yielding InferenceQuery instances.
 
@@ -427,8 +501,20 @@ def search_traversal(
     Terminates with a result dict matching recovery_search.search upon StopIteration.
     """
     if type(collect_diagnostics) is not bool:raise TypeError('Boolean diagnostics option required')
-    if q_scale not in ('legacy', 'natural_wdl'):
+    if q_scale not in ('legacy', 'natural_wdl', 'mctx_default'):
         raise ValueError('Unknown recovery Q scale')
+    if teacher_mode not in ('network','covered_terminal','covered_expert','covered_value'):
+        raise ValueError('Unknown teacher mode')
+    if teacher_mode!='network' and q_scale not in ('natural_wdl', 'mctx_default'):
+        raise ValueError('Covered teacher requires a WDL Q profile')
+    if teacher_mode!='network' and not callable(getattr(backend,'rule_decision',None)):
+        raise ValueError('Backend lacks the canonical rule teacher')
+    if teacher_mode=='covered_value':
+        if value_policy_identities_by_side is None:
+            raise ValueError('Qualified auxiliary value identities required')
+        _get_policy_identity(value_policy_identities_by_side,viewer)
+    if teacher_mode!='network' and hasattr(backend,'program') and 'rule_decision' not in backend.program.entries:
+        raise ValueError('Frozen program lacks the canonical rule teacher')
     if (type(simulations) is not int or simulations < 1 or type(gumbel_candidates) is not int
             or gumbel_candidates < 1 or type(max_depth) is not int or max_depth < 1
             or type(terminal_horizon) is not int or terminal_horizon < 0):
@@ -466,9 +552,9 @@ def search_traversal(
     query_counter = 0
     root_token = uuid4().hex
 
-    def make_query(actor_side: str, enc_x: np.ndarray, enc_c: np.ndarray, *, value_actor=True, value_only=False) -> InferenceQuery:
+    def make_query(actor_side: str, enc_x: np.ndarray, enc_c: np.ndarray, *, value_actor=True, value_only=False, auxiliary=False) -> InferenceQuery:
         nonlocal query_counter
-        p_key, m_version = _get_policy_identity(policy_identities_by_side, actor_side)
+        p_key, m_version = _get_policy_identity(value_policy_identities_by_side if auxiliary else policy_identities_by_side, actor_side)
         qid = f"{root_id}:{root_token}:{query_counter}"
         query_counter += 1
         return InferenceQuery(
@@ -498,6 +584,10 @@ def search_traversal(
         x,c=root_query.x,root_query.c
         if len(actions)!=len(c) or not actions:raise ValueError('Cached root action count mismatch')
     logits, root_value = _unpack_response(response, root_query, q_scale=q_scale)
+    if teacher_mode=='covered_value':
+        auxiliary_query=make_query(viewer,x,c[:0],value_only=True,auxiliary=True)
+        auxiliary_response=yield auxiliary_query
+        _,root_value=_unpack_response(auxiliary_response,auxiliary_query,q_scale=q_scale)
 
     prior = search_prior(logits)
     rng = np.random.default_rng(seed)
@@ -534,15 +624,18 @@ def search_traversal(
                     value = backend.terminal_value(world, viewer)
                     break
                 actor = backend.acting_side(world)
-                legal, (xx, cc) = backend.decision(world, actor)
-                if actor != viewer:
+                if actor!=viewer and teacher_mode!='network':
+                    legal,chosen=backend.rule_decision(world,actor)
+                else:
+                    legal,(xx,cc)=backend.decision(world,actor)
+                if actor!=viewer and teacher_mode=='network':
                     query = make_query(actor, xx, cc)
                     response = yield query
                     if calc_deadline is not None and clock_fn() >= calc_deadline:
                         raise _DeadlineReached('Inference completed after decision deadline')
                     scores, _ = _unpack_response(response, query, q_scale=q_scale)
                     chosen = int(rng.choice(len(legal), p=softmax(scores)))
-                else:
+                elif actor==viewer:
                     key = info_key(xx, cc)
                     if key not in tree:
                         query = make_query(actor, xx, cc)
@@ -550,10 +643,22 @@ def search_traversal(
                         if calc_deadline is not None and clock_fn() >= calc_deadline:
                             raise _DeadlineReached('Inference completed after decision deadline')
                         scores, value = _unpack_response(response, query, q_scale=q_scale)
+                        if teacher_mode=='covered_value':
+                            aux_query=make_query(viewer,xx,cc[:0],value_only=True,auxiliary=True)
+                            aux_response=yield aux_query
+                            _,value=_unpack_response(aux_response,aux_query,q_scale=q_scale)
                         tree[key] = ((yield from statistics.create(search_prior(scores),value,owner))
                                      if statistics is not None else Node.create(search_prior(scores), value))
                         remaining = max_depth - depth
-                        if terminal_horizon and remaining > 0:
+                        if teacher_mode=='covered_value':
+                            value,finished_sim=yield from _teacher_value_generator(world,viewer,
+                                backend=backend,query_factory=make_query,deadline=calc_deadline,clock=clock_fn,
+                                horizon=terminal_horizon,q_scale=q_scale)
+                        elif teacher_mode!='network':
+                            value,finished_sim=yield from _teacher_terminal_generator(world,viewer,rng,
+                                backend=backend,query_factory=make_query,deadline=calc_deadline,clock=clock_fn,
+                                own_rule=teacher_mode=='covered_expert',q_scale=q_scale)
+                        elif terminal_horizon and remaining > 0:
                             proved = yield from _short_terminal_value_generator(
                                 world, viewer, policy_identities_by_side, rng,
                                 scores=scores, legal=legal,
@@ -584,6 +689,14 @@ def search_traversal(
             else:
                 if backend.finished(world):
                     value = backend.terminal_value(world, viewer)
+                elif teacher_mode=='covered_value':
+                    value,finished_sim=yield from _teacher_value_generator(world,viewer,
+                        backend=backend,query_factory=make_query,deadline=calc_deadline,clock=clock_fn,
+                        horizon=terminal_horizon,q_scale=q_scale)
+                elif teacher_mode!='network':
+                    value,finished_sim=yield from _teacher_terminal_generator(world,viewer,rng,
+                        backend=backend,query_factory=make_query,deadline=calc_deadline,clock=clock_fn,
+                        own_rule=teacher_mode=='covered_expert',q_scale=q_scale)
                 else:
                     actor = backend.acting_side(world)
                     # A leaf uses the fixed root observer's independent WDL. An
@@ -629,7 +742,7 @@ def search_traversal(
             simulations=len(depths),requested=requested,complete=len(depths)==requested,
             roots_covered=covered,nodes=len(tree),worlds=worlds,max_depth=max(depths,default=0),
             stop_reason=stop_reason or ('complete' if len(depths)==requested else 'deadline'),
-            q_scale=q_scale,policy_source='gumbel_q_'+q_scale)
+            q_scale=q_scale,policy_source='gumbel_q_'+q_scale+(':'+teacher_mode if teacher_mode!='network' else ''))
     if statistics is not None:
         saved=yield from statistics.snapshot(root_ref)
         root=Node.create(saved['prior'],saved['raw_value'])
@@ -675,11 +788,12 @@ def search_traversal(
         worlds=worlds,
         max_depth=max(depths, default=0),
         depth=max(depths, default=0),
-        policy_source='gumbel_q_' + q_scale,
+        policy_source='gumbel_q_' + q_scale + (':'+teacher_mode if teacher_mode!='network' else ''),
         root_diagnostics=diagnostics,
         q_scale=q_scale,
-        teacher_mode='network',
-        leaf_source='network_or_short_proof',
+        teacher_mode=teacher_mode,
+        leaf_source='covered_expert_value_or_terminal' if teacher_mode=='covered_value' else
+            'real_terminal' if teacher_mode!='network' else 'network_or_short_proof',
         stop_reason=stop_reason or ('complete' if len(depths) == requested else 'deadline'),
     )
     return result

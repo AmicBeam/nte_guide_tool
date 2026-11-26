@@ -1,12 +1,47 @@
 # 异能对决模块
 
+曳尔沐为仅测试账号可见的光属性 2/5 角色。MU01–MU05 战术占位、MU06–MU08 三张 2/5 武备占位，特殊效果正文全部空白；只装备基础面板，不增加官方预组。三张武备均绑定对应皮肤立绘，牌桌与回放随武备切换。信号资源、延滞一次续接、盈蓄随机光减抗与终结已接入；各牌信号条件及失败替换效果留待卡效设计，当前占位牌不提升信号。验证：`.venv/bin/python -m unittest tests.test_duel_v2_elyms tests.test_duel_v2_catalog`。
+
+可接环合的角色复用现有状态向外发光；黑羽魔女形态的战斗牌 +1 攻在手牌面板可见，占卜要求牌库至少 2 张，叛逃者叠加原攻击，坏骨头在原攻击后释放。
+
+当前公开角色包含哈尼娅（共 18 名）。倾陷基础上限 3，绿色角色包围盒按累计比例从上向下消退；历史弹窗以小图与悬浮大卡展示公开卡牌，早雾图鉴补充紫框鬼郎丸。当前卡效回归：`.venv/bin/python -m unittest tests.test_duel_v2_latest_card_adjustments`。
+
+零与基础形态黑羽在释放战斗牌时充满环合值，包含直接释放，先于卡框和攻击；支付阶段仅按实际费用获值。
+
+当前环合规则为上限 3、实际行动力消耗等量的可改写基础获值、本回合用牌／普通出击来源与外扩蓝色虚线，回合结束清除来源；旧退下继承已移除。创生普通最多 3 珠，每珠记录固定层数、独立持续时间与每回合计次；九原每珠 2 层，伊洛伊额外珠按触发次数排队并可超过普通上限，并同步到公开投影和回放；角色效果及例外统一见[现行手册](../../../docs/everness-item-chain-card-design.md#当前环合与异能规则)。旧冻结高级模型不因规则变更自动重绑，仍须通过现行规则身份校验；训练专用复制规则不视为已适配本轮新机制。
+
+本轮回归入口：`.venv/bin/python -m unittest tests.test_duel_v2_harmony_rework tests.test_duel_v2_zero_harmony_timing tests.test_duel_v2_genesis_beads tests.test_duel_v2_catalog tests.test_duel_v2_tutorial tests.test_duel_v2_engine tests.test_duel_v2_zone_status tests.test_duel_v2_harmony_lifetime tests.test_duel_v2_escalation tests.test_duel_v2_presentation`。
+
+
 异能对决是仓库内的网页卡牌桌游，页面入口为 `/card-game`。登录后可构筑、查阅图鉴、进入单战场牌桌，并查看公开回放。默认主页、构筑、图鉴和牌桌使用四人轮替 V2；旧盖卡页面通过 `?legacy=1` 访问。
+
+NumPy／PyTorch 的 Mctx 算法适配可显式选择 `q_scale=mctx_default`，与历史 `natural_wdl` 做独立对照；网站与既有训练默认保持原配置。官方 JAX 仅作隔离数值 oracle，不进入 Windows CUDA 或网站运行。准备及验证入口：`python scripts/prepare_duel_v2_mctx.py`，实际 CUDA 组件核对使用 `--verify-cuda --output NEW_DIR`，细则见[Q 配置对照准备](../../../docs/duel-v2-public-training.md#numpy--cuda-的-mctx-q-配置对照准备)。验证：`python -m unittest tests.test_duel_v2_mctx_profiles`。
 
 本文件只说明模块范围、页面入口、代码边界和验证命令。训练先读[当前执行链路](../../../docs/duel-v2-public-training.md#当前训练链路与报告落点)和[完整评估规范](../../../docs/duel-v2-full-training-report-spec.md)；单轮报告存放在被Git忽略的 `artifacts/rl-evals/`，下文历史报告链接仅指向本机资料。规则、数值和角色职责以完整手册为准，不在这里另写一份。
 
+完整训练使用[轻量 agentic Flow](../../../docs/duel-v2-full-training-flow.md)：先确认候选换牌、精确截止和高级人机构筑范围，再由持续主 agent拆解步骤、默认 Grok 子 agent执行有界任务、登记证据并接受全新只读最终审计。`rl/training_flow*.py` 管理本轮训练证据与交接，不启动网站训练、不替换学习算法，不另设CLI。验证：`.venv/bin/python -m unittest tests.test_duel_v2_training_flow tests.test_duel_v2_training_flow_agents tests.test_duel_v2_training_flow_report tests.test_duel_v2_training_flow_integration`。
+
 恢复训练可显式使用 `--value-full-tower --value-replicas 12 --value-check-replicas 3` 扩大独立价值分支校准；轮数／温度只在选择集决定，不改变策略或放松留出条件。不同协议需新CUDA预检，见[价值校准协议](../../../docs/duel-v2-policy-recovery.md#独立价值分支的扩大校准)。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_recovery_round tests.test_duel_v2_current_round`。
 
+离线互搏统一七队，`evaluate_duel_v2_batched.py`默认seven，旧五队只保留历史数据与迁移兼容。`--rule-backend cuda_vm`显式接入GPU规则，`--device`独立选择推理设备；`--search-roots N`区分驻留局数与同时在途搜索根。容量计划分开持久图、VM临时堆及每次至多32行的调用工作区，统计池按同一候选限额分配；1600根不因分批缩减。等待、搜索、端到端延迟与实际峰值分别报告。协议、冻结程序和验证入口见[离线批量搜索](../../../docs/duel-v2-batched-search.md)，设备规则／完整终局与模型质量仍须独立验收。
+
 2026-09-15 起模块名称改为「异能对决」。Logo 使用青金色字标与 `ESPER DUEL` 副标，移除异象道具卡片及徽章；旧名称的构筑文本仍可导入。
+
+## 换牌与局内策略的隔离学习
+
+显式混合训练可用 `policy_layout=phase_isolated_v1`：同一批完整对局按换牌／局内分组，分别更新互不共享可训练参数的策略，终局WDL与独立辅助价值保持原职责。批量推理按阶段分组，仅执行激活分支；数值迁移、三个Adam状态、回放与RNG恢复均独立于旧schema。`scripts/prepare_duel_v2_phase_policy.py` 默认只计划，`--apply` 才写入新数值目录，不启动训练或更新网站模型。详见[训练手册](../../../docs/duel-v2-public-training.md#换牌局内策略隔离的显式混合路径)。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_phase_policy tests.test_duel_v2_phase_hybrid`。本地CPU通过不表示实际CUDA吞吐、显存或模型强度通过；Windows上线后须同源实测。
+
+## 当前高级人机服务模型
+
+大厅预组列表、牌桌与回放统一显示「高级人机」，不展示「实验性」标签。内部模型的 `experimental` 标记与强度验收状态仍保留；显示名称不影响模型选择、配牌、搜索预算或可用性校验。
+
+高级人机当前仅开放创生、浊燃、真红，指定入口与随机池使用同一范围；覆纹、小吱、倾陷、灵可保留为普通人机预组。三队采用 `engine/ai/models/seven-20261115/` 的选定 NumPy 数值与各自32张配牌。`seven_model.py` 校验独立的用户采用绑定、当前规则、原始清单、权重、配牌、张量与嵌入旧策略；研究模型的未批准标记不修改。浊燃选定策略沿用基线，创生和真红选定策略已更新；用户指定采用不等同于统计强度验收通过。
+
+新模型沿用网站逐操作 3 秒／最多 32 次模拟、16 根候选、H3、natural-WDL 的公开信息集搜索。网站只使用 CPU NumPy 推理，不导入 Torch、不训练，也不声称采用离线训练的完整搜索预算。旧房间权重或构筑版本变化须重新开局。缺失、损坏或规则不匹配的当前采用文件拒绝开局，整个当前目录缺失也不回退旧权重。随机高级对手只从三队中成功校验的模型选择。玩家可使用模型观察支持的公开角色自组；当前哈尼娅尚未进入该模型观察，在建房前明确拒绝。
+
+`models/` 只维护实际服务使用的数值导出与绑定；训练检查点、优化器、诊断、对局和单轮报告继续保存在 `artifacts/rl-evals/`。回归：`.venv/bin/python -m unittest tests.test_duel_v2_seven_serving tests.test_duel_v2_collapse_advanced_pause tests.test_duel_v2_serving_search tests.test_duel_v2_advanced_ai tests.test_duel_v2_ai_step`。下文旧日期的服务接入与暂停记录为历史状态，以本节及当前加载器为准。
 
 ## 文档入口
 
@@ -32,7 +67,7 @@
 
 ## 模块范围
 
-- 完整卡表 19 名角色、152 种可构筑卡牌。正式账号公开娜娜莉、零、九原、伊洛伊、薄荷、白藏、小吱、海月、真红、翳、安魂曲、残虹、早雾、阿德勒，以及创生、覆纹、小吱、真红、浊燃五套预组。随机简单人机从这五套公开预组中抽取。
+- 完整卡表21名角色、168种可构筑卡牌。当前17名公开角色包括黑羽、达芙蒂尔、灵可，以及此前公开的14人。七套公开官方预组为创生、覆纹、小吱、真红、浊燃、倾陷、灵可；普通人机指定和随机选择均支持六套。其余角色保持测试权限。
 - 每方 4 人、单人战斗区、玩家生命胜负、完整回合轮替。玩家行动力支付费用，手牌按牌面支付行动力，浔包含零费战术；每名角色独立保存环合值与能量。能量满后可发动终结，不消耗行动力，每回合限 1 次，备战区也可使用。
 - 每个回合开始通常抽 1 张，包括先手首回合。起手 5 张；先手首回合 1 点行动力，后手开局 5 点护盾。正式 Python 引擎、张量训练与编译训练后端同步执行该抽牌规则。
 - 2026-09-19 回合边界纠正：玩家护盾在己方回合开始效果前清零（含后手开局护盾）；家族壮大从整局第 5 回合起具有瞬发。正式规则与训练源码同步，专项验证见 [回合边界修正](../../../docs/duel-v2-turn-boundaries-20260919.md)。
@@ -44,7 +79,7 @@
 - 规则数值仍是试玩参数。功能测试、训练短跑和页面验收都不能证明已经平衡。
 - 旧教程和 `/analytics` 数据看板仍使用盖卡模式，尚未迁移。
 
-核心职责只作索引，细则见手册：娜娜莉自身成长主攻、零自身环合加速、九原强化创生、浔时计与荒时支援、安魂曲噩梦、残虹持续伤害、早雾鬼郎丸、阿德勒护盾、灵可同频、真红盈蓄追加攻击、翳兽牙影刺、哈索尔延滞、伊洛伊治疗加攻与复活、薄荷溢出穿透、白藏自伤叠攻与斩杀。
+核心职责只作索引，细则见手册：娜娜莉自身成长主攻、零自身环合加速、九原强化创生、浔时计与荒时支援、安魂曲噩梦、残虹持续伤害、早雾鬼郎丸、阿德勒护盾、灵可同频、真红盈蓄追加攻击、翳兽牙影刺、哈索尔等待重做、伊洛伊治疗加攻与复活、薄荷溢出穿透、白藏自伤叠攻与斩杀。
 
 ## 页面入口
 
@@ -71,6 +106,7 @@
 - 回放换牌面板随当前公开局面的阶段显示，自动播放进入第一回合时立即收起；暂停、单步与跳转使用相同阶段判断。
 - 回放顶部控制栏以回合下拉框替代时间显示：可选择开局或已有回合，立即暂停并还原该回合起点的公开局面；播放和单步前进时同步当前回合。
 - 回放控制栏占满顶部生命面板与右侧状态区之间的可用宽度；步骤摘要悬停显示完整内容与步数，场中央不再重复显示步骤。白热化进度放在中央区域左半部，避免伸入左侧异能者编队。
+- 白热化按后端公开阶段装饰屏幕边缘：第 6 回合柔和金色发光，第 13 回合增强为暖橙光，第 20 回合显示沿边缘燃烧的动效。实时牌桌与回放共用；装饰不接收指针、不占布局，减弱动态选项或系统减少动态时使用静态边缘。
 
 - 菜单提供「拖动选择目标」开关，默认开启并保存在本机。按下或点击卡牌时不显示拖动热区；按住移动超过 8 像素后才显示拖动卡影与合法目标。有目标牌只高亮目标，拖到目标松开出牌，非法落点回弹，不显示取消按钮。无目标卡（含固定作用于所属角色的装备，以及自动选取攻击目标的战斗牌）可拖到整个战斗大区，包含双方备战区、前排和其间空白。关闭后，所有牌先拖到同一战斗大区松开，有目标卡再进入可取消的点选界面。
 - 手牌瞬发虚线边框仅在我方本回合瞬发机会尚未使用时显示；虚线与内光保留卡牌类型原色，选中时也不改写边框颜色。机会用完后恢复普通可用牌边框，响应标记保留。
@@ -90,16 +126,18 @@
 
 ### 武备时装（2026-09-20）
 
-双方前排与备战区的角色立绘随当前武备切换，角色详情同步；手牌、构筑和图鉴仍使用默认图。08 优先居家服，07 按用户选择；缺图恢复默认，倒地卸装恢复默认，回放按当时的公开武备 ID 展示。公开与测试角色共用逻辑，不改变权限或规则。默认头像与立绘后续优先从 NTEData、Nanoka 核对，保留原有缩放与头部对齐；既有默认图未因来源约定改变而批量替换。映射和完整来源见 [角色图片资源说明](../../../docs/character-image-assets.md)。图片选择留在前端展示层，不修改卡池与模型规则哈希。
+双方前排与备战区的角色立绘随当前武备切换，角色详情同步；手牌、构筑和图鉴仍使用默认图。08 优先居家服，07 按用户选择；缺图恢复默认，倒地卸装恢复默认，回放按当时的公开武备 ID 展示。公开与测试角色共用逻辑，不改变权限或规则。默认头像与立绘后续从最新 NTEData 核对，保留原有缩放与头部对齐；既有默认图未因来源约定改变而批量替换。映射和完整来源见 [角色图片资源说明](../../../docs/character-image-assets.md)。图片选择留在前端展示层，不修改卡池与模型规则哈希。
 
 回归：`python3 -m unittest tests.test_duel_v2_costume_art tests.test_duel_v2_card_art`。
 
 ### 演出
 
+- 黑羽两种形态实际发动置底牌占卜效果时，均从所属方牌库公示该牌，双方视角均能看到牌面，不播放响应大字；已公示牌随后免费释放不重复揭牌。未发动效果的牌与后续牌序保持隐藏。
+- 实际自动响应使用公开 `play.response=true` 标记：先在战斗区中央播放「响应」大字，再从响应方手牌揭示该实体牌，完成后应用事件局面。实时我方也沿用回放的出牌演出；主动打出带响应能力的牌不显示响应大字。费用不足不产生演出，刷新不重播；旧回放缺少该标记时保持原演出。
 - 普通抽牌与生成牌动画落到所属角色手牌组的末尾；该角色暂无手牌时按编队顺序插入。对手未公开抽牌的放大与入手动画均显示牌背；已公开的牌按公开牌面演出。
 - 起手换牌沿用换牌区内的旧牌切出、新牌切入；换入牌不播放普通抽牌的放大飞入动画。
 - 获得环合值或能量时只让卡片上变化的资源数字跳动，不播放资源飘字或字幕。
-- 交战阶段只播放出击与反击动作，不提前显示伤害数值字幕。援护技免疫反击时，攻击者在原反击扣血时机飘出金色「无敌」；不把其他零伤害当作无敌。
+- 交战阶段只播放出击与反击动作，不提前显示伤害数值字幕。援护技免疫反击时，攻击者在原反击扣血时机飘出金色「免疫」并短暂显示金色保护框；不把其他零伤害当作免疫。
 - 衍生牌与临时复制成功加入手牌时，用公开 `gain.card` 先在视野中央显现牌面，再缩小飞入获得方手牌。
 - 触发环合时，对战区中央播放一次对应名称的艺术字；随后“获得延滞／浊燃／黯星／覆纹／浸染”的状态附着事件只更新局面与历史，不再重复播放。独立触发的失谐仍正常演出；素材保存在模块 `static/images/harmony/`。专项验证：`python -m unittest tests.test_duel_v2_harmony_presentation`。
 - 演出提示统一使用 `_notice(title, detail, position)`。回合、通用通知及角色状态提示放上方，出牌、抽牌等过程说明放下方。
@@ -127,7 +165,7 @@
 - 手机顶部信息栏也不保留整条背景和布局占位：对手生命、回合与菜单悬浮在战斗区上方，中央空白可直接操作牌桌；对手牌堆计数下移避开生命面板。
 - 手机点击我方「手牌数」也可展开／收起手牌，按钮同步标记展开状态。悬浮手牌在右侧留出牌堆按钮空间，展开后仍能点击手牌数收起；拖动期间与二次选择期间不切换。
 - V2 牌桌（含回放）在粗指针设备首次点击时尝试全屏并锁定横屏，每次页面加载至多一次；竖屏提示提供「尝试自动横屏」按钮。返回大厅不触发尝试。接口缺失或请求被拒绝时保留手动旋转提示，不阻塞对局操作；退出全屏或离开页面释放已取得的方向锁。大厅导航会切换文档，因此不能依赖大厅点击授权，需在牌桌内首次点击时尝试。
-- 起手换牌顶部提供「收起换牌 / 展开换牌」。手机换牌卡显示效果摘要，完整说明在大图中阅读。
+- 起手换牌、占卜和通用选择面板提供统一收起／恢复按钮；收起后可查看战场并悬浮查看大图，恢复保留原选择。手机换牌卡显示效果摘要，完整说明在大图中阅读。
 - 大厅、构筑、图鉴按 CSS 视口排版；手机横竖屏允许纵向滚动。图鉴角色导航横向滚动，卡片横屏四列、窄屏两列。
 - PC 终结按钮为立绘顶部的扁按钮，位于护盾、攻击与生命数值上方。手机终结按钮放在角色卡右侧竖排，待生效效果以增益／减益小图标显示在我方角色下方、对方角色上方；环合与能量优先同一行，必要时缩写为「环」「能」。
 - 手机出牌演出牌面宽度至多 220px、高度至多屏高的 65%（上限 300px）。
@@ -175,7 +213,7 @@
 
 ## 对局白热化
 
-新建 V2 对局在总第 6 回合起，每回合开始为当前玩家最低能量存活异能者 +1 能量（同值随机），并有每回合 2 次终结机会；第 13 回合双方能量上限 -1；第 20 回合双方环合上限降为 1。上限变化会同步截断双方已有资源。战斗区中间左侧显示下一阶段倒计时。旧快照和前 11 关教学不追加。第 12 关「白热化」显式启用，从后手总第 4 回合开始，到第 6 回合完成补能与两次终结。完整口径见手册「对局白热化」。
+新建 V2 对局在总第 6 回合起，每回合开始为全体己方可获能的存活异能者各 +1 能量，并有每回合 2 次终结机会；第 13 回合双方能量上限 -1、环合上限降为 1；第 20 回合每个己方回合开始随机从己方弃牌堆回收 1 张可构筑卡牌，基础行动力刷新为 3 点。回收排除衍生牌和临时复制，空候选跳过，通常抽牌仍为 1 张。非前排或终结中的真红、浔时计不参与全体回能。行动力没有统一硬上限，卡效可额外增加；剩余留给对方回合响应，下个己方回合重置。上限变化会同步截断双方已有资源。战斗区中间左侧显示下一阶段倒计时。旧快照和前 11 关教学不追加。第 12 关「白热化」显式启用，从后手总第 4 回合开始，到第 6 回合完成补能与两次终结。完整口径见手册「对局白热化」。
 
 规则快攻镜像对照：`python3 scripts/evaluate_duel_v2_escalation.py --pairs 64 --workers 4 --output /private/tmp/nte-escalation-eval.json`。
 
@@ -224,7 +262,7 @@ Windows 已完成一次有界 CUDA 出牌/配牌短训练，启动所需 MSVC �
 
 ```bash
 python3 -m unittest tests.test_module_routes.ModuleRoutesTest.test_card_game_module_page_and_asset
-python3 -m unittest tests.test_duel_v2_zone_status tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_table_contract tests.test_duel_v2_tutorial tests.test_duel_v2_opening_draw tests.test_duel_v2_escalation tests.test_duel_v2_trigger_history
+python3 -m unittest tests.test_duel_v2_zone_status tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_hooks tests.test_duel_v2_api tests.test_duel_v2_replay tests.test_duel_v2_table_contract tests.test_duel_v2_tutorial tests.test_duel_v2_opening_draw tests.test_duel_v2_escalation tests.test_duel_v2_escalation_backends tests.test_duel_v2_trigger_history
 node --check app/modules/card_game/static/js/v2_api.js
 node --check app/modules/card_game/static/js/v2_build.js
 node --check app/modules/card_game/static/js/v2_table.js
@@ -813,7 +851,7 @@ R02／R03／R04 移除盈蓄条件与瞬发，始终在出击前抽对应类型�
 
 ### CUDA 规则执行组件的边界
 
-`rl/batched_duel` 新增冻结程序数字图、CUDA 图堆／解释器、容器、模块／方法查询和候选编码组件。设备对拍覆盖的是已实现子集；完整规则、随机采样、GPU 观察和搜索尚未全部接通，`supports_full_duel_rules=False`。旧 CPU 进程池的 1,600 局在途容量不能当成真正 GPU 规则并发已完成。接口、验证与剩余门槛见[离线批量搜索](../../../docs/duel-v2-batched-search.md)。
+`rl/batched_duel` 提供冻结正式规则入口、CUDA 图堆／解释器与有界批量后端，以及设备公开图→观察/候选编码。NumPy/JSON和标准库有界原语已接入；默认拒绝缺失能力，显式独立实体守卫只准入正式对局路径，调用UUID兜底时明确失败。状态复制要求实体身份与别名已规范化，未知角色/动作仍拒绝。完整规则设备对拍与正式预算终局验收尚待完成，`supports_full_duel_rules=False`；旧CPU的1,600局在途容量不代表GPU规则并发通过。接口、运行边界与验证入口见[离线批量搜索](../../../docs/duel-v2-batched-search.md)。
 
 `rl/batched_duel/gpu_observation.py` 提供 2,420 列观察的真实 CUDA 编码及直接设备 token 接口，与 254 列候选分别逐列对拍。公开 token 的主机提取仍是过渡适配，完整 GPU 投影和规则搜索未完成。验证：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_observation`；1,600 行编码样本不计为 1,600 个完整对局。
 
@@ -867,3 +905,566 @@ N05 新增瞬发，I06 改为一次主动选择对方存活异能者并集中施
 用户可明确选择已回传的真红短训 `latest` 候选作为实验性网页对手。`serving.json` 的模型项可通过成套 `source_rule_hash`、`source_request`、`source_report` 记录独立训练来源；原五队顶层来源与其他四队不变。加载仍要求当前运行规则、原始模型/清单/构筑SHA、具名观察/动作、数值结构和未批准质量状态全部一致；来源字段缺失或与原清单不符则拒绝，不能重写训练清单冒充当前规则训练。
 
 真红当前使用2026-10-08短训练未批准候选，保留 I01/I03/I04/I08 各2张的服务配牌，继续现有信息集搜索，不在网页运行真红v3指导；更新权重后旧真红房间须重新开局。此为用户指定试用，不是确认强度提升，也不采用五队失败预检的模型。验证沿用恢复服务、实验性对手和搜索测试；原候选、旧服务模型及检查记录留在 `artifacts/rl-evals/`。
+
+### 2026-10-08 灵可覆纹辅助重做
+
+灵可角色包负责跨回合连续使用三张牌（含响应）、指定属性同频合击、借用角色自身援护技回调、共鸣领域及五张战术／三张武备；取消旧同频桥接。通用引擎新增实际使用与攻击命中前时机、指定属性／追加攻击标记、多选后续选择及可消费的下一张瞬发效果，覆纹继承原攻击属性。K06 普通费用1点、额外消耗1点，依次为其他存活队友及灵可自身发动合击，仅攻击对方前排；目录接受非负整数费用。机制说明、计数、玩家抗性减益在实时投影、生命 HUD 与公开回放同步；卡牌和具体边界见唯一设计手册灵可专节。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_modifiers tests.test_duel_v2_effect_markers tests.test_duel_v2_presentation tests.test_duel_v2_replay tests.test_duel_v2_hand_face tests.test_duel_v2_entities`，模拟对拍单独运行 `tests.test_duel_v2_simulation`；`node --test tests/js/duel_v2_effect_markers.test.cjs tests/js/duel_v2_hand_face.test.cjs tests/js/duel_v2_table_state.test.cjs`。
+
+
+### 2026-10-08 达芙蒂尔倾陷体系
+
+新增暗属性 2/5 测试角色达芙蒂尔、F01–F08 八种可构筑牌和 FF01 洞察衍生牌；复用已有共享头像／立绘，不新增预组。卡牌与规则以完整手册达芙蒂尔专节为准，数值来自用户桌游方案。普通账号目录继续过滤测试角色。
+
+角色包负责失谐永久降倾陷上限、洞察生成／增伤／使用计数、造物之众回收、湖心花响应、两种武备及双方随机倾陷。通用引擎统一派发进入倾陷、两种失谐顺序、对方攻击和援护结算后时机；永久上限修正独立于倒地清理。实时牌面、计数、倾陷与公开回放同步；旧模型不自动重绑，本次不训练或部署。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_dafutier tests.test_duel_v2_catalog tests.test_duel_v2_lingke tests.test_duel_v2_engine tests.test_duel_v2_continuous_cast tests.test_duel_v2_presentation tests.test_duel_v2_replay`；模拟对拍单独运行 `.venv/bin/python -m unittest tests.test_duel_v2_simulation`。
+
+
+### 2026-10-08 07／08 皮肤命名试行
+
+按用户要求将已有皮肤绑定的 21 张 07／08 改为对应皮肤名，未绑定者保留原名。目录记录皮肤 ID 与上游来源，并保留旧命名来源；角色包、效果提示和牌面卡名引用同步更名。稳定卡牌 ID、卡效、面板、费用、构筑及换装资源不变，历史回放与冻结资料不批量回写。对应表见规则手册本日专节。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_catalog tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_engine tests.test_duel_v2_continuous_cast tests.test_duel_v2_lingke tests.test_duel_v2_dafutier tests.test_duel_v2_presentation tests.test_duel_v2_replay`。
+
+
+### 2026-10-08 额外武备皮肤与灵可减抗修订
+
+补查上游完整服装表，新增零06城市漫游者／08学园随想、灵可03星间漫游、残虹06夜幕裁梦、哈尼娅07青春注脚的卡名与换装绑定；五张本地WebP与源SHA记录在图片清单。保留原卡牌ID、面板、费用和卡效。
+
+灵可同频合击机制说明按用户文本精简，同属性减抗改为不可叠加、重复刷新；不同属性独立，同类不同来源也不叠加。持续截止统一为灵可下个己方回合开始时按通用机制衰减，其他援护规则与借用回调保持。验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_dafutier tests.test_duel_v2_costume_art tests.test_duel_v2_card_art tests.test_duel_v2_catalog tests.test_duel_v2_haniya tests.test_duel_v2_engine tests.test_duel_v2_effect_markers tests.test_duel_v2_presentation tests.test_duel_v2_replay`。
+
+
+### 2026-10-08 灵可通用衰减
+
+按用户最终选择，同频合击及领域援护减抗统一在灵可下个己方回合开始时通过现有生命周期清除，同属性仍不可叠加。机制小卡、终结、效果历史与双方减益标记同步“回合开始时衰减”文案；领域自身的2个己方回合不变。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_modifiers tests.test_duel_v2_effect_markers tests.test_duel_v2_presentation tests.test_duel_v2_replay`。
+
+
+### 2026-10-08 黑羽占卜与救世魔女
+
+黑羽作为测试角色新增P01–P08与衍生谕石，基础能量需求特别为5。基础异能插入谕石、战斗牌回满环合、强化浸染和黯星；魔女暂停前两项，每次出击先等待占卜选择，完成后继续本次出击。玩家文案集中在占卜／救世魔女机制词条，不再使用分卡魔女效果。P07牧星者／P08睡衣不凋羽均3/6，分别提供穿透和占卜前置顶。完整用户卡表与结算边界见唯一规则手册。
+
+角色逻辑在content/duel_v2/characters/heiyu.py；目录支持显式energy_max覆盖，状态层对旧快照同样读取现行特别上限。谕石抽牌、失明症手牌置顶／占卜／出击续步与本局占卜计数随快照保存。前端divination.js沿用两行排序与一次确认，统一展示占卜效果。实时角色说明取现行目录。用户要求快速收尾，本轮未运行自动化测试或页面校验，不把验证入口当成最终版已通过证明。
+
+
+### 2026-10-08 倾陷预组与下一轮六队训练
+
+用户指定倾陷预组固定顺序为黑羽－达芙蒂尔－残虹－灵可，稳定ID为collapse；四人全部公开，残虹原已公开。异能对决现有17名公开角色、六套公开官方预组。新增预组按既有赠送机制加入账号构筑库，不覆盖个人配牌；普通人机指定与随机池均包含倾陷。
+
+初始32张配牌为黑羽P01／P03／P05／P08、达芙蒂尔F01／F03／F06／F08、残虹C01／C03／C04／C08、灵可K01／K02／K04／K08各2张。此为本任务拟定的起始配牌，便于用占卜与战斗展开、援护累积倾陷和响应保护，不是训练优选或已平衡结论。
+
+高级人机新增倾陷入口及专用模型槽位，缺少对应数值模型时明确显示待训练并禁止开局，随机高级人机跳过不可加载项；不借其他队权重或普通规则策略冒充受训倾陷对手。模型完成训练后仍须绑定当前规则、编码、实际构筑与服务清单。
+
+用户明确今晚尚未启动，加入下一轮六队任务。下一轮学习名单固定创生、覆纹、小吱、真红、浊燃、倾陷；六队各自学习，并参与镜像、当前交叉及冻结历史对照。每个完整轮转为15个无序跨队配对×两个先手＝30局，加六队镜像各两个先手＝12局；纯网络与带搜索各自完整6×6主表，含真实内战，不复用旧5×5表填充。实际每格样本、容量、训练／停学／评估时间和种子在开训前固定，不沿用旧预算。
+
+下一轮名单与固定角色顺序见content/duel_v2/next_training.json，scripts/plan_duel_v2_next_round.py物化请求，默认硬截止按训练手册为北京时间下一09:00。本次只记录下一轮，不启动训练、恢复旧任务或创建新定时任务。现有五队数值编码不覆盖黑羽、达芙蒂尔、灵可与顶牌重排／手动退出动作；须在新冻结源码中扩展六队编码、具名迁移及全队预检后开训。旧五队schema与权重保持原身份，不能只改循环常量或复用旧ready宣称已支持六队。
+
+按用户此前快速收尾要求，本轮未运行自动化测试或浏览器验收。任务请求及后续运行产物放artifacts/rl-evals，不提交Git。
+
+
+### 2026-10-08 占卜多张置底
+
+黑羽占卜允许任意数量置底，两行都可排序；两种形态均按底牌从左到右逐张结算占卜效果。谕石要求至少置底1张，全部收益结束后抽牌，多张只计1次占卜。动作使用有序bottom_card_ids及实体寻址列表；兼容旧单张动作，已有黑羽待选择刷新后也使用现行多张限制。用户此前要求快速收尾，本次未执行测试或页面校验。
+
+
+### 2026-10-08 星间漫游内联效果
+
+移除灵可独立衍生牌「同频行动」，瞬发与获得 1 点行动力直接写进 K03「星间漫游」。装备且行动力为 0、仍有瞬发机会时，灵可手牌按这项战术效果结算，保留物理牌身份和弃牌结果；不执行原卡效果、选取原卡目标或重新装备。验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_catalog tests.test_duel_v2_hooks tests.test_duel_v2_engine tests.test_duel_v2_hand_face tests.test_duel_v2_entities`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。
+
+
+### 2026-10-09 倾陷环合限制与达芙蒂尔加强
+
+倾陷中的异能者不能提供环合值产生环合效果，统一环合付款、来源残留、预览与公开标记采用相同判定。达芙蒂尔F03／F04／F06／F08的倾陷值分别为+2／+2／+4／+3；漆黑青春妄想使用动作术语「出击」。现行效果与来源边界见完整手册，图鉴词表同步。
+
+专项验证：`.venv/bin/python -m unittest tests.test_duel_v2_collapse_harmony tests.test_duel_v2_dafutier tests.test_duel_v2_harmony_residue.HarmonyResidueTest`。本轮235项Python规则／目录／回放／模拟检查及4项JavaScript测试通过，真实图鉴词条核对通过；不作为平衡结论。服务继续监听0.0.0.0:5001，本机与当前局域网192.168.10.3均返回200。
+
+
+### 2026-10-09 黑羽换装与机制详情
+
+P08不凋羽补齐官方1024换装图和EQUIPMENT_PORTRAITS映射，实体装备后用于战斗区／备战区／角色详情与回放；资源来源及SHA见图片说明。谕石通过正文中的「占卜」显式引用显示机制说明，按机制ID去重。本次未运行回归或页面验收。
+
+
+### 2026-10-09 选择界面通用折叠与占卜悬浮详情
+
+`static/js/v2_table/selection_view.js`统一管理起手换牌、占卜及普通选择面板的收起／恢复。按钮位于面板之外，收起后整个面板不遮挡战场且不可聚焦；牌序草稿、已选起手牌和待选择状态保留，恢复后继续原选择。新选择和换房重置为展开；收起不提交动作，也不解除后端合法动作限制。战场角色和公开卡牌仍可悬浮查看详情。
+
+占卜卡的「详情」按钮支持鼠标悬浮和键盘聚焦显示大图，点击仍可固定查看。验证：`node --test tests/js/duel_v2_selection_view.test.cjs tests/js/duel_v2_divination.test.cjs tests/js/duel_v2_table_state.test.cjs tests/js/duel_v2_ai_steps.test.cjs tests/js/duel_v2_animation.test.cjs`；真实页面从大厅开局，核对换牌选择／占卜牌序保留、收起后战场大图和恢复。
+
+
+### 2026-10-09 倾陷打断攻击
+
+通用战斗结算在攻击前效果、响应和伤害前时机之后复查攻击者倾陷，立即打断尚未结算伤害的一击；不结算该击的反击、攻击后效果或基础资源，已支付费用与已结算入场／环合保留。远程、追加攻击及借用援护回调共用判定；新历史／公开回放显示打断原因，旧记录不追改。完整口径见规则手册同日专节。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_collapse_interrupt tests.test_duel_v2_dafutier tests.test_duel_v2_lingke tests.test_duel_v2_followup_target tests.test_duel_v2_engine tests.test_duel_v2_presentation tests.test_duel_v2_replay`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。
+
+
+### 2026-10-09 黑羽两套武备确认
+
+补齐P07牧星者官方换装图，P07／P08分别映射Fashion_1042_1／Fashion_1042_nighty，资源来源及校验值记录在图片规范。两套资源尺寸和透明通道核对通过；tests.test_duel_v2_costume_art两项通过，独立浏览器真实组件核对双方显示、换装、倒地回退及JSON重建，无加载或控制台错误，不代表真实对局或移动端全流程验收。
+
+
+### 2026-10-09 黑羽机制引用纠正
+
+按用户要求撤回裸机制词匹配，通用关联继续只识别角引号名称；黑羽触发／提及机制的牌面正文加「占卜」「救世魔女」，效果栏标题仍为【占卜效果】。谕石详情沿用统一引用流程展示机制卡，无须扩大其他卡牌的关联范围。
+
+
+### 2026-10-09 倾陷晕眩圈
+
+战斗区与备战区中处于倾陷的存活异能者，在角色卡左上角显示金色圆环与星点；圆环中心位于卡牌上边缘，一半在卡内、一半悬浮在卡外。效果只消费公开`collapse`状态，双方与回放共用渲染；占位卡及倒地角色不显示。角色退回备战区后仍显示，状态解除或倒地时移除，不拦截点击与拖动。未开启菜单中的「减弱动态」时，星点绕圆环旋转；开启后保持静态，切换立即生效并沿用已保存的设置。
+
+验证：`node --test tests/js/duel_v2_immunity_frame.test.cjs tests/js/duel_v2_table_state.test.cjs`；A4AF39真实回放跳转、双方视角及页面截图确认位置与裁切，渲染状态检查覆盖解除、退下、倒地和占位卡。
+
+
+### 2026-10-09 回合内抽牌重复演出修复
+
+从牌库抽取衍生牌或临时复制时，不再同时生成gain与draw两个入手事件，统一由draw承担动画与手牌更新；直接生成牌保留gain演出。on_hand_added及满手牌处理保持，抽牌身份只向抽牌方公开。后端／回放／边界回归10项与动画回归36项通过；验证入口见演出协议本日专节。
+
+
+### 2026-10-09 即时幻境与玩家生命上限
+
+残虹幻境接入使用战斗牌时机，C05提供本次战斗免伤；噩梦随机分配扩展到对方角色，新月摇篮曲可削减玩家生命上限。纯规则层保存和结算玩家max_hp，观察／演出公开同一字段，前端仅显示上限变化；缺字段的旧数据默认30。具体规则见完整手册，字段契约见实现契约。验证：`.venv/bin/python -m unittest tests.test_duel_v2_mirage_nightmare tests.test_duel_v2_continuous_cast tests.test_duel_v2_engine tests.test_duel_v2_modifiers tests.test_duel_v2_catalog`；`node --test tests/js/duel_v2_player_max_hp.test.cjs tests/js/duel_v2_table_state.test.cjs tests/js/duel_v2_immunity_frame.test.cjs`。
+
+### 2026-10-09 失明症与选择整理界面
+
+黑羽 P03 先抽 1 张，再从手牌选择恰好 1 张置于牌库顶或底并完成出击，不再占卜。`hand_placement` 复用后端牌库整理动作与前端 `divination.js`，候选仍保留在手牌；界面支持拖放、按钮放置、详情悬浮与收起查看战场。通用卡牌选择和占卜使用 `handCardHtml` 的选择样式，完整描述不截断，小屏滚动浏览。验证：`python -m unittest tests.test_duel_v2_heiyu tests.test_duel_v2_heiyu_presentation tests.test_duel_v2_entities`，以及 `node --test tests/js/duel_v2_*.test.cjs`。
+
+
+### 2026-10-09 灵可减抗与检索选择
+
+灵可减抗文案统一为「持续到下个己方回合开始时」。玩家减抗仅在生命面板旁、异能者减抗在角色旁，以属性图标和下箭头展示；战斗区不重复显示减抗气泡。K01 从指定异能者的牌库随机抽取至多三种不同牌，再经通用完整牌面弹窗选一张；九原 J01 也共用该弹窗、详情与收起查看战场。随机状态与候选由后端保存。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_lingke tests.test_duel_v2_effect_markers tests.test_duel_v2_engine tests.test_duel_v2_presentation tests.test_duel_v2_replay`；`node --test tests/js/duel_v2_effect_markers.test.cjs tests/js/duel_v2_card_choice.test.cjs tests/js/duel_v2_selection_view.test.cjs`。
+
+
+### 2026-10-09 使用时统一先于卡效
+
+通用使用阶段为支付费用→完成使用时触发→卡框与卡效→明确写明的使用后／结算后。灵可第三张牌立即完成合击，不排入操作结束队列；第三张牌进入选择前已完成，JSON恢复选择不重复触发。零武备使用抽牌前移至卡效前，允许复活武备在恢复所属者前触发；残虹赤葵自动复活属于直接释放，不触发使用事件；哈尼娅V08在使用战斗牌时消费光环、记录战斗准备加攻，普通出击仍按原入场时机，覆写攻击与响应规则保留。来源为用户明确时机纠正，旧回放不追改。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_card_use_timing tests.test_duel_v2_lingke tests.test_duel_v2_haniya tests.test_duel_v2_zero_refund tests.test_duel_v2_jingu_marks tests.test_duel_v2_hooks tests.test_duel_v2_engine tests.test_duel_v2_presentation tests.test_duel_v2_replay`；模拟对拍单独运行 `tests.test_duel_v2_simulation`。
+
+
+### 2026-10-09 直接释放不算使用
+
+赤葵自动复活及黑羽占卜的P01／P02／P04直接释放（含魔女P04延后释放）统一走`resolve_release`，执行释放时机、卡框与卡效，跳过使用时／使用后、费用、瞬发消费与使用标注兑现。灵可不累计这些释放，哈尼娅V08不消耗光环，零使用抽牌及黑羽使用后回满环合也不触发；手动打出不变。赤葵释放保留父操作，牌实体只弃置一次；黑羽复用已有公开占卜展示，不重复播放牌面。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_card_release_timing tests.test_duel_v2_card_use_timing tests.test_duel_v2_auto_release tests.test_duel_v2_heiyu tests.test_duel_v2_heiyu_presentation tests.test_duel_v2_lingke tests.test_duel_v2_continuous_cast`，以及引擎／呈现／回放与独立模拟对拍。
+
+### 2026-10-09 倾陷与灵可人工起点
+
+倾陷预组改为黑羽－达芙蒂尔－残虹－安魂曲，新增灵可预组（残虹－薄荷－灵可－早雾）；角色顺序和32张配牌取用户指定的测试账号保存构筑，详见规则手册当日专节。普通人机和新赠送接入七套公开预组，已有个人构筑不覆盖、同名或同队不重复赠送。
+
+两套高级人机保留待训练入口，并作为下一轮七队任务的固定人工起点；计划检查绑定构筑身份、规范化牌列及7×7矩阵，42局跨队加14局镜像。没有启动训练或改写旧权重／兼容授权。验证：`.venv/bin/python -m unittest tests.test_duel_v2_preset_starts tests.test_duel_v2_catalog tests.test_duel_v2_simple_ai_presets tests.test_duel_v2_opponent_selection tests.test_duel_v2_api`；`scripts/plan_duel_v2_next_round.py`只物化请求，不预约种子或启动学习。
+
+### 按角色锁定的预选候选
+
+`rl/local_card_search.py:preselection_neighbors` 接受明确的可换牌角色，只生成这些角色的合法单换及有界双换，其他角色的8张配牌锁定；支持当前公开卡池，保持历史 `local_neighbors` 的默认编码边界。此入口只枚举未评分候选，不启动训练或授予模型／配牌批准。验证：`.venv/bin/python -m unittest tests.test_duel_v2_scoped_preselection tests.test_duel_v2_local_card_search`；实际训练接入及验收仍按训练手册。
+
+### 七队学习适配组件
+
+`rl/seven_*` 为七队独立数值／编码、生成牌采样、联合更新辅助、价值校准和恢复契约；保留旧五队入口与schema。顶／底牌有序选择、退出终结及新角色公开计次进入独立具名列，旧权重须显式核验后迁移，两套新队独立冷启动。准备入口为 `scripts/prepare_duel_v2_seven_value.py` 与 `scripts/prepare_duel_v2_seven_foundation.py`；实际开训仍需本轮完整同源CUDA预检与硬截止预算，不因组件存在视为已训练。验证：`.venv/bin/python -m unittest tests.test_duel_v2_seven_training tests.test_duel_v2_scoped_preselection`。冻结评估器增加显式 `runtime=seven`，沿用完整遥测和公开回放校验，不更新服务模型。
+
+### 复制异能生成牌与占卜续步
+
+复制黑羽产生的谕石归属实际触发者，复制达芙蒂尔产生的洞悉保留原角色来源；占卜续步通过内容注册的序列化标识完成，复制结束或安魂曲自身终结不改变这张牌的普通占卜效果。七队采样支持公开阵容中的复制生成来源与洞悉，保持生成归属和隐藏信息边界。验证：`.venv/bin/python -m unittest tests.test_duel_v2_mimic_generated_choices tests.test_duel_v2_seven_training tests.test_duel_v2_heiyu tests.test_duel_v2_dafutier`。
+
+### 七队构筑与冻结源码一致性
+
+七队导出／固定采样／专家变化构筑／监督重放统一规范化牌列，保证训练与冻结评估的模型构筑SHA一致，角色顺序不变。`rl/offline_sources.snapshot` 支持已认证的独立源码清单，逐成员核SHA后复制，保持外层旧checkout和当前工作区隔离。验证：`.venv/bin/python -m unittest tests.test_duel_v2_source_revision tests.test_duel_v2_learning_audits tests.test_duel_v2_seven_training`。
+
+### 七队相同候选的稳定分数
+
+七队Torch／NumPy对完全相同的候选数字向量统一同分，修正CUDA批量乘法末位差异造成的最高动作不一致；保留每个物理动作及完整策略目标，不合并标签或降低数值闸门。`seven_prepared` 只在规则、编码和隐藏世界采样逐文件SHA相同的情况下显式迁移锁定的准备数组，重新执行独立价值核验、CUDA32、恢复与P0预检；不继承旧ready。验证：`.venv/bin/python -m unittest tests.test_duel_v2_seven_training tests.test_duel_v2_mimic_generated_choices`。
+
+### 2026-10-09 魔女先占卜与共享瞬发出击
+
+占卜至少检视 2 张（短库按实际数量），所有形态均结算置底效果。P03／P07／P08 增加抽牌、当前回合共享瞬发机会换出击、恢复一次瞬发机会的占卜效果。combat 的 pending_sortie／resume_sortie 负责暂停和续接，内容文件保留各牌效果；normal_attack_payment 复用通用修正属性处理付款。双方仍看到被释放牌的揭牌动画，不显示旧响应大字。验证使用 tests.test_duel_v2_heiyu、tests.test_duel_v2_heiyu_presentation、tests.test_duel_v2_card_release_timing 及 tests/js/duel_v2_animation.test.cjs。
+
+### 2026-10-09 倾陷高级人机暂停与占卜视觉提示
+
+按用户要求，因黑羽卡牌调整暂停 collapse 倾陷预组高级人机：模型文件和缓存存在也不开放，随机高级对手池跳过它，直接指定开局由后端拒绝。普通人机与构筑可见性保留。pending_strategy_options 返回暂停原因，大厅显示「暂不开放」。黑羽占卜效果前插入描述换行；公共文字渲染器将换行展示为换行，图鉴、手牌、详情、占卜与公示共用。占卜中含【占卜效果】的卡牌追加发光边缘，减弱动态时保留静态光圈，手牌置顶／置底选择不加该提示。
+
+### 2026-10-09 哈索尔重做占位与术语修复
+
+哈索尔角色包仅保留战斗牌正常出击、武备装备和无效果战术；专属异能、终结强化、八张牌特殊效果及目标／事件回调清空，原身份、基础面板、卡框攻防和测试权限保留。正文数量统一阿拉伯数字，小吱选项使用完整卡名；图鉴角色／前排包含召唤物，补释放定义并纠正倒计时说明。规则见完整手册，措辞见卡牌描述规范。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_hathor_rework tests.test_duel_v2_catalog tests.test_duel_v2_engine tests.test_duel_v2_lingke tests.test_duel_v2_counter_text`。
+
+## 七队 GPU 训练采样入口
+
+`train_duel_v2_current_round.py`默认seven，GPU采样显式选`--rule-backend cuda_vm`并提供含训练教师的冻结程序与同源设备对拍回执。`seven_round.run`保留联合WDL更新、独立闸门、历史对手、择优回退与原截止恢复；`batched_search/training_rollout.py`复用协作搜索后端，按真实来源绑定冻结权重，仅完整终局进入学习。1600根上限与32行调用工作区、GPU预算和训练轨迹缓冲分别记录；普通七队轮实际56局，历史轮112局。源码／CPU测试不批准CUDA性能或模型质量，Windows验收待独立执行。参数和验证边界见[训练手册](../../../docs/duel-v2-public-training.md#七队-gpu-搜索训练采样)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_gpu_training tests.test_duel_v2_gpu_training_teachers tests.test_duel_v2_seven_training tests.test_duel_v2_batch_traversal tests.test_duel_v2_batch_cooperative tests.test_duel_v2_recovery_round tests.test_duel_v2_current_round`。
+
+研究七队数值的同布局迁入使用`rl/seven_source.py:migrate_seven`，保留全部实际数值与原身份，重新核验规则／价值／设备与独立闸门。混合搜索采样可显式使用`resident_cpu`正式规则、CUDA推理和`search_statistics_device=cuda`树统计；配置与全设备`cuda_vm`分开验收。新增检查：`.venv/bin/python -m unittest tests.test_duel_v2_seven_migration tests.test_duel_v2_training_statistics_device tests.test_duel_v2_cuda_compile_profile tests.test_duel_v2_gpu_argument_abi tests.test_duel_v2_vm_join tests.test_duel_v2_vm_callable_copy`。单次数据和报告只进入`artifacts/rl-evals/`。
+
+
+### 协作搜索采集诊断
+
+`TrainingRollout.last_diagnostics`在关闭采集资源前保存调度波次、驻留规则RPC、推理微批次／行数／候选填充和设备统计池的累计计数。`seven_round.collect_search_batch`将其写入当前批次的`search-diagnostics.json`，采集异常时也保留已取得的计数与原错误。缺失接口或读取失败的项为`null`，读取错误另列`diagnostic_errors`；不能把它们当作零耗时。计数分别使用各接口标注的秒或纳秒，CPU worker累计执行时间不能直接与父进程墙钟时间相加。
+
+这些诊断用于本轮实测定位，不改变搜索预算、动作和学习标签；记录存在不提供CUDA吞吐、1600完整局或模型质量批准。验证：`tests.test_duel_v2_search_diagnostics`覆盖真实CPU受控轨迹一致、异常清理、缺失计数与失败批次落盘。
+
+### 驻留教师与规则预演热路径
+
+`ResidentRuleBackend.covered_value_continuation`在规则进程内合并公开教师推进与最终编码，父进程继续执行原辅助WDL推理；不支持该能力的后端保留原路径。教师使用只含四个评分数值的正式战斗预演，同次决策复用匿名化模板、逐动作隔离沙盒，避免重复复制；公开操作不可变性和完整展示字段保留。验证：`.venv/bin/python -m unittest tests.test_duel_v2_fused_teacher tests.test_duel_v2_rule_preview_fast tests.test_duel_v2_batch_process_backend tests.test_duel_v2_batch_cooperative tests.test_duel_v2_batch_traversal tests.test_duel_v2_gpu_training_teachers tests.test_duel_v2_covered_rollout tests.test_duel_v2_preview_privacy tests.test_duel_v2_simulation`。这是规则执行优化，GPU完整采集5倍、1600完整局与模型质量需独立实测，不能由CPU用例批准；规则身份变化不得复用旧回执。细节见训练手册“混合采集的规则热路径优化”。
+
+### 异步规则调度与完整CUDA采集计时
+
+驻留后端提供所有者线程上的提交／轮询／取消，调度器默认按能力启用；完整训练可显式`--async-rule-dispatch auto|on|off`，混合CUDA树统计可用`--search-statistics-device cuda`。`--collection-replicas 1..5`生成真实独立的56／112局组，默认1，整批模型冻结；不倍增独立P0／评估。输入与树统计缓冲复用保留容量和异常检查，JSON状态复制保留实体、别名、未知字段和hydration验证，不删规则状态。配置、实际批次数和剩余恢复工作进入预算／身份。
+
+统一性能入口为`scripts/benchmark_duel_v2_gpu_collection.py`：默认仅计划，显式执行完整Gumbel32／16候选／3步＋合格WDL的混合CUDA采集；旧／新源码、分批安排可比较，但任务、数值、设备及实际轨迹须匹配。至少三轮真实时间和实际原始文件／SHA才报告5倍，采集、准备和重放核验分开计时，不替代P0、矩阵或质量批准。验证新增：`tests.test_duel_v2_async_rule_dispatch`、`tests.test_duel_v2_async_collection_integration`、`tests.test_duel_v2_collection_replicas`、`tests.test_duel_v2_device_sync_reduction`、`tests.test_duel_v2_state_copy_fast`、`tests.test_duel_v2_collection_benchmark`；GPU规则源码捕获、实体、模拟及既有采集／评估回归另保留。操作细节见训练手册“完整CUDA采集的统一性能验收”。
+
+
+### GPU设备内搜索接口
+
+正式训练及搜索互搏遵循 `docs/duel-v2-public-training.md` 的GPU设备内并行硬要求，验收清单见 `docs/duel-v2-device-search-acceptance.md`。CPU规则／逐根主机协程只作历史诊断和对拍，不能作为GPU错误后的回退。
+
+离线边界：`rl/batched_duel/device_rule_protocol.py`定义状态／动作租约；`gpu_seven_candidates.py`和`gpu_seven_observation.py`提供保留设备错误掩码的编码；`rl/batched_search/device_inference.py`、`device_search.py`、`device_statistics.py`、`device_info_key.py`及`batched_duel/device_graph_pool.py`分别管理设备推理、阶段机、树统计、信息集键和页所有权；`cuda_conditional_graph.py`提供GPU谓词控制的有界循环。这些组件不被网站导入，接口与原语通过不能代替完整规则／完整搜索／真实终局验收。
+
+有界部件验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_inference tests.test_duel_v2_device_vm tests.test_duel_v2_cuda_conditional_graph tests.test_duel_v2_device_candidates tests.test_duel_v2_device_projection tests.test_duel_v2_device_statistics tests.test_duel_v2_device_search -v`。没有CUDA时必须记录实际设备用例跳过；CPU数值oracle和合成树不提供完整对局批准。
+
+正式七队训练和互搏的实际入口已增加前置拒绝：缺少同源验证通过的完整设备执行服务时，`--run`、`--worker`、`--resume`及直接七队`run/learn`调用均在输出／种子／模型／进程创建前停止。当前closed factory与真实规则适配未接通，不能用`cuda_vm`或ready配置走回旧主机协程；静态计划和独立规则对拍只提供诊断。
+
+设备学习桥接：`rl/batched_search/device_learning_context.py`连接合格设备服务与`seven_round.run_closed_device_learning`的既有联合更新／择优／恢复，并核对完整任务身份及顺序。`device_training_tape.py`以有界记录和合法动作前缀存储观察、完整策略目标和自然终局标签，拒绝陈旧动作模板、错误租约、容量越界与重复终局；只有整批返回后才能导出数值。它不保存原始动作字典或证明完整重放，正式服务仍须提供原始轨迹和同源CUDA验收。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_learning_context tests.test_duel_v2_device_training_tape tests.test_duel_v2_device_games`。
+
+`rl/batched_search/device_pure_policy.py`为冻结纯网络评估提供设备内合法 argmax，按行动者选择模型，并与`device_games.py`共用物理循环；其搜索计数／预算／访问为0，不能替代Gumbel训练或形成搜索标签。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_pure_policy tests.test_duel_v2_device_games`；真实规则整局与CUDA容量仍独立验收。
+
+GPU物理动作归档由 `batched_search/device_raw_action_tape.py` 保存实际压缩动作图和执行身份，支持设备内有界恢复；它不替代不可变开局和完整GPU重放验收。`DeviceGameLoop`按既有训练语义执行physical apply后clean，并回收中间租约。数字轨迹在正常终局后按学习视角分别导出策略与价值；冻结对手行动时保留学习方价值行，审计用冻结策略行不会扩大学习范围。源码原语通过不代表完整对局、真实1600或训练已获准。
+
+搜索和物理循环通过 `device_action_leases.py` 单独回收动作图租约，保护root/current和借用state的别名；该检查沿用正式分页store非负generation首代契约。独立动作生命周期测试与CUDA图回放仍属于组件预检，不等于实际完整局或1600容量批准。
+
+`batched_search/device_game_policy_sink.py` 将物理对局版本和完整根信息集哈希接入轻量策略轨迹；它不重建训练输入，标签仍需原始动作 GPU 重放及逐哈希验证。
+
+`batched_search/device_replay_policy_tape.py` 以有界 ragged 前缀保存完整合法动作的 pi、visit_pi、visits 与根信息集哈希，不持久保存观察或候选向量。错误、过期版本和终局后写入永久撤销本局标签；训练输入必须另经 GPU 原始动作重放恢复并核验。
+
+`batched_search/device_physical_action_capture.py` 在冻结 GPU `apply_action` 选中原始动作后归档物理动作图；假想 `simulate_action` 不进入归档。组合 sink 要求原始动作计数与终局物理步数相同，归档错误会撤销策略标签；该接线仍需完整真实规则对局与 GPU 重放验收。
+
+`batched_search/device_raw_replay.py` 从独立 GPU 初态副本按归档的原始动作执行设备 WHILE 回放及 clean，校验 owner、seed、step、归档计数与永久错误。可注入实际 GPU 元数据核验 actor/version；缺少该核验时 `metadata_checked` 为 false。序列回放完成不等于真实终局或可学习标签，仍需真实规则与全观察／合法动作哈希验收。
+
+`batched_search/device_frozen_rules.py` 将已分配的冻结 VM、共享 GPU scratch、公开投影和独立动作图 arena 接入搜索／对局接口。元数据、完整合法动作、规则教师、固定视角价值及物理／假想执行都使用预分配捕获点；它不自行授予完整规则、1600 根或训练资格。
+
+### Mctx 批量改造的验收顺序
+
+设备批量搜索按[逐级容量验收](../../../docs/duel-v2-device-search-acceptance.md#mctx-批量改造与逐级容量验收)执行：8 根小批完整 Gumbel32 → 32 → 128 → 400 → 1600 根。每级保持 cap16、covered_value horizon3 和完整合法候选；同级完整搜索、真实终局与 GPU 原始动作重放通过后才晋级，显存和性能单独实测。规则工作槽与网络／编码 tile 分别记录，不作为独立根数。设备离线只做源码与 CPU 参考检查，不连接远端或将 CUDA 跳过写成通过。
+
+首阶段离线组件 `batched_search/device_teacher_ranking.py` 执行具名动作和四个公开预演数值的批量教师评分；`device_teacher_preview_jobs.py` 准备完整战斗预演任务，核验带 epoch／actor／状态租约的分组回执和全部任务完成。它们保持未合格，不被网站导入，尚未接入正式规则预演／三步教师；后续接线与 CUDA 验收按上述协议执行。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_teacher_ranking tests.test_duel_v2_device_teacher_preview_jobs`，CPU 参考和 CUDA skip 分开记账。
+
+正式教师桥研究入口为 `batched_search/device_batch_teacher.py` 与 `device_teacher_decode.py`：冻结VM执行同源准备及独立战斗预演，GPU解码完整合法动作和四标量，全部带身份的回执完成后再评分；三步pipeline支持显式决策工厂注入，默认路径保留。该桥仍需实际CUDA、正式规则与完整搜索证据，不因源码或CPU检查批准容量或服务。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_batch_teacher tests.test_duel_v2_device_teacher_pipeline tests.test_duel_v2_gpu_rule_program`；单次证据继续进入 `artifacts/rl-evals/`。
+
+设备VM的 `batched_duel/vm_collections.py` 支持正式效果刷新所需的列表／元组右值切片写入，保留原列表身份、自赋值和共享别名；扩展切片长度错误及容量不足拒绝，未知迭代器不近似执行。验证：`.venv/bin/python -m unittest tests.test_duel_v2_vm_slice_assignment tests.test_duel_v2_vm_collections`，正式教师与完整搜索另验。
+
+教师桥可用显式 `shared_template=True` 和 `batched_duel/gpu_teacher_prepared_template.py` 复用同一父状态的匿名化模板，按正式教师为每个战斗候选复制独立沙盒。预演任务包与物理原始动作引用分开保存，默认路径保留；模板身份、回执、原始状态不变与实际CUDA须重新对拍。CPU参考验证入口为 `tests.test_duel_v2_teacher_prepared_template`，设备隔离与重放仍由 `tests.test_duel_v2_device_batch_teacher` 验证，完整搜索和容量另验。
+
+搜索可用显式 `group_ready_leaves=True` 由GPU等待本次模拟的未就绪根，批量执行三步教师与回传，保持每根随机、选点、状态和访问更新顺序；错误及已结束根不阻挡队列。验证：`tests.test_duel_v2_device_search` 包含混合深度、尾槽与完整32次搜索对照及实际CUDA捕获检查。原语通过后仍从8根正式规则搜索与终局／原始动作重放重新验收。
+
+设备VM可显式启用 `mutable_lookup_cache=True`，只缓存可变字典／实体常量字符串查询的位置提示；每次命中重核当前头、索引及正式键相等，字段变化与冲突回到完整扫描，每个VM执行清空提示，不修改状态或默认路径。实际CUDA回归入口：`tests.test_duel_v2_vm_mutable_lookup`，覆盖值更新、删后重插、挂起帧回收和同头字段换位；正式规则、完整32次搜索及容量另验。
+
+就绪分组也覆盖对手教师与新节点评估。显式 `reuse_interior_observation=True` 只复用己方INSPECT已生成的完整观察，绑定当前slot/generation/owner并重新核验正式metadata的非终局与actor==viewer；辅助模型不替换，终局/H3后仍取正式观察。验证：`tests.test_duel_v2_device_search` 包含完整32次结果、混合深度随机顺序、陈旧拒绝与实际CUDA捕获对照，真实搜索与终局重放另验。
+
+冻结VM的 `constant_lookup=True` 继续只索引不可变且全部为字符串键的字典；常量引用直接命中后，动态或其它引用的字符串按精确UTF-8值二分查询，保留第一个相等键的位置与缺失结果。混合键、非字符串查询和可变字典回到原正式相等路径，不缓存可变值。验证：`tests.test_duel_v2_vm_constant_lookup` 包含动态字符串、Unicode不同序列、空键、缺失键、属性查找与可变／混合键对照；组件通过后仍需正式教师和完整搜索验收。
+
+设备VM可显式使用 `frozen_class_lookup=True`，按冻结类命名空间的描述符类别顺序和C3继承顺序生成精确静态索引，返回原值引用和类别。常量字符串与动态UTF-8字符串都保留相等和缺失语义；不支持的键仍走原查询。实例字段仍读取当前可变字典，getter、方法绑定与super继续由原对象处理器执行。默认关闭；`tests.test_duel_v2_vm_frozen_attributes` 对照多继承、描述符遮蔽、属性／静态／类方法、动态名称及实例写入，实际CUDA及正式教师／完整搜索分别验收。
+
+原始动作重放的CUDA图捕获保留外部索引、种子和逐根计数张量直到关闭图，避免调用方传入临时张量后设备分配器复用其内存。保留引用不改变输入内容或CPU／GPU边界；`tests.test_duel_v2_device_raw_replay` 以释放调用方引用、分配压力、完整多步／尾槽重放验证，正式原始动作／全合法哈希仍单独验收。
+
+
+### 无叶子延续的设备搜索与真红根指导
+
+`DeviceGumbelSearch` 可显式选择 `teacher_mode=network_value, terminal_horizon=0`：新叶子直接使用固定观察者的独立绑定 WDL 预测，已有新节点评价直接回传，不调用三步规则延续。独立根仍按设备阶段聚合遍历、扩展、估值和回传，保留 Gumbel32、完整合法候选及信息集采样；对手的公开规则选点与叶子教师分开配置和计时。该分支不自动修改网站或正式训练入口。
+
+`DeviceGameLoop(root_guide=...)` 支持搜索完成后的设备根指导。`DeviceZhenhongGuide` 仅对具名真红策略调用冻结指导入口，按公开版本生成三个信息集世界，固定至多24个计划，共用v3的保牌、完整准备组合、合法性和安全排序；不使用主机时间剪枝。实际动作与原Gumbel选点、原策略分布分开保存，混合训练目标仍须由完整采集接口明确接线。组件及真实八根计时不授予完整对局、学习、容量或强度资格。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_device_network_guide tests.test_duel_v2_device_search tests.test_duel_v2_device_games tests.test_duel_v2_zhenhong_guide`。
+
+
+### 策略对手与最小设备编码投影（离线实验）
+
+设备搜索新增显式冻结策略对手、真红活跃根打包队列及指导前独立搜索轨迹。`rl/batched_duel/gpu_policy_projection.py` 从正式投影派生编码专用路径，保持完整观察／候选编码、合法顺序与隐藏信息边界；网站仍使用正式投影。VM按CPython语义支持有界 `Random.sample`。接口边界与验收见[设备搜索协议](../../../docs/duel-v2-device-search-acceptance.md)。验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_policy_opponent tests.test_duel_v2_policy_projection tests.test_duel_v2_vm_sample tests.test_duel_v2_device_search tests.test_duel_v2_device_game_policy_sink tests.test_duel_v2_device_search_row_work`。完整根搜索、连续物理决策、自然终局和训练资格分别核验，计时通过不表示模型质量批准。
+
+
+### 设备临时堆与自有副本转移实验
+
+`DeviceRuleGraphCalls` 默认保留原节点、边及32MiB载荷的临时堆下界。资源验证可在显式 `vm_layout` 上启用 `allow_reduced_payload=True`，只降低临时载荷下界，仍不少于压缩输出上界；节点／边、持久状态、完整候选与错误拒绝语义保持。此选项需要独立冻结与实际CUDA容量／重放验证，不提供训练资格。
+
+`rl/batched_duel/gpu_owned_transitions.py` 从正式转移源函数派生消费自有VM工作副本的入口，保留正式实体归一、规则校验、教程分支、效果与事件，避免在已复制的工作区内再次复制整张状态图；不得传入共享持久根，也不替换网页或默认冻结入口。结构检查、真实多步全状态／对象别名、JSON／实体计数、错误后重新装载及CUDA输入不变性验证见 `tests.test_duel_v2_owned_transitions`；临时堆边界和队列路由见 `tests.test_duel_v2_device_rule_calls`。完整搜索同种子对照与实际提速需另验收。
+
+
+VM可显式设置 `direct_stack_dispatch=True`，让LOAD_CONST／LOAD_FAST／STORE_FAST／POP_TOP直接进入原有指令switch，保留原指令主体、PC、预算、错误与截止逻辑；默认关闭。验证入口为 `tests.test_duel_v2_vm_direct_dispatch`，检查默认代码不变、库无拦截、实际编译源绑定、数值／别名及逐指令错误状态。启用后的完整搜索与耗时另行冻结验证。
+
+
+七队设备观察中的连锁来源／复制来源席位归一化使用binary64中间除法后单次转float32，与标准编码逐字节一致，避免CUDA常量倒数乘法的一ULP差异。回归覆盖全部席位的来源索引，见 `tests.test_duel_v2_gpu_seven`。此修正不回写历史计时或未通过的轨迹验收。
+
+
+## 批量数组规则改造
+
+离线数组分支提供共享规则IR的批量张量内核、固定观察者WDL的recurrent扩展接口、逐次取整的生命上限原语，以及无额外模拟的真红根先验。真红评分只调整搜索前的logits，不覆盖搜索后的动作；旧模拟指导与新先验不得叠加。七队完整规则另有同源原生图后端和完整领域SoA后端；接口与验证命令见[数组搜索边界](../../../docs/duel-v2-array-search.md)和[原生规则后端](../../../docs/duel-v2-native-array-rules.md)。
+
+
+## 七队同源原生规则
+
+`rl/batched_duel/native_array_*` 冻结现行公开七队规则并把完整控制流编译为原生C++，对有界实体／区域数组执行，不读取字节码指令流，不回退Python规则。`NativeArrayCPU` 使用同一源码做本机语义验收，`CudaNativeArray` 接设备内搜索、双观察检查采样及原始动作记录。默认无三步教师、规则对手教师或模拟真红指导；真红使用数组先验。完整CPU对局、机制与32搜索对拍不授予CUDA或模型质量资格。说明与命令见[七队原生数组后端](../../../docs/duel-v2-native-array-rules.md)。
+
+## 专用 SoA 开发与 1016 验收
+
+`rl/batched_duel/domain_soa_records.py` 与 `record_soa.py` 维护完整状态的逐字段列、类型引用池、顺序与别名；`native_soa_*` 将完整公开规则直接绑定到这些列。初始化、完整卡效／角色回调、选择续步、合法动作、公开观察和信息集采样沿用正式规则的原生控制流。`device_soa_storage.py` 管理所有者／代次租约，`record_soa_compact.py` 收集不可达状态，`batched_search/device_soa_rules.py` 接设备内完整32搜索、原始动作记录和无模拟真红先验。列、原生栈和回收工作区按顺序复用，完整Game不能通过公开输出导出器退回通用状态图。
+
+语言临时对象与标量装箱仍有有界工作区，后续按实机计时优化。`NativeSoACPU` 只作显式软件语义参考；CUDA捕获、性能、自然终局与容量资格须另行实测。早期 `domain_soa_codec.py` 仍仅支持换牌阶段，其他局部组件也不授予完整规则资格；输入生成器的完整局不算SoA规则执行。
+
+SoA 及辅助 CUDA 内核默认以 `min` 档直接编译并加载当前 GPU 的 CUBIN，指令分片、共享操作和大型库入口保留调用边界，基础栈与帧初始化启用已有快路，设备调用栈至少 128 KiB，默认每行一个线程块，采样路径索引在图捕获前准备；编译、驱动加载和规则执行分别计时。不支持的编译格式、冲突优化配置及未通过标量比较的 `mid` 档明确拒绝。加载与捕获契约检查见 `tests.test_duel_v2_soa_cuda_loading`，两路真实设备初始化／推进／采样仍由 `tests.test_duel_v2_device_soa_rules` 单独验收；加载通过不代表搜索性能通过。已核验的 CUBIN 按源码、选项、GPU／编译器及参数契约缓存到 `artifacts/rl-evals/cuda-cache/`，可用 `NTE_CUDA_BINARY_CACHE_DIR` 改目录或设空禁用；回归见 `tests.test_duel_v2_cuda_binary_cache`。
+
+[1016验收协议](../../../docs/duel-v2-soa-1016-acceptance.md)覆盖完整状态与规则对拍、Windows 8路每根32搜索、自然终局与逐级扩容，以及官方Mctx的算法结果和真实规则性能对照。离线数值树工具默认仅计划；显式运行使用可选JAX/Mctx依赖，不自动安装。单轮结果保存在 `artifacts/rl-evals/`。
+
+```bash
+.venv/bin/python -m unittest tests.test_duel_v2_record_soa tests.test_duel_v2_domain_soa_records tests.test_duel_v2_native_soa_cpu tests.test_duel_v2_record_soa_compact tests.test_duel_v2_device_soa_storage tests.test_duel_v2_device_soa_rules
+.venv/bin/python scripts/validate_duel_v2_native_soa.py
+.venv/bin/python scripts/validate_duel_v2_native_soa.py --run --program FROZEN_PROGRAM --models MODELS --teachers TEACHERS --games 14 --roots 8 --mechanism-tests --output artifacts/rl-evals/NEW_RUN/software
+.venv/bin/python scripts/benchmark_duel_v2_soa_device.py
+# Windows上线后先做CUDA查询式规则对拍，再跑设备内闭环；查询时间不作吞吐。
+python -X utf8 scripts/validate_duel_v2_native_soa.py --run --backend cuda --program FROZEN_PROGRAM --games 14 --mechanism-tests --output artifacts/rl-evals/NEW_RUN/cuda-rules
+python -X utf8 scripts/benchmark_duel_v2_soa_device.py --run --program FROZEN_PROGRAM --models MODELS --teachers TEACHERS --rows 8 --max-decisions 1 --output artifacts/rl-evals/NEW_RUN/cuda-step
+.venv/bin/python -m unittest tests.test_duel_v2_domain_soa_rules tests.test_duel_v2_domain_soa_effects tests.test_duel_v2_domain_soa_random tests.test_duel_v2_domain_soa_transition tests.test_duel_v2_domain_soa_codec tests.test_duel_v2_mctx_reference
+.venv/bin/python scripts/validate_duel_v2_domain_soa.py
+.venv/bin/python scripts/validate_duel_v2_mctx_reference.py --plan
+# 仅在已准备好JAX/Mctx的独立测试环境运行官方数值树对照：
+python scripts/validate_duel_v2_mctx_reference.py --run --exact --require-official --output artifacts/rl-evals/NEW_RUN/mctx
+```
+
+### 决策内隐藏世界复用
+
+SoA搜索固定每个物理决策只采样一份符合公开信息的假想暗牌，全部32次模拟复用不可变世界；分支推进使用独立状态，下个决策重新采样，完成或失败后回收缓存租约。根观察及完整候选复用，内部和对手局面仍按各自信息重新编码；普通行动／选择阶段共享等价采样检查，换牌保留内外两项完整检查。CPU数值参考显式使用 `recovery_search.search(world_sampling='per_decision')`，历史默认分支保持不变。该近似减少世界覆盖，不代表策略强度已验收。
+
+验证入口为 `tests.test_duel_v2_device_world_reuse`、`tests.test_duel_v2_gpu_sample_guard_views` 及真实CUDA的 `tests.test_duel_v2_device_soa_rules`。`benchmark_duel_v2_soa_device.py` 记录每根实际采样数、完整32预算和分阶段耗时，批次外核对正式动作及相同采样协议的数值参考；只有一批时不宣称稳定吞吐。详见[数组搜索](../../../docs/duel-v2-array-search.md)和[1016协议](../../../docs/duel-v2-soa-1016-acceptance.md)。
+
+公开观察 CUDA 投影器独立准备至少 128 KiB 设备栈，并保留堆操作与编码辅助函数的调用边界，避免快速编译内联产生过大的栈帧。函数正文、观察与完整合法候选语义保持不变。`tests.test_duel_v2_device_projection` 包含不依赖 VM 栈初始化的七队公开局面、换牌／普通行动、混合活动行和重复 CUDA 图回放的逐字节编码对照；该组件验证不替代完整32搜索验收。
+
+SoA 的固定视角价值入口只编码公开观察，允许对手回合及终局的空合法动作；实际选动作仍使用完整候选校验。`tests.test_duel_v2_device_soa_rules` 覆盖这两种状态的重复 CUDA 回放、观察逐字节对拍、真实终局 WDL 和输入不变性，防止深度上限估值误报候选为空。
+
+SoA 对象定位按 schema 的递增、互不重叠编号区间做精确二分，保持区间末端、首对象、越界与空洞的拒绝语义；冻结字符串字典使用既有精确索引，可变字典仍按原查询处理。`tests.test_duel_v2_soa_pool_lookup` 用生成的同一 C++／CUDA 函数穷举现行全部对象编号及无效边界；实际 CUDA 项须单独通过，CPU 通过不授予设备资格。离线计时报告另标记初始化、图捕获、设备执行与事后核验阶段。
+
+SoA 深拷贝以逐对象代次标记隔离复制映射，普通重置只推进代次，整数代次回绕时才清理标记表；复用既有复制工作区，不增加逐根持久状态。原子值、同次复制的共享子对象、不同复制的独立性及不可变元组身份保留；回归见 `tests.test_duel_v2_native_soa_cpu` 与 `tests.test_duel_v2_soa_clone_epochs`，实际 CUDA 与完整搜索性能仍分别验收。重复计时在每批核验结束后释放批次资源及回执，再创建下一批，初始化／回收不混入设备执行时间。
+
+完整搜索核验把网络前向与树计算分别检查：批次外独立 Python 规则搜索重新编码、重算 CUDA 价值前向，每个输入同时按既有推理容差对照冻结 NumPy WDL；访问、完成 Q、pi、先验、Gumbel 与动作仍保持原搜索容差和精确比较项。报告记录前向误差，不读取设备搜索的估值作为参考；见 `tests.test_duel_v2_soa_device_cli` 与 1016 协议。
+
+### 冻结权重 SoA 高并发容量分支
+
+`rl/batched_search/soa_capacity.py` 将独立根、规则工作槽、推理分块和各类字节预算分开，固定本研究分支的 Gumbel32／cap16／horizon0、策略对手、每决策一次世界采样及真红数组根评分。现有模型和网站数值冻结，不执行优化器步；容量、自然终局、训练采集、梯度／保存恢复分别验收，不改正式长训的教师与启动保护。
+
+`rl/batched_duel/device_sparse_soa_storage.py` 保存稀疏类型列的逻辑下标与原始同类型值，浮点按位保留负零；`rl/batched_search/device_tiled_soa_rules.py` 在有界原生工作槽恢复完整列，由嵌套设备队列执行相同正式规则并散回真实根。初始化、完整候选、采样、价值、推进与全局根ID动作归档共用此边界，旧稠密存储和直接调用仍为独立小批对照。工作槽、配置或单步通过不批准1600容量。
+
+`benchmark_duel_v2_soa_device.py` 默认采用稀疏状态和有界队列；可用 `--rows 1600 --rule-work-rows 8 --inference-rows 2` 只列静态计划。原始动作与策略前缀追加空间受独立字节预算约束，耗尽明确失败；批次后状态／动作导出也使用有界分块。`--cohort-only --max-decisions N` 用于有界多步诊断，完整自然局仍需 `--require-natural`；稳定计时、逐级容量和数据完整性要求见 [1016协议](../../../docs/duel-v2-soa-1016-acceptance.md)。
+
+验证：`.venv/bin/python -m unittest tests.test_duel_v2_soa_capacity tests.test_duel_v2_sparse_soa_storage tests.test_duel_v2_tiled_soa_rules tests.test_duel_v2_soa_device_cli`。实际CUDA项与CPU参考分别记账，跳过不算通过。
+
+搜索专用观察进一步省去名称、头像和被动等展示文本，仍保留完整数值、身份、可见性和合法候选；网站投影不变。`--capture-training` 可同时保存既有设备训练轨迹与独立策略审计，按 `--training-tape-budget-mib` 拒绝超预算；只有整批自然终局及回放／双视角数值对拍完成后才导出七队episode。`soa_frozen_collection.py` 负责冻结采集边界，`outcome_runtime.update(..., gradient_only=True)` 要求优化器为 `None`，只核验既有联合损失与梯度。对应检查为 `tests.test_duel_v2_policy_projection`、`tests.test_duel_v2_soa_frozen_collection` 和 `tests.test_duel_v2_device_training_tape`；组件通过不替代真实自然局和正式训练保护。
+
+原生执行器和CUDA诊断的 `stack_runs=True` 是默认关闭的编译实验：合并连续局部栈操作，保留原PC、逐指令预算及异常检查。`tests.test_duel_v2_native_stack_runs` 验证独立编译的开关两版逐步截断与状态／错误一致性；启用必须另过实际设备与完整搜索验收，不能作为已经提速的证据。
+
+`capture_native_array_program(policy_query_cache=True)` 可选择 `gpu_cached_policy_projection.py` 的单次投影属性效果索引，默认关闭；复用正式适用条件与归约，观察结束即丢弃缓存。测试 `tests.test_duel_v2_cached_policy_projection` 覆盖完整视图、编码和跨调用失效，仍需独立的原生／CUDA及闭环搜索核验。
+
+有界队列可显式使用 `--candidate-int32` 保存经范围检查的32位候选类别索引，计数仍为64位，完整候选宽度与数值编码不变；训练轨迹原型按相同dtype计费。默认关闭，`tests.test_duel_v2_candidate_index_storage` 验证完整前缀、溢出拒绝和布局字节数，实际设备与闭环资格仍需另验。
+
+`device_paged_soa_storage.py` 将四条稀疏类型列放入有界共享页，保留原逻辑偏移与类型位值；`--state-storage paged --state-page-budget-mib 1536` 显式选择，默认仍为固定稀疏槽。页不足整批拒绝，页归属、重复映射、长度和租约在设备上核验。`tests.test_duel_v2_paged_soa_storage` 验证逐位运输、跨页、复用及损坏拒绝；实际规则与完整搜索分别验收。
+
+`soa_frozen_episode_batch.py` 将完整设备诊断episode接入既有七队消费接口，交叉核验控制器回执、原始动作、模型身份、完整pi及双视角终局标签。它不是实时驱动，正式训练保护继续拒绝，`learning_eligible=False`；仅用于冻结消费、损失／梯度和检查点恢复验收。
+
+原生 SoA 字段访问沿用常量名直达列，动态字符串名在所属记录类型内使用精确 UTF-8 二分索引；读取与成员判断不再为了找值扫描插入顺序或构造字段名。删除和遍历继续使用原有顺序，缺失标记实时读取，非字符串查询保留原拒绝／比较路径。记录适配与编码的字段匹配复用同一索引。验证：`.venv/bin/python -m unittest tests.test_duel_v2_soa_record_fields tests.test_duel_v2_native_soa_cpu`；短时实际 CUDA 可通过 `NTE_SOA_RECORD_FIELDS_PROGRAM` 指定同源小型冻结用例。局部访问或CPU组件收益不授予完整GPU搜索吞吐与并发资格。
+
+原生 SoA 默认允许同一指令片段内连续执行，减少逐指令返回外层分发。后续每条指令仍执行原步数、截止、错误上下文、函数／PC边界检查；异常、错误、帧切换和跨片段跳转先交回原执行循环。opcode与规则正文保持不变；无法识别的片段结构明确拒绝。显式 `stack_runs=True` 保留原独立栈融合实验，不与此模式叠加。验证：`.venv/bin/python -m unittest tests.test_duel_v2_native_shard_runs tests.test_duel_v2_native_stack_runs tests.test_duel_v2_native_soa_cpu`。小型CUDA循环和CPU组件结果不批准整批搜索、自然局或400并发。
+
+
+### 规则 VM 的逐函数原生迁移
+
+`rl/batched_duel/native_functions.py` 的 `native_functions=True` 完整模式为冻结程序的全部函数生成原生控制流，覆盖调用、属性、闭包、生成器挂起及异常恢复；有未支持函数时整体拒绝，不保留旧 PC 分片作为回退，也不编译截断前缀。入口／恢复保留 PC 跳转表，函数内直线直接顺接、分支直接跳转；逐指令步数／截止、错误、对象别名和帧 ABI 保持。兼容对象／帧运行时仍保留，不把完整控制流覆盖称为领域数据已完全去对象化。
+
+`NativeSoACPU`、`CudaSoARules`、`NativeSoACUDAQuery` 显式传入 `native_functions=True` 试用；默认关闭，与 `stack_runs=True` 不叠加。完整覆盖通过 `compile_native_functions(native_plan, complete=True, max_function_ops=16384)` 核验；不带 `complete` 的接口保留早期叶子函数规划作为诊断。验证：`.venv/bin/python -m unittest tests.test_duel_v2_native_functions`；跨 Python 版本使用 `NTE_NATIVE_FUNCTION_PROGRAM` 加载同源冻结夹具。
+
+当前具备完整冻结控制流、局部引用提升、常量字段读取及原生调用路由，但仍使用带类型标签的对象与兼容帧，未完成全部标量／对象去装箱。优化构建、实际 CUDA 全规则、完整搜索与正常终局分别验收；组件或静态覆盖结果不提供 400 路容量或一小时吞吐结论，默认开关保持关闭。
+
+
+`rl/batched_duel/native_values.py` 提供默认关闭的 `native_values=True` 局部引用提升与常量字段读取实验，可独立于整函数编译使用。静态选择有界直线片段，优先合法动作、攻击／伤害和行动推进；不跨函数、跳转目标、调用或未支持操作。每段使用 C++ 局部引用保存操作数和局部值，仅在退出、预算／截止或错误时回写活跃栈及已修改局部值；原逻辑指令计数、错误位置、部分修改与外层异常处理保持。分片模式仍可独立进入普通 PC，栈形状不适合时保留原执行；完整函数模式保留所有合法的调用／挂起、异常／分支及局部片段退出恢复入口，不为直线指令增加不可能的恢复分支。
+
+常量字符串下标绑定 schema 的记录类型／列偏移，绕过通用字段查找；仍核验记录、缺失值和类型化对象边界，并保留原值装箱及缓存／别名语义。动态键、普通对象、列表和 Counter 特殊读取继续调用相应原语。片段同时支持数值运算、比较、逻辑取反、身份／成员判断和字段写入；整数／布尔运算使用原数值算法的受保护快路径，浮点、序列和其它对象调用原语。原装箱、缓存及分配错误保留，不声称全部标量已去装箱。
+
+`NativeSoACPU`、`CudaSoARules`、`NativeSoACUDAQuery` 均接收此显式选项；与 `stack_runs=True` 互斥。`compile_native_values(image, schema, native_plan)` 返回所选函数／PC范围、常量读取点及代码身份。验证入口：`.venv/bin/python -m unittest tests.test_duel_v2_native_values tests.test_duel_v2_native_functions tests.test_duel_v2_native_shard_runs`。组件及CPU短测不提供GPU性能或并发资格，默认路径切换仍需独立CUDA、完整搜索和正常终局验收。
+
+
+`native_calls.py` 在上述显式原生模式中直接路由普通／闭包函数和已知同步字典／列表方法，复用原参数绑定、生成器和返回逻辑；生成器式extend、关键字update及其它特殊方法继续使用对应原语。`native_scalar_ops.py` 的整数／布尔快路径复用原溢出算法；比较／取反返回原始真假值，运算结果仍按原协议装箱。验证 `tests.test_duel_v2_native_calls`、`tests.test_duel_v2_native_scalar_ops` 与 `tests.test_duel_v2_native_scalar_cuda`。后一项使用真实完整堆／库原语执行独立设备探针，对比节点、边、载荷、计数、结果与错误，并核验独立期望；不运行完整规则搜索，不提供整局或并发资格。
+
+
+原生实验把大型调用、参数绑定、数值回退和 SoA 写入／复制实现保留为共享设备函数，避免在各规则函数中反复内联；函数正文与布局不变。只读字段访问仍可内联，控制流完整模式不会裁剪规则函数或合法动作。
+
+`NativeSoACUDAQuery(..., execute_only=True)` 是显式诊断入口：保留相同规则内核与全部所选冻结函数，只编译执行／时钟入口，省去未使用的投影、导出、解码和压缩内核；后面这些接口会主动拒绝。`rule_source_sha256` 记录完整规则源码，`source_sha256` 记录实际编译源码，二者不得混用。默认关闭，不用于批准闭环设备搜索。`tests.test_duel_v2_native_rule_stages` 核对正式规则辅助函数的完整状态与实体别名；它是组件，不是完整对局。
+
+`CudaSoARules` 和 `NativeSoACUDAQuery` 可显式传入 `separate_compilation=True`，须同时启用 `native_functions=True`，默认关闭。`native_compile_units.py` 保留同一份规则函数体和 ABI，将运行库、局部值片段与全部规则函数分开编译；不剪枝冻结函数或合法动作。CUDA 使用严格浮点的可重定位 CUBIN 和设备链接；两个独立编译任务并行，各自持有源码身份和回执，保留最终链接顺序；每个编译单元及最终链接结果分别按源码、编译旗标、设备／编译器／驱动身份校验缓存，记录对象编译与链接时间。`execute_only` 的诊断限制仍生效。验证：`.venv/bin/python -m unittest tests.test_duel_v2_native_compile_units tests.test_duel_v2_cuda_compile_units tests.test_duel_v2_cuda_linker`；主机多文件对拍只证明语义与链接边界，不提供 GPU 吞吐证据。完整函数模式复用现有直接栈路径的四类操作：局部值读取／写入、常量读取和弹栈直接执行原操作，不再实例化不处理这些操作的通用字符串／异常／标准库／容器处理器；逐步预算、错误和局部值未绑定检查保持。
+
+`native_profile.py` 只用于显式诊断：在拆分后的运行库单元记录冻结函数执行片段、通用操作和共享原语耗时，保持规则／局部值单元与 ABI 不变。计数按行保存，复位、执行和读回须在同一流顺序进行；嵌套类别时间重叠，不能相加当作独立占比。计时构建不用于宣称未插桩性能，生产源生成器不会自动启用。`CudaSoARules`／`NativeSoACUDAQuery` 可显式传入 `indexed_attributes=True`，须启用独立完整编译，默认关闭；仅替换运行库的冻结类查找，复用现有精确 C3／描述符索引；索引采用运行库专用函数名，只接入运行库独占的非内联函数，共享的原内联定义逐字保持；实例字段、getter、方法绑定和错误／预算保持。冻结规则源身份与优化后的单元／CUBIN 身份分别记录，其他单元缓存不失效。验证：`tests.test_duel_v2_native_profile`、`tests.test_duel_v2_native_runtime_index`。仅 `execute_only=True` 的主机诊断可显式设置 `stack_bytes=65536`，用于共享显存受限时的固定状态检查；正式执行仍至少128 KiB且默认值不变。较小诊断栈通过不提供任意规则路径的栈上限或生产资格，新旧计时须使用相同实际栈配置。
+
+`create_soa_search` 默认启用已有的 `reuse_interior_observation`：非终局己方新节点的价值评估复用同一状态租约下的决策观察，省去重复 `public_legal_decision`；仍核对 arena、slot、generation、owner、行动者和终局元数据。终局、不同观察者与深度截止保留独立观察路径，Gumbel32／cap16、随机流、价值和信息集协议不变；可显式传 `False` 做对照，重建搜索时重新捕获图。验证 `tests.test_duel_v2_soa_observation_reuse` 同时比较完整预算结果、随机状态和租约回收，并确认有效价值观察查询减少；合成搜索测试不提供正式规则或并发资格。
+
+可显式设 `NTE_CUDA_COMPILE_THREADS=4` 启用有界并行编译，范围1–16；不设置时原编译旗标与缓存身份保持不变。线程数与实际旗标进入编译回执／缓存键，不允许0或任意编译选项，也不改变严格浮点设置。验证：`tests.test_duel_v2_cuda_compile_profile`、`tests.test_duel_v2_cuda_binary_cache`。编译超时与执行失败分别记录，不通过延长同次截止取得通过。
+
+运行库还提供默认关闭的 `direct_runtime_calls`、`direct_type_queries` 与 `indexed_container_methods`，均要求完整原生函数和独立编译，可与 `indexed_attributes` 组合。调用选项将普通函数及标量内建的原始分支接入运行库 `call`，类型查询选项只提前处理 `type/isinstance` 和已解析的原生字典 `.get()`，容器选项用冻结名称引用解析字典／列表／元组方法；保留参数绑定、动态名称回退、类覆盖／描述符、分配、错误及逻辑步数，不缓存可变效果。只改运行库独占函数，共享内联定义和 ABI 保持，其他单元按身份复用。验证 `tests.test_duel_v2_native_runtime_calls`、`tests.test_duel_v2_native_effect_queries`；实际收益须由同配置未插桩 GPU 对照证明。
+
+`create_soa_search` 同时默认开启 `reuse_root_observation`，初始化后的根价值评估复用本次相同租约、同观察者的非终局决策观察；仍运行独立辅助 WDL 模型。终局及其他观察者回退独立查询，陈旧 arena／slot／generation／owner 拒绝，根价值复用核验保留独立查询。可显式关闭作对照；重建搜索并重新捕获图。验证 `tests.test_duel_v2_soa_root_observation_reuse` 对照完整 Gumbel32、辅助推理输入／次数、随机状态、错误、租约和有效观察查询数；不提供真实规则完整终局或400并发资格。
+
+完整 SoA 搜索验收脚本可显式传 `--native-complete`，实际启用完整原生函数、局部值和独立编译；`--indexed-attributes` 要求该模式。计划与运行回执记录这些实际选项，默认仍保留原配置。搜索使用完整 CUDA 模块及至少128 KiB栈，不开放 execute-only 或64 KiB诊断配置。验证 `tests.test_duel_v2_soa_device_cli`；选项存在不等于完整搜索或并发验收通过。
+
+无缓存效果快路由 `gpu_effect_queries.query_legacy_effects` 和 `query_all_effects` 从当前正式函数派生：仅 exact flags dict、全部七个旧式效果键缺失且 holder 是普通字典或三种正式实体时提前返回空效果；`query_all_effects` 仅对正式 holder 的 exact 空 list／tuple 效果及 None／exact 空字典 flags 提前返回新空列表；自定义读取、迭代、类覆盖、异常及实时标记修改保留正式顺序，其他输入完整回退，不缓存可变结果。`capture_native_array_program(effect_query_fastpaths=True)` 显式接入冻结替换并记录协议／源码身份，默认关闭；`tests.test_duel_v2_policy_effect_queries` 和 `tests.test_duel_v2_native_array_program` 验证派生、替换及原生结果。生成新规则程序会改变其编译身份，不能沿用旧规则或模型的验收资格。
+
+`indexed_entity_queries=True` 只为有界冻结纯字符串 tuple 建立精确 UTF-8 二分索引，支持运行时动态字符串查询；其他容器／类型／坏引用保持原路，不缓存可变实体或跳过恢复校验。要求独立完整编译，默认关闭，CLI 显式 `--native-complete --indexed-entity-queries` 可选；验证 `tests.test_duel_v2_native_entity_queries` 包括真实角色顺序、实体恢复、别名、容量与步数截止。
+
+完整模块的投影／导出／解码附加源码仅归运行库；未知定义、声明或规则对投影符号的反向引用拒绝拆分。完整及 execute-only 的非运行库对象源码逐字一致。`CudaModule.compilation_unit_specs` 可显式指定完整绑定的非空同签名子集，仅用于对象缓存；最终链接与实际主机绑定保留完整签名，源码／GPU／NVRTC／驱动／编译选项校验不变，不修改并行共享状态。SoA 使用相同规则／时钟对象身份复用缓存；完整模块仍保留全部功能和至少128 KiB栈。验证 `tests.test_duel_v2_native_compile_units`、`tests.test_duel_v2_cuda_compile_units`。
+
+规则工作行显式支持1–64，默认8；稀疏及分页状态工作区同步支持64。容量计划、编译前及 cohort 分配前检查已知 scratch／typed 工作区下界和当前整卡占用；下界通过不表示显存必定足够，捕获后仍核对总预算。完整搜索回执绑定独立种子／owner／slot、有效行覆盖、尾批、错误、固定Gumbel32及临时租约回收；复制状态吞吐和CPU分块对照不授予GPU容量资格。短连续入口可用 `--native-complete --indexed-attributes --rows 65 --rule-work-rows 64 --cohort-only --max-decisions 2 --warmup 0 --repeats 1 --execution-seconds 60 --proof-seconds 30`，同时提供冻结输入与新输出目录。验证 `tests.test_duel_v2_wide_soa_search`、`tests.test_duel_v2_soa_capacity`、`tests.test_duel_v2_sparse_soa_storage`、`tests.test_duel_v2_soa_device_cli`。
+
+设备内层循环被deadline或tick guard打断时，在物理提交前通过 `DeviceGumbelSearch.abort_device` 排空已签发的临时世界、粒子、当前动作及统计租约；根动作继续由物理层统一消费／释放。排空幂等，不推进模拟，不改变已请求／完成计数、信息键、随机流或原错误，不允许将中断结果写为成功。验收脚本先持久化原始执行计数、阶段与捕获后显存分项，再核验租约，避免失败回执丢失。验证 `tests.test_duel_v2_device_action_leases` 的独立动作arena、各阶段截断与重复排空。
+
+`DeviceSoARules`／`DeviceTiledSoARules(require_teacher=True)` 显式准备冻结三步 teacher 和原始规则动作解码；默认仍关闭。精确 int64 选择索引、完整原始动作顺序及独立动作租约不经过策略重排。`staged_teacher=True` 必须同时启用 teacher：一次独立 typed clone，三步分别选择、推进、清理与压实保存，回收中间状态和动作，提前终局停步，亲本租约不变。该适配只提供接线能力，单次规则决策的预览仍受临时及 typed 池容量限制，必须另做完整 GPU 对拍，不能授予训练资格。`soa_training_jobs.adapt_training_jobs` 只绑定真实七队任务、目录／版本／构筑与训练侧，保留起手换牌；不启动规则、推理或学习。验证 `tests.test_duel_v2_soa_teacher`、`tests.test_duel_v2_soa_teacher_pipeline`、`tests.test_duel_v2_soa_training_jobs`。
+
+假想推进可显式启用 `fused_rule_steps=True`（验收 CLI：`--fused-rule-steps`），默认关闭。推进与原 `clean` 之间保留独占 typed 列和有效新根，重置临时堆／视图／克隆缓存后仅保存最终状态；`EventList` 无新槽余量的行仍走原先压实／保存／重新加载路径直接使用第一次推进的新根而不重做动作，并释放中间租约，保留 fresh events 与旧列表别名。分配证明绑定当前正式 clean 与冻结入口，拒绝物理提交，避免原始动作录像重复；不变更规则程序和编译对象身份。验证 `tests.test_duel_v2_soa_fused_steps`；组件通过与完整搜索、自然终局及400并发资格分别验收。
+
+`soa_training_results.verified_training_games` 只在批次结束后校验并适配完整 GPU 标签：真实任务和模型版本、执行搜索回执、完整动作顺序、策略／访问数、双观察者 WDL、自然终局及独立原始动作重放必须一致。缺少 GPU 行或证据不在 CPU 补造，不写文件或授予闭环训练资格。`DeviceTrainingTape.value_rows_after_batch(include_frozen=True)` 显式导出完整双观察者记录，冻结对手仍不可学习；策略审计同时用 `numerical_rows_after_batch(include_frozen=True)`，默认导出行为不变。验证 `tests.test_duel_v2_soa_training_results`、`tests.test_duel_v2_device_training_tape`。
+
+
+正式 covered_value/H3 的显式组件工厂为 `rl/batched_search/soa_covered_search.py`：校验七队独立辅助模型范围，固定逐模拟世界采样、三步规则对手续推和 Gumbel32；不加载策略同名模型冒充辅助模型，不授予执行资格。训练任务适配保留 covered scope 和 teacher 语义。`DeviceTieredSoARules` 提供默认不接线的小工作区宽队列与大工作区窄队列，仅对来源明确的 VM 容量失败重试；物理推进始终只执行一次。验证入口为 `tests.test_duel_v2_soa_covered_search`、`tests.test_duel_v2_soa_training_jobs`、`tests.test_duel_v2_tiered_soa_rules`，实际 GPU、完整搜索和自然终局另行验收。
+
+
+原生规则运行库的整数／布尔比较和精确 deepcopy 调用可分别通过 `--runtime-primitive-compare`、`--direct-deepcopy-calls` 做单变量短测，要求 `--native-complete`，默认关闭。仅变换共享 runtime 编译单元，其他缓存及规则保持；宽整数、浮点、自定义对象和未知类型沿原规则处理。验证入口为 `tests.test_duel_v2_native_runtime_compare`、`tests.test_duel_v2_native_runtime_calls`、`tests.test_duel_v2_soa_device_cli`；收益须另作未插桩 GPU 配对测量。
+
+
+纯策略价值预热使用独立 `batched_search/device_pure_value_tape.py`，接受真实零模拟决策并保存双方公开价值输入，不产生策略搜索标签；整批自然结束、无错且容量足够后才允许导出。`soa_pure_jobs.adapt_pure_jobs` 绑定原任务、原牌序、起手换牌与独立 policy/reference 来源和版本，保留候选／基线比较身份。两者不构成闭环 driver 或模型校准资格。验证 `tests.test_duel_v2_device_pure_value_tape`、`tests.test_duel_v2_soa_pure_jobs`。
+
+
+局部引用片段预算优先覆盖实际观察主体 `_cached_observe`／`_policy_observe`，而非只标外层入口；共享 cell 每次读原 cell、立即写回，global 每次查原 globals，均保留原引用与装箱。`EXTENDED_ARG`／`NOP` 仍逐指令核对预算，不跨调用或异常边界。`native_values=False` 不变；开启该实验会改变编译单元，必须重新核验新缓存和实际 GPU，不能继承旧源码资格。验证 `tests.test_duel_v2_native_values` 的闭包、globals、扩展参数及完整堆／状态切点对拍。
+
+
+`soa_pure_results.verified_pure_calibration_games` 在批次结束后核对真实纯策略任务、原始初始化、完整自然终局、双观察者 GPU 价值记录及独立 CUDA 策略回执，再转换为既有价值学习输入；不生成搜索策略标签或补造缺失记录。比较任务须另走比较协议，不由本适配器接收。验证 `tests.test_duel_v2_soa_pure_results`、`tests.test_duel_v2_soa_pure_jobs`；转换通过不等于学习、完整评估或闭环资格。
+
+
+`DeviceGameLoop(defer_physical_presentation=True)` 为默认关闭的闭环选项：仅已核验冻结程序、绑定同一真实原始动作记录器且立即执行原 `clean` 的物理提交，可通过专用入口使用模拟演出边界；普通 `step_device(physical=True)` 仍执行完整公开动作。Tiled 共用原队列，Tiered 物理只执行大工作区一次；缺补丁的中间事件不得公开播放，公开录像须批后按原始动作走完整正式入口重建。源检查发生在静态构建／捕获，不进入 GPU replay 的每步。验证 `tests.test_deferred_physical_presentation`。
+
+冻结可显式启用 `capture_native_array_program(policy_query_cache=True, value_observation_entry=True)`，默认关闭；专用价值投影从正式公开投影派生，仅去掉合法动作枚举与复制，保留可见性、数值公式及每查询缓存。SoA 只接受精确冻结的专用入口，旧程序仍沿原查询路径。验证 `tests.test_duel_v2_gpu_value_projection`、`tests.test_duel_v2_value_observation_entry`；新程序／编译缓存和 GPU 收益须独立验证。
+
+
+SoA 验收 CLI 可显式传 `--defer-physical-presentation` 接入上述闭环物理选项，默认关闭；计划及实际运行回执记录该值，实际回执从已构造循环读取。原始动作记录、立即清理、完整公开回放批后重建及源门控仍必须满足；不改变模拟次数、起手配置、预算或资格。验证 `tests.test_duel_v2_soa_device_cli`。
+
+
+`DevicePCG64.integers_device(highs, active, max_retries=128)` 提供精确 NumPy PCG64 的 low=0、逐行 high≤2³¹−1 整数抽样，保留 uint32 半字缓存；上界1及未激活行不消费随机数，非法上界和拒绝重试耗尽返回明确错误，后者回滚全部六字段状态。原 raw／uniform／Gumbel／categorical 不变。验证 `tests.test_duel_v2_device_bounded_integers` 的真实 CUDA 源 CPU shim 与 NumPy 对拍，GPU 数值与设备循环另行验收。
+
+`batched_search/device_rule_policy.py` 是独立的零模拟规则控制器，绑定真实 SoA teacher，保留完整原始合法顺序与规则选择，并另取真实 GPU 行动方价值观察。可显式启用 `explore_first_six=True, exploration_seeds=tuple(job_seeds)`：setup 建立自有 PCG64，构造循环后调用 `bind_game_loop`，仅在物理步号小于6且处于行动阶段时精确整数抽样；不在每次决策重置随机数，原规则选择保留审计。控制器仅关闭自有 RNG，不拥有外部规则及动作租约。验证 `tests.test_duel_v2_device_rule_policy`；这不是 Gumbel、辅助模型 scope 或完整训练服务，不能通过要求 NN argmax 的纯策略结果适配器。
+
+
+`seven_auxiliary_jobs.auxiliary_jobs` 复用既有七队广覆盖计划的配对种子、变化卡牌及顺序；调用方显式传本轮冻结起点。`adapt_auxiliary_jobs(..., starting_decks=...)` 必须绑定真实七队起点，逐侧核对角色及顺序，允许合法卡牌变化，保留原 job 牌序与截止，初始化保留正常起手换牌。计划和元数据适配均不执行规则、推理或学习；辅助算法身份包含该计划代码，不能沿用过期 scope。验证 `tests.test_duel_v2_seven_auxiliary_jobs`。
+
+冻结可显式选择 `aura_query_fastpaths=True`，默认关闭。该选项从正式 `modifiers.evaluate` 派生，仅跳过三个经源结构核验、属性不匹配时必为空的 aura 生成器；Context 构造、参数求值、库存、条件、贡献顺序与归约保留，自定义类型及未知 provider 原路执行，不缓存效果。宿主先核对构造／provider／依赖身份，冻结体仅使用不可变函数引用，不调用源码检查。验证 `tests.test_duel_v2_gpu_aura_queries`、`tests.test_duel_v2_native_array_program`；实际 GPU 与收益另验。
+
+
+### 设备辅助价值采样组件
+
+`rl/device_auxiliary_collection.py` 的 `DeviceAuxiliaryCollector` 组合真实规则策略、设备对局循环、原始动作与双视角价值记录；只在批后使用正式规则核验。调用方显式提供对局决策上限、绝对截止时间、显存预算和进程级超时保护。当前辅助价值合同绑定 512 次决策；其他上限仅可诊断，不能导出该合同的学习数据。 显式 `defer_replay_proof=True` 只导出未证明候选；恢复前完整证明保留，另一个 CPU 进程完整核验后才能通过 ledger 的 `commit_phase_segment` 提交。未证明候选和 RUNNING／REJECTED 队列不能直接用于学习或原地重置。
+
+正常分段暂停不修改终局、截断或错误标记，也不提前生成终局标签。恢复核对原始动作前缀、完整状态与别名、PCG 状态、版本及源码绑定，上传原有 GPU 价值记录，并由最终 GPU 终局处理补齐整段历史标签。只有全批自然终局、完整核验且无历史错误的轨迹可导出价值样本。组件接管并释放调用方交入的三个独立存储区，借用的规则执行器仍由调用方管理。它不提供正式闭环 Gumbel driver、辅助模型 scope 或评估资格。
+
+相关 CPU 契约验证：`.venv/bin/python -m unittest tests.test_duel_v2_device_auxiliary_collection tests.test_duel_v2_seven_auxiliary_jobs tests.test_duel_v2_device_pure_value_tape -q`。GPU 对拍和本轮性能记录保存在 `artifacts/rl-evals/`，不由这些 CPU 测试代替。
+
+
+`CudaRecordSoACompact` 可在构造时或后续捕获前显式设置 `threads_per_block`，允许 1、2、4、8、16、32、64、128，默认 128。该参数只改变每行独立压实任务的 CUDA 启动网格，不改变 CUDA 源码、schema、容量、遍历顺序或错误处理。已经捕获的图保留捕获时的启动配置；数值参数不代替实际 GPU 性能和正确性核验。相关检查：`.venv/bin/python -m unittest tests.test_duel_v2_record_soa_compact_launch tests.test_duel_v2_record_soa_compact -q`。
+
+
+原生 SoA 规则适配器对不超过 32 行的工作批次默认采用单线程块压实，使各行独立分布到不同 block；更大工作批次及通用压实器仍保留原 128 线程配置。只改变启动网格，规则程序、CUDA 源码、容量与二进制缓存身份保持不变；新捕获会读取实际配置。
+
+GPU公开合法动作的 raw-token 投影在1～32行采用每block1线程，超过32行保留128线程；其他投影路径保持原启动配置。此项仅调整行独立kernel的启动几何，CUDA源码、候选顺序、可见信息、错误和容量行为不变。验证运行 `python -m unittest tests.test_duel_v2_projection_geometry tests.test_duel_v2_device_projection`，并补GPU完整状态、动作与编码对拍；局部优化不代表完整Gumbel或训练资格。
+
+完整 SoA 后端可显式设置 `native_hydration_probe=True, hydration_program=program` 启用实体恢复原生探针，要求 `native_functions=True`、`separate_compilation=True` 和 `execute_only=False`。默认关闭，不额外解析程序且保留原编译单元。启用时核对实际 FrozenRuleProgram、image、规范函数／实体类／全局绑定、稳定 AST 和 typed schema；只有确认无需恢复实体或修复别名的状态才走快路，其余继续完整原函数。探针工作计入额外 VM 预算，命中会省去临时分配，因此不承诺旧 opcode／分配计数等价。必须同时保存 `hydration_probe_binding` 的实际 ordered-unit SHA、recipe 与 program／image／schema 身份，原 monolithic `source_sha256` 不能单独描述启用后的程序；独立完成对应GPU对拍后方可用于验收，不自动获得H3或完整训练资格。CPU验证运行 `python -m unittest tests.test_duel_v2_native_hydration_probe tests.test_duel_v2_soa_cuda_loading`。
+
+设备价值预热已提供独立连接：`seven_round.run_device_value_calibration` 复用现有 `warm_value` 的训练／选择／留出流程，由 `DeviceValueCalibrationContext` 和 `DevicePureCollector` 收集真实 GPU 纯策略自然完整局；`run_device_value_smoke` 检查有限 WDL 更新、策略逐张量不变、数值导出恢复及独立种子的冻结设备评估。此阶段不要求预先具备完整 Gumbel 驱动，但也不授予搜索或正式训练资格；截断批次不产生学习标签。接口及限制见[设备端价值预热](../../../docs/duel-v2-public-training.md#设备端价值预热与短训连接)。验证：`python -m unittest tests.test_duel_v2_device_value_training tests.test_duel_v2_device_learning_context tests.test_duel_v2_soa_pure_results tests.test_duel_v2_device_pure_value_tape`。
+
+
+### H3 Gumbel 联合学习连接
+
+`rl/device_joint_training.py` 将辅助价值准备、主价值预检和真正策略／WDL 联合更新分开。`prepare_joint_training_inputs` 使用显式七队冻结起点（包含人工起点），依次收集辅助168／56／56局、选择温度并验收 scope，再执行既有主价值112／56／56局校准；各阶段使用独立种子与显式截止，辅助轨迹以显式有界步数短段推进（默认4步）。
+
+`seven_round.run_device_joint_smoke` 仅接收真实 `DeviceH3Collector` 与同执行器的 `DevicePureCollector`：完整自然终局的 Gumbel32／16候选／H3 记录通过独立核验后，调用原 `update_batch` 联合更新，核对策略及价值参数实际变化、冻结队伍不变、数值导出恢复和独立种子冻结评估。`DeviceChunkedGameLoop` 允许单根搜索跨短图重放保留完整设备状态；默认每段一个搜索 tick，未完成32次模拟不能提交物理动作。纯策略校准可显式使用 `segment_decisions` 保留完整前缀；历史错误与截断不能产生学习标签。
+
+相关验证：`python -m unittest tests.test_duel_v2_device_joint_training tests.test_duel_v2_device_auxiliary_calibration tests.test_duel_v2_device_chunked_games tests.test_duel_v2_device_h3_segments tests.test_duel_v2_device_h3_collection tests.test_duel_v2_device_pure_segments`。这些组件及CPU验证不解除正式长训入口的设备资格检查；GPU完整局、实测联合更新、容量与模型强度须分别验收。
+
+辅助采集的持久队列由 `DeviceAuxiliaryCalibrationLedger` 维护；`device_auxiliary_continuation` 只接受有明确预算授权且历史干净的无损前缀。纯策略与 H3 收集器可将完整轨迹、设备搜索中间状态和独立证明分段持久化；`seven_round` 的价值拟合与联合短训另存阶段回执，续跑复用数值和完成缓存。失败记录禁止回退清洗，未完成自然终局或独立证明不得更新。接口、进程预算及验证见[跨进程短段恢复](../../../docs/duel-v2-public-training.md#跨进程短段恢复)。
+
+设备条件循环使用 PyTorch 原生子图分配池，并在捕获期登记实际子流，避免后续独立图捕获回收仍被搜索使用的临时张量。设备迭代／时间／显存保护、所有者线程和外来流拒绝保留；支持边界及GPU回归要求见设备搜索验收协议。
+
+规则预览可显式选择 `batched_duel/native_preview_arena.py` 的精确私有 typed 临时区回收，采用独立后端身份且保留默认执行路径；CUDA模块在实际图捕获时持有张量参数，图停止、设备同步后再释放，避免短命原生子流的析构错误。边界及独立GPU验收见设备搜索协议；组件CPU测试不能代替完整Gumbel训练成功。
+
+无 VM 的普通出击实验位于 `rl/batched_duel/native_attack_slice.py`：固定数值字段直接生成受限创生队局面的完整合法动作，并计算普通出击的战斗字段；环合和未知效果明确拒绝。尚未输出完整实体／事件后继状态，不能接入正式搜索或训练。支持边界见[原生出击数值样例](../../../docs/duel-v2-native-attack-slice.md)，本机对拍命令为 `python -m unittest tests.test_duel_v2_native_attack_slice`；CUDA 实测仍须独立短验。
+
+显式授权的混合训练可使用 `batched_search/training_checkpoint.py` 保存完整决策边界前缀，并通过 `hybrid_joint_update.py` 执行一次性联合更新、`hybrid_capacity.py` 接续原容量拟合；辅助／主WDL、自然终局、原搜索预算及P0门槛保留。入口边界与验证命令见[显式授权的混合训练](../../../docs/duel-v2-public-training.md#显式授权的混合训练)，默认设备内训练入口不因这些组件解除资格校验。
+
+七队默认预检直接使用完整搜索对局做联合更新，不再额外采集容量留出并拟合临时网络200轮；策略容量工具仅按需诊断。规则、独立价值、数值／恢复、P0、独立互搏和并发／显存验收保留，旧失败不追认。验证：`python -m unittest tests.test_duel_v2_seven_preflight`；流程见[七队默认学习与按需容量诊断](../../../docs/duel-v2-public-training.md#七队默认学习与按需容量诊断)。
+
+无 VM GPU 的具名字段状态池、完整候选批队列、直接 CUDA 复制／准备后伤害和区域移动组件见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。组件计时入口 `scripts/benchmark_duel_v2_direct_gpu.py` 默认只展示计划，显式 `--run` 才使用 CUDA；完整规则、七队自然终局与 H3 接线尚未通过，组件成绩不能作为整局或训练资格。验证：`python -m unittest tests.test_duel_v2_domain_state_pool tests.test_duel_v2_domain_action_batch tests.test_duel_v2_domain_cuda_damage tests.test_duel_v2_domain_soa_zones -q`。
+
+无 VM 选择阶段的直接合法动作生成见 `rl/batched_duel/domain_soa_choices.py`：保留逐张、组合与已解析排牌的完整顺序，具名设备列在图重放时重新读取，超容量与未解析角色规格拒绝；它不执行选择卡效，也不提供完整搜索资格。验证：`python -m unittest tests.test_duel_v2_domain_soa_choices -v`。边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。
+
+域状态编解码将角色存储身份与当前阵容分开，保留消失召唤物、实际出击次序、灵可连用记录、伤害来源和选择续步。所有对象引用使用存储槽；具名投影按有效阵容呈现。验证：`python -m unittest tests.test_duel_v2_domain_soa_codec tests.test_duel_v2_domain_soa_projection -q`；完整 GPU 对局资格仍未由这些状态组件授予。
+
+无 VM 公开计数采样的数值诊断位于 `rl/batched_duel/domain_soa_sampler.py`，保留全状态输出、选择／结算牌引用、正式随机序列和失败回滚。默认保护已接入完整 3479 观察和原行动表全部 1576 维候选校验；不一致逐列回滚，关闭保护仅限诊断，完整物理与 H3 训练资格仍未开放。验证：`python -m unittest tests.test_duel_v2_domain_soa_sampler -v`；详细边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。
+
+换牌设备阶段 `rl/batched_duel/domain_soa_turns.py` 输出手牌／牌库、随机状态及相关计数的增量，保留失败回滚；第二次起手换牌和手牌调度分别等待回合开始／结算结束续步。它要求完整合法动作预校验，尚非完整动作或对局执行器。验证：`python -m unittest tests.test_duel_v2_domain_soa_turns -v`；边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。
+
+域状态的效果条件、空清理列表与空持续状态分别保留；战斗玩家目标、额外出击计数、倾陷削减和黑羽检视续步采用具名字段。暂停出击仅保存已知规格，临时牌视图保留物理引用；采样器保留单层临时视图的共享原牌，完整 GPU 训练资格未解除。验证：`python -m unittest tests.test_duel_v2_domain_soa_codec -v`。
+
+公开字段投影保留来源失败与内容绑定保护，个人能量上限按正式模板和节奏变化，待选项之外不编码结算牌头部；设备图重放覆盖这些变化。验证：`python -m unittest tests.test_duel_v2_domain_soa_projection -v`。当前仍为部分特征，不是完整网络观察。
+
+只读角色数值查询 `rl/batched_duel/domain_soa_character_queries.py` 直接处理具名设备字段的效果条件、范围、层级、武备和相关面板数值，保留来源错误及绑定保护；它不执行出牌、攻击命中或回合推进。验证：`python -m unittest tests.test_duel_v2_domain_soa_character_queries -v`；详细边界见[直接 GPU 方案](../../../docs/duel-v2-direct-gpu.md)。
+
+七队完整观察列由 `rl/batched_duel/domain_soa_observation.py` 组装，保留冻结编码接口、手牌牌面变换、可见性、复制异能与终局行为；源字段和观察者在设备图中重读。它不提供完整动作特征、物理推进或 H3 资格，采样保护仍保留。验证：`python -m unittest tests.test_duel_v2_domain_soa_observation -v`；数值列和完整对局资格分别验收。
+
+直接设备候选编码组件 `rl/batched_duel/domain_soa_candidates.py` 将公共数值牌表和显式动作描述拼成七队模型的完整 1576 维候选，支持有序牌库选择、组合牌袋及动态上下文；本组件接收显式描述，完整合法动作与原始状态的公共牌表由独立模块产生。验证：`python -m unittest tests.test_duel_v2_domain_soa_candidates -v`；组件通过不代表完整 GPU 对局或训练通过。
+
+公共候选牌表 `rl/batched_duel/domain_soa_public_cards.py` 在设备端筛选自己的手牌与可见待选牌，保留变换牌面、物理原牌和动态瞬发，供完整候选编码使用；完整动作由全阶段枚举器产生，物理推进接入见文末的直接领域执行器。`rl/batched_duel/domain_soa_rule_queries.py` 提供固定具名属性的修正器归约，用于后续费用／出击瞬发等接线，不是完整支付或动作执行。验证：`python -m unittest tests.test_duel_v2_domain_soa_public_cards tests.test_duel_v2_domain_soa_rule_queries -v`。
+
+设备目标筛选 `rl/batched_duel/domain_soa_targets.py` 保留目标规则、角色／召唤物及弃牌实例顺序，处理残虹战斗牌与普通出击的不同空列表语义；支付与合法动作组合由行动组合器负责，物理推进接入直接领域执行器，设备资格另行验收。验证：`python -m unittest tests.test_duel_v2_domain_soa_targets -v`。
+
+行动阶段设备组合器 `rl/batched_duel/domain_soa_playing_actions.py` 按正式顺序合并费用、出击、终结、用牌限制、目标和选项，并独立保留物理身份载荷；换牌／选择枚举由全阶段入口合并，物理规则与 H3 的集成见文末，设备资格仍须单独验收。验证：`python -m unittest tests.test_duel_v2_domain_soa_playing_actions -v`。
+
+全阶段设备枚举入口 `rl/batched_duel/domain_soa_actions.py` 合并行动、换牌、选牌与牌库排序，保留实例载荷、单／多底部形式和设备图跨阶段重放；它不执行物理规则，也不自动开放采样、H3 或训练。验证：`python -m unittest tests.test_duel_v2_domain_soa_actions -v`。
+
+设备端信息一致性检查由 `rl/batched_duel/domain_soa_information_guard.py` 比较完整观察和原行动表的全部候选特征，逐窗口检查整个容量；验证用 `python -m unittest tests.test_duel_v2_domain_soa_information_guard -v`。它也是默认采样器的只读校验器；接线不表示物理整局、H3 或训练已经可运行。
+
+物理卡表规范化阶段 `rl/batched_duel/domain_soa_card_order.py` 重排首次引用顺序与全部相关引用，保留实体身份，保留单层有效牌面的共享物理引用，拒绝嵌套／身份不一致的视图及错误占用；验证用 `python -m unittest tests.test_duel_v2_domain_soa_card_order -v`。完整字符串规范化、采样资格与物理执行仍须分别验收。
+
+设备数值采样已保留对手已揭示手牌的实体与原顺序，并与敌手牌选择的公开引用合并；完整验证仍用 `python -m unittest tests.test_duel_v2_domain_soa_sampler -v`。完整搜索训练接线尚未开放。
+
+设备数值采样按实际观察方与当前行动方处理己方可见牌库：可见时保序并跳过洗牌随机消耗，标记过期或非当前行动方时按正式算法采样；同一图重放与严格导出仍由采样器测试覆盖。默认完整输入检查已接通，物理整局尚未开放。
+
+设备数值采样同时保护可见有效牌面与其共享原牌槽位，保留选择／操作的别名，拒绝嵌套、自指、悬空或身份不一致的物理引用；仍由采样器测试与严格导出核验。默认完整输入检查已接通，完整物理卡效和 H3 尚未开放。
+
+设备采样在重建牌池前扣除已分配为临时牌的公开 A03，派生 A03 不计入原牌上界；采样器测试覆盖临时数量为零／非零的种子及完整随机状态。角色存储可显式采用 16 槽保留累计消失召唤物，默认 8 槽超界仍明确拒绝，不能丢弃旧实体来适配容量；完整整局容量仍另行验收。
+
+物理规则主链从 `rl/batched_duel/domain_soa_physical.py` 接入直接状态变更原语，当前覆盖抽牌、小吱加手牌标记、溢出弃置／移出与空库终局；验证用 `python -m unittest tests.test_duel_v2_domain_soa_physical -v`。本机显式 C++ 对拍与实际 CUDA 检查分开计数，完整出牌／战斗／回合执行器与 H3 的集成见文末，设备资格仍未开放，不据此恢复已截止训练。
+
+域状态编解码保留暂停出击的全部具名数值／布尔参数、目标与属性，以及响应延后结算的完整操作快照；快照牌与区域中的原牌保留独立对象身份，区域重复身份仍拒绝。验证：`python -m unittest tests.test_duel_v2_domain_soa_pending_sortie tests.test_duel_v2_domain_soa_mark_queue -v`。这些无损状态字段不授予完整物理执行、H3 或实际 CUDA 资格。
+
+直接领域执行器 `domain_soa_execution.py` 已组合出牌、战斗、回合、响应、选择与公开角色 hooks，并通过 `domain_soa_rule_adapter.py` 接入完整观察、逐模拟采样、真实 H3 和固定 Gumbel32 搜索。该接线仍是显式未验收入口：CPU 同源编译器对拍不能替代实际 CUDA、400 并发或训练资格。实现边界、紧凑候选和验证命令见 [直接领域 GPU 执行器](../../../docs/duel-v2-domain-gpu-executor.md)。
+
+直接领域 GPU 验证入口 `tests.test_duel_v2_domain_soa_execution_cuda` 与 `tests.test_duel_v2_domain_soa_search_cuda` 复用正式完整状态对拍夹具，分别覆盖物理图重放／自然终局及真实 H3／起手换牌采样。完整物理 CUDA 函数显式非内联并预先配置调用栈；起手采样保持正式行动代理及恢复后的双重信息检查。组件通过仍不自动授予 400 并发、速度或训练资格。
+
+直接领域 GPU 的临时属性归约与伤害列表使用逐根工作区，只读查询避免内联展开并复用父观察的私有快照，减少设备栈与重复字段占用。规则容量、完整特征和 Gumbel32/H3 参数不变；验证及内存生命周期见 [直接领域 GPU 执行器](../../../docs/duel-v2-domain-gpu-executor.md)，400 并发和整局性能仍分别验收。
+
+直接领域搜索支持显式 `phase_gating=True`，由 GPU 条件分支跳过没有活跃根的整个搜索阶段，保留完整模拟、H3、错误清理与原截止语义。默认路径保持不变；验证使用 `tests.test_duel_v2_device_search` 与 `tests.test_duel_v2_device_search_phase_gate`，实际并发和整局速度另行验收。
+
+直接领域搜索可显式组合 `group_ready_leaves=True` 与完整信息核验的 `information_window`，前者只调整独立根的批处理时机，后者必须完整遍历 800 个候选。物理执行为每根分配独立 warp，规则与模型输入不变；验证和生命周期约束见 [直接领域 GPU 执行器](../../../docs/duel-v2-domain-gpu-executor.md)。
+
+
+紫色战斗免疫或绿色非战斗免疫实际阻止正数伤害时，在受击角色位置弹出对应颜色的「免疫」。提示读取后端实际免疫事件，不根据保护框或零伤害推断；护盾吸收、抗性减至零、限伤和保留生命不触发该提示。双方与新回放一致。
+
+
+### 大厅移动布局与玩法菜单
+
+大厅沿用已保存构筑优先、基础预组兜底的当前编队规则。PC 保留四人前台立绘；手机竖屏改为同一编队的四人装饰背景，手机横屏将四人卡片集中在左侧、玩法面板放在右侧；两栏顶部对齐，左侧按导航下方可用视口高度撑满，立绘分配摘要之外的全部剩余空间，不再受固定高度上限限制；重复的游戏标题在横屏视觉隐藏，左侧构筑摘要预留固定高度，右侧超出高度时独立滚动，切换玩法与进入／返回二级菜单不改变左侧位置和高度，前台操作面板使用 80% 不透明的深色底，文字与按钮不降低透明度。大厅、构筑、图鉴、回放、账号和工具入口均保留；构筑统一通过顶部导航进入，操作面板不再重复提供「调整构筑」按钮。
+
+玩法统一为普通人机、高级人机、好友对战和新手教学。PC 在入口下展示当前设置，手机通过入口进入二级菜单，可返回切换，切换时保留对手预组和房间码。房间码与加入按钮仅在好友对战中出现；教学关卡使用独立进入按钮。进行中／已结束房间的继续、离开与回放仍优先显示，开局、构筑及教学进度规则保持现状。
+
+验证：`node --check app/modules/card_game/static/js/v2_home.js`；浏览器检查手机竖屏 320／375／390px、横屏 844×390 及 PC 1440×900，核对四人背景、80% 面板、四种玩法的进入／返回、选项保留、加入房间校验及已有房间入口；用拦截开局请求核对原有请求参数，避免为布局验收创建对局。
+
+### 当前环合训练观察与学习子集
+
+七队研究编码补齐创生珠、伊洛伊有序追加队列及每回合计次；数值列不随无关角色公开或移除旧衍生牌自动漂移。历史数值须显式迁移并重新核对分数、WDL、CUDA及恢复，不重绑旧批准。已明确授权的混合联合更新可用 `learning_keys` 限定学习队伍，其余银行模型保持全部张量不变。完整配牌候选与独立评估仍按本轮合同另行执行。验证：`.venv/bin/python -m unittest tests.test_duel_v2_harmony_observation tests.test_duel_v2_seven_migration tests.test_duel_v2_hybrid_joint_update`；细则见 `docs/duel-v2-rl.md`。

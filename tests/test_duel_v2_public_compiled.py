@@ -468,7 +468,7 @@ class PublicCompiledNativeTest(unittest.TestCase):
         packed = got[OFFSETS['ch_hp_floor'] + (0 if side == 'a' else 1) * 6 + SEAT_INDEX['baicang']]
         self.assertEqual(packed, 1)
 
-    def test_escalation_turn6_lowest_energy_and_two_ultimates(self):
+    def test_escalation_turn6_all_alive_energy_and_two_ultimates(self):
         state = new_game(seed=21, skip_mulligan=True, escalation=True)
         side = state['active_side']
         for hero in state['sides'][side]['characters'].values():
@@ -513,7 +513,7 @@ class PublicCompiledNativeTest(unittest.TestCase):
         ]
         self.assertEqual(third, [])
 
-    def test_escalation_t13_energy_clamp_and_t20_harmony_cap(self):
+    def test_escalation_t13_energy_and_harmony_clamp(self):
         state = new_game(seed=22, skip_mulligan=True, escalation=True)
         state['turn'] = 12
         for team in state['sides'].values():

@@ -105,7 +105,7 @@ def _q05(c):
         card = card_instance(c.state, 'Q05', c.side)
         c.state['sides'][c.side]['deck'].append(card)
         shuffle(c.state, c.state['sides'][c.side]['deck'])
-        c.history(f"将一张「{card['name']}」的复制洗入牌库。")
+        c.history(f"将 1 张「{card['name']}」的复制洗入牌库。")
     c.draw(1)
 
 
@@ -135,6 +135,36 @@ class Xiaozhi:
     def on_damage_dealt(c, target_side=None, target_id=None, amount=0, **_):
         if target_side == other(c.side) and is_player(target_id) and amount > 0:
             change_jingu(c, 1, '小吱对对方玩家造成伤害，触发异能')
+
+    @staticmethod
+    def on_surplus_energy(c, amount=0, **_data):
+        if amount > 0:
+            change_jingu(c, 1, '【盈蓄】回能，小吱触发异能')
+
+    @staticmethod
+    def on_surplus(c, **_data):
+        team = c.state['sides'][c.side]
+        for zone in ('hand', 'deck'):
+            card = next((card for card in team[zone] if card.get('card_id') == 'Q06'), None)
+            if card is None:
+                continue
+            team[zone].remove(card)
+            from app.modules.card_game.engine.duel_v2.flow import resolve_release
+            parent = c.state.get('operation')
+            phase, pending = c.state['phase'], c.state.get('pending_choice')
+            draining = c.state.get('_draining_actions')
+            c.state['_draining_actions'] = True
+            try:
+                resolve_release(c.state, c.side, card, response=True)
+            finally:
+                c.state['operation'] = parent
+                if not finished(c.state):
+                    c.state['phase'], c.state['pending_choice'] = phase, pending
+                if draining is None:
+                    c.state.pop('_draining_actions', None)
+                else:
+                    c.state['_draining_actions'] = draining
+            break
 
     @staticmethod
     def on_ultimate(c):
@@ -191,4 +221,4 @@ class Xiaozhi:
         amount = Xiaozhi._attack_bonus(c, **{k: v for k, v in query.items() if k != 'operation'})
         if amount:
             yield contribution('xiaozhi.attack_bonus', property, amount, kind='aura', scope='allies',
-                               source_entity_id=c.entity_id, source_key=c.weapon_source('Q08'), label='思考喵')
+                               source_entity_id=c.entity_id, source_key=c.weapon_source('Q08'), label='绒绒春日')

@@ -34,9 +34,45 @@ from app.modules.card_game.rl.batched_search.cooperative import (
     OperationResponse,
     RequestExpired,
     _PROTOCOL_METHODS,
+    _OPTIONAL_PROTOCOL_METHODS,
 )
 
-PROTOCOL_METHODS = _PROTOCOL_METHODS
+PROTOCOL_METHODS = _PROTOCOL_METHODS | _OPTIONAL_PROTOCOL_METHODS
+
+
+RECOVERY_RUNTIME_MODULE = 'app.modules.card_game.rl.recovery_runtime'
+SEVEN_RUNTIME_MODULE = 'app.modules.card_game.rl.seven_runtime'
+RESIDENT_RUNTIME_MODULES = {
+    RECOVERY_RUNTIME_MODULE: 'recovery',
+    SEVEN_RUNTIME_MODULE: 'seven',
+}
+
+
+def import_resident_runtime(alias: str):
+    """Import the explicit resident runtime module. Unknown aliases fail closed."""
+    if alias == 'recovery':
+        from app.modules.card_game.rl import recovery_runtime
+        return recovery_runtime
+    if alias == 'seven':
+        from app.modules.card_game.rl import seven_runtime
+        return seven_runtime
+    raise ValueError(
+        f'Unsupported resident runtime {alias!r}; expected recovery or seven. No implicit fallback.'
+    )
+
+
+def bind_resident_runtime(runtime: Optional[Any]) -> tuple[Any, str]:
+    """Bind recovery_runtime or seven_runtime. None keeps the historical recovery default."""
+    if runtime is None:
+        return import_resident_runtime('recovery'), 'recovery'
+    name = getattr(runtime, '__name__', None)
+    alias = RESIDENT_RUNTIME_MODULES.get(name)
+    if alias is None:
+        raise ValueError(
+            'Resident rules bind recovery_runtime or seven_runtime explicitly; '
+            f'got {name!r}. No implicit fallback.'
+        )
+    return runtime, alias
 
 
 @dataclass(frozen=True)
@@ -125,6 +161,19 @@ class WorkerBatchResult:
     methods_ns: dict[str, int]
 
 
+@dataclass
+class _PendingBatch:
+    """Owner-thread bookkeeping for one in-flight worker RPC."""
+
+    worker: int
+    future: concurrent.futures.Future
+    ops: tuple[WireOp, ...]
+    methods_by_id: dict[str, str]
+    submitted_at: float
+    deadlines: dict[str, float | None]
+    abandoned_ids: set[str]
+
+
 # --- Worker Process State and Handlers ---
 
 _worker_state: Optional[_WorkerState] = None
@@ -133,7 +182,9 @@ _worker_state: Optional[_WorkerState] = None
 class _WorkerState:
     """Worker-local resident state storage and execution engine."""
 
-    def __init__(self, worker_id: int, max_states: int, record_output=None) -> None:
+    def __init__(self, worker_id: int, max_states: int, record_output=None, runtime_name: str = 'recovery') -> None:
+        self.runtime_name = runtime_name
+        self._runtime = None
         self.worker_id = worker_id
         self.max_states = max_states
         self.states: dict[int, Any] = {}
@@ -147,6 +198,11 @@ class _WorkerState:
         self.record_output=record_output
         self.physical_records={}
         self.decision_cache={}
+
+    def runtime(self):
+        if self._runtime is None:
+            self._runtime = import_resident_runtime(self.runtime_name)
+        return self._runtime
 
     def allocate_slot(
         self,
@@ -215,22 +271,27 @@ class _WorkerState:
         if op.method=='public_terminal_probe':
             from .serving_protocol import public_terminal_probe
             return public_terminal_probe(state,op.args[0],op.args[1])
+        if op.method=='rule_decision':
+            from app.modules.card_game.rl.covered_rollout import rule_decision
+            return rule_decision(state,op.args[0])
+
+        if op.method=='covered_value_continuation':
+            return self._covered_value_continuation(state, op)
 
         if op.method == "decision":
-            from app.modules.card_game.rl import recovery_runtime
-
             side = op.args[0]
             key=(slot,gen,side)
             if key not in self.decision_cache:
-                self.decision_cache[key]=recovery_runtime.decision(state,side)
+                self.decision_cache[key]=self.runtime().decision(state,side)
             return self.decision_cache[key]
 
         elif op.method == "sample_world":
-            from app.modules.card_game.rl import information_search, recovery_runtime
+
+            from app.modules.card_game.rl import information_search
 
             viewer = op.args[0]
             seed = op.args[1]
-            sampled = information_search.sample_world(state, viewer, seed, runtime=recovery_runtime)
+            sampled = information_search.sample_world(state, viewer, seed, runtime=self.runtime())
             return self.allocate_slot(
                 sampled,
                 role="hypothetical",
@@ -285,11 +346,10 @@ class _WorkerState:
 
         elif op.method == "value_observation":
             from app.modules.card_game.engine.duel_v2 import observe
-            from app.modules.card_game.rl import recovery_runtime
 
             viewer = op.args[0]
             view = observe(state, viewer, include_previews=False)
-            return recovery_runtime.encode(view, [])
+            return self.runtime().encode(view, [])
 
         elif op.method == "acting_side":
             from app.modules.card_game.engine.duel_v2 import acting_side
@@ -311,10 +371,44 @@ class _WorkerState:
         else:
             raise ValueError(f"Worker {self.worker_id}: unsupported operation method {op.method}")
 
+    def _covered_value_continuation(self, state: Any, op: WireOp) -> Any:
+        from app.modules.card_game.engine.duel_v2 import acting_side, observe
+        from app.modules.card_game.engine.duel_v2.simulation import simulate_action
+        from app.modules.card_game.rl.covered_rollout import rule_decision
+        from app.modules.card_game.rl import league_rollout
 
-def _worker_init(worker_id: int, max_states: int, record_output=None) -> None:
+        viewer = op.args[0]
+        horizon = op.args[1]
+        world = state
+        for step in range(horizon + 1):
+            phase = world.get("phase") if isinstance(world, dict) else getattr(world, "phase", None)
+            if phase == "finished":
+                winner = world.get("winner") if isinstance(world, dict) else getattr(world, "winner", None)
+                if winner not in ("a", "b"):
+                    value = 0.0
+                else:
+                    value = 1.0 if winner == viewer else -1.0
+                return ("terminal", value)
+            if op.deadline is not None and time.monotonic() >= op.deadline:
+                return RequestExpired(op.id, step > 0)
+            if step == horizon:
+                break
+            actor = acting_side(world)
+            legal, chosen = rule_decision(world, actor)
+            world = league_rollout.clean(simulate_action(world, actor, legal[chosen]))
+        view = observe(world, viewer, include_previews=False)
+        encoded, candidates = self.runtime().encode(view, [])
+        return ("observation", encoded, candidates, acting_side(world) == viewer)
+
+
+def _worker_init(worker_id: int, max_states: int, record_output=None, runtime_name: str = 'recovery') -> None:
     global _worker_state
-    _worker_state = _WorkerState(worker_id=worker_id, max_states=max_states,record_output=record_output)
+    _worker_state = _WorkerState(
+        worker_id=worker_id,
+        max_states=max_states,
+        record_output=record_output,
+        runtime_name=runtime_name,
+    )
 
 
 def _worker_warmup(worker_id: int) -> dict[str, Any]:
@@ -400,9 +494,9 @@ def _worker_commit_action(
     # Retain old state in source slot, create new real state with official apply_action
     new_state = apply_action(source, side, action)
     if _worker_state.record_output is not None:
-        from app.modules.card_game.rl import recovery_runtime,league_rollout
+        from app.modules.card_game.rl import league_rollout
         decision=_worker_state.decision_cache.get((slot,generation,side))
-        if decision is None:decision=recovery_runtime.decision(source,side)
+        if decision is None:decision=_worker_state.runtime().decision(source,side)
         legal=decision[0]
         if action not in legal:
             from app.modules.card_game.engine.duel_v2 import observe
@@ -455,13 +549,14 @@ def _worker_ops_batch(
     results: list[tuple[str, Any]] = []
     methods_ns: dict[str, int] = {}
     for op in ops:
-        if op.deadline is not None and time.monotonic()>=op.deadline:
+        fused = op.method == "covered_value_continuation"
+        if not fused and op.deadline is not None and time.monotonic()>=op.deadline:
             results.append((op.id,RequestExpired(op.id)));continue
         op_t0 = time.perf_counter_ns()
         val = _worker_state.execute_op(op)
         op_t1 = time.perf_counter_ns()
         methods_ns[op.method] = methods_ns.get(op.method, 0) + (op_t1 - op_t0)
-        if op.deadline is not None and time.monotonic()>=op.deadline:
+        if not fused and op.deadline is not None and time.monotonic()>=op.deadline:
             if isinstance(val,WireStateMeta) and (val.slot,val.generation)!=(op.slot,op.generation):
                 _worker_state.release_slot(val.slot,val.generation)
             val=RequestExpired(op.id,True)
@@ -493,10 +588,32 @@ class ResidentRuleBackend:
 
     Maintains bounded worker process capacity, handles garbage-collected StateRef release,
     and resolves operations in batches across sticky worker processes.
+
+    Asynchronous API for CooperativeScheduler (owner thread only):
+    supports_async_operations advertises submit_operations, poll_operations and
+    cancel_operations. submit_operations validates, registers identities, and
+    queues work on the existing per-worker process pools without waiting for
+    other workers; metadata queries become ready immediately.
+    poll_operations(timeout=0.0, ids=None) harvests completed worker RPCs on
+    this same thread, registers or releases produced StateRefs, and returns
+    newly ready OperationResponse values. timeout=0 never waits; a positive
+    timeout waits for the first completed worker batch.
+    cancel_operations(ids) abandons outstanding identities; late worker results
+    still run on the owned pool and then release any newly produced refs.
+    resolve_operations remains the synchronous wait-for-this-batch API.
+    Pending operations are bounded by max(max_games, 1600). Each in-flight
+    batch is limited by operation_timeout from submit time. Never invoke these
+    methods off the owning scheduler thread.
     """
 
     backend_kind = "python_resident_process"
     supports_gpu = False
+    # WireOp carries its own method; one wave can batch different rule queries
+    # together and keep all workers busy instead of serializing by method.
+    supports_mixed_operations = True
+    supports_covered_value_continuation = True
+    # Capability-gated submit/poll: owner thread only. GPU rule backends omit this.
+    supports_async_operations = True
 
     def __init__(
         self,
@@ -535,9 +652,7 @@ class ResidentRuleBackend:
         self.max_games = max_games
         self.max_states_per_worker = max_states_per_worker
         self.operation_timeout = float(operation_timeout)
-        self.runtime = runtime
-        if runtime is not None and getattr(runtime,'__name__',None)!='app.modules.card_game.rl.recovery_runtime':
-            raise ValueError('Resident rules bind the explicit recovery runtime')
+        self.runtime, self.runtime_name = bind_resident_runtime(runtime)
         from pathlib import Path
         self.record_output=str(Path(record_output).resolve()) if record_output is not None else None
         self.backend_id = uuid4().hex
@@ -561,6 +676,17 @@ class ResidentRuleBackend:
         self._parent_queue_ns = 0
         self._released_count = 0
         self._peak_states = 0
+        self._max_pending_operations = max(int(max_games), 1600)
+        self._pending_batches: dict[concurrent.futures.Future, _PendingBatch] = {}
+        self._in_flight_ids: dict[str, concurrent.futures.Future] = {}
+        self._ready_operations: dict[str, OperationResponse] = {}
+        self._abandoned_ids: set[str] = set()
+        self._release_futures: dict[concurrent.futures.Future, int] = {}
+        self._produced_by_query: dict[str, StateRef] = {}
+        self._peak_pending_operations = 0
+        self.pending_operations = 0
+        self.ready_operations = 0
+        self.idle_workers = workers
 
         self._game_to_worker: dict[str, int] = {}
         self._latest_real_generation: dict[str,int] = {}
@@ -572,7 +698,7 @@ class ResidentRuleBackend:
                 max_workers=1,
                 mp_context=self._ctx,
                 initializer=_worker_init,
-                initargs=(i, self.max_states_per_worker, self.record_output),
+                initargs=(i, self.max_states_per_worker, self.record_output, self.runtime_name),
             )
             for i in range(self.workers)
         ]
@@ -608,7 +734,11 @@ class ResidentRuleBackend:
 
     def close(self) -> None:
         """Stop owned workers while each executor manager retains sole join ownership."""
-        self._closed=True;self._refresh_owned_processes();procs=list(self._owned_processes)
+        self._closed=True
+        self._abandoned_ids.update(self._in_flight_ids)
+        self._ready_operations.clear();self._in_flight_ids.clear();self._pending_batches.clear()
+        self._release_futures.clear();self._produced_by_query.clear();self._refresh_async_counters()
+        self._refresh_owned_processes();procs=list(self._owned_processes)
         managers=[]
         for executor in self._executors:
             manager=getattr(executor,'_executor_manager_thread',None)
@@ -692,17 +822,115 @@ class ResidentRuleBackend:
                 releases_by_worker.setdefault(worker, []).append((slot, gen))
         return releases_by_worker
 
-    def _flush_releases(self) -> None:
+    def _flush_releases(self, wait: Optional[bool] = None) -> None:
         if self._closed or self._poisoned:
             return
         releases_by_worker = self._get_pending_releases()
-        if not releases_by_worker:
-            return
-        futures = {}
         for w, rels in releases_by_worker.items():
             fut = self._executors[w].submit(_worker_release_batch, rels)
-            futures[fut] = w
-        self._await_futures(futures)
+            self._release_futures[fut] = w
+        if wait is None:
+            wait = not self._pending_batches
+        if wait:
+            self._await_release_futures()
+
+    def _refresh_async_counters(self) -> None:
+        self.pending_operations = len(self._in_flight_ids)
+        self.ready_operations = len(self._ready_operations)
+        busy = {batch.worker for future,batch in self._pending_batches.items() if not future.done()}
+        busy.update(worker for future,worker in self._release_futures.items() if not future.done())
+        self.idle_workers = self.workers - len(busy)
+        if self.pending_operations > self._peak_pending_operations:
+            self._peak_pending_operations = self.pending_operations
+
+    def _await_release_futures(self) -> None:
+        if not self._release_futures:
+            return
+        pending = dict(self._release_futures)
+        self._release_futures.clear()
+        self._await_futures(pending)
+
+    def _ingest_completed_releases(self) -> None:
+        done = [fut for fut in self._release_futures if fut.done()]
+        for fut in done:
+            self._release_futures.pop(fut, None)
+            try:
+                fut.result()
+            except Exception as exc:
+                self._poisoned = True
+                self.close()
+                raise RuntimeError(f"Worker failure: {exc}") from exc
+
+    def _check_batch_timeouts(self) -> None:
+        now = time.monotonic()
+        for batch in self._pending_batches.values():
+            if now - batch.submitted_at >= self.operation_timeout:
+                self._poisoned = True
+                self.close()
+                raise TimeoutError(f"Operation timed out after {self.operation_timeout}s")
+
+    def _ingest_batch(self, batch: _PendingBatch, batch_res: WorkerBatchResult) -> None:
+        self._worker_execution_ns += batch_res.execution_ns
+        for meth, ns in batch_res.methods_ns.items():
+            self._worker_methods_ns[meth] += ns
+        ops = {op.id: op for op in batch.ops}
+        now = time.monotonic()
+        seen = set()
+        for op_id, res_val in batch_res.results:
+            if op_id in seen or op_id not in ops:
+                raise ValueError("Bulk operation response identity mismatch")
+            seen.add(op_id)
+            op = ops[op_id]
+            deadline = batch.deadlines.get(op_id)
+            expired = deadline is not None and now >= deadline
+            abandoned = op_id in self._abandoned_ids or op_id in batch.abandoned_ids
+            if isinstance(res_val, WireStateMeta):
+                produced_new = (res_val.slot, res_val.generation) != (op.slot, op.generation)
+                out_ref = self._register_wire_meta(res_val)
+                if batch.methods_by_id[op_id] in ("step", "clean"):
+                    self._known_clean.add((out_ref.worker, out_ref.slot, out_ref.generation))
+                if (abandoned or expired) and produced_new:
+                    self.release([out_ref])
+                    res_val = RequestExpired(op_id, True)
+                elif abandoned or expired:
+                    res_val = RequestExpired(op_id, True)
+                else:
+                    res_val = out_ref
+                    if produced_new:
+                        self._produced_by_query[op_id] = out_ref
+            elif abandoned:
+                res_val = res_val if isinstance(res_val, RequestExpired) else RequestExpired(op_id, True)
+            elif (expired and not isinstance(res_val, RequestExpired)
+                  and not (op.method == 'covered_value_continuation'
+                           and isinstance(res_val, tuple) and len(res_val) == 2
+                           and res_val[0] == 'terminal')):
+                res_val = RequestExpired(op_id, True)
+            self._in_flight_ids.pop(op_id, None)
+            self._abandoned_ids.discard(op_id)
+            if abandoned:
+                continue
+            self._ready_operations[op_id] = OperationResponse(op_id, res_val)
+        if seen != set(ops):
+            raise ValueError("Bulk operation response set mismatch")
+
+    def _ingest_completed_batches(self) -> None:
+        done = [fut for fut, batch in self._pending_batches.items() if fut.done()]
+        for fut in done:
+            batch = self._pending_batches.pop(fut)
+            try:
+                batch_res = fut.result()
+            except concurrent.futures.CancelledError:
+                for op in batch.ops:
+                    self._in_flight_ids.pop(op.id, None)
+                    self._abandoned_ids.discard(op.id)
+                continue
+            except Exception as exc:
+                self._poisoned = True
+                self.close()
+                raise RuntimeError(f"Worker failure: {exc}") from exc
+            self._ingest_batch(batch, batch_res)
+        self._ingest_completed_releases()
+        self._refresh_async_counters()
 
     def _register_wire_meta(self, meta: WireStateMeta) -> StateRef:
         key = (meta.worker, meta.slot, meta.generation)
@@ -748,19 +976,25 @@ class ResidentRuleBackend:
     def stats(self) -> dict[str, Any]:
         """Return runtime statistics on method executions, states, capacity, and latency."""
         self._check_healthy()
-        self._flush_releases()
+        self._ingest_completed_batches()
+        self._flush_releases(wait=False)
         self._refresh_owned_processes()
         active_processes = sum(1 for p in self._owned_processes if p.is_alive())
         return {
             "backend_id": self.backend_id,
             "backend_kind": self.backend_kind,
             "supports_gpu": self.supports_gpu,
+            "supports_async_operations": True,
+            "rule_backend": "resident_cpu",
+            "runtime": self.runtime_name,
             "workers": self.workers,
             "max_games": self.max_games,
             "max_states_per_worker": self.max_states_per_worker,
             "max_capacity": self.workers * self.max_states_per_worker,
             "active_processes": active_processes,
             "live_states": len(self._live_slots),
+            "live_states_are_parent_refs": True,
+            "pending_release_batches": len(self._release_futures),
             "peak_states": self._peak_states,
             "released_states": self._released_count,
             "methods": dict(self._method_counts),
@@ -769,6 +1003,10 @@ class ResidentRuleBackend:
             "worker_methods_ns": dict(self._worker_methods_ns),
             "parent_rpc_wall_ns": self._parent_rpc_wall_ns,
             "parent_queue_ns": None,  # not yet measured; never invent zero queue wait
+            "pending_operations": self.pending_operations,
+            "ready_operations": self.ready_operations,
+            "idle_workers": self.idle_workers,
+            "peak_pending_operations": self._peak_pending_operations,
         }
 
     def import_states(
@@ -847,7 +1085,7 @@ class ResidentRuleBackend:
                 exported[idx] = st
         return [s for s in exported if s is not None]
 
-    def release(self, refs: Sequence[StateRef]) -> None:
+    def release(self, refs: Sequence[StateRef], *, wait: Optional[bool] = None) -> None:
         """Explicitly release state reference handles and free worker slots."""
         self._check_healthy()
         releases_by_worker: dict[int, list[tuple[int, int]]] = {}
@@ -868,7 +1106,12 @@ class ResidentRuleBackend:
             for w, rels in releases_by_worker.items():
                 fut = self._executors[w].submit(_worker_release_batch, rels)
                 futures[fut] = w
-            self._await_futures(futures)
+            if wait is None:
+                wait = not self._pending_batches
+            if wait:
+                self._await_futures(futures)
+            else:
+                self._release_futures.update(futures)
 
     def commit_action(self,ref,side,action,next_root_generation,*,search_stats=None):
         return self.commit_actions([(ref,side,action,next_root_generation,search_stats)])[0]
@@ -892,8 +1135,11 @@ class ResidentRuleBackend:
             groups[ref.worker].append((index,ref.slot,ref.generation,side,action,next_gen,stats))
         releases=self._get_pending_releases();futures={}
         for worker,items in groups.items():
-            if items or releases.get(worker):
+            if items:
                 futures[self._executors[worker].submit(_worker_commit_batch,items,releases.get(worker,[]))]=worker
+            elif releases.get(worker):
+                release_future = self._executors[worker].submit(_worker_release_batch,releases[worker])
+                self._release_futures[release_future] = worker
         rows=self._await_futures(futures);results=[None]*len(commits)
         for worker,items in rows.items():
             for index,meta in items:
@@ -922,73 +1168,89 @@ class ResidentRuleBackend:
         if any(row is None for row in results):raise RuntimeError('Physical finish result was lost')
         return results
 
-    def resolve_operations(
-        self, queries: Sequence[OperationQuery]
-    ) -> list[OperationResponse]:
-        """Resolve a batch of cooperative search operations without inter-process state copying."""
-        self._check_healthy()
-        self._flush_releases()
-        if not queries:
-            return []
-
+    def _validate_operation_queries(self, queries: Sequence[OperationQuery]) -> list[OperationQuery]:
+        rows = list(queries)
         query_ids = set()
-        for q in queries:
+        arities = {'acting_side':1,'finished':1,'terminal_value':2,'decision':2,
+                   'sample_world':3,'step':3,'clean':1,'value_observation':2,
+                   'serving_root_metadata':2,'public_terminal_probe':3,'rule_decision':2,
+                   'covered_value_continuation':3}
+        for q in rows:
             if not isinstance(q, OperationQuery):
                 raise TypeError(f"Expected OperationQuery, got {type(q)}")
             if q.id in query_ids:
                 raise ValueError(f"Duplicate query identity: {q.id}")
-            if q.backend is not self:raise ValueError('Operation belongs to another backend')
+            if q.backend is not self:
+                raise ValueError('Operation belongs to another backend')
             query_ids.add(q.id)
-
-        methods_by_id={q.id:q.method for q in queries}
-        arities={'acting_side':1,'finished':1,'terminal_value':2,'decision':2,
-                 'sample_world':3,'step':3,'clean':1,'value_observation':2,
-                 'serving_root_metadata':2,'public_terminal_probe':3}
-        for q in queries:
+            if q.method not in PROTOCOL_METHODS:
+                raise ValueError(f"Unknown operation method: {q.method}")
             if q.method not in arities or len(q.args)!=arities[q.method] or q.kwargs:
                 raise ValueError('Unsupported rule operation signature')
             if q.deadline is not None and (isinstance(q.deadline,bool) or
                 not isinstance(q.deadline,(int,float)) or not math.isfinite(q.deadline)):
                 raise ValueError('Finite monotonic rule operation deadline required')
+            if not q.args:
+                raise ValueError(f"Operation {q.method} requires at least one argument (StateRef)")
             self._validate_ref(q.args[0])
             if len(q.args)>1 and q.args[1] not in ('a','b'):
                 raise ValueError('Rule operation requires side a or b')
             if q.method=='sample_world' and type(q.args[2]) is not int:
                 raise TypeError('Integer world seed required')
+            if q.method=='covered_value_continuation':
+                if type(q.args[2]) is not int:
+                    raise TypeError('Non-negative integer covered value horizon required')
+                if q.args[2]<0:
+                    raise ValueError('Non-negative integer covered value horizon required')
+        return rows
 
-        responses: dict[str, OperationResponse] = {}
+    def _queue_ready(self, query_id: str, value: Any) -> None:
+        self._ready_operations[query_id] = OperationResponse(query_id, value)
+
+    def submit_operations(self, queries: Sequence[OperationQuery]) -> None:
+        """Validate and enqueue rule operations on the owning thread without waiting.
+
+        Metadata queries become ready immediately. Worker RPCs use the existing
+        owned process pools; parent StateRef registration happens later in poll.
+        """
+        self._check_healthy()
+        self._ingest_completed_batches()
+        self._check_batch_timeouts()
+        rows = self._validate_operation_queries(queries)
+        if not rows:
+            self._flush_releases(wait=False)
+            return
+        for q in rows:
+            if q.id in self._in_flight_ids or q.id in self._ready_operations or q.id in self._abandoned_ids:
+                raise ValueError(f"Duplicate outstanding query identity: {q.id}")
+        worker_count = sum(1 for q in rows if q.method not in ("acting_side", "finished", "terminal_value"))
+        if self.pending_operations + worker_count > self._max_pending_operations:
+            raise OverflowError('Pending rule operations exceeded')
         worker_ops: dict[int, list[WireOp]] = {w: [] for w in range(self.workers)}
-
-        for q in queries:
-            if q.method not in PROTOCOL_METHODS:
-                raise ValueError(f"Unknown operation method: {q.method}")
-            if not q.args:
-                raise ValueError(f"Operation {q.method} requires at least one argument (StateRef)")
+        now = time.monotonic()
+        for q in rows:
             ref = q.args[0]
-            self._validate_ref(ref)
-
-            # Metadata queries are resolved directly in parent without worker roundtrip
+            self._method_counts[q.method] += 1
             if q.method == "acting_side":
-                self._method_counts[q.method] += 1
-                responses[q.id] = OperationResponse(q.id, ref.actor)
+                self._queue_ready(q.id, ref.actor)
             elif q.method == "finished":
-                self._method_counts[q.method] += 1
-                responses[q.id] = OperationResponse(q.id, ref.phase == "finished")
+                self._queue_ready(q.id, ref.phase == "finished")
             elif q.method == "terminal_value":
-                self._method_counts[q.method] += 1
-                if len(q.args) < 2:
-                    raise ValueError("terminal_value requires viewer argument")
-                viewer = q.args[1]
                 winner = ref.winner
                 if winner not in ("a", "b"):
                     val = 0.0
                 else:
-                    val = 1.0 if winner == viewer else -1.0
-                responses[q.id] = OperationResponse(q.id, val)
+                    val = 1.0 if winner == q.args[1] else -1.0
+                self._queue_ready(q.id, val)
+            elif q.method == 'covered_value_continuation' and ref.phase == 'finished':
+                value = (0.0 if ref.winner not in ('a', 'b')
+                         else 1.0 if ref.winner == q.args[1] else -1.0)
+                self._queue_ready(q.id, ('terminal', value))
+            elif q.deadline is not None and now >= q.deadline:
+                self._queue_ready(q.id, RequestExpired(q.id))
             else:
-                self._method_counts[q.method] += 1
                 kw = dict(q.kwargs) if isinstance(q.kwargs, (tuple, list)) else (q.kwargs or {})
-                wire_op = WireOp(
+                worker_ops[ref.worker].append(WireOp(
                     id=q.id,
                     method=q.method,
                     slot=ref.slot,
@@ -996,37 +1258,159 @@ class ResidentRuleBackend:
                     args=tuple(q.args[1:]),
                     kwargs=tuple(kw.items()),
                     deadline=q.deadline,
-                )
-                worker_ops[ref.worker].append(wire_op)
-
+                ))
         releases_by_worker = self._get_pending_releases()
-        futures = {}
-        t_rpc_start = time.perf_counter_ns()
+        submitted_at = time.monotonic()
         for w, ops in worker_ops.items():
-            if ops or releases_by_worker.get(w):
-                fut = self._executors[w].submit(_worker_ops_batch, ops, releases_by_worker.get(w, []))
-                futures[fut] = w
+            if not ops:
+                continue
+            fut = self._executors[w].submit(_worker_ops_batch, ops, releases_by_worker.pop(w, []))
+            batch = _PendingBatch(
+                worker=w,
+                future=fut,
+                ops=tuple(ops),
+                methods_by_id={op.id: op.method for op in ops},
+                submitted_at=submitted_at,
+                deadlines={op.id: op.deadline for op in ops},
+                abandoned_ids=set(),
+            )
+            self._pending_batches[fut] = batch
+            for op in ops:
+                self._in_flight_ids[op.id] = fut
+        for w, rels in releases_by_worker.items():
+            fut = self._executors[w].submit(_worker_release_batch, rels)
+            self._release_futures[fut] = w
+        self._refresh_async_counters()
 
+    def poll_operations(
+        self,
+        timeout: float = 0.0,
+        ids: Optional[Sequence[str]] = None,
+    ) -> list[OperationResponse]:
+        """Harvest completed operations on the owning thread.
+
+        timeout=0 returns currently ready results without waiting. A positive
+        timeout waits for the first completed worker batch, then returns every
+        newly ready identity (or the requested ids subset). Late expired worker
+        allocations are released here, never on a random thread.
+        """
+        self._check_healthy()
+        if type(timeout) is bool or type(timeout) not in (int, float) or not math.isfinite(timeout) or timeout < 0:
+            raise ValueError('Non-negative finite poll timeout required')
+        want = None if ids is None else list(ids)
+        if want is not None:
+            if len(set(want)) != len(want):
+                raise ValueError('Duplicate outstanding query identity')
+            unknown = [query_id for query_id in want
+                       if query_id not in self._ready_operations and query_id not in self._in_flight_ids]
+            if unknown:
+                raise ValueError('Unknown or foreign operation identity')
+        t_rpc_start = time.perf_counter_ns()
+        self._ingest_completed_batches()
+        self._check_batch_timeouts()
+        deadline = time.monotonic() + float(timeout)
+        def have_wanted() -> bool:
+            if want is None:
+                return bool(self._ready_operations) or not self._pending_batches
+            return all(query_id in self._ready_operations or query_id not in self._in_flight_ids for query_id in want)
+        while not have_wanted():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not self._pending_batches:
+                break
+            self._check_batch_timeouts()
+            futures = [batch.future for batch in self._pending_batches.values() if not batch.future.done()]
+            if not futures:
+                self._ingest_completed_batches()
+                break
+            concurrent.futures.wait(futures, timeout=remaining, return_when=concurrent.futures.FIRST_COMPLETED)
+            self._ingest_completed_batches()
+            self._check_batch_timeouts()
+        self._parent_rpc_wall_ns += time.perf_counter_ns() - t_rpc_start
+        if want is None:
+            rows = list(self._ready_operations.values())
+            self._ready_operations.clear()
+            self._produced_by_query.clear()
+        else:
+            rows = []
+            for query_id in want:
+                row = self._ready_operations.pop(query_id, None)
+                if row is not None:
+                    rows.append(row)
+                    self._produced_by_query.pop(query_id, None)
+        self._refresh_async_counters()
+        return rows
+
+    def cancel_operations(self, ids: Sequence[str]) -> None:
+        """Abandon outstanding identities on the owning thread.
+
+        Queued process-pool work is cancelled when the future has not started.
+        Running worker RPCs finish on the owned pool; poll/close then releases
+        any newly produced StateRefs instead of publishing them.
+        """
+        self._check_healthy()
+        wanted = list(ids)
+        if len(set(wanted)) != len(wanted):
+            raise ValueError('Duplicate outstanding query identity')
+        for query_id in wanted:
+            self._ready_operations.pop(query_id, None)
+            produced = self._produced_by_query.pop(query_id, None)
+            if produced is not None:
+                self.release([produced])
+            fut = self._in_flight_ids.get(query_id)
+            if fut is None:
+                continue
+            batch = self._pending_batches.get(fut)
+            if batch is None:
+                self._in_flight_ids.pop(query_id, None)
+                continue
+            batch.abandoned_ids.add(query_id)
+            self._abandoned_ids.add(query_id)
+            if batch.abandoned_ids >= {op.id for op in batch.ops} and fut.cancel():
+                self._pending_batches.pop(fut, None)
+                for op in batch.ops:
+                    self._in_flight_ids.pop(op.id, None)
+                    self._abandoned_ids.discard(op.id)
+        self._ingest_completed_batches()
+        self._refresh_async_counters()
+
+    def _wait_for_operations(self, query_ids: Sequence[str]) -> list[OperationResponse]:
+        needed = list(query_ids)
+        if not needed:
+            return []
+        futures = {}
+        for query_id in needed:
+            if query_id in self._ready_operations:
+                continue
+            fut = self._in_flight_ids.get(query_id)
+            if fut is not None and fut not in futures:
+                futures[fut] = query_id
         if futures:
-            worker_results = self._await_futures(futures)
-            t_rpc_end = time.perf_counter_ns()
-            self._parent_rpc_wall_ns += t_rpc_end - t_rpc_start
+            t0 = time.perf_counter_ns()
+            self._await_futures({fut: index for index, fut in enumerate(futures)})
+            self._parent_rpc_wall_ns += time.perf_counter_ns() - t0
+            self._ingest_completed_batches()
+        missing = [query_id for query_id in needed if query_id not in self._ready_operations]
+        if missing:
+            self._poisoned = True
+            self.close()
+            raise RuntimeError('Worker failure: outstanding rule operation disappeared')
+        rows = []
+        for query_id in needed:
+            rows.append(self._ready_operations.pop(query_id))
+            self._produced_by_query.pop(query_id, None)
+        self._refresh_async_counters()
+        return rows
 
-            for w, batch_res in worker_results.items():
-                self._worker_execution_ns += batch_res.execution_ns
-                for meth, ns in batch_res.methods_ns.items():
-                    self._worker_methods_ns[meth] += ns
-                for op_id, res_val in batch_res.results:
-                    if isinstance(res_val, WireStateMeta):
-                        out_ref = self._register_wire_meta(res_val)
-                        method=methods_by_id[op_id]
-                        if method in ('step','clean'):
-                            self._known_clean.add((out_ref.worker,out_ref.slot,out_ref.generation))
-                        responses[op_id] = OperationResponse(op_id, out_ref)
-                    else:
-                        responses[op_id] = OperationResponse(op_id, res_val)
-
-        return [responses[q.id] for q in queries]
+    def resolve_operations(
+        self, queries: Sequence[OperationQuery]
+    ) -> list[OperationResponse]:
+        """Resolve a batch of cooperative search operations without inter-process state copying."""
+        if not queries:
+            self._check_healthy()
+            self._flush_releases(wait=False)
+            return []
+        self.submit_operations(queries)
+        return self._wait_for_operations([q.id for q in queries])
 
     def inline_operation(self,method,args):
         """Resolve only immutable metadata and proven clean handles, with no RPC.
@@ -1065,6 +1449,10 @@ class ResidentRuleBackend:
             return 0.0
         return 1.0 if winner == viewer else -1.0
 
+    def rule_decision(self, ref, side):
+        q = OperationQuery(uuid4().hex,self,'rule_decision',(ref,side),())
+        return self.resolve_operations([q])[0].value
+
     def decision(
         self, ref: StateRef, side: str
     ) -> Tuple[List[Any], Tuple[np.ndarray, np.ndarray]]:
@@ -1088,3 +1476,11 @@ class ResidentRuleBackend:
     ) -> Tuple[np.ndarray, np.ndarray]:
         q = OperationQuery(uuid4().hex, self, "value_observation", (ref, viewer), ())
         return self.resolve_operations([q])[0].value  # type: ignore
+
+    def covered_value_continuation(self, ref: StateRef, viewer: str, horizon: int, *,
+                                   deadline: Optional[float] = None):
+        q = OperationQuery(
+            uuid4().hex, self, "covered_value_continuation", (ref, viewer, horizon), (),
+            deadline=deadline,
+        )
+        return self.resolve_operations([q])[0].value

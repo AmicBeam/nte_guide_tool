@@ -12,6 +12,16 @@ import unittest
 from tests.test_solo_room_flow import RoomFlowTestCase
 
 
+def _current_model_fixture(version, build=None):
+    from app.modules.card_game.engine.ai.advanced_model import load_model
+    from app.modules.card_game.rl.league_schema import build_hash
+    current = load_model('starter')
+    deck = deepcopy(current.serving_deck if build is None else build)
+    return SimpleNamespace(version=version, schema=current.schema, experimental=True,
+                           capability=deepcopy(current.capability), validate_human=current.validate_human,
+                           serving_deck=deck, serving_build_sha256=build_hash(deck))
+
+
 class AdvancedRoomTest(RoomFlowTestCase):
     def setUp(self):
         super().setUp()
@@ -26,15 +36,15 @@ class AdvancedRoomTest(RoomFlowTestCase):
         from app.modules.card_game.engine.duel_v2 import choose_action
         module = 'app.modules.card_game.engine.ai.advanced_model.'
         from app.modules.card_game.rl.capability import capability_ready_manifest
-        with patch(module+'load_model', return_value=SimpleNamespace(version='test-version', capability=capability_ready_manifest('weave-rush'))), patch(module+'choose_action', side_effect=choose_action) as model:
-            result = self._post('/api/duel-v2/start', {'mode':'advanced','ai_deck':'weave-rush'}, token=self.token)
+        with patch(module+'load_model', return_value=_current_model_fixture('test-version')), patch(module+'choose_action', side_effect=choose_action) as model:
+            result = self._post('/api/duel-v2/start', {'mode':'advanced','ai_deck':'starter'}, token=self.token)
             self.assertEqual(result['room']['mode'],'advanced')
             game = result['game']
             self.assertEqual(game['sides']['b']['name'],'高级人机')
             catalog=self._get('/api/duel-v2/catalog', token=self.token)
             human=set(catalog['saved_build']['character_ids'])
             self.assertEqual({h['id'] for h in game['sides']['a']['characters']}, human)
-            self.assertEqual({h['id'] for h in game['sides']['b']['characters']},{'bohe','baicang','zero','iloy'})
+            self.assertEqual({h['id'] for h in game['sides']['b']['characters']},{'nanali','iloy','zero','jiuyuan'})
             self.assertEqual(catalog['saved_build']['character_ids'], self._get('/api/duel-v2/catalog', token=self.token)['saved_build']['character_ids'])
             code = result['room']['room_code']
             action = next(e['action'] for e in game['legal_actions'] if e['action']['type']=='mulligan' and not e['action']['card_ids'])
@@ -56,10 +66,10 @@ class AdvancedRoomTest(RoomFlowTestCase):
             self.assertEqual(state['room']['mode'],'advanced')
             room = self.repository.room_by_code(code)
             profile = self.storage.load(room.id)['game']['ai_profile']
-            self.assertEqual(profile['deck_id'],'weave-rush')
+            self.assertEqual(profile['deck_id'],'starter')
             self.assertEqual(profile['version'],'test-version')
             self.assertIn('capability', profile)
-            switched=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'starter'},headers={'Authorization':'Bearer '+self.token})
+            switched=self.client.post('/api/duel-v2/start',json={'mode':'advanced','ai_deck':'murk'},headers={'Authorization':'Bearer '+self.token})
             self.assertEqual(switched.status_code,409)
     @unittest.skipUnless(importlib.util.find_spec('numpy'),'NumPy required')
     def test_joint_opening_policy_is_dispatched_and_opponent_swap_ids_stay_private(self):
@@ -69,8 +79,9 @@ class AdvancedRoomTest(RoomFlowTestCase):
         from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA
         from app.modules.card_game.rl.capability import capability_ready_manifest,preset_opponent_deck,serving_deck_hash
         deck=preset_opponent_deck('starter')
-        model=SimpleNamespace(version='opening-fixture',schema=OPENING_SCHEMA,capability=capability_ready_manifest('starter'),
-            serving_deck=deck,serving_build_sha256=serving_deck_hash(deck),scores=lambda state,candidates:candidates[:,11:].sum(1))
+        model=_current_model_fixture('opening-fixture', deck)
+        model.schema=OPENING_SCHEMA
+        model.scores=lambda state,candidates:candidates[:,11:].sum(1)
         model.select_public_action=MethodType(FrozenModel.select_public_action,model)
         with patch('app.modules.card_game.engine.ai.advanced_model.load_model',return_value=model):
             result=self._post('/api/duel-v2/start',{'mode':'advanced','ai_deck':'starter'},token=self.token)
@@ -92,7 +103,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
     @patch('app.modules.card_game.engine.ai.advanced_search.choose',side_effect=lambda state,side,model,fallback:fallback)
     def test_real_models_finish_all_presets_and_save_replays(self, _planner):
         from app.modules.card_game.engine.duel_v2 import choose_action
-        for deck in ('starter','weave-rush','quick-rush'):
+        for deck in ('starter','murk','zhenhong'):
             result=self._post('/api/duel-v2/start',{'mode':'advanced','ai_deck':deck},token=self.token)
             code=result['room']['room_code']
             for index in range(800):
@@ -108,7 +119,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
                     'request_id':f'{deck}-{index}','action':action},token=self.token)
             self.assertEqual(result['game']['phase'],'finished')
             self.assertTrue(result['room']['has_replay'])
-            self.assertEqual(result['game']['sides']['b']['name'],'实验性高级人机')
+            self.assertEqual(result['game']['sides']['b']['name'],'高级人机')
             self._post('/api/duel-v2/leave',token=self.token)
 
     def test_evaluated_bot_allocation_and_mirror_match_without_changing_saved_build(self):
@@ -119,7 +130,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
         self._post('/api/duel-v2/build',original,token=self.token)
         custom=deepcopy(original);custom['card_ids']=['N01' if c=='N02' else c for c in custom['card_ids']]
         module='app.modules.card_game.engine.ai.advanced_model.'
-        model=SimpleNamespace(version='paired-version',capability=capability_ready_manifest('starter'),serving_deck=custom)
+        model=_current_model_fixture('paired-version', custom)
         with patch(module+'load_model',return_value=model) as loader,patch(module+'choose_action',side_effect=choose_action):
             self._post('/api/duel-v2/start',{'mode':'advanced','ai_deck':'starter','ai_player_deck':'mirror'},token=self.token)
             loader.assert_called_once_with('starter')
@@ -129,7 +140,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
             for side in ('a','b'):
                 cards=[c['card_id'] for zone in ('hand','deck','discard') for c in state['sides'][side][zone]]
                 self.assertEqual(Counter(cards),Counter(custom['card_ids']))
-            self.assertEqual(state['ai_profile']['build_sha256'],serving_deck_hash(custom))
+            self.assertEqual(state['ai_profile']['build_sha256'],model.serving_build_sha256)
             saved=self._get('/api/duel-v2/catalog',token=self.token)['saved_build']
             self.assertEqual(saved['card_ids'],original['card_ids'])
 
@@ -139,7 +150,7 @@ class AdvancedRoomTest(RoomFlowTestCase):
         from app.modules.card_game.engine.ai.advanced_model import load_model
         custom=sample_public_deck(9016,character_ids=['nanali','bohe','baicang','jiuyuan'])
         self._post('/api/duel-v2/build',custom,token=self.token)
-        for key in ('starter','weave-rush'):
+        for key in ('starter','murk','zhenhong'):
             self.assertTrue(load_model(key).capability['human_public_custom'])
             started=self._post('/api/duel-v2/start',{'mode':'advanced','ai_deck':key,'ai_player_deck':'saved'},token=self.token)
             room=self.repository.room_by_code(started['room']['room_code'])
@@ -201,10 +212,10 @@ class AdvancedRoomTest(RoomFlowTestCase):
         saved = self._post('/api/duel-v2/build', custom, token=self.token)
         self.assertEqual(saved['saved_build']['id'], 'deck-public-custom')
         module = 'app.modules.card_game.engine.ai.advanced_model.'
-        with patch(module+'load_model', return_value=SimpleNamespace(version='test-version', capability=capability_ready_manifest('weave-rush'))):
-            result = self._post('/api/duel-v2/start', {'mode':'advanced','ai_deck':'weave-rush'}, token=self.token)
+        with patch(module+'load_model', return_value=_current_model_fixture('test-version')):
+            result = self._post('/api/duel-v2/start', {'mode':'advanced','ai_deck':'starter'}, token=self.token)
         self.assertEqual({h['id'] for h in result['game']['sides']['a']['characters']}, set(custom['character_ids']))
-        self.assertEqual({h['id'] for h in result['game']['sides']['b']['characters']}, {'bohe','baicang','zero','iloy'})
+        self.assertEqual({h['id'] for h in result['game']['sides']['b']['characters']}, {'nanali','iloy','zero','jiuyuan'})
         catalog = self._get('/api/duel-v2/catalog', token=self.token)
         self.assertEqual(catalog['saved_build']['id'], 'deck-public-custom')
         self.assertEqual(catalog['saved_build']['card_ids'], custom['card_ids'])
@@ -216,14 +227,16 @@ class AdvancedRoomTest(RoomFlowTestCase):
             models.Player.player_uid == 'advanced-privileged'
         ).execute()
         content = importlib.import_module('app.modules.card_game.content.duel_v2')
-        requiem = test_character_deck('requiem')
+        from tests.duel_v2_test_decks import make_role_deck
+        hidden = next(cid for cid in content.CHARACTERS if cid not in content.PUBLIC_CHARACTER_IDS)
+        requiem = make_role_deck([hidden, 'nanali', 'zero', 'iloy'], name='隐藏角色测试构筑')
         self._post('/api/duel-v2/build', requiem, token=token)
         module = 'app.modules.card_game.engine.ai.advanced_model.'
-        with patch(module+'load_model', return_value=SimpleNamespace(version='test-version', capability={'kind':'legacy_exact_mirror'})):
+        with patch(module+'load_model', return_value=_current_model_fixture('test-version')):
             error = self._post_error('/api/duel-v2/start', {'mode':'advanced','ai_deck':'starter','ai_player_deck':'saved'}, token=token)
         self.assertIn('公开', error['error'])
         catalog = self._get('/api/duel-v2/catalog', token=token)
-        self.assertTrue(any(item['name'] == '浊燃预组' for item in catalog['saved_builds']))
+        self.assertTrue(any(item['name'] == '隐藏角色测试构筑' for item in catalog['saved_builds']))
 
     def test_refresh_keeps_asymmetric_advanced_room(self):
         module = 'app.modules.card_game.engine.ai.advanced_model.'
@@ -257,14 +270,15 @@ class CpuEncoderTest(unittest.TestCase):
 
     def test_bundled_models_are_complete_and_loadable(self):
         from app.modules.card_game.engine.ai.advanced_model import load_model
-        from app.modules.card_game.engine.ai.recovery_model import SCHEMAS, RELEASE
+        from app.modules.card_game.engine.ai.recovery_model import SCHEMAS
+        from app.modules.card_game.engine.ai.seven_model import SCHEMA as SEVEN_SCHEMA, RELEASE
         directory=Path(__file__).resolve().parents[1]/'app/modules/card_game/engine/ai/models'/RELEASE
-        keys=('starter','weave-rush','quick-rush','zhenhong','murk')
+        keys=('starter','murk','zhenhong')
         self.assertEqual({p.name for p in directory.iterdir()},
                          {f'{key}.{ext}' for key in keys for ext in ('json','npz')} | {'serving.json', '.gitattributes'})
         for key in keys:
             model=load_model(key)
-            self.assertIn(model.schema,SCHEMAS)
+            self.assertIn(model.schema,(*SCHEMAS, SEVEN_SCHEMA))
             self.assertTrue(model.version)
             self.assertTrue(model.serving_authorized)
 

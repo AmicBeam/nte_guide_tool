@@ -1,0 +1,35 @@
+{% extends 'common/base.html' %}
+{% block title %}双角色合轴 · 异环工具{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('overlap_module.static', filename='css/overlap.css', v=asset_version) }}">
+{% endblock %}
+{% block body %}
+<main class="overlap-page overlap-pair-page" data-tables-url="{{ url_for('overlap_module.static', filename='data/tables.json', v=asset_version) }}" data-worker-url="{{ url_for('overlap_module.static', filename='js/pair_worker.js', v=asset_version) }}">
+    <header class="glass-card overlap-header">
+        <div><p class="eyebrow">Overlap Planner</p><h1>双角色合轴</h1><p class="subtle">选两位角色，寻找能接回起点的节奏。</p></div>
+        <a class="secondary-btn" href="{{ url_for('main.default_page') }}">工具主页</a>
+    </header>
+    <nav class="overlap-tabs" aria-label="合轴模块">
+        <a href="{{ url_for('overlap_module.index') }}">合轴收益表</a>
+        <a href="{{ url_for('overlap_module.index', page='pair') }}" aria-current="page">双角色合轴</a>
+    </nav>
+    <section class="glass-card overlap-controls" aria-label="双角色匹配">
+        <div class="pair-selectors"><label>角色一<select id="pair-first"></select></label><button id="pair-swap" class="pair-swap" type="button" aria-label="交换两个角色" title="交换两个角色" disabled>⇄</button><label>角色二<select id="pair-second"></select></label><button id="pair-calculate" class="primary-btn" type="button" disabled>重新匹配</button></div>
+        <div class="pair-group-filters">
+            <label><span id="pair-first-group-label">角色一包含动作组</span><select id="pair-first-group" aria-labelledby="pair-first-group-label"><option value="">不限动作组</option></select></label>
+            <label><span id="pair-second-group-label">角色二包含动作组</span><select id="pair-second-group" aria-labelledby="pair-second-group-label"><option value="">不限动作组</option></select></label>
+            <label>动作组种类<select id="pair-group-count"><option value="all">全部（每人最多两种）</option><option value="single">每人一种</option><option value="with-two">至少一人两种</option><option value="both-two">两人都用两种</option></select></label>
+        </div>
+        <div class="pair-toolbar"><label><input id="pair-no-dodge" type="checkbox"> 不使用闪避替代</label><label title="前台必须由动作本体连续覆盖，恢复后摇也算空等"><input id="pair-no-foreground-idle" type="checkbox"> 不含前台空动作</label><label>排序 <select id="pair-sort"><option value="rate">双人倍率 / 秒最高</option><option value="first-rate">角色一秒均倍率最高</option><option value="second-rate">角色二秒均倍率最高</option><option value="time">循环最短</option><option value="actions">动作最多</option></select></label><label>时间轴缩放 <select id="pair-zoom"><option value="64">紧凑</option><option value="90" selected>标准</option><option value="120">放大</option></select></label></div>
+        <p class="pair-description">只匹配当前动作表中不含三人合轴、无需额外释放条件的路线。残虹幻境动作、安魂曲 E 不参与匹配；黑羽魔 E 须由黑羽自己的上一个魔 a5 激活，可隔着队友动作或跨循环衔接。恢复后摇按动作配置，默认0秒。合法衔接可提前接，非衔接重新起手须等后摇结束。切入前台时必须有动作正在释放、处于恢复后摇或当场起手，不能空等。切人可以延后；首尾接回下一轮时同样检查 1.2 秒切回间隔。相同动作只留更短周期，同等或更短周期内可多打动作的方案会替代其子集。</p>
+        <p id="pair-status" role="status" aria-live="polite">正在读取动作表…</p>
+    </section>
+    <div class="pair-legend"><span class="pair-color-a">● 角色一</span><span class="pair-color-b">● 角色二</span><span>色带：前台占轴</span><span>气泡：动作本体 · 点线尾段：恢复后摇</span><span>◆：输入节点</span><span>竖线：切人</span><span>淡色：下一轮</span></div>
+    <section id="pair-results" class="pair-results" aria-label="可循环合轴方案" aria-busy="false"></section>
+    <button id="pair-more" class="secondary-btn" type="button" hidden>显示更多方案</button>
+    <p class="pair-footnote">按当前筛选和排序计算前20名，修改条件会重新计算，显示更多可继续搜索。每轮每位角色最多执行两组动作，可以相同或不同；去掉双方都重复同一种动作组的方案，包含组内已有的回场。时间轴展示连续两轮，后台尾段可跨越循环线；按已记录条件过滤动作；黑羽采用本页口径，仅检查魔 E 的上一个黑羽动作，不额外限制形态与恶意。</p>
+</main>
+<script src="{{ url_for('overlap_module.static', filename='js/pair_engine.js', v=asset_version) }}" defer></script>
+<script src="{{ url_for('overlap_module.static', filename='js/pair_multi_engine.js', v=asset_version) }}" defer></script>
+<script src="{{ url_for('overlap_module.static', filename='js/pair.js', v=asset_version) }}" defer></script>
+{% endblock %}

@@ -1,0 +1,1235 @@
+"""Bounded CUDA-only DeviceSoARules / DeviceGameLoop acceptance CLI.
+
+Default prints a plan and does not import CUDA, load models, or write files.
+--run requires a frozen native image, frozen models, teachers, and a new
+artifacts/rl-evals directory. Search stays Gumbel32/cap16/h0/network-WDL/
+policy opponents with the array Zhenhong root prior. Not training.
+"""
+from pathlib import Path
+import argparse
+import gc
+import hashlib
+import json
+import sys
+import time
+import traceback
+
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0,str(ROOT))
+KEYS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke')
+SEARCH = dict(
+    simulations=32, gumbel_candidates=16, terminal_horizon=0,
+    teacher_mode='network_value', opponent_mode='policy',
+    prior='array_zhenhong', extra_guidance_simulations=0, cpu_fallback=False,
+    world_sampling='per_decision')
+STAGE_SOURCE = r"""
+__device__ unsigned long long ticks(){unsigned long long t;asm volatile("mov.u64 %0, %%globaltimer;":"=l"(t));return t;}
+extern "C" __global__ void begin_span(long long* start,long long* live,const unsigned char* active,int rows,int site){
+ if(blockIdx.x||threadIdx.x)return;long long n=0;for(int i=0;i<rows;i++)n+=active[i]!=0;live[site]=n;start[site]=(long long)ticks();
+}
+extern "C" __global__ void end_span(const long long* start,const long long* live,long long* elapsed,long long* calls,long long* active_calls,long long* active_rows,int site){
+ if(blockIdx.x||threadIdx.x)return;elapsed[site]+=(long long)ticks()-start[site];calls[site]++;active_calls[site]+=live[site]>0;active_rows[site]+=live[site];
+}
+"""
+
+
+def build_parser():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--run', action='store_true')
+    p.add_argument('--program', type=Path)
+    p.add_argument('--models', type=Path)
+    p.add_argument('--teachers', type=Path)
+    p.add_argument('--output', type=Path)
+    p.add_argument('--rows', type=int, default=8)
+    p.add_argument('--rule-work-rows', type=int, default=8)
+    p.add_argument('--inference-rows', type=int, default=2)
+    p.add_argument('--state-storage', choices=('sparse', 'dense','paged'), default='sparse')
+    p.add_argument('--state-page-budget-mib',type=int,default=1536)
+    p.add_argument('--rule-dispatch', choices=('tiled', 'direct'), default='tiled')
+    p.add_argument('--native-complete', action='store_true',
+                   help='Complete native rule functions and values, using cached separate compilation')
+    p.add_argument('--indexed-attributes', action='store_true',
+                   help='Frozen attribute lookup index; requires --native-complete')
+    p.add_argument('--indexed-entity-queries', action='store_true',
+                   help='Bounded immutable string membership index; requires --native-complete')
+    p.add_argument('--runtime-primitive-compare',action='store_true',
+                   help='Optional primitive comparison routing; requires --native-complete')
+    p.add_argument('--direct-deepcopy-calls',action='store_true',
+                   help='Optional exact deepcopy call routing; requires --native-complete')
+    p.add_argument('--candidate-int32',action='store_true',help='Checked narrower candidate indices; retains complete legal sets')
+    p.add_argument('--defer-physical-presentation',action='store_true',
+                   help='Closed training-state step followed immediately by clean; raw actions rebuild public replay after the batch')
+    p.add_argument('--fused-rule-steps',action='store_true',help='Exact hypothetical step/clean with one final state store')
+    p.add_argument('--gpu-budget-mib', type=int, default=14336)
+    p.add_argument('--state-budget-mib', type=int, default=4096)
+    p.add_argument('--raw-tape-budget-mib', type=int, default=512)
+    p.add_argument('--policy-tape-budget-mib', type=int, default=128)
+    p.add_argument('--training-tape-budget-mib', type=int, default=512)
+    p.add_argument('--capture-training', action='store_true', help='Capture frozen policy and both-viewer WDL rows; never update weights')
+    p.add_argument('--max-decisions', type=int, default=1)
+    p.add_argument('--require-natural', action='store_true')
+    p.add_argument('--cohort-only', action='store_true', help='Bounded multi-decision diagnostic; no separate one-step timing repetitions')
+    p.add_argument('--device', default='cuda')
+    p.add_argument('--warmup', type=int, default=2)
+    p.add_argument('--repeats', type=int, default=3)
+    p.add_argument('--seed', type=int, default=202610161600)
+    p.add_argument('--setup-seconds', type=int, default=600)
+    p.add_argument('--execution-seconds', type=int, default=900)
+    p.add_argument('--proof-seconds', type=int, default=300)
+    p.add_argument('--max-actions', type=int, default=800)
+    p.add_argument('--inner-max-ticks', type=int, default=10000)
+    p.add_argument('--rule-steps', type=int, default=48000000)
+    return p
+
+
+def plan(args):
+    capacity = capacity_config(args)
+    return dict(
+        mode='plan',
+        scope='bounded CUDA DeviceSoARules DeviceGameLoop acceptance; not training or CPU fallback',
+        rows=args.rows, max_decisions=args.max_decisions,
+        require_natural=bool(args.require_natural), device=str(args.device),
+        warmup=args.warmup, repeats=args.repeats, presets=list(KEYS),
+        execution_budget_scope='per_trial',proof_budget_scope='after_each_batch',
+        typed_state_slots=args.rows*6+8,
+        capacity=capacity.plan(), state_storage=args.state_storage, rule_dispatch=args.rule_dispatch,
+        rule_executor=rule_executor_options(args),
+        cohort_only=args.cohort_only, capture_training=args.capture_training,candidate_index_bits=32 if args.candidate_int32 else 64,
+        state_page_budget_mib=args.state_page_budget_mib,
+        mixed_first_sides=True, skip_mulligan=True, search=dict(SEARCH,fused_rule_steps=args.fused_rule_steps,
+                    defer_physical_presentation=args.defer_physical_presentation),
+        cuda_imported=False, models_loaded=False, files_created=False,
+        learning_updates=0, gpu_qualified=False, passed=False,
+        output=None if args.output is None else str(args.output))
+
+
+def _bounded(parser, name, value, low, high):
+    if type(value) is not int or not low <= value <= high:
+        parser.error('Bounded %s in %s..%s required' % (name, low, high))
+
+
+def validate_bounds(parser, args):
+    _bounded(parser, 'rows', args.rows, 1, 1600)
+    _bounded(parser, 'rule-work-rows', args.rule_work_rows, 1, 64)
+    _bounded(parser, 'inference-rows', args.inference_rows, 1, 32)
+    for name in ('gpu_budget_mib', 'state_budget_mib', 'raw_tape_budget_mib', 'policy_tape_budget_mib','training_tape_budget_mib','state_page_budget_mib'):
+        _bounded(parser, name.replace('_','-'), getattr(args,name), 1, 1024**2)
+    if args.rule_dispatch == 'direct' and args.rows > 32:
+        parser.error('Direct SoA calls are bounded to32; use device tiled dispatch for larger root cohorts')
+    if args.capture_training and not args.cohort_only:
+        parser.error('--capture-training requires a single --cohort-only multi-decision acceptance batch')
+    if args.candidate_int32 and args.rule_dispatch!='tiled':
+        parser.error('--candidate-int32 requires tiled rule dispatch')
+    if args.indexed_attributes and not args.native_complete:
+        parser.error('--indexed-attributes requires --native-complete')
+    if args.indexed_entity_queries and not args.native_complete:
+        parser.error('--indexed-entity-queries requires --native-complete')
+    for option in ('runtime_primitive_compare','direct_deepcopy_calls'):
+        if getattr(args,option) and not args.native_complete:
+            parser.error('--'+option.replace('_','-')+' requires --native-complete')
+    if args.cohort_only and args.max_decisions <= 1:
+        parser.error('--cohort-only requires --max-decisions greater than1')
+    _bounded(parser, 'max-decisions', args.max_decisions, 1, 400)
+    _bounded(parser, 'warmup', args.warmup, 0, 8)
+    _bounded(parser, 'repeats', args.repeats, 1, 8)
+    _bounded(parser, 'setup-seconds', args.setup_seconds, 1, 600)
+    _bounded(parser, 'execution-seconds', args.execution_seconds, 1, 86400)
+    _bounded(parser, 'proof-seconds', args.proof_seconds, 1, 86400)
+    _bounded(parser, 'max-actions', args.max_actions, 1, 800)
+    _bounded(parser, 'inner-max-ticks', args.inner_max_ticks, 1, 100000)
+    _bounded(parser, 'rule-steps', args.rule_steps, 1, 2 ** 30)
+    if type(args.seed) is not int or not 0 <= args.seed <= (1 << 63)-args.rows:
+        parser.error('Nonnegative int64 seed range must include every independent row')
+    if not str(args.device).startswith('cuda'):
+        parser.error('CUDA-only acceptance; CPU fallback is forbidden')
+    try:
+        capacity_config(args)
+    except (ValueError,MemoryError) as exc:
+        parser.error(str(exc))
+
+
+def capacity_config(args):
+    from app.modules.card_game.rl.batched_search.soa_capacity import SoACapacityConfig
+    return SoACapacityConfig(roots=args.rows, rule_lanes=args.rule_work_rows,
+        inference_rows=args.inference_rows, max_actions=args.max_actions, max_decisions=args.max_decisions,
+        gpu_budget_mib=args.gpu_budget_mib, state_budget_mib=args.state_budget_mib,
+        raw_tape_budget_mib=args.raw_tape_budget_mib, policy_tape_budget_mib=args.policy_tape_budget_mib,
+        training_tape_budget_mib=args.training_tape_budget_mib,
+        execution_seconds=args.execution_seconds, proof_seconds=args.proof_seconds)
+
+
+def rule_executor_options(args):
+    """Explicit full search module options, without importing CUDA/model code."""
+    if args.indexed_attributes and not args.native_complete:
+        raise ValueError('--indexed-attributes requires --native-complete')
+    if args.indexed_entity_queries and not args.native_complete:
+        raise ValueError('--indexed-entity-queries requires --native-complete')
+    for option in ('runtime_primitive_compare','direct_deepcopy_calls'):
+        if getattr(args,option) and not args.native_complete:
+            raise ValueError('--'+option.replace('_','-')+' requires --native-complete')
+    return dict(native_functions=bool(args.native_complete),
+                native_values=bool(args.native_complete),
+                separate_compilation=bool(args.native_complete),
+                indexed_attributes=bool(args.indexed_attributes),
+                indexed_entity_queries=bool(args.indexed_entity_queries),
+                runtime_primitive_compare=bool(args.runtime_primitive_compare),
+                direct_deepcopy_calls=bool(args.direct_deepcopy_calls),
+                execute_only=False, stack_bytes=131072)
+
+
+def create_rule_executor(factory, image, schema, args, *, device, limits):
+    """The real acceptance constructor shares its exact kwargs with the plan."""
+    return factory(image,schema,device=str(device),limits=limits,
+                   **rule_executor_options(args))
+
+
+def create_game_loop(factory,*args,defer_physical_presentation=False,**kwargs):
+    """Pass the explicit closed-state option to the actual physical driver."""
+    if type(defer_physical_presentation) is not bool:
+        raise TypeError('Explicit deferred physical presentation boolean required')
+    return factory(*args,defer_physical_presentation=defer_physical_presentation,**kwargs)
+
+
+def validate_run(parser, args):
+    if args.program is None or args.models is None or args.teachers is None or args.output is None:
+        parser.error('--run requires --program --models --teachers --output')
+    args.program = args.program.resolve()
+    args.models = args.models.resolve()
+    args.teachers = args.teachers.resolve()
+    args.output = args.output.resolve()
+    if not args.program.is_file():
+        parser.error('Frozen native image --program is required')
+    if not args.models.is_dir():
+        parser.error('Frozen --models directory is required')
+    if not args.teachers.is_dir():
+        parser.error('Frozen --teachers directory is required')
+    try:
+        args.output.relative_to((ROOT/'artifacts'/'rl-evals').resolve())
+    except ValueError:
+        parser.error('--output must be a new artifacts/rl-evals directory')
+    if args.output.exists():
+        parser.error('Use a new output directory')
+
+
+def parameters_for(rows, seed):
+    jobs = []
+    for i in range(rows):
+        jobs.append(dict(seed=seed + i, first_side='ab'[i % 2], skip_mulligan=True,
+                         escalation=True, keys={'a': KEYS[i % 7], 'b': KEYS[(i + 1) % 7]}))
+    return jobs
+
+
+def compact_summary(report):
+    keys = ('passed', 'phase', 'rows', 'max_decisions', 'natural_games', 'truncated_games',
+            'error_rows', 'require_natural', 'one_step_cannot_qualify_natural',
+            'capture_seconds', 'replay_wall_seconds', 'replay_gpu_seconds',
+            'setup_seconds', 'complete_root_decisions', 'rule_executor')
+    return {key: report[key] for key in keys if key in report}
+
+
+def save_report(output, report, phase, started):
+    report['phase'] = phase
+    report['seconds'] = time.monotonic() - started
+    tmp = output / 'report.json.tmp'
+    tmp.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf8')
+    tmp.replace(output / 'report.json')
+
+
+class StageTiming:
+    """Device globaltimer spans compiled in this CLI; no extra module."""
+
+    def __init__(self, device, sites=64):
+        import torch
+        from app.modules.card_game.rl.batched_duel.cuda_runtime import CudaModule
+        self.device = device
+        self.names, self.sites, self.ids = [], sites, {}
+        self.start = torch.zeros(sites, dtype=torch.int64, device=device)
+        self.live = torch.zeros_like(self.start)
+        self.elapsed = torch.zeros_like(self.start)
+        self.calls = torch.zeros_like(self.start)
+        self.active_calls = torch.zeros_like(self.start)
+        self.active_rows = torch.zeros_like(self.start)
+        self.module = CudaModule(
+            STAGE_SOURCE,
+            {'begin_span': ['int64*', 'int64*', 'uint8*', 'int32', 'int32'],
+             'end_span': ['int64*', 'int64*', 'int64*', 'int64*', 'int64*', 'int64*', 'int32']},
+            device=str(device))
+
+    def call_mask(self, name, mask, fn, *args, **kwargs):
+        import torch
+        if name not in self.ids:
+            self.ids[name] = len(self.names)
+            if len(self.names) >= self.sites:
+                raise RuntimeError('Stage timing site capacity exceeded')
+            self.names.append(name)
+        site = self.ids[name]
+        mask = mask.view(torch.uint8).contiguous()
+        self.module.launch('begin_span', [self.start, self.live, mask, mask.numel(), site],
+                           grid=1, block=1, capture_safe=True)
+        out = fn(*args, **kwargs)
+        self.module.launch(
+            'end_span',
+            [self.start, self.live, self.elapsed, self.calls, self.active_calls, self.active_rows, site],
+            grid=1, block=1, capture_safe=True)
+        return out
+
+    def after_batch(self):
+        return [dict(name=name, site=i, seconds=int(self.elapsed[i].cpu()) / 1e9,
+                     calls=int(self.calls[i].cpu()), active_calls=int(self.active_calls[i].cpu()),
+                     active_rows=int(self.active_rows[i].cpu()))
+                for i, name in enumerate(self.names)]
+
+    def close(self):
+        self.module.close()
+
+
+def action_store(device, rows):
+    from app.modules.card_game.rl.batched_duel.device_graph_storage import CompactDeviceGraphStore
+    return CompactDeviceGraphStore(
+        slots=rows * 6 + 128, node_pages=8192, edge_pages=8192, payload_pages=4096,
+        node_page_bytes=4096, edge_page_bytes=4096, payload_page_bytes=4096,
+        max_node_pages_per_slot=64, max_edge_pages_per_slot=64, max_payload_pages_per_slot=32,
+        device=device)
+
+
+def unpack_graph(graph, mask=None):
+    import numpy as np
+    from app.modules.card_game.rl.batched_duel.codec import unpack_states
+    from app.modules.card_game.rl.batched_duel.schema import GraphLayout, PackedStateBatch
+    arrays = {name: getattr(graph, name).detach().cpu().numpy()
+              for name in ('nodes', 'edges', 'payload', 'counts', 'roots')}
+    ids = list(range(graph.rows)) if mask is None else [i for i, on in enumerate(mask) if on]
+    output = [None] * graph.rows
+    if ids:
+        layout = GraphLayout(len(ids), graph.layout.max_nodes, graph.layout.max_edges,
+                             graph.layout.max_payload_bytes)
+        packed = PackedStateBatch(
+            layout, **{name: np.ascontiguousarray(value[ids]) for name, value in arrays.items()})
+        for i, value in zip(ids, unpack_states(packed)):
+            output[i] = value
+    return output
+
+
+def host_states(store, roots):
+    from app.modules.card_game.rl.batched_duel.device_rule_protocol import DeviceStateBatch
+    from app.modules.card_game.rl.batched_duel.record_soa import unpack_game_states
+    result=[]
+    # Diagnostic egress only, after a whole device batch. Never densify B roots.
+    for start in range(0,len(roots.slots),8):
+        selected=DeviceStateBatch(roots.pool,*[getattr(roots,name)[start:start+8].contiguous()
+            for name in ('slots','generations','owners','active','errors')])
+        result.extend(unpack_game_states(store.gather_device(selected, shared_reads=True).to_host()))
+    return result
+
+
+def memory_snapshot(torch, store, rules, actions, raw, light):
+    free,total=torch.cuda.mem_get_info()
+    return dict(
+        allocated=int(torch.cuda.memory_allocated()), reserved=int(torch.cuda.memory_reserved()),
+        device_free=int(free), device_total=int(total), device_used=int(total-free),
+        process_peak_allocated=int(torch.cuda.max_memory_allocated()),
+        process_peak_reserved=int(torch.cuda.max_memory_reserved()),
+        typed_store=int(store.allocated_bytes), workspace=int(rules.workspace_bytes),
+        action_store=int(actions.allocated_bytes), raw_tape=int(raw.allocated_bytes),
+        policy_tape=int(getattr(light, 'allocated_bytes', 0)))
+
+
+def check_memory_budget(snapshot, capacity):
+    limit=capacity.gpu_budget_mib << 20
+    # Reserved allocator memory and non-PyTorch/other-process device use are
+    # different measurements. Neither may silently exceed this job's budget.
+    if any(snapshot[name]>limit for name in ('device_used','reserved','process_peak_reserved')):
+        raise MemoryError('Whole-device or allocator memory exceeded the declared GPU budget')
+    if snapshot['action_store']>capacity.action_budget_mib << 20:
+        raise MemoryError('Action arena exceeded the declared action byte budget')
+    if snapshot.get('training_tape',0)>capacity.training_tape_budget_mib << 20:
+        raise MemoryError('Training archive and prototype exceeded the declared collection byte budget')
+
+
+def inference_weight_digest(bank):
+    import hashlib
+    digest=hashlib.sha256()
+    for group in ('weights','legacy_weights'):
+        for name,value in sorted(getattr(bank,group,{}).items()):
+            if value.requires_grad:
+                raise ValueError('Frozen device inference weights cannot require gradients')
+            digest.update((group+'/'+name+':'+str(value.dtype)+':'+str(tuple(value.shape))).encode())
+            digest.update(value.detach().cpu().contiguous().numpy().tobytes())
+    return digest.hexdigest()
+
+
+def work_lane_receipt(rules):
+    if not hasattr(rules,'_queues'):
+        return dict(dispatch='direct', roots=rules.rows, work_rows=rules.rows)
+    visits=[0]*rules.rows;sites=[]
+    for index,queue in enumerate(rules._queues):
+        rows=int(queue.total_rows.cpu()[0]);calls=int(queue.total_dispatches.cpu()[0])
+        peak=int(queue.peak_selected.cpu()[0]);seen=queue.root_visits.cpu().tolist()
+        tail=int(queue.tail_dispatches.cpu()[0]) if hasattr(queue,'tail_dispatches') else 0
+        failed=int(queue.errored_rows.cpu()[0]) if hasattr(queue,'errored_rows') else 0
+        errors=int(queue.loop.errors.cpu().reshape(-1)[0]) if hasattr(queue,'loop') else 0
+        if min(rows,calls,peak,*seen)<0 or peak>rules.work_rows or sum(seen)!=rows:
+            raise AssertionError('Invalid device rule-lane coverage receipt')
+        visits=[a+b for a,b in zip(visits,seen)]
+        if calls:
+            sites.append(dict(site=index, selected_rows=rows, dispatches=calls, peak_selected=peak,
+                              tail_dispatches=tail,errored_rows=failed,dispatch_errors=errors))
+        if min(tail,failed)<0 or tail>calls or errors:
+            raise AssertionError('Invalid device rule-lane tail/error receipt')
+    if not all(visits):
+        raise AssertionError('Independent root never reached the native rule work lanes')
+    return dict(dispatch='tiled', roots=rules.rows, work_rows=rules.work_rows,
+                distinct_roots=len(visits),per_root_visits=visits, sites=sites,
+                capacity_qualified=False)
+
+
+def root_identity_receipt(roots,jobs):
+    """Post-initialization evidence, after formal new_game boundary comparison."""
+    slots=roots.slots.cpu().tolist();generations=roots.generations.cpu().tolist()
+    owners=roots.owners.cpu().tolist();seeds=[row['seed'] for row in jobs]
+    count=len(jobs)
+    if any(len(values)!=count for values in (slots,generations,owners)):
+        raise AssertionError('Root identity row count mismatch')
+    if (len(set(seeds))!=count or len(set(owners))!=count or len(set(slots))!=count
+            or min(slots,default=-1)<0 or min(owners,default=-1)<0 or min(generations,default=0)<1):
+        raise AssertionError('Distinct seeded roots and checked independent leases required')
+    return dict(independent_roots=count,distinct_seeds=len(set(seeds)),distinct_owners=len(set(owners)),
+                distinct_state_slots=len(set(slots)),initial_boundary_verified=True,
+                copied_state_capacity_qualified=False)
+
+
+def completed_lease_receipt(store,actions,states,rows):
+    """Checked postbatch physical leases; temporary search/action slots are gone."""
+    slots=states.slots
+    bad=(slots<0)|(slots>=store.live.numel())
+    safe=slots.clamp(0,store.live.numel()-1)
+    bad|=(~store.live[safe].bool())|(store.generation[safe]!=states.generations)
+    bad|=store.owner[safe]!=states.owners
+    state_count=int(store.live.long().sum().cpu())
+    action_count=int(actions.live.long().sum().cpu())
+    distinct=len(set(slots.cpu().tolist()))==rows
+    if (getattr(states,'pool',store) is not store or not distinct
+            or bool(bad.any().cpu()) or state_count!=rows or action_count):
+        raise AssertionError('Physical lease mismatch or temporary search/action leases leaked: '+
+            json.dumps(dict(live_state_slots=state_count,live_action_slots=action_count,
+                            expected_physical_state_slots=rows,distinct_slots=distinct,
+                            invalid_physical_leases=int(bad.long().sum().cpu()))))
+    return dict(live_state_slots=state_count,live_action_slots=action_count,
+                expected_physical_state_slots=rows,checked_physical_leases=rows)
+
+
+def install_root_diagnostics(cohort,torch,rows,width):
+    B,shared=rows,{'max_actions':width}
+    device=cohort.stats.device
+    cohort.diagnostics={name:torch.zeros((B,shared['max_actions']),dtype=torch.float64,device=device)
+                      for name in ('q','prior','mean','gumbel')}
+    cohort.diagnostics['value']=torch.zeros(B,dtype=torch.float64,device=device)
+    cohort.diagnostics['errors']=torch.zeros(B,dtype=torch.bool,device=device)
+    original_snapshot=cohort.stats.snapshot
+    def snapshot(*args,**kwargs):
+        result=original_snapshot(*args,**kwargs)
+        q=cohort.stats.completed_q(*args,**kwargs)
+        active=kwargs.get('active')
+        if active is None:
+            raise RuntimeError('Root diagnostic snapshot requires the exact final mask')
+        values=dict(q=q.completed_q,prior=result.prior,
+            mean=result.total/result.visits.clamp_min(1),gumbel=cohort.search._noise)
+        for name,value in values.items():
+            cohort.diagnostics[name].copy_(torch.where(active[:,None],value,cohort.diagnostics[name]))
+        cohort.diagnostics['value'].copy_(torch.where(active,result.value,cohort.diagnostics['value']))
+        cohort.diagnostics['errors'].logical_or_(active & (result.error|q.error))
+        return result
+    cohort.stats.snapshot=snapshot
+
+
+class IsolatedCohort:
+    """Own store/tape/search/loop. Recreated per timing trial or acceptance run."""
+
+    def __init__(self, shared, *, max_decisions, seconds):
+        self.started=time.monotonic()
+        import numpy as np
+        import torch
+        from app.modules.card_game.rl.batched_duel.device_soa_storage import DeviceSoAStore
+        from app.modules.card_game.rl.batched_duel.device_sparse_soa_storage import DeviceSparseSoAStore
+        from app.modules.card_game.rl.batched_search.device_soa_rules import DeviceSoARules, create_soa_search
+        from app.modules.card_game.rl.batched_search.device_tiled_soa_rules import DeviceTiledSoARules
+        from app.modules.card_game.rl.batched_search.soa_capacity import archive_capacities
+        from app.modules.card_game.rl.batched_search.device_raw_action_tape import DeviceRawActionTape
+        from app.modules.card_game.rl.batched_search.device_replay_policy_tape import DeviceReplayPolicyTape
+        from app.modules.card_game.rl.batched_search.device_game_policy_sink import DeviceGamePolicySink
+        from app.modules.card_game.rl.batched_search.device_physical_action_capture import RawActionPolicySink
+        from app.modules.card_game.rl.batched_search.device_random import DevicePCG64
+        from app.modules.card_game.rl.batched_search.device_root_random import DeviceRootRandomPlan
+        from app.modules.card_game.rl.batched_search.device_seeds import DeviceRootSeeds
+        from app.modules.card_game.rl.batched_search.device_statistics import DeviceStatisticsPool
+        from app.modules.card_game.rl.batched_search.device_info_key import DeviceInformationKey
+        from app.modules.card_game.rl.batched_search.device_games import DeviceGameLoop
+        self.shared, self.max_decisions, self.closed = shared, max_decisions, False
+        B, device = shared['rows'], shared['device']
+        capacity = shared['capacity']
+        if 'rule_workspace_minimum_bytes' in shared:
+            from app.modules.card_game.rl.batched_search.soa_capacity import check_workspace_budget
+            free,total=torch.cuda.mem_get_info()
+            check_workspace_budget(capacity,shared['rule_workspace_minimum_bytes'],
+                                   resident_bytes=int(total-free))
+        if shared['state_storage']=='paged':
+            from app.modules.card_game.rl.batched_duel.device_paged_soa_storage import DevicePagedSoAStore
+            self.store=DevicePagedSoAStore(shared['schema'],capacity.state_slots,device=device,
+                max_bytes=capacity.state_budget_mib << 20,resident_bytes=shared['state_page_budget_mib'] << 20)
+        elif shared['state_storage'] == 'sparse':
+            self.store = DeviceSparseSoAStore(shared['schema'], capacity.state_slots, device=device,
+                                              max_bytes=capacity.state_budget_mib << 20)
+        else:
+            from app.modules.card_game.rl.batched_search.soa_capacity import legacy_dense_state_bytes
+            if legacy_dense_state_bytes(shared['schema'].lengths,B) > capacity.state_budget_mib << 20:
+                raise MemoryError('Legacy dense state arena exceeds declared state budget')
+            self.store = DeviceSoAStore(shared['schema'], capacity.state_slots, device=device)
+        self.actions = action_store(device, B)
+        archive = archive_capacities(capacity,max_decisions)
+        self.raw = DeviceRawActionTape(
+            B, archive['max_records'], archive['node_capacity'], archive['edge_capacity'],
+            archive['payload_capacity'], device=device)
+        self.light = DeviceReplayPolicyTape(
+            B, archive['max_records'], archive['max_legal_entries'], shared['max_actions'],
+            capacity.policy_tape_budget_mib << 20,
+            device=device)
+        if shared['rule_dispatch'] == 'tiled':
+            self.rules = DeviceTiledSoARules(shared['executor'], self.store, self.actions, rows=B,
+                work_rows=capacity.lanes, inference_rows=capacity.inference_tile, seconds=seconds,
+                candidate_int32=shared.get('candidate_int32',False),
+                max_actions=shared['max_actions'], raw_tape=self.raw)
+        else:
+            self.rules = DeviceSoARules(shared['executor'], self.store, self.actions, rows=B,
+                max_actions=shared['max_actions'], raw_tape=self.raw)
+        self.random = DevicePCG64(
+            [np.random.PCG64(shared['seed'] + i).state for i in range(B)],
+            device=device, max_rows=B, max_draws=shared['max_actions'],
+            max_choices=shared['max_actions'])
+        self.random_plan = DeviceRootRandomPlan(
+            self.random, [shared['seed'] + i for i in range(B)],
+            max_decisions=max_decisions, max_bytes=64 << 20)
+        self.seeds = DeviceRootSeeds(device=device, max_rows=B)
+        self.keys = DeviceInformationKey(device=device, max_rows=B)
+        self.stats = DeviceStatisticsPool(
+            B * 33, shared['max_actions'], device=device, max_batch=B, max_path_len=10)
+        self.search = create_soa_search(
+            self.rules, shared['inference'], shared['inference'], self.stats, self.keys,
+            rows=B, random=self.random, max_actions=shared['max_actions'], zhenhong_prior=True,
+            noise=True, max_depth=10, value_batch_rows=capacity.inference_tile, queued_row_work=True,
+            row_work_seconds=seconds, reuse_root_policy_value=True,
+            group_ready_leaves=True, reuse_interior_observation=True,
+            fused_rule_steps=shared.get('fused_rule_steps',False))
+        policy = DeviceGamePolicySink(self.light)
+        self.training_tape=None
+        if shared.get('capture_training'):
+            from app.modules.card_game.rl.batched_search.soa_frozen_collection import create_training_tape
+            self.training_tape=create_training_tape(self.rules,capacity,decisions=max_decisions,
+                max_bytes=capacity.training_tape_budget_mib << 20)
+        self.sink = RawActionPolicySink(self.training_tape or policy, self.raw)
+        self.loop = create_game_loop(DeviceGameLoop,
+            self.rules, self.search, self.sink, self.seeds, max_decisions=max_decisions,
+            random_plan=self.random_plan, device=device, inner_max_ticks=shared['inner_max_ticks'],
+            seconds=seconds, search_audit_sink=policy if self.training_tape is not None else None,
+            defer_physical_presentation=shared.get('defer_physical_presentation',False))
+        self.rules.bind_game_loop(self.loop)
+        policy.bind_game_loop(self.loop)
+        self.timing = None
+        self.root_prior_separated = False
+        self.guided_row_calls=torch.zeros(1,dtype=torch.int64,device=device)
+        self.nonzero_guided_row_calls=torch.zeros_like(self.guided_row_calls)
+        install_root_diagnostics(self,torch,B,shared['max_actions'])
+        try:
+            self.timing = StageTiming(self.loop.device)
+            for name in ('sample_world_device', 'decision_device', 'step_device','step_clean_device',
+                         'clean_device', 'metadata_device', 'value_observation_device','step_deferred_physical_device'):
+                original_rule = getattr(self.rules, name)
+                def timed_rule(states, *args, _name=name, _original=original_rule, **kwargs):
+                    return self.timing.call_mask(_name, states.active,
+                        _original, states, *args, **kwargs)
+                setattr(self.rules, name, timed_rule)
+            prior = self.search.prior_guide
+            original_prior = prior.score_device
+
+            def timed_prior(observations, candidates, valid, mask, _original=original_prior):
+                result=self.timing.call_mask(
+                    'root_zhenhong_prior', mask.view(torch.uint8),
+                    _original, observations, candidates, valid, mask)
+                self.guided_row_calls.add_(result.applicable.long().sum().reshape(1))
+                self.nonzero_guided_row_calls.add_(((result.shifts!=0).any(-1)&result.applicable).long().sum().reshape(1))
+                return result
+
+            prior.score_device = timed_prior
+            self.root_prior_separated = True
+            span = len(self.timing.names)
+            self.timing.ids['complete_gumbel32'] = span
+            self.timing.names.append('complete_gumbel32')
+            original_start = self.loop._start_search
+            original_commit = self.loop._commit_turn
+
+            def start_span(_original=original_start):
+                mask = self.loop._present.view(torch.uint8).contiguous()
+                self.timing.module.launch(
+                    'begin_span', [self.timing.start, self.timing.live, mask, B, span],
+                    grid=1, block=1, capture_safe=True)
+                return _original()
+
+            def finish_span(_original=original_commit):
+                self.timing.module.launch(
+                    'end_span',
+                    [self.timing.start, self.timing.live, self.timing.elapsed,
+                     self.timing.calls, self.timing.active_calls, self.timing.active_rows, span],
+                    grid=1, block=1, capture_safe=True)
+                return _original()
+
+            self.loop._start_search = start_span
+            self.loop._commit_turn = finish_span
+        except Exception:
+            if self.timing is not None:
+                self.timing.close()
+                self.timing = None
+            self.root_prior_separated = False
+            if 'original_prior' in locals():
+                prior.score_device=original_prior
+            if 'original_start' in locals():
+                self.loop._start_search=original_start
+                self.loop._commit_turn=original_commit
+
+    def close(self):
+        if self.closed:
+            return
+        self.closed = True
+        for obj in (self.timing, self.loop, self.search, self.rules, self.raw, self.actions,
+                    self.random, self.keys, self.seeds, self.store):
+            closer = getattr(obj, 'close', None)
+            if callable(closer):
+                closer()
+
+
+def warmup_inference(inference, loop, rows, max_actions):
+    import torch
+    device = loop.device
+    rows = min(rows,inference.max_rows)
+    wx = torch.zeros((rows, inference.feature_dim), dtype=torch.float32, device=device)
+    wc = torch.zeros((rows, max_actions, inference.candidate_dim), dtype=torch.float32, device=device)
+    wm = torch.zeros((rows, max_actions), dtype=torch.bool, device=device)
+    wm[:, 0] = True
+    wi = torch.full((rows,), inference.keys.index('starter'), dtype=torch.int64, device=device)
+    wa = torch.ones((rows, 1), dtype=torch.float32, device=device)
+    streams = (torch.cuda.current_stream(device), loop._outer.capture_stream,
+               loop._outer.body_stream, loop._inner.body_stream)
+    empty = torch.ones(rows, dtype=torch.bool, device=device)
+    for stream in streams:
+        stream.wait_stream(torch.cuda.current_stream(device))
+        with torch.cuda.stream(stream):
+            inference.predict_device(wx, wc, wm, wi, wa)
+            inference.predict_device(wx, wc[:, :0], wm[:, :0], wi, wa, value_only=empty)
+        stream.synchronize()
+
+
+def run_cohort(cohort, shared, *, deadline, proof_deadline=None, verify=True):
+    import torch
+    from app.modules.card_game.engine.duel_v2 import new_game
+    B, device = shared['rows'], shared['device']
+    progress = shared.get('progress', lambda phase: None)
+    if time.monotonic() >= deadline:
+        raise TimeoutError('Execution budget exhausted before capture')
+    progress('initializing_cohort')
+    warmup_inference(shared['inference'], cohort.loop, B, shared['max_actions'])
+    roots = cohort.rules.initialize_device(shared['parameters'])
+    torch.cuda.synchronize()
+    if bool((roots.errors != 0).any().cpu()):
+        raise AssertionError(['initialize errors', roots.errors.cpu().tolist()])
+    initial = host_states(cohort.store, roots)
+    expected = [new_game(**row) for row in shared['engine_parameters']]
+    from scripts.validate_duel_v2_native_soa import compare_boundary
+    for actual,reference in zip(initial,expected):
+        compare_boundary(actual,reference,'CUDA initial boundary')
+    identities=root_identity_receipt(roots,shared['jobs'])
+    if 'output' in shared:
+        (shared['output']/'initial-states.json').write_text(json.dumps(initial,ensure_ascii=False),encoding='utf8')
+    seed_tensor = torch.arange(shared['seed'], shared['seed'] + B, dtype=torch.int64, device=device)
+    ids = torch.tensor(
+        [[shared['inference'].keys.index(job['keys']['a']),
+          shared['inference'].keys.index(job['keys']['b'])] for job in shared['jobs']],
+        dtype=torch.int64, device=device)
+    train = torch.full((B, 2),cohort.training_tape is not None,dtype=torch.bool,device=device)
+    torch.cuda.synchronize()
+    torch.cuda.empty_cache()
+    progress('capturing_cohort')
+    capture_started = time.monotonic()
+    cohort.loop.capture(roots, seed_tensor, ids, ids, train)
+    capture_seconds = time.monotonic() - capture_started
+    before_memory=memory_snapshot(torch,cohort.store,cohort.rules,cohort.actions,cohort.raw,cohort.light)
+    before_memory['training_tape']=cohort.training_tape.collection_allocated_bytes if cohort.training_tape is not None else 0
+    if 'output' in shared:
+        memory_path=shared['output']/'pre-replay-memory.json'
+        temporary=memory_path.with_suffix('.json.tmp')
+        temporary.write_text(json.dumps(dict(capture_seconds=capture_seconds,memory=before_memory,
+            roots=B,rule_lanes=shared['capacity'].lanes),indent=2),encoding='utf8')
+        temporary.replace(memory_path)
+    check_memory_budget(before_memory,shared['capacity'])
+    if time.monotonic() >= deadline:
+        raise TimeoutError('Execution budget exhausted during capture')
+    progress('executing_cohort')
+    start_event = torch.cuda.Event(enable_timing=True)
+    end_event = torch.cuda.Event(enable_timing=True)
+    replay_started = time.monotonic()
+    start_event.record()
+    cohort.loop.replay()
+    end_event.record()
+    end_event.synchronize()
+    replay_wall = time.monotonic() - replay_started
+    replay_gpu = start_event.elapsed_time(end_event) / 1000.0
+    progress('reading_cohort_result')
+    result = cohort.loop.result_device()
+    searched = cohort.search.result_device()
+    stage = cohort.timing.after_batch() if cohort.timing is not None else []
+    payload = dict(
+        cohort_setup_seconds=capture_started-cohort.started,
+        capture_seconds=capture_seconds, replay_wall_seconds=replay_wall,
+        replay_gpu_seconds=replay_gpu,
+        per_root_requested=searched.requested.cpu().tolist(),
+        per_root_completed=searched.completed.cpu().tolist(),
+        per_root_world_samples=cohort.search.world_samples.cpu().tolist(),
+        per_root_search_errors=searched.errors.cpu().tolist(),
+        per_root_game_errors=result.errors.cpu().tolist(),
+        per_root_steps=result.steps.cpu().tolist(),
+        per_root_complete=result.complete.cpu().tolist(),
+        per_root_truncated=result.truncated.cpu().tolist(),
+        complete_root_decisions=int(((searched.completed == searched.requested)
+                                    & (searched.errors == 0)).sum().cpu()),
+        game_error_rows=int((result.errors != 0).sum().cpu()),
+        search_error_rows=int((searched.errors != 0).sum().cpu()),
+        natural_games=int(result.complete.sum().cpu()),
+        truncated_games=int(result.truncated.sum().cpu()),
+        error_rows=int(((result.errors != 0) | (searched.errors != 0)).sum().cpu()),
+        inner_ticks=int(cohort.loop._inner.counter[0].cpu()),
+        outer_ticks=int(cohort.loop._outer.counter[0].cpu()),
+        stage_timings=stage, root_prior_separated=cohort.root_prior_separated,
+        memory=memory_snapshot(torch, cohort.store, cohort.rules, cohort.actions,
+                               cohort.raw, cohort.light),
+        graph_executed=int(cohort.loop._outer.counter[0].cpu()) > 0)
+    payload['root_identity']=identities
+    payload['rule_executor']=dict(shared['rule_executor'])
+    payload['search_contract']=dict(SEARCH,fused_rule_steps=shared.get('fused_rule_steps',False),
+                                  defer_physical_presentation=cohort.loop.defer_physical_presentation,
+                                  physical_decision_limit=cohort.max_decisions,
+                                  independent_roots=B,rule_lanes=shared['capacity'].lanes)
+    # Persist actual work before any diagnostic acceptance can reject it.
+    # Failed/timed-out cohorts must retain their counters and phase evidence.
+    if 'output' in shared:
+        (shared['output']/'raw-replay.json').write_text(json.dumps(payload,indent=2),encoding='utf8')
+        (shared['output']/'search-device-snapshot.json').write_text(json.dumps(dict(
+            diagnostics={name:value.cpu().tolist() for name,value in cohort.diagnostics.items()},
+            phase=cohort.search.phase.cpu().tolist(),depth=cohort.search.depth.cpu().tolist(),
+            completed=searched.completed.cpu().tolist(),errors=searched.errors.cpu().tolist()),
+            ensure_ascii=False),encoding='utf8')
+    payload['leases']=completed_lease_receipt(cohort.store,cohort.actions,result.states,B)
+    payload['peak_device_search_roots']=int(searched.peak_device_roots.cpu())
+    payload['candidate_index_bits_actual']=searched.decision.candidates.tokens.int_tokens.element_size()*8
+    if payload['candidate_index_bits_actual']!=(32 if shared.get('candidate_int32') else 64):
+        raise AssertionError('Declared candidate storage width was not executed')
+    if callable(getattr(cohort.store,'metrics_device',None)):
+        def host_metric(value):
+            return {k:host_metric(v) for k,v in value.items()} if isinstance(value,dict) else value.cpu().tolist()
+        payload['state_storage_metrics']=host_metric(cohort.store.metrics_device())
+    payload['memory_before_replay']=before_memory
+    payload['memory']['training_tape']=int(cohort.training_tape.collection_allocated_bytes) if cohort.training_tape is not None else 0
+    payload['work_lanes']=work_lane_receipt(cohort.rules)
+    if 'output' in shared:
+        (shared['output'] / 'last-replay.json').write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf8')
+        (shared['output']/'search-device-snapshot.json').write_text(json.dumps(dict(
+            diagnostics={name:value.cpu().tolist() for name,value in cohort.diagnostics.items()},
+            phase=cohort.search.phase.cpu().tolist(),depth=cohort.search.depth.cpu().tolist(),
+            completed=searched.completed.cpu().tolist(),errors=searched.errors.cpu().tolist()),
+            ensure_ascii=False),encoding='utf8')
+    if time.monotonic()>deadline:
+        raise TimeoutError('Per-trial CUDA execution budget exceeded')
+    check_memory_budget(payload['memory'],shared['capacity'])
+    if not payload['graph_executed']:
+        raise AssertionError('Closed nested CUDA WHILE did not execute')
+    if payload['game_error_rows'] or payload['search_error_rows']:
+        raise AssertionError(['batch errors', payload])
+    if bool((cohort.raw.errors_device != 0).any().cpu()):
+        raise AssertionError(['raw tape errors', cohort.raw.errors_device.cpu().tolist()])
+    payload['root_prior_applicable_row_calls']=int(cohort.guided_row_calls.cpu()[0])
+    payload['root_prior_nonzero_row_calls']=int(cohort.nonzero_guided_row_calls.cpu()[0])
+    final = None
+    if verify:
+        progress('verifying_cohort')
+        final = host_states(cohort.store, result.states)
+        proof_deadline=time.monotonic()+shared['proof_seconds']
+        payload['postbatch'] = verify_postbatch(
+            cohort, shared, initial, final, result, searched,proof_deadline)
+        if cohort.training_tape is not None:
+            payload['frozen_collection']=export_frozen_collection(cohort,shared,payload,initial,final,proof_deadline)
+    if not payload['root_prior_separated']:
+        payload['root_prior_timing'] = 'included_in_complete_gumbel32_not_separated'
+    return payload, initial, final, result, searched
+
+
+def export_frozen_collection(cohort,shared,payload,initial,final,deadline):
+    from app.modules.card_game.rl.batched_search.soa_frozen_collection import (
+        completed_rows_after_batch,write_verified_episodes)
+    dataset=completed_rows_after_batch(cohort.training_tape,verified=payload['postbatch']['verified'],
+        natural_games=payload['natural_games'],roots=shared['rows'])
+    references={};light=cohort.light
+    if dataset['complete']:
+        count=int(light._record_count.cpu())
+        for i in range(count):
+            start=int(light._rec_offset[i].cpu());n=int(light._rec_count[i].cpu())
+            key=int(light._rec_game[i].cpu()),int(light._rec_step[i].cpu())
+            references[key]=dict(pi=light._packed_pi[start:start+n].cpu().numpy().copy(),
+                visits=light._packed_visits[start:start+n].cpu().numpy().copy())
+    return write_verified_episodes(dataset,initial=initial,final=final,
+        records=payload['postbatch']['records'],jobs=shared['jobs'],
+        versions={k:m.version for k,m in shared['models'].items()},policy_reference=references,
+        output=shared['output']/'frozen-episodes',deadline=deadline)
+
+
+def verify_postbatch(cohort, shared, initial, final, result, searched, deadline):
+    import hashlib as _hashlib
+    import numpy as np
+    import torch
+    from app.modules.card_game.engine.duel_v2 import apply_action, acting_side, observe
+    from app.modules.card_game.engine.duel_v2.state import finished
+    from app.modules.card_game.rl.league_rollout import clean
+    from app.modules.card_game.rl.seven_lineup import encode
+    from app.modules.card_game.rl.batched_duel.device_rule_calls import _empty_graph
+    B, raw, light = shared['rows'], cohort.raw, cohort.light
+    counts = result.steps.cpu().tolist()
+    if counts != raw.steps_device.cpu().tolist():
+        raise AssertionError('Raw tape step counts drifted from physical game steps')
+    raw_count = int(raw._record_count.cpu())
+    policy_count = int(light._record_count.cpu())
+    if raw_count != sum(counts):
+        raise AssertionError(['raw record count', raw_count, sum(counts)])
+    raw_map, policy_map = {}, {}
+    for tape, count, mapping in ((raw, raw_count, raw_map), (light, policy_count, policy_map)):
+        games = tape._rec_game[:count].cpu().tolist()
+        steps = tape._rec_step[:count].cpu().tolist()
+        for index, pair in enumerate(zip(games, steps)):
+            if pair in mapping:
+                raise AssertionError(['duplicate tape record', pair])
+            mapping[pair] = index
+    if policy_count!=raw_count or set(raw_map) != set(policy_map):
+        raise AssertionError('Raw and policy tape coordinates diverged')
+    expected = list(initial)
+    last_roots=[None]*B
+    records = []
+    for step in range(max(counts) if counts else 0):
+        if time.monotonic() >= deadline:
+            raise TimeoutError('Postbatch proof budget exhausted')
+        ids = [raw_map.get((row, step), raw.max_records) for row in range(B)]
+        actions=[]
+        # Batch is already complete: bounded audit copies must not allocate
+        # a dense action/projection arena for every resident root.
+        from app.modules.card_game.rl.batched_duel.schema import GraphLayout
+        layout=cohort.rules.action_layout
+        for start in range(0,B,8):
+            stop=min(start+8,B);mask=[step < counts[row] for row in range(start,stop)]
+            graph=_empty_graph(torch,GraphLayout(stop-start,layout.max_nodes,layout.max_edges,
+                layout.max_payload_bytes),cohort.rules.device)
+            on=torch.tensor(mask,dtype=torch.bool,device=raw.device)
+            errors=raw.gather_into_device(torch.tensor(ids[start:stop],dtype=torch.int64,device=raw.device),graph,on)
+            torch.cuda.synchronize()
+            if bool((errors!=0).any().cpu()):
+                raise AssertionError(['raw gather errors',start,errors.cpu().tolist()])
+            actions.extend(unpack_graph(graph,mask))
+        for row in range(B):
+            if step >= counts[row]:
+                continue
+            rid = ids[row]
+            if (int(raw._rec_version[rid].cpu())!=expected[row]['version']
+                    or int(raw._rec_owner[rid].cpu())!=row
+                    or int(raw._rec_seed[rid].cpu())!=shared['jobs'][row]['seed']):
+                raise AssertionError(['raw owner/version/seed mismatch',row,step])
+            actor_id = int(raw._rec_actor[rid].cpu())
+            actor = 'a' if actor_id == 0 else 'b'
+            if actor != acting_side(expected[row]):
+                raise AssertionError(['raw actor mismatch', row, step, actor])
+            view = observe(expected[row], actor, include_previews=False)
+            legal = [entry['action'] for entry in view['legal_actions']
+                     if entry['action']['type'] != 'concede']
+            action = actions[row]
+            if action not in legal:
+                raise AssertionError(['raw action not legal', row, step])
+            info_hash = None
+            chosen = legal.index(action)
+            if (row, step) in policy_map:
+                pid = policy_map[(row, step)]
+                x, candidates = encode(view, legal)
+                digest = _hashlib.sha256(x.tobytes() + candidates.tobytes()).digest()
+                words = np.frombuffer(digest, dtype='>u4').astype(np.int64).tolist()
+                info_hash = light._rec_info[pid].cpu().tolist()
+                if info_hash != words:
+                    raise AssertionError(['information hash mismatch', row, step])
+                if int(light._rec_count[pid].cpu()) != len(legal):
+                    raise AssertionError(['policy legal count', row, step])
+                if int(light._rec_chosen[pid].cpu()) != chosen:
+                    raise AssertionError(['policy chosen mismatch', row, step])
+                if int(light._rec_actor[pid].cpu()) != actor_id:
+                    raise AssertionError(['policy actor mismatch', row, step])
+                requested=int(light._rec_requested[pid].cpu())
+                completed=int(light._rec_completed[pid].cpu())
+                if requested!=(1 if len(legal)==1 else 32) or completed!=requested:
+                    raise AssertionError(['incomplete physical search budget',row,step,requested,completed])
+            last_roots[row]=expected[row]
+            expected[row] = clean(apply_action(expected[row], actor, action))
+            records.append(dict(
+                game=row, seed=shared['jobs'][row]['seed'], step=step, actor=actor,
+                raw_action=action, legal_count=len(legal), chosen=chosen, info_hash=info_hash,
+                phase=view['phase'],requested=requested,completed=completed))
+    from scripts.validate_duel_v2_native_soa import compare_boundary
+    for left,right in zip(final,expected):
+        compare_boundary(left,right,'CUDA raw replay final boundary')
+    terminals = [bool(finished(state)) for state in expected]
+    if terminals != result.complete.cpu().tolist():
+        raise AssertionError(['natural terminal mismatch', terminals, result.complete.cpu().tolist()])
+    if 'output' in shared:
+        # Save device evidence before invoking the independent Python oracle so
+        # a proof/export failure can be investigated without replaying the GPU batch.
+        snapshot=dict(states=last_roots, counts=counts, policy_map=[[*key,value] for key,value in policy_map.items()],
+            diagnostics={name:value.cpu().tolist() for name,value in cohort.diagnostics.items()},
+            tape={name:getattr(light,name).cpu().tolist() for name in
+                  ('_rec_count','_rec_offset','_packed_visits','_packed_pi','_rec_chosen')},
+            raw_records=records, raw_replay_verified=True)
+        path=shared['output']/'postbatch-device-proof.json'
+        path.write_text(json.dumps(snapshot,ensure_ascii=False),encoding='utf8')
+    numerical=verify_last_searches(cohort,shared,last_roots,counts,policy_map,deadline)
+    return dict(verified=True, records=records, natural_terminals=terminals,
+                raw_records=raw_count, policy_records=policy_count,
+                numerical_root_parity=numerical,
+                information_hashes_verified=policy_count == raw_count and raw_count > 0)
+
+
+
+class PostbatchValueOracle:
+    """Recompute NN forwards after replay; never read search values or device states.
+
+    The Python rule/search oracle uses the same FP32 CUDA arithmetic, separately
+    checked against frozen NumPy WDL at the inference component's tolerance.
+    This prevents amplifying permitted forward rounding by the Q-scale factor.
+    """
+    def __init__(self, bank, policies):
+        import torch
+        self.t = torch
+        self.bank = bank
+        self.policies = policies
+        self.cache = {}
+        self.calls = 0
+        self.max_abs_error = 0.
+
+    def policy(self, key):
+        oracle = self
+        base = self.policies[key]
+        class Policy:
+            def scores(self, x, c):
+                return base.scores(x, c)
+            def wdl(self, x, is_actor):
+                return oracle.wdl(key, x, is_actor)
+            def scores_value(self, x, c):
+                p = self.wdl(x, True)
+                return self.scores(x, c), float(p[2] - p[0])
+        return Policy()
+
+    def wdl(self, key, x, is_actor):
+        import numpy as np
+        cache_key = (key, bool(is_actor), x.tobytes())
+        if cache_key not in self.cache:
+            t = self.t; bank = self.bank; n = min(2, bank.max_rows)
+            xx = t.as_tensor(np.stack([x] * n), device=bank.device)
+            candidates = t.empty((n, 0, bank.candidate_dim), device=bank.device)
+            valid = t.empty((n, 0), dtype=t.bool, device=bank.device)
+            ids = t.full((n,), bank.keys.index(key), dtype=t.int64, device=bank.device)
+            context = t.full((n, 1), float(is_actor), device=bank.device)
+            value_only = t.ones(n, dtype=t.bool, device=bank.device)
+            prediction = bank.predict_device(xx, candidates, valid, ids, context,
+                                             value_only=value_only)
+            if bool(prediction.invalid_rows.any().cpu()):
+                raise AssertionError('Invalid independent postbatch value forward')
+            actual = prediction.wdl[0].cpu().numpy()
+            expected = self.policies[key].wdl(x, is_actor)
+            np.testing.assert_allclose(actual, expected, rtol=2e-5, atol=2e-5,
+                                       err_msg='Frozen NumPy/CUDA WDL component parity')
+            self.max_abs_error = max(self.max_abs_error, float(np.abs(actual - expected).max()))
+            self.calls += 1
+            self.cache[cache_key] = actual
+        return self.cache[cache_key]
+
+
+def verify_last_searches(cohort,shared,states,counts,policy_map,deadline):
+    """Postbatch CPU oracle only; no search decision or rule result is supplied."""
+    import numpy as np
+    from app.modules.card_game.engine.duel_v2 import acting_side
+    from app.modules.card_game.rl import seven_runtime
+    from app.modules.card_game.rl.recovery_search import search
+    from app.modules.card_game.rl.batched_search.array_zhenhong_prior import ArrayZhenhongPrior
+    guide=ArrayZhenhongPrior(device='cpu',allow_cpu_reference=True)
+    diagnostics={name:value.detach().cpu().numpy() for name,value in cohort.diagnostics.items()}
+    rows=[]
+    forwards=PostbatchValueOracle(shared['inference'],shared['models'])
+    for row,state in enumerate(states):
+        if state is None or time.monotonic()>=deadline:
+            raise TimeoutError('Full numerical search proof incomplete')
+        actor=acting_side(state);step=counts[row]-1
+        seed=(1<<256)|int.from_bytes(hashlib.sha256(
+            ('recovery:%s:%s:%s'%(shared['jobs'][row]['seed'],step,actor)).encode()).digest(),'big')
+        policies={side:forwards.policy(key) for side,key in shared['jobs'][row]['keys'].items()}
+        result=search(state,actor,policies,seed=seed,runtime=seven_runtime,simulations=32,
+            gumbel_candidates=16,terminal_horizon=0,teacher_mode='network',max_depth=10,
+            noise=True,q_scale='natural_wdl',root_prior=guide,
+            world_sampling='per_decision',
+            deadline=time.time()+max(0,deadline-time.monotonic()))
+        if not result['complete']:
+            raise AssertionError('CPU numerical oracle failed to finish its declared budget')
+        pid=policy_map[(row,step)]
+        tape=cohort.light
+        count=int(tape._rec_count[pid].cpu());offset=int(tape._rec_offset[pid].cpu())
+        visits=tape._packed_visits[offset:offset+count].cpu().numpy()
+        pi=tape._packed_pi[offset:offset+count].cpu().numpy()
+        checks=dict(visits=np.array_equal(visits,result['visits']),
+            pi=np.allclose(pi,result['pi'],rtol=1e-5,atol=1e-6),
+            completed_q=np.allclose(diagnostics['q'][row,:count],result['root_diagnostics']['completed_q'],rtol=1e-5,atol=1e-6),
+            prior=np.allclose(diagnostics['prior'][row,:count],result['root_prior'],rtol=1e-5,atol=1e-6),
+            mean=np.allclose(diagnostics['mean'][row,:count],result['mean_values'],rtol=1e-5,atol=1e-6),
+            value=np.isclose(diagnostics['value'][row],result['value'],rtol=1e-5,atol=1e-6),
+            gumbel=np.allclose(diagnostics['gumbel'][row,:count],result['root_gumbel'],rtol=1e-12,atol=1e-12),
+            choice=int(tape._rec_chosen[pid].cpu())==result['search_choice'],
+            snapshot=not diagnostics['errors'][row])
+        checks={key:bool(value) for key,value in checks.items()}
+        rows.append(dict(row=row,step=step,seed=str(seed),checks=checks,visits=visits.tolist(),
+            pi=pi.tolist(),completed_q=diagnostics['q'][row,:count].tolist(),
+            reference_completed_q=np.asarray(result['root_diagnostics']['completed_q']).tolist(),
+            value_forward_checks=forwards.calls,
+            max_numpy_cuda_wdl_abs_error=forwards.max_abs_error,
+            reference_value_backend='independent_postbatch_cuda_forward_numpy_checked'))
+        if not all(checks.values()):
+            raise AssertionError(['CUDA complete32 numerical parity',rows[-1]])
+    return rows
+
+
+def run(args):
+    import torch
+    from contextlib import ExitStack
+    from app.modules.card_game.rl import seven_runtime, cross_teacher_distillation
+    from app.modules.card_game.rl.batched_duel.native_array_program import load_native_array_program
+    from app.modules.card_game.rl.batched_duel.vm_image import lower_program
+    from app.modules.card_game.rl.batched_duel.cuda_vm import VmLimits
+    from app.modules.card_game.rl.batched_duel.domain_soa_records import compile_execution_schema
+    from app.modules.card_game.rl.batched_duel.native_soa_cuda import CudaSoARules
+    from app.modules.card_game.rl.batched_search.device_value_only_inference import DeviceValueOnlyInference
+    if not torch.cuda.is_available():
+        raise RuntimeError('Actual CUDA required; no host loop fallback')
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    torch.set_num_threads(1)
+    device = torch.device(args.device)
+    capacity=capacity_config(args)
+    if device.type != 'cuda':
+        raise RuntimeError('CUDA-only acceptance; CPU fallback is forbidden')
+    if device.index is None:
+        device = torch.device('cuda', torch.cuda.current_device())
+    torch.cuda.set_device(device)
+    args.output.mkdir(parents=True, exist_ok=False)
+    started = time.monotonic()
+    report = dict(
+        mode='run',
+        scope='bounded CUDA DeviceSoARules DeviceGameLoop acceptance; not training or CPU fallback',
+        passed=False, rows=args.rows, max_decisions=args.max_decisions,
+        require_natural=bool(args.require_natural), device=str(device),
+        warmup=args.warmup, repeats=args.repeats, seed=args.seed, presets=list(KEYS),
+        search=dict(SEARCH,fused_rule_steps=args.fused_rule_steps,
+                    defer_physical_presentation=args.defer_physical_presentation), learning_updates=0, gpu_qualified=False,frozen_training_chain_passed=False,
+        one_step_cannot_qualify_natural=True, skip_mulligan=True, mixed_first_sides=True)
+    report.update(capacity=capacity.plan(),state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
+                  rule_executor=rule_executor_options(args),
+                  cohort_only=args.cohort_only,capture_training=args.capture_training,
+                  state_page_budget_mib=args.state_page_budget_mib,
+                  candidate_index_bits=32 if args.candidate_int32 else 64,stable_throughput_qualified=False)
+    report['static'] = dict(
+        search=dict(SEARCH,fused_rule_steps=args.fused_rule_steps,
+                    defer_physical_presentation=args.defer_physical_presentation), rows=args.rows, max_decisions=args.max_decisions,
+        max_actions=args.max_actions, inner_max_ticks=args.inner_max_ticks,
+        rule_steps=args.rule_steps, seed=args.seed, warmup=args.warmup, repeats=args.repeats,
+        rule_executor=rule_executor_options(args),
+        require_natural=bool(args.require_natural), skip_mulligan=True, mixed_first_sides=True,
+        presets=list(KEYS), cpu_fallback=False, training=False)
+
+    def checkpoint(phase):
+        save_report(args.output, report, phase, started)
+
+    checkpoint('start')
+    try:
+        jobs = parameters_for(args.rows, args.seed)
+        cross_teacher_distillation.REPO_TEACHERS = args.teachers
+        models = {key: seven_runtime.SevenModel(args.models, key) for key in KEYS}
+        report['weight_sha256'] = {
+            key: hashlib.sha256((args.models / (key + '.npz')).read_bytes()).hexdigest()
+            for key in models}
+        report['model_versions'] = {key: models[key].version for key in models}
+        program = load_native_array_program(args.program, repo_root=ROOT)
+        image = lower_program(program)
+        schema = compile_execution_schema()
+        from app.modules.card_game.rl.batched_search.soa_capacity import (
+            rule_workspace_minimum_bytes,check_workspace_budget)
+        from app.modules.card_game.rl.batched_duel.vm_soa_views import value_cache_extent
+        free,total=torch.cuda.mem_get_info()
+        lanes=capacity.lanes if args.rule_dispatch=='tiled' else args.rows
+        minimum=rule_workspace_minimum_bytes(lanes,schema_lengths=schema.lengths,
+            total_objects=schema.total_objects,value_cache_entries=value_cache_extent(schema),
+            constant_nodes=len(image.nodes),max_strings=schema.max_strings)
+        report['workspace_preflight']=check_workspace_budget(capacity,minimum,resident_bytes=int(total-free))
+        report.update(program_identity=program.identity, image_identity=image.identity,
+                      schema_identity=schema.identity, gpu_name=torch.cuda.get_device_name(device),
+                      torch=torch.__version__)
+        checkpoint('program')
+        executor = create_rule_executor(CudaSoARules,image,schema,args,device=device,
+                                        limits=VmLimits(steps=args.rule_steps))
+        # Report the actual constructor state, including refusal of diagnostic
+        # execute-only modules. Device stack size is in compilation_profile.
+        options=rule_executor_options(args)
+        for name,value in options.items():
+            if name!='stack_bytes' and getattr(executor,name)!=value:
+                raise RuntimeError('Rule executor option mismatch: '+name)
+        report.update(native_source_sha256=executor.source_sha256,
+                      cuda_compilation_profile=executor.module.compilation_profile,
+                      cuda_compile_options=list(executor.module.compile_options),
+                      rule_threads_per_block=executor.threads)
+        inference = DeviceValueOnlyInference(
+            models, device=str(device), max_rows=capacity.inference_tile,
+            max_candidate_elements=capacity.inference_tile * args.max_actions * 1576)
+        report['inference_weight_sha256']=inference_weight_digest(inference)
+        engine_parameters, parameters = [], []
+        for job in jobs:
+            decks = {'a': models[job['keys']['a']].serving_deck,
+                     'b': models[job['keys']['b']].serving_deck}
+            row = dict(seed=job['seed'], decks=decks, first_side=job['first_side'],
+                       skip_mulligan=True, escalation=True)
+            engine_parameters.append(row)
+            parameters.append(row)
+        shared = dict(
+            rows=args.rows, device=str(device), schema=schema, executor=executor,
+            rule_executor=rule_executor_options(args),
+            rule_workspace_minimum_bytes=minimum,
+            output=args.output, progress=checkpoint,
+            capacity=capacity,state_storage=args.state_storage,rule_dispatch=args.rule_dispatch,
+            capture_training=args.capture_training,
+            candidate_int32=args.candidate_int32,
+            fused_rule_steps=args.fused_rule_steps,
+            defer_physical_presentation=args.defer_physical_presentation,
+            state_page_budget_mib=args.state_page_budget_mib,
+            inference=inference, seed=args.seed, max_actions=args.max_actions,models=models,
+            proof_seconds=args.proof_seconds,
+            inner_max_ticks=args.inner_max_ticks, jobs=jobs, parameters=parameters,
+            engine_parameters=engine_parameters)
+        report['setup_seconds'] = time.monotonic() - started
+        if report['setup_seconds'] > args.setup_seconds:
+            raise TimeoutError('Setup hard deadline exceeded before capture')
+        checkpoint('setup')
+        timings = []
+        with ExitStack() as cleanup:
+            cleanup.callback(inference.close)
+            cleanup.callback(executor.close)
+            for trial in range(0 if args.cohort_only else args.warmup + args.repeats):
+                exec_deadline=time.monotonic()+args.execution_seconds
+                with ExitStack() as trial_cleanup:
+                    cohort = IsolatedCohort(shared, max_decisions=1, seconds=args.execution_seconds)
+                    trial_cleanup.callback(cohort.close)
+                    payload, initial, final, result, searched = run_cohort(
+                        cohort, shared, deadline=exec_deadline, verify=True)
+                    if payload['per_root_requested']!=[32]*args.rows or payload['per_root_completed']!=[32]*args.rows:
+                        raise AssertionError('One-step timing requires every independent root to finish exactly32')
+                    if payload['per_root_world_samples'] != [1]*args.rows:
+                        raise AssertionError('Each physical decision must sample exactly one hidden world')
+                    timings.append(dict(
+                        trial=trial, warmup=trial < args.warmup, max_decisions=1,
+                        capture_seconds=payload['capture_seconds'],
+                        replay_wall_seconds=payload['replay_wall_seconds'],
+                        replay_gpu_seconds=payload['replay_gpu_seconds'],
+                        complete_root_decisions=payload['complete_root_decisions'],
+                        per_root_requested=payload['per_root_requested'],per_root_completed=payload['per_root_completed'],
+                        per_root_world_samples=payload['per_root_world_samples'],
+                        graph_executed=payload['graph_executed'],
+                        root_prior_separated=payload['root_prior_separated'],
+                        stage_timings=payload['stage_timings'], memory=payload['memory']))
+                    report['one_step_timings'] = timings
+                    checkpoint('one_step_timing')
+                # A callback bound to a cohort retains its large state/work buffers.
+                # Drop that callback and all device receipts before allocating the next trial.
+                del cohort, result, searched
+                gc.collect()
+                torch.cuda.empty_cache()
+            measured = [row for row in timings if not row['warmup']]
+            if not args.cohort_only and len(measured) != args.repeats:
+                raise AssertionError('One-step repeats incomplete')
+            report['one_step_repeat_seconds'] = [row['replay_gpu_seconds'] for row in measured]
+            report['one_step_capture_seconds'] = [row['capture_seconds'] for row in measured]
+            if args.max_decisions != 1:
+                exec_deadline=time.monotonic()+args.execution_seconds
+                acceptance = IsolatedCohort(
+                    shared, max_decisions=args.max_decisions, seconds=args.execution_seconds)
+                cleanup.callback(acceptance.close)
+                payload, initial, final, result, searched = run_cohort(
+                    acceptance, shared, deadline=exec_deadline)
+            report.update(payload)
+            report['per_root'] = [dict(
+                row=i, seed=jobs[i]['seed'], first=jobs[i]['first_side'], decks=jobs[i]['keys'],
+                requested=payload['per_root_requested'][i],
+                completed=payload['per_root_completed'][i],
+                search_errors=payload['per_root_search_errors'][i],
+                game_errors=payload['per_root_game_errors'][i],
+                steps=payload['per_root_steps'][i], complete=payload['per_root_complete'][i],
+                truncated=payload['per_root_truncated'][i], natural=payload['per_root_complete'][i])
+                for i in range(args.rows)]
+            (args.output / 'raw-replay.json').write_text(
+                json.dumps(dict(initial=initial, final=final, records=payload['postbatch']['records']),
+                           ensure_ascii=False), encoding='utf8')
+            if args.require_natural and payload['natural_games'] != args.rows:
+                raise AssertionError('require-natural rejected truncated or incomplete games')
+            report['natural_claim_from_step1'] = False
+            after_weights={key:hashlib.sha256((args.models/(key+'.npz')).read_bytes()).hexdigest() for key in models}
+            if after_weights!=report['weight_sha256'] or inference_weight_digest(inference)!=report['inference_weight_sha256']:
+                raise AssertionError('Frozen source or resident inference weights changed')
+            report['weights_unchanged']=True
+            report['frozen_collection_complete']=bool(payload.get('frozen_collection',{}).get('complete'))
+            report['passed'] = (
+                payload['graph_executed'] and payload['game_error_rows'] == 0
+                and payload['search_error_rows'] == 0 and payload['postbatch']['verified']
+                and (payload['natural_games'] == args.rows if args.require_natural else True))
+            checkpoint('complete')
+        report['torch_peak_allocated_bytes'] = int(torch.cuda.max_memory_allocated())
+        report['torch_peak_reserved_bytes'] = int(torch.cuda.max_memory_reserved())
+        checkpoint(report.get('phase', 'complete'))
+        if not report['passed']:
+            raise SystemExit(1)
+    except BaseException:
+        report['passed'] = False
+        report['error'] = traceback.format_exc()
+        if torch.cuda.is_available():
+            report['torch_peak_allocated_bytes'] = int(torch.cuda.max_memory_allocated())
+            report['torch_peak_reserved_bytes'] = int(torch.cuda.max_memory_reserved())
+        checkpoint('failed')
+        raise
+    finally:
+        save_report(args.output, report, report.get('phase', 'failed'), started)
+        print(json.dumps(compact_summary(report), ensure_ascii=False, indent=2))
+
+
+def main(argv=None):
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    validate_bounds(parser, args)
+    if not args.run:
+        print(json.dumps(plan(args), ensure_ascii=False, indent=2))
+        return 0
+    validate_run(parser, args)
+    run(args)
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -60,13 +60,14 @@ class OpponentSelectionTest(RoomFlowTestCase):
         deck['character_ids'] = ['xun' if cid == 'nanali' else cid for cid in deck['character_ids']]
         deck['card_ids'] = [cid for cid in deck['card_ids'] if not cid.startswith('N')]
         deck['card_ids'] += ['X01', 'X02', 'X03', 'X04'] * 2
-        self._post('/api/duel-v2/build', deck, token=self.token)
+        saved = self._post('/api/duel-v2/build', deck, token=self.token)['saved_build']
         response = self.client.post('/api/duel-v2/start', json={'mode': 'solo', 'ai_deck': 'mirror'},
                                     headers={'Authorization': 'Bearer ' + self.token})
         self.assertEqual(response.status_code, 400)
         self.assertIn('欣欣渐行', response.get_json()['error'])
         self.assertIsNone(self.repository.current_room(self.player))
         deck['card_ids'] = ['X05' if cid == 'X01' else cid for cid in deck['card_ids']]
+        deck['id'] = saved['id']
         self._post('/api/duel-v2/build', deck, token=self.token)
         result = self.start(mode='solo', ai_deck='mirror')
         self.assertIn('xun', self.raw(result)['sides']['b']['characters'])
@@ -75,7 +76,8 @@ class OpponentSelectionTest(RoomFlowTestCase):
         with patch('secrets.choice', side_effect=lambda choices: choices[-1]) as choose:
             first = self.start(mode='solo')
             selected = choose.call_args.args[0]
-            self.assertEqual({d['id'] for d in selected}, {'starter', 'weave-rush', 'quick-rush', 'zhenhong'})
+            self.assertEqual({d['id'] for d in selected},
+                             {'starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke'})
             calls = choose.call_count
             again = self.start(mode='solo', ai_deck='random')
             self.assertEqual(choose.call_count, calls)
@@ -112,7 +114,7 @@ class OpponentSelectionTest(RoomFlowTestCase):
         from app.modules.card_game.engine.duel_v2 import choose_action
         path = 'app.modules.card_game.engine.ai.advanced_model.'
         def load(key):
-            if key == 'weave-rush':
+            if key not in ('starter', 'quick-rush'):
                 raise RuleValidationError('unavailable fixture')
             return self.fake_model(key)
         for options in ({}, {'ai_deck': 'random'}):
@@ -146,8 +148,8 @@ class OpponentSelectionTest(RoomFlowTestCase):
         self.player.save()
         catalog = self._get('/api/duel-v2/catalog', token=self.token)
         self.assertEqual({d['id'] for d in catalog['starter_decks']},
-                         {'starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk'})
-        self.assertEqual(len(catalog['saved_builds']), 5)
+                         {'starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk', 'collapse', 'lingke'})
+        self.assertEqual(len(catalog['saved_builds']), 7)
         for retired in ('requiem', 'sync-curse'):
             response = self.client.post('/api/duel-v2/start', json={'mode': 'solo', 'ai_deck': retired},
                                         headers={'Authorization': 'Bearer ' + self.token})

@@ -5,6 +5,14 @@ if (V2.ensureLogin()) {
 }
 
 async function bootstrapHome() {
+  const playPanel = document.getElementById('v2-home-play');
+  const detailTitle = document.getElementById('v2-home-detail-title');
+  const backBtn = document.getElementById('v2-home-back');
+  const joinRow = document.getElementById('v2-join-row');
+  const backdrop = document.getElementById('v2-home-backdrop');
+  const tutorialPanel = document.getElementById('v2-home-tutorial');
+  const modes = ['solo', 'advanced', 'pvp', 'tutorial'];
+  const modeNames = {solo: '普通人机', advanced: '高级人机', pvp: '好友对战', tutorial: '新手教学'};
   const banner = document.getElementById('v2-home-banner');
   const resumeCard = document.getElementById('v2-resume-card');
   const resumeTitle = document.getElementById('v2-resume-title');
@@ -43,9 +51,10 @@ async function bootstrapHome() {
     busy = Boolean(next);
     startBtn.disabled = busy;
     joinBtn.disabled = busy;
-    ['solo', 'advanced', 'pvp'].forEach(function (mode) {
+    modes.forEach(function (mode) {
       document.getElementById('v2-mode-' + mode).disabled = busy;
     });
+    backBtn.disabled = busy;
     aiDeck.disabled = busy;
     soloDeck.disabled = busy;
     if (tutorialStart) tutorialStart.disabled = busy;
@@ -66,8 +75,14 @@ async function bootstrapHome() {
     const ids = Array.isArray(deck.character_ids) && deck.character_ids.length
       ? deck.character_ids.slice(0, 4)
       : ['nanali', 'zero', 'jiuyuan', 'iloy'];
-    starterGrid.innerHTML = ids.map(function (id) {
-      const character = Object.assign({}, V2.characterFallback(id) || { id: id }, byId[id] || {});
+    const characters = ids.map(function (id) {
+      return Object.assign({}, V2.characterFallback(id) || {id: id}, byId[id] || {});
+    });
+    backdrop.innerHTML = characters.map(function (character) {
+      const portrait = V2.characterAsset(character, 'portrait') || V2.characterAsset(character, 'avatar');
+      return '<div class="v2-backdrop-esper">' + V2.imageMarkup(portrait, '', 'v2-portrait') + '</div>';
+    }).join('');
+    starterGrid.innerHTML = characters.map(function (character) {
       const portrait = V2.characterAsset(character, 'portrait') || V2.characterAsset(character, 'avatar');
       return (
         '<article class="v2-home-esper">' +
@@ -82,6 +97,16 @@ async function bootstrapHome() {
   function renderBuildSummary() {
     const saved = catalog && catalog.saved_build;
     const starter = catalog && catalog.starter_deck;
+    ((catalog && catalog.advanced_pending_presets) || []).forEach(function (item) {
+      const option = Array.from(aiDeck.options).find(function (node) { return node.value === item.id; });
+      if (option) {
+        option.disabled = Boolean(item.pending);
+        option.textContent = item.unavailable_reason ? item.name + '（暂不开放）' :
+          (item.pending ? item.name + '（待训练）' : item.name);
+        option.title = item.unavailable_reason || '';
+      }
+    });
+    if (aiDeck.options[aiDeck.selectedIndex] && aiDeck.options[aiDeck.selectedIndex].disabled) aiDeck.value = 'random';
     const previousSolo = soloDeck.value;
     soloDeck.innerHTML = '<option value="random">随机</option><option value="mirror">镜像对局</option>' + ((catalog && catalog.starter_decks) || []).map(function (deck) {
       return '<option value="' + V2.escapeAttr(deck.id) + '">' + V2.escapeHtml(deck.name) + '</option>';
@@ -91,7 +116,7 @@ async function bootstrapHome() {
       const opponentName = aiDeck.options[aiDeck.selectedIndex].text;
       const playerDeck = saved || starter;
       buildSummary.textContent = '我方「' + ((playerDeck && playerDeck.name) || '当前构筑') + '」· 对手「' + opponentName + '」';
-      aiDeckHint.textContent = '使用当前保存的构筑对战，仅支持公开角色。五套高级人机均已启用新模型与搜索，属于尚未通过新规则完整强度验收的实验性策略。';
+      aiDeckHint.textContent = '使用当前保存的构筑对战，支持除哈尼娅外的公开角色。当前开放创生、浊燃和真红。';
       return;
     }
     if (selectedMode === 'solo') {
@@ -213,18 +238,29 @@ async function bootstrapHome() {
   function selectMode(mode) {
     if (busy) return;
     selectedMode = mode;
-    ['solo', 'advanced', 'pvp'].forEach(function (value) {
+    playPanel.dataset.view = 'detail';
+    detailTitle.textContent = modeNames[mode];
+    modes.forEach(function (value) {
       const button = document.getElementById('v2-mode-' + value);
       button.classList.toggle('selected', value === mode);
       button.setAttribute('aria-pressed', String(value === mode));
     });
+    V2.setHidden(joinRow, mode !== 'pvp');
+    V2.setHidden(tutorialPanel, mode !== 'tutorial');
+    V2.setHidden(startBtn, mode === 'tutorial');
     V2.setHidden(aiPicker, mode !== 'advanced');
     V2.setHidden(soloPicker, mode !== 'solo');
     startBtn.textContent = mode === 'advanced' ? '挑战高级人机' : (mode === 'pvp' ? '创建 1v1 房间' : '开始人机对局');
     renderStarter();
     renderBuildSummary();
+    detailTitle.focus({preventScroll: true});
   }
-  ['solo', 'advanced', 'pvp'].forEach(function (mode) {
+  backBtn.addEventListener('click', function () {
+    if (busy) return;
+    playPanel.dataset.view = 'menu';
+    document.getElementById('v2-mode-' + selectedMode).focus({preventScroll: true});
+  });
+  modes.forEach(function (mode) {
     document.getElementById('v2-mode-' + mode).addEventListener('click', function () { selectMode(mode); });
   });
   soloDeck.addEventListener('change', renderBuildSummary);
@@ -266,6 +302,7 @@ async function bootstrapHome() {
   }
 
   function flipTutorial(delta) {
+    if (busy) return;
     const available = selectableTutorialLevels();
     const index = available.findIndex(function (item) { return item.id === selectedTutorialId; });
     const next = available[index + delta];

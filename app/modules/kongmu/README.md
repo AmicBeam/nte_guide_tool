@@ -7,11 +7,14 @@
 - 页面展示角色、卡带和计算结果。
 - 浏览器只提交选择并渲染结果，方案计算由后端应用服务完成。
 - 该模块不依赖异象对决的房间、对局快照或规则结算。
-- 空幕规划器的全部角色对匿名、普通、受邀和测试账号统一开放，角色目录与方案计算不读取排轴角色权限。
+- 空幕规划器的公开角色（含曳尔沐）对所有用户开放，匿名、正式、受邀和测试用户均可查看和计算。权限由空幕内容的`access_level`独立配置，不依赖排轴领域服务。目录缓存按权限等级隔离。
 - 主角目录头像使用共享本地角色资源，通过长效 immutable 静态缓存加载，不依赖 Nanoka 远程回退。
+- 属性图标统一使用共享资源 `app/static/images/elements/`，不依赖其他业务模块的静态资源。
 - 残虹头像使用共享资源 `app/static/images/characters/avatar/残虹.png`，空幕与排轴统一引用该文件。
-- 残虹的Ⅲ型特化、“每个Ⅲ型驱动增加16%暴击伤害”和20格空幕拓扑已按 Nanoka NTE 1.3.4 正式角色 ID `1036` 的角色详情接入；规划器保留排轴稳定角色 ID，但角色已公开。
+- 残虹的Ⅲ型特化、“每个Ⅲ型驱动增加16%暴击伤害”和20格空幕拓扑已按 Nanoka NTE 1.3.4 正式角色 ID `1036` 的角色详情接入；规划器使用正式角色 ID `1036`，角色已公开。
 - 灵可使用 Nanoka 角色 ID `1072`，为灵属性5星角色；空幕为Ⅲ型特化，每个Ⅲ型驱动增加8%暴击率。头像使用共享资源 `app/static/images/characters/avatar/灵可.png`。
+
+Exe使用1074（兼容`char_exe`），暗属性S级，实际7×7空幕含20个可用格，Ⅲ型驱动每个增加8%暴击率。该角色为测试权限；公开角色的匿名使用不受影响。Wiki工具链接按真实角色预选，不回退其他角色。
 
 ## 代码边界
 
@@ -33,7 +36,7 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 
 ## 黑羽（2026-09-16 接入）
 
-黑羽使用稳定ID `char_heiyu`，魂属性；在空幕中对所有用户开放，排轴权限独立。现有数值来源为用户提供的[腾讯文档《黑羽资料汇总》](https://docs.qq.com/aio/DVVRZempSSmZ4THVj?p=MluEyftYtfADwlqnzgRzww)；Nanoka NTE `1.4.6` 已有角色 `1042` 的资源记录，本次只用来核对图片，不改写数值来源。Ⅲ型特化，每个Ⅲ型驱动提供8%暴击率。5×5拓扑按文档原始方向录入：
+黑羽使用正式ID `1042`，魂属性；在空幕中对所有用户开放，排轴权限独立。现有数值来源为用户提供的[腾讯文档《黑羽资料汇总》](https://docs.qq.com/aio/DVVRZempSSmZ4THVj?p=MluEyftYtfADwlqnzgRzww)；Nanoka NTE `1.4.6` 已有角色 `1042` 的资源记录，本次只用来核对图片，不改写数值来源。Ⅲ型特化，每个Ⅲ型驱动提供8%暴击率。5×5拓扑按文档原始方向录入：
 
 ```text
 11110
@@ -47,4 +50,24 @@ python3 -m unittest tests.test_lingke_modules.LingkeModulesTest
 
 ## 明音凛（2026-09-24 接入）
 
-明音凛沿用排轴稳定 ID `char_akane`，在空幕中对所有用户开放。空幕拓扑与被动来自 Nanoka NTE `1.4.6` 角色 `1057`：7×7 画布中间四行各五格，共20格；Ⅲ型特化，每个Ⅲ型驱动使攻击力增加10%。本次只为独立空幕规划器接入该配置，不改排轴既有的用户估算面板和机制。头像使用最新 NTEData 默认立绘裁成的共享方形图，来源和裁切参数见[角色图片资源说明](../../../docs/character-image-assets.md#明音凛默认造型补图2026-09-24)。验证：`tests.test_shaft_publication.ShaftPublicationTest.test_akane_kongmu_is_public_with_source_backed_grid`。
+明音凛使用正式角色 ID `1057`，在空幕中对所有用户开放。空幕拓扑与被动来自 Nanoka NTE `1.4.6` 角色 `1057`：7×7 画布中间四行各五格，共20格；Ⅲ型特化，每个Ⅲ型驱动使攻击力增加10%。本次只为独立空幕规划器接入该配置，不改排轴既有的用户估算面板和机制。头像使用最新 NTEData 默认立绘裁成的共享方形图，来源和裁切参数见[角色图片资源说明](../../../docs/character-image-assets.md#明音凛默认造型补图2026-09-24)。验证：`tests.test_shaft_publication.ShaftPublicationTest.test_akane_kongmu_is_public_with_source_backed_grid`。
+
+## 角色ID与跳转预选
+
+空幕目录、接口结果及本地角色文件使用正式数字ID，与攻略数据库统一。残虹为1036、黑羽为1042、明音凛为1057；旧 `char_076a1f4e53`、`char_heiyu`、`char_akane` 仍作为链接及计算请求别名接受，返回正式ID。男女主保留1046／1051，目录合并时通过 `merged_ids` 接受两者。`/kongmu?character=1042&cartridge=psyche` 可预选角色与卡带，目录加载完成后自动计算一次。只传入一个有效预选参数时，另一项使用默认选择；无参数、参数为空或全部无效时保持手动计算。
+
+验证：`.venv/bin/python -m unittest tests.test_guide_kongmu_links tests.test_module_routes tests.test_lingke_modules tests.test_shaft_heiyu tests.test_shaft_publication -q`；浏览器核对角色页入口、正式ID与旧链接预选和推荐卡带。
+
+## 曳尔沐
+
+曳尔沐为光属性5星角色，空幕规划对所有用户开放，无需登录；仅调整本模块角色开放状态，排轴权限保持独立。正式角色编号为1090，旧`char_elyms`作为兼容别名；头像使用从共享默认立绘主动裁剪的方形头像。Ⅲ型特化，每装配一个Ⅲ型驱动使暴击率增加8%。5×5画布、20个可用格，布局保持如下方向（1为可用格）：
+
+```text
+11110
+11110
+11011
+01111
+01111
+```
+
+支持`/kongmu?character=1090&cartridge=cosmos`预选并生成方案，旧ID与名称同样可解析。角色对当前账号不可用时，不自动换成其他角色计算，而是提示登录有权限的账号或手动选择可用角色。验证：`python3 -m unittest tests.test_kongmu_elyms tests.test_module_routes tests.test_lingke_modules tests.test_guide_kongmu_links`，并检查页面角色选择、布局和方案生成。

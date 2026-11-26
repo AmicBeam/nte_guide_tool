@@ -10,6 +10,10 @@ SEARCH_SIMULATIONS = 32
 def _runtime(model):
     from .recovery_model import SCHEMAS
     schema = getattr(model, 'schema', None)
+    from .seven_model import SCHEMAS as SEVEN_SCHEMAS
+    if schema in SEVEN_SCHEMAS:
+        from app.modules.card_game.rl import seven_runtime
+        return seven_runtime
     if schema in SCHEMAS:
         from app.modules.card_game.rl import recovery_runtime
         return recovery_runtime
@@ -86,7 +90,8 @@ def choose(state, side, model, fallback):
             return fallback
         from .recovery_model import SCHEMAS
         options = dict(algorithm='gumbel')
-        if getattr(model, 'schema', None) in SCHEMAS:
+        from .seven_model import SCHEMAS as SEVEN_SCHEMAS
+        if getattr(model, 'schema', None) in (*SCHEMAS, *SEVEN_SCHEMAS):
             from app.modules.card_game.rl.recovery_search import search
             options = dict(q_scale='natural_wdl', teacher_mode='network')
         result = search(state, side, {side: model, 'a' if side == 'b' else 'b': model},

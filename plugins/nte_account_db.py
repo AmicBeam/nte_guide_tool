@@ -25,6 +25,8 @@ class NTEPlayer(NTEBaseModel):
     id = AutoField()
     player_uid = CharField(unique=True, max_length=64)
     nickname = CharField(default='')
+    shaft_invited = BooleanField(default=False)
+    shaft_test_whitelisted = BooleanField(default=False)
     created_at = DateTimeField(default=datetime.utcnow)
     updated_at = DateTimeField(default=datetime.utcnow)
 
@@ -57,12 +59,13 @@ class NTEShaftCharacterPublication(NTEBaseModel):
         table_name = 'shaftcharacterpublication'
 
 
-DEFAULT_UNPUBLISHED_CHARACTERS = {}
+DEFAULT_UNPUBLISHED_CHARACTERS = {'曳尔沐': 'char_elyms'}
 RELEASED_CHARACTERS = {
     '灵可': 'char_0846d632e0',
     '伊洛伊': 'char_a01c39f576',
     '残虹': 'char_076a1f4e53',
     '黑羽': 'char_heiyu',
+    '明音凛': 'char_akane',
 }
 
 
@@ -83,6 +86,13 @@ def ensure_nte_tables():
                 'WHERE "is_published" = 1'
             )
     nte_account_db.create_tables([NTEPlayer, NTELoginCode, NTEShaftCharacterPublication])
+    with nte_account_db.atomic('IMMEDIATE'):
+        player_columns = {column.name for column in nte_account_db.get_columns('player')}
+        for column in ('shaft_invited', 'shaft_test_whitelisted'):
+            if column not in player_columns:
+                nte_account_db.execute_sql(
+                    f'ALTER TABLE "player" ADD COLUMN "{column}" INTEGER NOT NULL DEFAULT 0'
+                )
     for character_name, character_id in DEFAULT_UNPUBLISHED_CHARACTERS.items():
         publication, _ = NTEShaftCharacterPublication.get_or_create(
             character_id=character_id,

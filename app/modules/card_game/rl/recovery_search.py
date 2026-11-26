@@ -1,11 +1,15 @@
 """Isolated Gumbel Q-scale experiment sharing official information-search helpers.
 
 The legacy branch must match information_search.search numerically. Natural
-WDL scale corresponds to Mctx rescale_values=False. Existing service and
-training source hashes are untouched. No rewards, rule shortcuts or hand
-visibility changes. Full-game/strength acceptance is still required.
+WDL scale corresponds to Mctx rescale_values=False. Historical default behavior
+is retained; new source configurations require fresh qualification. No rewards,
+rule shortcuts or hand visibility changes. Full-game/strength acceptance is required.
+
+Explicit mctx_default uses the official rescaled mixed-Q profile on the full
+legal axis; historical defaults remain natural_wdl.
 """
 import time
+from copy import deepcopy
 import numpy as np
 from . import information_search as core
 from . import search_policy as legacy
@@ -13,6 +17,10 @@ from .search_stability import raw_completed_q
 
 
 def completed_q(node, mode):
+    if mode == 'mctx_default':
+        from .mctx_q import completed_q as mctx_completed_q
+        return mctx_completed_q(node.prior, node.visits, node.total, node.raw_value,
+                                np.ones(len(node.prior), dtype=bool))
     if mode == 'legacy':
         return legacy.completed_q(node.prior, node.visits, node.total, node.raw_value)
     if mode != 'natural_wdl':
@@ -37,15 +45,18 @@ def choose_root(node, noise, visit, mode):
 
 def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_candidates=16,
            terminal_horizon=3, max_depth=10, deadline=None, noise=False, q_scale='natural_wdl',
-           fast_simulation=True,teacher_mode='network',value_policies=None,root_trace=False):
+           fast_simulation=True,teacher_mode='network',value_policies=None,root_trace=False,
+           root_prior=None, world_sampling='per_simulation'):
     """Bounded version of the existing Gumbel traversal with an explicit planner.
 
     Keep root worlds, opponent private observations, fixed observer values,
     short terminal proofs and the sequential-halving budget identical to the
     shared implementation. This branch has no optional shaped reward path.
     """
-    if q_scale not in ('legacy', 'natural_wdl'):
+    if q_scale not in ('legacy', 'natural_wdl', 'mctx_default'):
         raise ValueError('Unknown recovery Q scale')
+    if world_sampling not in ('per_simulation', 'per_decision'):
+        raise ValueError('Unknown hidden-world sampling mode')
     if teacher_mode not in ('network','covered_terminal','covered_expert','covered_value') or (teacher_mode!='network' and q_scale=='legacy'):
         raise ValueError('Unknown or incompatible recovery teacher mode')
     if teacher_mode!='network':
@@ -61,6 +72,17 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
         raise ValueError('Search must use decision owner')
     actions, (x, c) = runtime.decision(state, viewer)
     logits, root_value = runtime.predict_encoded(policies[viewer], x, c)
+    raw_choice = int(np.argmax(logits))
+    prior_shifts = None
+    if root_prior is not None:
+        if teacher_mode != 'network' or terminal_horizon != 0:
+            raise ValueError('Array-prior reference requires network value and zero teacher horizon')
+        if not callable(getattr(root_prior, 'score_numpy', None)):
+            raise TypeError('Explicit CPU array-prior reference required')
+        prior_shifts = np.asarray(root_prior.score_numpy(x, c), dtype=np.float32)
+        if prior_shifts.shape != (len(actions),) or not np.isfinite(prior_shifts).all():
+            raise ValueError('Finite full legal root-prior shifts required')
+        logits = np.asarray(logits, dtype=np.float64) + prior_shifts
     if teacher_mode=='covered_value':root_value=runtime.value_for(state,viewer,value_policies)
     prior = core.search_prior(logits)
     rng = np.random.default_rng(seed)
@@ -71,11 +93,19 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
     depths = []; worlds = 0; trace = []
     terminal_checks = np.zeros(len(actions), dtype=np.int32)
     terminal_wins = np.zeros(len(actions), dtype=np.int32)
+    decision_world = None
     for simulation in range(requested):
         if deadline is not None and time.time() >= deadline:
             break
-        world = core.sample_world(state, viewer, seed + simulation * 104729, runtime=runtime)
-        worlds += 1; path = []; value = 0.; finished_sim = True
+        if world_sampling == 'per_decision':
+            if decision_world is None:
+                decision_world = core.sample_world(state, viewer, seed, runtime=runtime)
+                worlds += 1
+            world = deepcopy(decision_world)
+        else:
+            world = core.sample_world(state, viewer, seed + simulation * 104729, runtime=runtime)
+            worlds += 1
+        path = []; value = 0.; finished_sim = True
         root_action = None; root_terminal_win = False
         for depth in range(max_depth):
             if deadline is not None and time.time() >= deadline:
@@ -161,9 +191,11 @@ def search(state, viewer, policies, *, seed, runtime, simulations=32, gumbel_can
                 terminal_checks=terminal_checks, terminal_wins=terminal_wins,
                 complete=len(depths) == requested, simulations=len(depths), requested=requested,
                 roots_covered=int((visits > 0).sum()), search_choice=selected,
-                raw_choice=int(np.argmax(logits)), nodes=len(tree), worlds=worlds,
+                raw_choice=raw_choice, nodes=len(tree), worlds=worlds, world_sampling=world_sampling,
+                prior_shifts=prior_shifts, prior_version=getattr(root_prior, 'version', None),
                 max_depth=max(depths, default=0), policy_source='gumbel_q_' + q_scale +
-                    (':'+teacher_mode if teacher_mode!='network' else ''),
+                    (':'+teacher_mode if teacher_mode!='network' else '') +
+                    (':root_prior:'+str(getattr(root_prior, 'version', 'unknown')) if root_prior is not None else ''),
                 root_diagnostics=diagnostics, q_scale=q_scale,teacher_mode=teacher_mode,
                 **({'root_trace': trace} if root_trace else {}),
                 leaf_source='covered_expert_value_or_terminal' if teacher_mode=='covered_value' else

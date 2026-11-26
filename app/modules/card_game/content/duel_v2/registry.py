@@ -31,6 +31,18 @@ def copy_owner_id() -> str | None:
     return None
 
 
+def summon_passive(character) -> str:
+    """Public summon text belongs to content, independently of its owner's life."""
+    _ensure_kits()
+    for kit in KITS.values():
+        describe = getattr(kit, 'summon_passive', None)
+        if describe is not None:
+            text = describe(character)
+            if text is not None:
+                return text
+    return character.get('passive') or ''
+
+
 def text_name(character_id: str | None) -> str | None:
     kit = KITS.get(character_id or '')
     if kit is None:
@@ -126,7 +138,8 @@ def _kit_handlers(c, hook: str, *, actor_only: bool = False, include_down: bool 
             yield cid, dispatch
 
 
-def fire(c, hook: str, *, actor_only: bool = False, include_down: bool = False, **data) -> None:
+def fire(c, hook: str, *, actor_only: bool = False, include_down: bool = False,
+         exclude_entity_ids=(), **data) -> None:
     """Run append-only kit callbacks. Missing hooks are skipped."""
     from app.modules.card_game.engine.duel_v2.state import finished
     from app.modules.card_game.engine.duel_v2.tutorial import tutorial_flags
@@ -135,7 +148,10 @@ def fire(c, hook: str, *, actor_only: bool = False, include_down: bool = False, 
     if tutorial_flags(c.state).get('disable_passives'):
         return
     for cid, handler in _kit_handlers(c, hook, actor_only=actor_only, include_down=include_down):
-        handler(c.for_character(c.side, cid), **data)
+        context = c.for_character(c.side, cid)
+        if exclude_entity_ids and context.entity_id in exclude_entity_ids:
+            continue
+        handler(context, **data)
 
 
 def decide(c, hook: str, default, *, actor_only: bool = False, include_down: bool = False, **data):
@@ -181,3 +197,23 @@ def collect_effects() -> tuple[dict[str, Callable], dict[str, str]]:
         effects.update(getattr(kit, 'effects', {}))
         policies.update(getattr(kit, 'target_policies', {}))
     return effects, policies
+
+
+CHOICE_CONTINUATIONS = {}
+
+
+def choice_continuation(name):
+    """Register a content-owned, serializable choice continuation identity."""
+    def decorate(handler):
+        if name in CHOICE_CONTINUATIONS:
+            raise ValueError('Duplicate choice continuation: ' + name)
+        CHOICE_CONTINUATIONS[name] = handler
+        return handler
+    return decorate
+
+
+def continue_choice(c, name, **data):
+    _ensure_kits()
+    if name not in CHOICE_CONTINUATIONS:
+        raise ValueError('Unknown choice continuation: ' + name)
+    CHOICE_CONTINUATIONS[name](c, **data)

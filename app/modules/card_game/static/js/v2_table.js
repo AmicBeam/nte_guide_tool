@@ -72,7 +72,7 @@ async function bootstrapTable() {
     logList: document.getElementById('v2-log-list'),
     normalAttack: document.getElementById('v2-normal-attack'),
     ultimate: document.getElementById('v2-ultimate'),
-    mulliganToggle: document.getElementById('v2-mulligan-toggle'),
+    selectionToggle: document.getElementById('v2-selection-toggle'),
     mulliganBtn: document.getElementById('v2-mulligan-btn'),
     mulliganStage: document.getElementById('v2-mulligan-stage'),
     mulliganRail: document.getElementById('v2-mulligan-rail'),
@@ -160,6 +160,7 @@ async function bootstrapTable() {
 
   TABLE.bindSync(ctx);
   TABLE.bindInteraction(ctx);
+  TABLE.bindSelectionView(ctx);
   if (typeof TABLE.bindTutorial === 'function') {
     TABLE.bindTutorial(ctx);
   }
@@ -177,6 +178,7 @@ async function bootstrapTable() {
   const mobileLayout = window.matchMedia('(pointer: coarse) and (max-width: 1200px)');
 
   function applyPlayerOptions() {
+    page.setAttribute('data-reduced-motion', ctx.options.reducedMotion ? '1' : '0');
     const fontSize = Number.isInteger(ctx.options.fontSize) && ctx.options.fontSize >= 0 && ctx.options.fontSize <= 4 ? ctx.options.fontSize : 2;
     ctx.options.fontSize = fontSize;
     const layoutScale = [0.8, 1, 1.5, 2].includes(ctx.options.layoutScale) ? ctx.options.layoutScale : 1;

@@ -32,7 +32,7 @@ class IloyKnockdownTest(unittest.TestCase):
                         start = state['event_seq']
                         result = apply_action(state, attacker, action)
                         events = [e for e in result['events'] if e['seq'] > start]
-                        self.assertFalse(any('想做什么梦？' in e.get('text', '') for e in events))
+                        self.assertFalse(any('织梦者' in e.get('text', '') for e in events))
                         self.assertEqual(result['sides'][defender]['hp'], 30)
                         self.assertEqual(result['sides'][attacker]['hp'], 30)
                         downs = [e['target'] for e in events if e['type'] == 'down']
@@ -56,5 +56,5 @@ class IloyKnockdownTest(unittest.TestCase):
             start = state['event_seq']
             knockdowns(state)
             self.assertEqual(state['sides'][foe]['hp'], 30)
-            self.assertFalse(any('想做什么梦？' in e.get('text', '')
+            self.assertFalse(any('织梦者' in e.get('text', '')
                                  for e in state['events'] if e['seq'] > start))

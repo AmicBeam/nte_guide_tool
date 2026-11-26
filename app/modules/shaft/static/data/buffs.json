@@ -24,7 +24,7 @@
     "providers": [{"kind": "character", "id": "char_dd034941ef"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 4}]},
     "target": {"scope": "registrar", "action_types": ["Q"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.25}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.25}, "display": {"line": false}
   },
   {
     "id": "character_protagonist_a5_support_atk", "name": "鉴定师5觉·援护攻击",
@@ -92,13 +92,13 @@
     "providers": [{"kind": "character", "id": "char_4f917797cb"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 6}]},
     "target": {"scope": "registrar", "action_names": ["转圈金谷", "金谷", "双倍金谷", "暴击金谷"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.15}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.15}, "display": {"line": false}
   },
   {
     "id": "character_edgar_a4_e_damage", "name": "埃德嘉4觉·变轨强化",
     "providers": [{"kind": "character", "id": "char_31c5130304"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 4}]}, "target": {"scope": "registrar", "action_types": ["E"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.5}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.5}, "display": {"line": false}
   },
   {
     "id": "character_edgar_a5_hp", "name": "埃德嘉5觉·生命",
@@ -248,7 +248,7 @@
     "activation": {"duration_from_personal_resource": {"resource": "臆想", "per_second": 10, "min_ticks": 16}},
     "resource_effects": {
       "ignore_cost": {"臆想": {"tags": ["蓄力", "重击"]}},
-      "block_gain": {"臆想": true}
+      "block_gain": {"臆想": {"warn": false}}
     },
     "effects": {},
     "display": {"line": false}
@@ -312,7 +312,7 @@
         "action_2d0c051441", "action_634a6398e3"
       ]
     },
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 1.0}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 1.0}, "display": {"line": false}
   },
   {
     "id": "character_nanali_authority", "name": "娜娜莉·一代目的权柄",
@@ -345,7 +345,7 @@
     "id": "character_mint_a2_e_damage", "name": "薄荷2觉·变轨强化",
     "providers": [{"kind": "character", "id": "char_dda9fae1ef"}], "priority": 20,
     "trigger": {"event": "passive", "conditions": [{"type": "awakening_min", "min": 2}]}, "target": {"scope": "registrar", "action_types": ["E"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.4}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.4}, "display": {"line": false}
   },
   {
     "id": "character_mint_a4_single_enemy_crit", "name": "薄荷4觉·单目标暴击",
@@ -469,7 +469,7 @@
     "id": "character_daphne_shift_damage", "name": "达芙蒂尔·幻影移行强化",
     "providers": [{"kind": "character", "id": "char_e8ad982185"}], "priority": 20,
     "trigger": {"event": "passive"}, "target": {"scope": "registrar", "action_names": ["移行", "移行附加"]},
-    "duration": {"type": "permanent"}, "effects": {"all_dmg": 0.8}, "display": {"line": false}
+    "duration": {"type": "permanent"}, "effects": {"action_dmg": 0.8}, "display": {"line": false}
   },
   {
     "id": "character_daphne_a6_def_ignore", "name": "达芙蒂尔6觉·无视防御",
@@ -544,7 +544,7 @@
     "providers": [{"kind": "character", "id": "char_7578b18979"}], "priority": 20,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_types": ["Q"]}},
     "target": {"scope": "registrar", "tags": ["附着"]}, "duration": {"type": "time", "ticks": 150},
-    "stacking": {"mode": "refresh", "max_stacks": 1}, "effects": {"all_dmg": 0.1}
+    "stacking": {"mode": "refresh", "max_stacks": 1}, "effects": {"action_dmg": 0.1}
   },
   {
     "id": "character_yi_a1_beast_damage", "name": "翳1觉·兽牙强化",
@@ -604,7 +604,7 @@
     },
     "duration": {"type": "time", "ticks": 1, "loop_carry": false},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"all_dmg": 0.3}
+    "effects": {"action_dmg": 0.3}
   },
   {
     "id": "character_zhenhong_a5_ascendant_def",
@@ -675,7 +675,7 @@
       "source": {"scope": "registrar", "action_types": ["Q"]},
       "conditions": [{"type": "active_buff_key", "key": "arc_time_outside_maze"}]
     },
-    "target": {"scope": "registrar", "action_types": ["Q"]},
+    "target": {"scope": "registrar", "damage_types": ["Q"]},
     "duration": {"type": "time", "ticks": 700, "loop_carry": true},
     "stacking": {"mode": "refresh", "max_stacks": 1},
     "activation": {
@@ -729,7 +729,7 @@
   },
   {
     "id": "arc_fearless_q_atk",
-    "name": "无畏之棉：Q 后攻击",
+    "name": "无畏之绵：Q 后攻击",
     "providers": [{"kind": "arc", "id": "arc_1a476075cd"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}},
@@ -740,7 +740,7 @@
   },
   {
     "id": "arc_fearless_full_q_atk",
-    "name": "无畏之棉·满精：Q 后攻击",
+    "name": "无畏之绵·满精：Q 后攻击",
     "providers": [{"kind": "arc", "id": "arc_57b6c49b66"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["Q"]}},
@@ -834,7 +834,7 @@
   },
   {
     "id": "arc_speed_cotton_front_atk",
-    "name": "极速之棉：前台驻场攻击",
+    "name": "极速之绵：前台驻场攻击",
     "providers": [{"kind": "arc", "id": "arc_126824ee1b"}],
     "priority": 100,
     "trigger": {"event": "front_time"},
@@ -845,7 +845,7 @@
   },
   {
     "id": "arc_speed_cotton_full_front_atk",
-    "name": "极速之棉·满精：前台驻场攻击",
+    "name": "极速之绵·满精：前台驻场攻击",
     "providers": [{"kind": "arc", "id": "arc_b3c0b59d01"}],
     "priority": 100,
     "trigger": {"event": "front_time"},
@@ -1003,7 +1003,7 @@
     "providers": [{"kind": "arc", "id": "arc_ce53905d70"}],
     "priority": 100,
     "trigger": {"event": "action_start", "source": {"scope": "registrar", "action_types": ["E", "Q"]}},
-    "target": {"scope": "registrar", "action_types": ["普攻", "闪反"]},
+    "target": {"scope": "registrar", "damage_types": ["普攻", "闪反"]},
     "duration": {"type": "time", "ticks": 150, "loop_carry": true},
     "stacking": {"mode": "add_stack", "max_stacks": 2},
     "activation": {"full_stack_buff_id": "arc_ready_tally_boss_damage"},
@@ -1036,8 +1036,8 @@
     "name": "欧拉欧拉！：普伤叠层",
     "providers": [{"kind": "arc", "id": "arc_4d19ef5194"}],
     "priority": 100,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_types": ["普攻"]}},
-    "target": {"scope": "registrar", "action_types": ["普攻"]},
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "damage_types": ["普攻"]}},
+    "target": {"scope": "registrar", "damage_types": ["普攻"]},
     "duration": {"type": "time", "ticks": 100, "loop_carry": true},
     "stacking": {"mode": "independent", "max_stacks": 10},
     "effects": {"basic_dmg": 0.036}
@@ -1077,7 +1077,7 @@
   },
   {
     "id": "arc_fierce_cotton_crit",
-    "name": "凶猛之棉：暴击后暴伤",
+    "name": "凶猛之绵：暴击后暴伤",
     "providers": [{"kind": "arc", "id": "arc_1ddecc32f3"}],
     "priority": 100,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar"}, "conditions": [{"type": "expected_critical_hit"}]},
@@ -1088,7 +1088,7 @@
   },
   {
     "id": "arc_fierce_cotton_full_crit",
-    "name": "凶猛之棉·满精：暴击后暴伤",
+    "name": "凶猛之绵·满精：暴击后暴伤",
     "providers": [{"kind": "arc", "id": "arc_92353a7626"}],
     "priority": 100,
     "trigger": {"event": "action_hit", "source": {"scope": "registrar"}, "conditions": [{"type": "expected_critical_hit"}]},
@@ -1378,7 +1378,7 @@
     "activation": {
       "effects_from_stack": {
         "key": "character_xun_record_stack",
-        "per_stack_from_effect": {"all_dmg": {"source": "record_damage", "factor": 1}}
+        "per_stack_from_effect": {"action_dmg": {"source": "record_damage", "factor": 1}}
       }
     },
     "effects": {"record_damage": 0.12}
@@ -1397,7 +1397,7 @@
     "target": {"scope": "registrar", "action_types": ["Q"]},
     "duration": {"type": "time", "ticks": 1, "loop_carry": false},
     "stacking": {"mode": "refresh", "max_stacks": 1},
-    "effects": {"all_dmg": 0.2}
+    "effects": {"action_dmg": 0.2}
   },
   {
     "id": "character_xun_q_def_ignore",
@@ -2248,7 +2248,7 @@
     "activation": {
       "effects_from_stack": {
         "key": "character_baizang_jin_word",
-        "per_stack_from_effect": {"all_dmg": {"source": "word_damage", "factor": 1}}
+        "per_stack_from_effect": {"action_dmg": {"source": "word_damage", "factor": 1}}
       }
     },
     "consume_on_apply": true,
@@ -2298,7 +2298,7 @@
     "dynamic_effects": {
       "negative_effect_count": {
         "damage_tags": ["DOT"],
-        "effect_key": "all_dmg",
+        "effect_key": "other_dmg",
         "per_count": 0.03,
         "max_count": 4
       }
@@ -2809,7 +2809,7 @@
     "duration": {"type": "permanent"},
     "dynamic_effects": {
       "active_dot_layer_count": {
-        "effect_key": "all_dmg",
+        "effect_key": "other_dmg",
         "per_count": 0.12,
         "max_count": 20,
         "action_last_hit_ratio": true
@@ -2857,7 +2857,7 @@
     "dynamic_effects": {
       "personal_resource_value": {
         "resource": "谐频",
-        "effect_key": "all_dmg",
+        "effect_key": "other_dmg",
         "base_value": 1.5,
         "per_point": 0.004,
         "max_amount": 100,
@@ -2881,7 +2881,7 @@
         "count_def_down": true,
         "count_res_down": true,
         "damage_tags": ["DOT"],
-        "effect_key": "all_dmg",
+        "effect_key": "other_dmg",
         "per_count": 0.04,
         "max_count": 5
       }
@@ -3020,7 +3020,7 @@
     "providers": [{"kind": "arc", "id": "arc_614aec6ed1"}],
     "priority": 100,
     "trigger": {"event": "passive"},
-    "target": {"scope": "registrar", "action_types": ["援护"]},
+    "target": {"scope": "registrar", "damage_types": ["援护"]},
     "duration": {"type": "permanent"},
     "effects": {"crit_dmg": 0.66},
     "display": {"line": false}
@@ -3030,8 +3030,8 @@
     "name": "远行者之声·援护后终结暴伤",
     "providers": [{"kind": "arc", "id": "arc_614aec6ed1"}],
     "priority": 101,
-    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "action_types": ["援护"]}},
-    "target": {"scope": "registrar", "action_types": ["Q"]},
+    "trigger": {"event": "action_hit", "source": {"scope": "registrar", "damage_types": ["援护"]}},
+    "target": {"scope": "registrar", "damage_types": ["Q"]},
     "duration": {"type": "time", "ticks": 30, "loop_carry": true},
     "stacking": {"key": "arc_gold_record_q_crit_damage", "mode": "add_stack", "max_stacks": 3},
     "effects": {"crit_dmg": 0.22}
@@ -4000,7 +4000,7 @@
       "interval_ticks": 30,
       "requires_reaction_unlock": true
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 延滞周期3秒仍属X参数暂估。"
   },
   {
     "id": "character_akane_area",
@@ -4045,7 +4045,7 @@
       "interval_ticks": 30,
       "requires_reaction_unlock": true
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 延滞周期3秒仍属X参数暂估。"
   },
   {
     "id": "character_akane_mode",
@@ -4081,7 +4081,7 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "character_akane_transmit_single",
@@ -4105,7 +4105,8 @@
         "action_akane_a1",
         "action_akane_a2",
         "action_akane_a3",
-        "action_akane_a4"
+        "action_akane_a4",
+        "action_akane_counter"
       ],
       "conditions": [
         {
@@ -4118,9 +4119,9 @@
       "type": "permanent"
     },
     "effects": {
-      "base_multiplier_pct": 0.325
+      "base_multiplier_pct": 0.4
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%按用户10月9日调整公告更新。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_e_single",
@@ -4150,7 +4151,8 @@
         "action_akane_a1",
         "action_akane_a2",
         "action_akane_a3",
-        "action_akane_a4"
+        "action_akane_a4",
+        "action_akane_counter"
       ],
       "conditions": [
         {
@@ -4163,9 +4165,9 @@
       "type": "permanent"
     },
     "effects": {
-      "base_multiplier_pct": 0.175
+      "base_multiplier_pct": 0.24
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_transmit_area",
@@ -4189,7 +4191,8 @@
         "action_akane_a1",
         "action_akane_a2",
         "action_akane_a3",
-        "action_akane_a4"
+        "action_akane_a4",
+        "action_akane_counter"
       ],
       "conditions": [
         {
@@ -4202,9 +4205,9 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.36
+      "action_dmg": 0.6
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%按用户10月9日调整公告更新。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_e_area",
@@ -4234,7 +4237,8 @@
         "action_akane_a1",
         "action_akane_a2",
         "action_akane_a3",
-        "action_akane_a4"
+        "action_akane_a4",
+        "action_akane_counter"
       ],
       "conditions": [
         {
@@ -4247,49 +4251,13 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.24
+      "action_dmg": 0.3
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
-  },
-  {
-    "id": "character_akane_c",
-    "name": "明音凛C觉·泛音列倍率",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_akane"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "passive",
-      "source": {
-        "scope": "registrar"
-      },
-      "conditions": [
-        {
-          "type": "awakening_min",
-          "min": 3
-        }
-      ]
-    },
-    "target": {
-      "scope": "registrar",
-      "action_ids": [
-        "action_akane_e"
-      ]
-    },
-    "duration": {
-      "type": "permanent"
-    },
-    "effects": {
-      "base_multiplier_pct": 1.5
-    },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%按用户10月9日调整公告更新。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。"
   },
   {
     "id": "character_akane_b_single",
-    "name": "明音凛B觉·全抗降低",
+    "name": "明音凛B觉·泛音列相抗降低",
     "providers": [
       {
         "kind": "character",
@@ -4322,19 +4290,13 @@
       "type": "permanent"
     },
     "effects": {
-      "res_down_光": 0.075,
-      "res_down_灵": 0.075,
-      "res_down_咒": 0.075,
-      "res_down_暗": 0.075,
-      "res_down_魂": 0.075,
-      "res_down_相": 0.075,
-      "res_down_心灵": 0.075
+      "res_down_相": 0.12
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_b_area",
-    "name": "明音凛B觉·前台增伤",
+    "name": "明音凛B觉·音域相抗降低",
     "providers": [
       {
         "kind": "character",
@@ -4355,7 +4317,7 @@
       ]
     },
     "target": {
-      "scope": "front",
+      "scope": "team",
       "conditions": [
         {
           "type": "active_buff_key",
@@ -4367,46 +4329,13 @@
       "type": "permanent"
     },
     "effects": {
-      "all_dmg": 0.125
+      "res_down_相": 0.12
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_a",
-    "name": "明音凛A觉·暴击",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_akane"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "passive",
-      "source": {
-        "scope": "registrar"
-      },
-      "conditions": [
-        {
-          "type": "awakening_min",
-          "min": 1
-        }
-      ]
-    },
-    "target": {
-      "scope": "registrar"
-    },
-    "duration": {
-      "type": "permanent"
-    },
-    "effects": {
-      "crit_rate": 0.12
-    },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
-  },
-  {
-    "id": "character_akane_d",
-    "name": "明音凛D觉·攻击",
+    "name": "明音凛A觉·抗打断与防御",
     "providers": [
       {
         "kind": "character",
@@ -4419,7 +4348,53 @@
       "source": {
         "scope": "registrar",
         "action_ids": [
-          "action_akane_enhanced_e"
+          "action_akane_short_enhanced_e",
+          "action_akane_long_enhanced_e"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "effects": {
+      "interrupt_resistance": 0.6,
+      "def_pct": 0.5
+    },
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。",
+    "stacking": {
+      "key": "character_akane_a",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
+  },
+  {
+    "id": "character_akane_d",
+    "name": "明音凛D觉·暴伤",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_akane"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_akane_short_enhanced_e",
+          "action_akane_long_enhanced_e"
         ]
       },
       "conditions": [
@@ -4434,51 +4409,18 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 100,
+      "ticks": 150,
       "loop_carry": true
     },
     "effects": {
-      "atk_pct": 0.16
+      "crit_dmg": 0.3
     },
     "stacking": {
       "key": "character_akane_d",
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
-  },
-  {
-    "id": "character_akane_three",
-    "name": "明音凛三觉共鸣·攻击",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_akane"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "passive",
-      "source": {
-        "scope": "registrar"
-      },
-      "conditions": [
-        {
-          "type": "awakening_count_min",
-          "min": 3
-        }
-      ]
-    },
-    "target": {
-      "scope": "registrar"
-    },
-    "duration": {
-      "type": "permanent"
-    },
-    "effects": {
-      "atk_pct": 0.2
-    },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_six",
@@ -4495,7 +4437,8 @@
       "source": {
         "scope": "registrar",
         "action_ids": [
-          "action_akane_enhanced_e"
+          "action_akane_short_enhanced_e",
+          "action_akane_long_enhanced_e"
         ]
       },
       "conditions": [
@@ -4514,7 +4457,7 @@
       "loop_carry": true
     },
     "effects": {
-      "crit_dmg": 0.5
+      "crit_dmg": 0.64
     },
     "stacking": {
       "key": "character_akane_six",
@@ -4526,7 +4469,7 @@
         "弦能": 10
       }
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_talent2",
@@ -4552,22 +4495,22 @@
     },
     "duration": {
       "type": "time",
-      "ticks": 250,
+      "ticks": 200,
       "loop_carry": true
     },
     "effects": {
-      "all_dmg": 0.2
+      "atk_pct": 0.2
     },
     "stacking": {
       "key": "character_akane_talent2",
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。"
   },
   {
     "id": "character_akane_f",
-    "name": "明音凛F觉·全队增伤",
+    "name": "明音凛F觉·无视防御",
     "providers": [
       {
         "kind": "character",
@@ -4591,43 +4534,6 @@
       ]
     },
     "target": {
-      "scope": "team"
-    },
-    "duration": {
-      "type": "time",
-      "ticks": 250,
-      "loop_carry": true
-    },
-    "effects": {
-      "all_dmg": 0.1
-    },
-    "stacking": {
-      "key": "character_akane_f",
-      "mode": "refresh",
-      "max_stacks": 1
-    },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
-  },
-  {
-    "id": "character_akane_cadenza",
-    "name": "明音凛·华彩连段",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_akane"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "action_start",
-      "source": {
-        "scope": "registrar",
-        "action_ids": [
-          "action_akane_q1"
-        ]
-      }
-    },
-    "target": {
       "scope": "registrar"
     },
     "duration": {
@@ -4635,87 +4541,15 @@
       "ticks": 200,
       "loop_carry": true
     },
-    "effects": {},
-    "stacking": {
-      "key": "character_akane_cadenza",
-      "mode": "refresh",
-      "max_stacks": 1
-    },
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 华彩连段持续20秒；第二段不自动结算。"
-  },
-  {
-    "id": "character_akane_cadenza_front",
-    "name": "明音凛·华彩前半",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_akane"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "action_start",
-      "source": {
-        "scope": "registrar",
-        "action_ids": [
-          "action_akane_q1"
-        ]
-      }
-    },
-    "target": {
-      "scope": "registrar"
-    },
-    "duration": {
-      "type": "time",
-      "ticks": 100,
-      "loop_carry": true
-    },
-    "effects": {},
-    "stacking": {
-      "key": "character_akane_cadenza_front",
-      "mode": "refresh",
-      "max_stacks": 1
-    },
-    "display": {
-      "line": false
-    },
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 第二段只在华彩后半可释放；前10秒放置会提示。"
-  },
-  {
-    "id": "character_akane_enhanced_single",
-    "name": "明音凛·泛音列同调共振",
-    "providers": [
-      {
-        "kind": "character",
-        "id": "char_akane"
-      }
-    ],
-    "priority": 50,
-    "trigger": {
-      "event": "passive"
-    },
-    "target": {
-      "scope": "registrar",
-      "action_ids": [
-        "action_akane_enhanced_e"
-      ],
-      "conditions": [
-        {
-          "type": "active_buff_key",
-          "key": "character_akane_single"
-        }
-      ]
-    },
-    "duration": {
-      "type": "permanent"
-    },
     "effects": {
-      "base_multiplier_pct": 0.25
+      "def_ignore": 0.16
     },
-    "display": {
-      "line": false
+    "stacking": {
+      "key": "character_akane_f",
+      "mode": "refresh",
+      "max_stacks": 1
     },
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 同调共振基础800%；泛音列额外+200%，合计1000%。音域保持800%。"
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "character_akane_heal",
@@ -4732,7 +4566,8 @@
       "source": {
         "scope": "registrar",
         "action_ids": [
-          "action_akane_enhanced_e"
+          "action_akane_short_enhanced_e",
+          "action_akane_long_enhanced_e"
         ]
       },
       "conditions": [
@@ -4757,12 +4592,12 @@
       "max_stacks": 1
     },
     "activation": {
-      "heal_base_atk_ratio": 1
+      "heal_base_atk_ratio": 10
     },
     "display": {
       "line": false
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。 用户2026-10-10：短强E与长强E命中均触发本效果，零命中不触发。"
   },
   {
     "id": "arc_akane_skill",
@@ -4775,32 +4610,21 @@
     ],
     "priority": 50,
     "trigger": {
-      "event": "action_hit",
+      "event": "passive",
       "source": {
-        "scope": "registrar",
-        "action_types": [
-          "普攻"
-        ]
-      },
-      "cooldown_ticks": 3
+        "scope": "registrar"
+      }
     },
     "target": {
       "scope": "registrar"
     },
     "duration": {
-      "type": "time",
-      "ticks": 50,
-      "loop_carry": true
+      "type": "permanent"
     },
     "effects": {
-      "skill_dmg": 0.07
+      "skill_dmg": 0.28
     },
-    "stacking": {
-      "key": "arc_akane_skill",
-      "mode": "add_stack",
-      "max_stacks": 4
-    },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "arc_akane_basic",
@@ -4837,7 +4661,7 @@
       "mode": "refresh",
       "max_stacks": 1
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。"
   },
   {
     "id": "arc_akane_element",
@@ -4850,30 +4674,2608 @@
     ],
     "priority": 50,
     "trigger": {
-      "event": "passive",
+      "event": "action_start",
       "source": {
-        "scope": "registrar"
+        "scope": "registrar",
+        "action_types": [
+          "E"
+        ]
       }
     },
     "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "effects": {
+      "element_dmg_相": 0.2
+    },
+    "source_note": "用户2026-10-10要求实装10月9日公告的弧盘与六觉调整；暴击12%–24%、相伤20%–40%，精炼2–4按端点等差换算，六觉暴伤50%；覆盖旧NTEData同名值，不标为新解包实值。",
+    "stacking": {
+      "key": "arc_akane_element",
+      "mode": "refresh",
+      "max_stacks": 1
+    }
+  },
+  {
+    "id": "arc_paperplane_spirit_eq",
+    "name": "开始净空·纸翼战队",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_edbcee2b65"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive"
+    },
+    "target": {
       "scope": "registrar",
-      "conditions": [
-        {
-          "type": "active_buff_key",
-          "key": "arc_akane_skill"
-        },
-        {
-          "type": "active_buff_key",
-          "key": "arc_akane_basic"
-        }
+      "damage_types": [
+        "E",
+        "Q"
+      ],
+      "elements": [
+        "灵"
       ]
     },
     "duration": {
       "type": "permanent"
     },
     "effects": {
-      "element_dmg_相": 0.16
+      "action_dmg": 0.35
     },
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。"
+    "display": {
+      "line": false
+    },
+    "source_url": "https://static.nanoka.cc/nte/1.4.6/zh/weapon/fork_PaperPlane.json",
+    "note": "2026-10-13按Nanoka 1.4.6核验：只作用装备者变轨技能和极轨终结造成的灵属性伤害，精炼1–5为20/23.75/27.5/31.25/35%。"
+  },
+  {
+    "id": "character_elyms_talent2",
+    "name": "保底机制",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_talent2",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "crit_dmg": 0.1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_d",
+    "name": "302 祈愿重新定向",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 4
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_d",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "crit_dmg": 0.2
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_e",
+    "name": "304 今日一如往昔",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_skill1"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_e",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_b_q",
+    "name": "200 节点彼此相连·终结倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_ultraskilla1",
+        "action_elyms_ultraskillb1"
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_three",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0.3
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_six",
+    "name": "再会，我的新知",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_six",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "res_down": 0.12
+    },
+    "display": {
+      "line": false,
+      "effect_labels": {
+        "res_down": "全属性抗性无视"
+      }
+    }
+  },
+  {
+    "id": "character_elyms_q_atk",
+    "name": "一如昨日光景·全队攻击与追加攻击",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_q_atk",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "follow_dmg": 0.1
+    },
+    "activation": {
+      "effects_from_owner_base": {
+        "stat": "atk",
+        "effect_key": "flat_atk",
+        "factor": 0.2
+      }
+    }
+  },
+  {
+    "id": "character_elyms_illusion_normal",
+    "name": "错视幻觉",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 10,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_count_max",
+          "max": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_illusion",
+      "mode": "add_stack",
+      "max_stacks": 4
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_illusion_b",
+    "name": "错视幻觉",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 10,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_illusion",
+      "mode": "add_stack",
+      "max_stacks": 4
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_illusion_bc",
+    "name": "504 强信号错视幻觉",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 11,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        },
+        {
+          "type": "awakening_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_illusion",
+      "mode": "add_stack",
+      "max_stacks": 4,
+      "stack_gain": 3
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_signal_medium",
+    "name": "中等信号",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_count_max",
+          "max": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_medium",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_signal_b",
+    "name": "强信号",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_skill2",
+          "action_elyms_qte"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        },
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_strong",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_illusion_c",
+    "name": "504 强信号错视幻觉",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 10,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_medium"
+        },
+        {
+          "type": "awakening_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_illusion",
+      "mode": "add_stack",
+      "max_stacks": 4,
+      "stack_gain": 3
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_signal_strong",
+    "name": "强信号",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 20,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_medium"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_strong",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_medium"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_last_clear",
+    "name": "更新本次错视幻觉消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 1,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_last_clear",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_last_consumed"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_accumulate",
+    "name": "累计错视幻觉消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 2,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_consumed",
+      "mode": "add_stack",
+      "max_stacks": 2147483647
+    },
+    "effects": {},
+    "activation": {
+      "stack_gain_from_key": "character_elyms_illusion"
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_last",
+    "name": "本次错视幻觉消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 3,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_last_consumed",
+      "mode": "refresh",
+      "max_stacks": 2147483647
+    },
+    "effects": {},
+    "activation": {
+      "stack_gain_from_key": "character_elyms_illusion"
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_consume",
+    "name": "对你说再见·错视幻觉倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 4,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_goodbye"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_consume",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "per_layer": 1
+    },
+    "activation": {
+      "clear_keys": [
+        "character_elyms_illusion"
+      ],
+      "effects_from_stack": {
+        "key": "character_elyms_illusion",
+        "per_stack_from_effect": {
+          "base_multiplier_pct": {
+            "factor": 1,
+            "source": "per_layer"
+          }
+        }
+      }
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_a",
+    "name": "404 遥望一座孤岛",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 30,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_a",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "per_layer": 0.1
+    },
+    "activation": {
+      "effects_from_stack": {
+        "key": "character_elyms_consumed",
+        "per_stack_from_effect": {
+          "crit_dmg": {
+            "factor": 1,
+            "source": "per_layer"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "character_elyms_f",
+    "name": "301 您访问的地址已被永久转移",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 30,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_f",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "per_layer": 0.25
+    },
+    "activation": {
+      "effects_from_stack": {
+        "key": "character_elyms_consumed",
+        "per_stack_from_effect": {
+          "follow_dmg": {
+            "factor": 1,
+            "source": "per_layer"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "character_elyms_reset_consumed",
+    "name": "终结清空错视幻觉累计消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 90,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_reset_consumed",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_consumed"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_q_signal_weak",
+    "name": "终结·弱信号倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_ultraskilla1",
+        "action_elyms_ultraskillb1"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_q_signal_weak",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_follow_snapshot_weak",
+    "name": "追忆·信号快照",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_none",
+          "keys": [
+            "character_elyms_medium",
+            "character_elyms_strong"
+          ]
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_xietongskilla1",
+        "action_elyms_xietongskillb1"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_follow_snapshot",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0
+    }
+  },
+  {
+    "id": "character_elyms_q_signal_medium",
+    "name": "终结·中等信号倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_ultraskilla1",
+        "action_elyms_ultraskillb1"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_medium"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_q_signal_medium",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0.5
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_follow_snapshot_medium",
+    "name": "追忆·信号快照",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_medium"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_xietongskilla1",
+        "action_elyms_xietongskillb1"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_follow_snapshot",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 0.5
+    }
+  },
+  {
+    "id": "character_elyms_q_signal_strong",
+    "name": "终结·强信号倍率",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_ultraskilla1",
+        "action_elyms_ultraskillb1"
+      ],
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_strong"
+        }
+      ]
+    },
+    "duration": {
+      "type": "permanent"
+    },
+    "stacking": {
+      "key": "character_elyms_q_signal_strong",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_follow_snapshot_strong",
+    "name": "追忆·信号快照",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_strong"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_xietongskilla1",
+        "action_elyms_xietongskillb1"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_follow_snapshot",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "base_multiplier_pct": 1
+    }
+  },
+  {
+    "id": "character_elyms_backend",
+    "name": "后台连线",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 40,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_backend",
+      "mode": "refresh",
+      "max_stacks": 6,
+      "stack_gain": 6
+    },
+    "effects": {}
+  },
+  {
+    "id": "character_elyms_reset_signal",
+    "name": "终结重置信号",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 99,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_reset_signal",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_medium",
+        "character_elyms_strong"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_six_extra",
+    "name": "再会，我的新知·末段追加",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        },
+        {
+          "type": "active_buff_key",
+          "key": "character_elyms_last_consumed"
+        }
+      ],
+      "timing": "end"
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_six_extra",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "effects_from_stack": {
+        "key": "character_elyms_last_consumed"
+      }
+    },
+    "triggered_damage": {
+      "action": {
+        "id": "action_elyms_six_extra",
+        "name": "再会，我的新知·追加",
+        "action_type": "E",
+        "damage_type": "E",
+        "damage_element": "光",
+        "skill_level_category": "skill",
+        "resonance_skill_level_bonus": true,
+        "hit_count": 1,
+        "multipliers": {
+          "atk": 0
+        },
+        "multiplier_level": 1
+      },
+      "atk_per_stack": 1.68
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_energy_light",
+    "name": "中继节点·盈蓄强化",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "energy_gain",
+      "source": {
+        "scope": "team"
+      },
+      "conditions": [
+        {
+          "type": "energy_source",
+          "source": "盈蓄"
+        },
+        {
+          "type": "source_foreground_at_hit"
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_energy_light",
+      "mode": "add_stack",
+      "max_stacks": 8
+    },
+    "effects": {
+      "element_dmg_光": 0.0375
+    }
+  },
+  {
+    "id": "character_elyms_delay_echo",
+    "name": "中继节点·延滞回响",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "reaction_trigger",
+      "source": {
+        "scope": "team"
+      },
+      "conditions": [
+        {
+          "type": "reaction_type",
+          "reactions": [
+            "延滞"
+          ]
+        },
+        {
+          "type": "reaction_not_echo"
+        }
+      ],
+      "cooldown_ticks": 70,
+      "cooldown_advance_on_timeline_mask": true
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 75,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_delay_echo",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "delayed_reaction": {
+      "reaction": "延滞",
+      "delay_ticks": 75,
+      "advance_on_timeline_mask": true
+    },
+    "display": {
+      "line": true
+    }
+  },
+  {
+    "id": "arc_elyms_counter",
+    "name": "静候彩铃·追击计数",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "tags": [
+          "追击"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "active_buff_key",
+          "key": "arc_elyms_q_window"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_counter",
+      "mode": "add_stack",
+      "max_stacks": 3,
+      "stack_gain_from": "hit_count"
+    },
+    "effects": {},
+    "activation": {
+      "full_stack_threshold": 3,
+      "full_stack_buff_ids": [
+        "arc_elyms_team_def",
+        "arc_elyms_self_def"
+      ],
+      "full_stack_clear_keys": [
+        "arc_elyms_q_window",
+        "arc_elyms_counter"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "arc_elyms_q_window",
+    "name": "静候彩铃·终结后追击",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "Q"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 9990,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_q_window",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "arc_elyms_counter"
+      ]
+    }
+  },
+  {
+    "id": "arc_elyms_team_def",
+    "name": "静候彩铃·全队无视防御",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "full_stack",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [],
+      "on_battle_start": true
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_team_def",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "def_ignore": 0.12
+    },
+    "calculation": {
+      "team_unique_key": "elyms_team_def"
+    }
+  },
+  {
+    "id": "arc_elyms_self_def",
+    "name": "静候彩铃·装备者额外无视防御",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "full_stack",
+      "on_battle_start": true
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_self_def",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "def_ignore": 0.1
+    }
+  },
+  {
+    "id": "arc_elyms_light_pen",
+    "name": "静候彩铃·全队光抗无视",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_elyms_waiting_ringtone"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_types": [
+          "E"
+        ]
+      },
+      "conditions": [],
+      "on_battle_start": true
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_elyms_light_pen",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "res_down_光": 0.08
+    },
+    "display": {
+      "effect_labels": {
+        "res_down_光": "光属性抗性无视"
+      }
+    },
+    "calculation": {
+      "team_unique_key": "elyms_light_pen"
+    }
+  },
+  {
+    "id": "character_elyms_follow_group",
+    "name": "追忆·对群",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_follow_single"
+      ]
+    }
+  },
+  {
+    "id": "character_elyms_follow_single",
+    "name": "追忆·对单",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskillb1"
+        ]
+      }
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_follow_group"
+      ]
+    }
+  },
+  {
+    "id": "character_elyms_b_ignore",
+    "name": "200 节点彼此相连·消费穿防",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 5,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_goodbye"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "action_ids": [
+        "action_elyms_goodbye"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_b_ignore",
+      "mode": "replace",
+      "max_stacks": 1
+    },
+    "effects": {
+      "per_layer": 0.05
+    },
+    "activation": {
+      "effects_from_stack": {
+        "key": "character_elyms_last_consumed",
+        "per_stack_from_effect": {
+          "def_ignore": {
+            "source": "per_layer",
+            "factor": 1
+          }
+        }
+      }
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_reset_consumed_a",
+    "name": "终结清空错视幻觉累计消耗",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 90,
+    "trigger": {
+      "event": "action_end",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_reset_consumed_a",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_consumed"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_elyms_reset_q_bonuses",
+    "name": "释放终结移除上次增益",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_elyms"
+      }
+    ],
+    "priority": 0,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_elyms_ultraskilla1",
+          "action_elyms_ultraskillb1"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 1,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_elyms_reset_q_bonuses",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "activation": {
+      "clear_keys": [
+        "character_elyms_a",
+        "character_elyms_f"
+      ]
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_exe_equation",
+    "name": "方程构建",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_start",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_exe_q"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 150,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_equation",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": true
+    }
+  },
+  {
+    "id": "character_exe_a",
+    "name": "print 你好，我的世界",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 1
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_a",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    },
+    "dynamic_effects": {
+      "personal_resource_steps": {
+        "resource": "评分",
+        "effect_key": "element_dmg_暗",
+        "steps": [
+          {
+            "min": 0,
+            "value": 0
+          },
+          {
+            "min": 500,
+            "value": 0.2
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "character_exe_b",
+    "name": "define X/Y",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_b",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    },
+    "dynamic_effects": {
+      "personal_resource_steps": {
+        "resource": "评分",
+        "effect_key": "atk_pct",
+        "steps": [
+          {
+            "min": 0,
+            "value": 0.1
+          },
+          {
+            "min": 100,
+            "value": 0.12
+          },
+          {
+            "min": 300,
+            "value": 0.15
+          },
+          {
+            "min": 500,
+            "value": 0.2
+          },
+          {
+            "min": 3000,
+            "value": 0.3
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "character_exe_b_omega",
+    "name": "define X/Y·Ω评分",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 2
+        },
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_b_omega",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    },
+    "dynamic_effects": {
+      "personal_resource_steps": {
+        "resource": "评分",
+        "effect_key": "atk_pct",
+        "steps": [
+          {
+            "min": 0,
+            "value": 0
+          },
+          {
+            "min": 5000,
+            "value": 0.2
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "character_exe_c",
+    "name": "for 永远一起玩",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_exe_e"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "team"
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 120,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_c",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "res_down_暗": 0.15
+    },
+    "display": {
+      "line": true
+    }
+  },
+  {
+    "id": "character_exe_d_team",
+    "name": "kill 杀死进程·召唤物",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 4
+        }
+      ]
+    },
+    "target": {
+      "scope": "team",
+      "tags": [
+        "召唤物"
+      ]
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_d_team",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "action_dmg": 0.1
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_exe_d_clone",
+    "name": "kill 杀死进程·数字残像",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 4
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar",
+      "tags": [
+        "数字残像"
+      ]
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_d_clone",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "action_dmg": 0.3
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_exe_resonance3",
+    "name": "save 不曾想象的未来",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 3
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_resonance3",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "energy_recharge": 0.25
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_exe_resonance6_interrupt",
+    "name": "load 不可证明的宝物·抗打断",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "passive",
+      "source": {
+        "scope": "registrar"
+      },
+      "conditions": [
+        {
+          "type": "awakening_count_min",
+          "min": 6
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_resonance6_interrupt",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {
+      "interrupt_resistance": 0.5
+    },
+    "display": {
+      "line": false
+    }
+  },
+  {
+    "id": "character_exe_overclock",
+    "name": "临时超频",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "team",
+        "tags": [
+          "召唤物"
+        ]
+      },
+      "conditions": [],
+      "periodic_damage": true
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_overclock",
+      "mode": "add_stack",
+      "max_stacks": 4,
+      "max_stacks_per_source": 2,
+      "stack_gain_from": "hit_count",
+      "seed_from_arc_names": [
+        "茶花会",
+        "海特洛的安宁"
+      ]
+    },
+    "effects": {
+      "all_dmg": 0.025
+    },
+    "display": {
+      "line": true
+    }
+  },
+  {
+    "id": "character_exe_cooldown",
+    "name": "数字残像·冷却缩减",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_exe_clone"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_cooldown",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    },
+    "activation": {
+      "reduce_action_cooldowns": {
+        "action_exe_e": 10
+      },
+      "cooldown_floor_ticks": 20
+    }
+  },
+  {
+    "id": "character_exe_e",
+    "name": "null 空指针",
+    "providers": [
+      {
+        "kind": "character",
+        "id": "char_exe"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "action_ids": [
+          "action_exe_clone"
+        ]
+      },
+      "conditions": [
+        {
+          "type": "awakening_min",
+          "min": 5
+        },
+        {
+          "type": "active_buff_key",
+          "key": "character_exe_equation"
+        }
+      ]
+    },
+    "target": {
+      "scope": "registrar"
+    },
+    "duration": {
+      "type": "permanent",
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "character_exe_e",
+      "mode": "refresh",
+      "max_stacks": 1
+    },
+    "effects": {},
+    "display": {
+      "line": false
+    },
+    "triggered_damage": {
+      "action": {
+        "id": "action_exe_clone_boom",
+        "name": "数字残像·冲击",
+        "action_type": "普攻",
+        "damage_type": "普攻",
+        "skill_level_category": "basic",
+        "hit_count": 1,
+        "tags": [
+          "召唤物",
+          "数字残像"
+        ],
+        "multipliers": {
+          "atk": 0.129
+        },
+        "atk_multipliers_by_level": [
+          0.129,
+          0.139,
+          0.15,
+          0.163,
+          0.176,
+          0.19,
+          0.205,
+          0.221,
+          0.239,
+          0.258,
+          0.279,
+          0.301,
+          0.325
+        ],
+        "ranked_resource_hits": [
+          {
+            "frames": 0,
+            "score": 10
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "arc_exe_summon",
+    "name": "缥缈的执手同行",
+    "providers": [
+      {
+        "kind": "arc",
+        "id": "arc_exe_dotted_horizon"
+      }
+    ],
+    "priority": 50,
+    "trigger": {
+      "event": "action_hit",
+      "source": {
+        "scope": "registrar",
+        "elements": [
+          "暗"
+        ]
+      },
+      "conditions": []
+    },
+    "target": {
+      "scope": "registrar",
+      "tags": [
+        "召唤物"
+      ]
+    },
+    "duration": {
+      "type": "time",
+      "ticks": 200,
+      "loop_carry": true
+    },
+    "stacking": {
+      "key": "arc_exe_summon",
+      "mode": "add_stack",
+      "max_stacks": 10,
+      "stack_gain_from": "hit_count"
+    },
+    "effects": {
+      "action_dmg": 0.02
+    },
+    "display": {
+      "line": true
+    }
   }
 ]

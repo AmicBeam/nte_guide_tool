@@ -12,6 +12,10 @@
     "note": "循环自带环合按原始机制校验实例数量上限；创生最多3个独立实例，其他环合最多1个，角色提供的刷新或额外加层能力不放宽。"
   },
   "personal_resource_caps": {
+    "char_exe": {
+      "帧数": 100,
+      "评分": 5000
+    },
     "char_31c5130304": {"真理之匙": 3},
     "char_701295143d": {"言灵字": 4},
     "char_912dbfe17c": {"闪送之力": 6},
@@ -23,6 +27,9 @@
     },
     "char_akane": {
       "弦能": 30
+    },
+    "char_elyms": {
+      "信号等级": 2
     }
   },
   "hidden_personal_resources": ["噩梦"],
@@ -187,6 +194,15 @@
     }
   },
   "default_build_options": {
+    "char_exe": {
+      "curtain_bonus": {
+        "value": 8,
+        "stat": "暴击",
+        "passive_type": "type3",
+        "fixed": true
+      }
+    },
+    "char_elyms": {"curtain_bonus": {"value": 8, "stat": "暴击", "passive_type": "type3", "fixed": true}},
     "char_dd034941ef": {
       "cartridge_main_stat": "精通",
       "curtain_bonus": {
@@ -374,9 +390,10 @@
     "char_akane": {
       "cartridge_main_stat": "属伤",
       "curtain_bonus": {
-        "value": 0,
+        "value": 10,
         "stat": "攻击",
-        "passive_type": "type3"
+        "passive_type": "type3",
+        "fixed": true
       }
     }
   },

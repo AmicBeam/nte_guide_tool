@@ -1180,13 +1180,13 @@ test("support immunity floats at the counter damage slot and target", async () =
     { seq: 902, type: "combat", group_id: "support", actor: "b:zero", target: "a:nanali", amount: 0,
       counter_immunity: "support", before: { hp: 5, shield: 0 }, after: { hp: 5, shield: 0 } },
   ], { instant: true }), harness.clock, player);
-  const immune = shown.find(item => item.text === "无敌");
+  const immune = shown.find(item => item.text === "免疫");
   const hit = shown.find(item => item.text === "-2");
   assert.ok(immune && hit);
   assert.equal(immune.time, hit.time);
   assert.deepEqual(immune.point, { x: 365, y: 355 });
   assert.equal(immune.kind, "invincible");
-  assert.equal(shown.filter(item => item.text === "无敌").length, 1);
+  assert.equal(shown.filter(item => item.text === "免疫").length, 1);
 });
 
 test("ordinary zero damage does not float invincibility", async () => {
@@ -1207,4 +1207,166 @@ test("rewind patches once under the black curtain and removes it", async () => {
   await settle(player.play([{ seq: 920, type: 'rewind', side: 'a', patch: { turn: 1 } }]), harness.clock, player);
   assert.equal(patches, 1);
   assert.equal(harness.stage.querySelector('.v2-rewind-curtain'), null);
+});
+
+test("actual responses announce large text then reveal from either hand before patching once", async () => {
+  for (const side of ["a", "b"]) {
+    const harness = makeRoot();
+    const card = publicCard();
+    const source = makeHandCard(harness.documentRef, card);
+    source.classList.add("v2-hand-card");
+    (side === "a" ? harness.handA : harness.handB).appendChild(source);
+    const order = [];
+    const player = new Player({ root: harness.root, clock: harness.clock,
+      applyPatch() { order.push("patch"); source.parentNode.removeChild(source); } });
+    const harmony = player._presentHarmony.bind(player);
+    player._presentHarmony = async (...args) => {
+      order.push(args[2]);
+      const done = harmony(...args);
+      const art = harness.stage.querySelector(".v2-fx-harmony-art");
+      assert.equal(art.textContent, "响应");
+      assert.equal(art.getAttribute("aria-label"), "响应");
+      assert.ok(art.classList.contains("is-response"));
+      await done;
+    };
+    const reveal = player._presentPlay.bind(player);
+    player._presentPlay = async (...args) => {
+      order.push("reveal");
+      const done = reveal(...args);
+      assert.ok(source.classList.contains("v2-fx-source"));
+      assert.equal(harness.stage.querySelector(".v2-fx-play-card").getAttribute("data-instance-id"), card.instance_id);
+      assert.deepEqual(order, ["响应", "reveal"]);
+      await done;
+    };
+    const event = { seq: 930, type: "play", side, actor: side + ":nanali", response: true, card, patch: {} };
+    await settle(player.play([event, event]), harness.clock, player);
+    assert.deepEqual(order, ["响应", "reveal", "patch"]);
+    assert.equal(source.parentNode, null);
+  }
+});
+
+test("a response-capable card manually played gets no response announcement or own reveal", async () => {
+  const harness = makeRoot();
+  const player = new Player({ root: harness.root, clock: harness.clock });
+  let reveals = 0;
+  player._presentHarmony = async () => assert.fail("manual play must not announce response");
+  player._presentPlay = async () => { reveals += 1; };
+  await settle(player.play([{ seq: 931, type: "play", side: "a", response: false,
+    card: { ...publicCard(), response: "ally_attacked" }, patch: {} }]), harness.clock, player);
+  assert.equal(reveals, 0);
+});
+
+test("cancelling a response title applies state once without starting a later reveal", async () => {
+  const harness = makeRoot();
+  const patched = [];
+  const player = new Player({ root: harness.root, clock: harness.clock, applyPatch: (_p, event) => patched.push(event.seq) });
+  let reveals = 0;
+  player._presentPlay = async () => { reveals += 1; };
+  const done = player.play([{ seq: 932, type: "play", side: "a", response: true, card: publicCard(), patch: {} }]);
+  await Promise.resolve();
+  await Promise.resolve();
+  player.cancel();
+  await settle(done, harness.clock, player);
+  assert.deepEqual(patched, [932]);
+  assert.equal(reveals, 0);
+  assert.equal(harness.stage.querySelector(".v2-fx-harmony-art"), null);
+});
+
+test("derived and copied deck draws use one draw animation and one hand patch", async () => {
+  for (const flag of ['derived', 'copy']) {
+    const harness = makeRoot();
+    const patches = [];
+    const player = new Player({root:harness.root, clock:harness.clock, viewerSide:'a',
+      applyPatch(_patch, event) { patches.push(event.seq); }});
+    const card = {...publicCard(), [flag]:true};
+    let flyers = 0;
+    const create = player._el.bind(player);
+    player._el = function(tag, classes) {
+      if (classes === 'v2-fx-draw-card') flyers += 1;
+      return create(...arguments);
+    };
+    const done = player.play([{seq:1001,type:'draw',side:'a',actor:'a:player',card,
+      patch:{sides:{a:{hand_count:1}}}}]);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.equal(overlayOf(harness).querySelector('.v2-fx-draw-card').getAttribute('data-v2-fx-kind'), 'draw-public');
+    assert.equal(flyers, 1);
+    assert.deepEqual(patches, []);
+    await settle(done, harness.clock, player);
+    assert.equal(flyers, 1);
+    assert.deepEqual(patches, [1001]);
+  }
+});
+
+test("legacy deck responses show public cards to either viewer without touching hand cards", async () => {
+  for (const side of ["a", "b"]) {
+    const harness = makeRoot();
+    const card = publicCard();
+    const handCard = makeHandCard(harness.documentRef, card);
+    (side === "a" ? harness.handA : harness.handB).appendChild(handCard);
+    const deck = harness.documentRef.createElement("button");
+    deck.setAttribute("id", side === "a" ? "v2-player-deck" : "v2-opponent-deck");
+    place(deck, 700, side === "a" ? 350 : 50, 60, 40);
+    harness.root.appendChild(deck);
+    const order = [];
+    const player = new Player({root: harness.root, clock: harness.clock, applyPatch() {order.push("patch");}});
+    player._presentHarmony = async (_event, _instant, keyword) => { order.push(keyword); };
+    const reveal = player._presentPlay.bind(player);
+    player._presentPlay = async (...args) => {
+      order.push("reveal");
+      const done = reveal(...args);
+      const flyer = harness.stage.querySelector(".v2-fx-play-card");
+      assert.equal(flyer.style.left, "580px", "flyer starts at the deck, not the hand");
+      assert.equal(handCard.classList.contains("v2-fx-source"), false);
+      assert.equal(flyer.getAttribute("data-instance-id"), card.instance_id);
+      assert.equal(flyer.querySelector(".v2-fx-card-name").textContent, card.name);
+      await done;
+    };
+    await settle(player.play([
+      {seq: 940, type: "reveal", side, actor: side + ":nanali", response: true, card_source: "deck", card, patch: {}},
+      {seq: 941, type: "play", side, actor: side + ":nanali", present: false, card, patch: {}},
+    ]), harness.clock, player);
+    assert.deepEqual(order, ["响应", "reveal", "patch", "patch"]);
+  }
+});
+
+test("public basic divination reveals own card without a response title", async () => {
+  const harness = makeRoot();
+  const player = new Player({root: harness.root, clock: harness.clock});
+  let reveals = 0;
+  player._presentHarmony = async () => assert.fail("basic divination is not a witch response");
+  player._presentPlay = async () => { reveals += 1; };
+  await settle(player.play([{seq: 942, type: "reveal", side: "a", response: false,
+    card_source: "deck", card: publicCard(), patch: {}}]), harness.clock, player);
+  assert.equal(reveals, 1);
+});
+
+test("divination releases reveal publicly to both viewers without response or a duplicate play animation", async () => {
+  for (const side of ["a", "b"]) {
+    const harness = makeRoot();
+    const order = [];
+    const player = new Player({root: harness.root, clock: harness.clock, applyPatch() {order.push("patch");}});
+    player._presentHarmony = async () => assert.fail("divination must not announce a response");
+    player._presentPlay = async () => {order.push("reveal");};
+    await settle(player.play([
+      {seq: 950, type: "reveal", side, actor: side + ":heiyu", response: false, card_source: "deck", card: publicCard(), patch: {}},
+      {seq: 951, type: "play", side, actor: side + ":heiyu", present: false, release_only: true, card: publicCard(), patch: {}},
+    ]), harness.clock, player);
+    assert.deepEqual(order, ["reveal", "patch", "patch"]);
+  }
+});
+
+test('combat and noncombat immunity float matching colors at the blocked target', async () => {
+  for (const [type, immunity, tone] of [['combat', 'combat', 'combat-immune'], ['damage', 'noncombat', 'noncombat-immune'], ['genesis', 'noncombat', 'noncombat-immune'], ['nightmare', 'noncombat', 'noncombat-immune']]) {
+    const harness = makeRoot();
+    const player = new Player({ root: harness.root, clock: harness.clock });
+    const shown = [];
+    player._floater = (point, rect, text, kind) => shown.push({point, text, kind});
+    await settle(player.play([{seq: 1000, type, target: 'a:nanali', amount: 0, immunity_kind: immunity,
+      before: {hp: 5, shield: 0}, after: {hp: 5, shield: 0}}], {instant: true}), harness.clock, player);
+    assert.equal(shown.length, 1);
+    assert.equal(shown[0].text, '免疫');
+    assert.equal(shown[0].kind, tone);
+    assert.deepEqual(shown[0].point, {x: 365, y: 355});
+  }
 });

@@ -58,7 +58,7 @@ test('solitary resolves from passive and R06 without portrait or owner in its re
   assert.equal(api.referencedCards({name:hero.name,description:hero.passive})[0].id,'mechanism-solitary');
   const mechanism=api.referencedCards(r06)[0];
   assert.equal(mechanism.name,'独行');
-  assert.match(mechanism.description,/回复真红的全部生命/);
+  assert.match(mechanism.description,/真红获得 4 点护盾/);
   const source=fs.readFileSync('app/modules/card_game/static/js/v2_table/interaction.js','utf8');
   const renderer=source.slice(source.indexOf('    function hoverCardMarkup('),source.indexOf('    function hoverCharacterMarkup('));
   const context=vm.createContext({V2:api,render:null});
@@ -89,4 +89,36 @@ test('summons use their own portrait and pact uses the debuff icon', ()=>{
     {side:'b',usePortrait:true});
   assert.match(node.innerHTML,/v2-effect-icon is-debuff/);
   assert.doesNotMatch(node.innerHTML,/<span class="">枚约<\/span>/);
+});
+
+test('Canhong passive references mirage and its mechanism explains additional attack damage', async()=>{
+  const catalog=JSON.parse(fs.readFileSync('app/modules/card_game/content/duel_v2/catalog.json','utf8'));
+  catalog.characters.forEach(c=>(c.mechanisms||[]).forEach(m=>Object.assign(m,{type:'mechanism',character_id:c.id})));
+  const api=await load(catalog);
+  const hero=catalog.characters.find(c=>c.id==='canhong');
+  const refs=api.referencedCards({name:hero.name,description:hero.passive});
+  assert.deepEqual(clone(refs).map(c=>c.id),['mechanism-mirage']);
+  assert.match(refs[0].description,/造成伤害视为追加攻击/);
+  assert.deepEqual(clone(api.referencedCards(refs[0])).map(c=>c.id),['mechanism-etch-venom']);
+  assert.ok(!catalog.cards.some(c=>c.id==='mechanism-mirage'));
+});
+
+test('quoted divination on Heiyu cards resolves without broad unquoted matching', async()=>{
+  const raw=JSON.parse(fs.readFileSync('app/modules/card_game/content/duel_v2/catalog.json','utf8'));
+  const heiyu=clone(raw.characters.find(c=>c.id==='heiyu'));
+  heiyu.mechanisms.forEach(m=>Object.assign(m,{type:'mechanism',character_id:heiyu.id}));
+  const owned=raw.cards.filter(c=>c.character_id==='heiyu');
+  const example=owned.find(c=>c.id==='P05');
+  assert.ok(!owned.some(c=>c.id==='PF01'));
+  const api=await load({characters:[heiyu],cards:owned});
+  for (const id of ['P05','P06','P08']) {
+    const card=owned.find(c=>c.id===id);
+    assert.deepEqual(clone(api.referencedCards(card)).map(c=>c.id),['mechanism-divination']);
+  }
+  assert.deepEqual(clone(api.referencedCards(owned.find(c=>c.id==='P03'))),[]);
+  assert.deepEqual(clone(api.referencedCards({...example,description:'占卜，然后抽牌。'})),[]);
+  assert.deepEqual(clone(api.referencedCards(example)).map(c=>c.id),['mechanism-divination']);
+  assert.deepEqual(clone(api.referencedCards({...example,description:'占卜，然后「占卜」。占卜效果。'})).map(c=>c.id),['mechanism-divination']);
+  const own=heiyu.mechanisms.find(m=>m.id==='mechanism-divination');
+  assert.ok(!api.referencedCards(own).some(c=>c.id===own.id));
 });

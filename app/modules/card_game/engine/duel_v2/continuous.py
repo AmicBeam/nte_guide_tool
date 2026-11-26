@@ -1,8 +1,8 @@
 """Continuous damage attached to a battle zone.
 
-浊燃、噩梦、蚀心、鸩火 and 诛恶护持 share this clock. Damage is dealt on the
-applier's turn end and split across living opponent espers. The same character
-receives one merged hit. Stack halving is a countdown, not a turn-start trigger.
+浊燃、噩梦 and 诛恶护持 deal damage on the applier's turn end. 蚀心 and 鸩火
+keep their stacks and count toward continuous-effect synergies without damage.
+Each damaged character receives one merged hit. Stack halving is a countdown.
 """
 from random import Random
 
@@ -14,8 +14,8 @@ from .state import (SIDES, alive, damage, finished, front_debuff, hero, knockdow
 
 DOTS = {
     'nightmare': {'name': '噩梦', 'max_stacks': 10, 'mode': 'stacks', 'halve': True},
-    'etch': {'name': '蚀心', 'max_stacks': 10, 'mode': 'every5'},
-    'venom': {'name': '鸩火', 'max_stacks': 10, 'mode': 'every5'},
+    'etch': {'name': '蚀心', 'max_stacks': 10, 'mode': 'counter'},
+    'venom': {'name': '鸩火', 'max_stacks': 10, 'mode': 'counter'},
     'guard': {'name': '诛恶护持', 'max_stacks': 1, 'mode': 'single', 'unique': True,
               'ignore_shield': True},
 }
@@ -90,13 +90,14 @@ def _source_context(state, source):
 
 
 def distribute(state, target_side, amount, *, source, by, ignore_shield=False, reason=None,
-               damage_class='esper', after_hit=None, continuous=True):
+               damage_class='esper', after_hit=None, continuous=True, include_roles=False):
     if finished(state):
         return []
     amount = max(0, int(amount))
     if continuous:
         amount = _boost(state, target_side, by, amount)
-    targets = living_espers(state, target_side)
+    targets = (['player'] + [cid for cid in team_order(state, target_side) if alive(state, target_side, cid)]
+               if include_roles else living_espers(state, target_side))
     if amount <= 0 or not targets:
         return []
     rng = Random(state['rng'])
@@ -227,10 +228,11 @@ def apply_burn(state, target_side, *, by, source_cid):
         target = state['sides'][target_side].get('front')
         if is_esper(target) and alive(state, target_side, target):
             add_collapse(state, target_side, target, 1, by=by)
-            log(state, f"{hero(state, by, source_cid)['name']}触发失谐。", 'harmony',
-                side=by, source=source_cid, actor=f'{by}:{source_cid}',
-                target=f'{target_side}:{target}')
-            fire(ctx, 'on_dissonance', enemy=target_side, target_id=target)
+        log(state, f"{hero(state, by, source_cid)['name']}触发失谐。", 'harmony',
+            side=by, source=source_cid, actor=f'{by}:{source_cid}',
+            target=f'{target_side}:{target or "player"}')
+        from app.modules.card_game.engine.events import GameEvent
+        fire(ctx, GameEvent.V2_DISSONANCE, enemy=target_side, target_id=target)
     return gained
 
 
@@ -284,29 +286,18 @@ def _rose_followup(state, dot, cid, dealt):
     target_side = other(ctx.side) if ctx.side in SIDES else None
     if target_side is None:
         return
-    h = hero(state, target_side, cid)
+    h = state['sides'][target_side] if cid == 'player' else hero(state, target_side, cid)
     if h.get('hp', 0) > 0:
         reduce_max_hp(state, target_side, cid, dealt, source=source, settle=False)
     if not finished(state) and alive(state, ctx.side, ctx.cid):
-        heal(state, ctx.side, ctx.cid, dealt, source=source, reason='「最后一朵玫瑰」')
-
-
-def _kill_player(state, dot, killed):
-    if not killed:
-        return
-    ctx = _source_context(state, dot.get('source'))
-    if not ctx or ctx.character.get('shape') != 'A07' or not alive(state, ctx.side, ctx.cid):
-        return
-    foe = other(ctx.side)
-    for _ in killed:
-        if finished(state):
-            return
-        damage(state, foe, 'player', 2, source=dot.get('source'), kind='damage',
-               reason='「噩梦」消灭了对方异能者')
+        heal(state, ctx.side, ctx.cid, dealt, source=source, reason='「新月摇篮曲」')
 
 
 def trigger_dot(state, target_side, kind, dot, *, reason=None):
     """Resolve a zone effect identically for its clock and an explicit card trigger."""
+    # Current definitions also cover old snapshots carrying mode='every5'.
+    if (DOTS.get(kind) or {}).get('mode') == 'counter':
+        return []
     source = dot.get('source') or f"{dot['by']}:{kind}"
     stacks = int(dot.get('stacks') or 0)
     kwargs = dict(source=source, by=dot['by'], reason=reason or dot.get('name'))
@@ -315,10 +306,7 @@ def trigger_dot(state, target_side, kind, dot, *, reason=None):
     if dot.get('mode') == 'every5':
         return distribute(state, target_side, stacks // 5, **kwargs)
     after = (lambda cid, dealt: _rose_followup(state, dot, cid, dealt)) if kind == 'nightmare' else None
-    killed = distribute(state, target_side, stacks, after_hit=after, **kwargs)
-    if kind == 'nightmare' and not finished(state):
-        _kill_player(state, dot, killed)
-    return killed
+    return distribute(state, target_side, stacks, after_hit=after, include_roles=kind == 'nightmare', **kwargs)
 
 
 def tick_owner_end(state, side):

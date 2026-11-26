@@ -64,9 +64,10 @@
     }
 
     function closeOverlay(node) {
-      node.classList.remove('open');
+      node.classList.remove('open', 'is-divination');
       node.setAttribute('aria-hidden', 'true');
       node.innerHTML = '';
+      if (ctx.clearSelectionView) ctx.clearSelectionView(node);
     }
 
     function isTouchLike(pointerType) {
@@ -132,7 +133,7 @@
         '<p>终结：' + V2.cardDescriptionMarkup(found.awakened_passive || '尚未提供') + '</p>',
       ];
       if (found.shape_description) {
-        lines.push('<p>弧盘：' + V2.escapeHtml(found.shape_description) + '</p>');
+        lines.push('<p>' + V2.escapeHtml(found.shape || '武备') + '：' + V2.escapeHtml(found.shape_description) + '</p>');
       }
       if (Array.isArray(found.effect_markers) && found.effect_markers.length) {
         lines.push('<section class="v2-effect-details"><h3>额外效果</h3>' + found.effect_markers.map(function (marker) {
@@ -158,6 +159,13 @@
     }
 
     function payloadFromNode(node) {
+      if (node.hasAttribute('data-log-seq')) {
+        const event = ((ctx.game && ctx.game.events) || []).find(function (item) {
+          return String(item.seq) === node.getAttribute('data-log-seq');
+        });
+        const card = event && (event.card || (event.item && event.item.card));
+        return card && !card.hidden ? { kind: 'card', card: card } : null;
+      }
       if (!node || !node.getAttribute) {
         return null;
       }
@@ -214,6 +222,8 @@
       const choices = config.choices || [];
       const selectedIds = new Set();
       const maxSelect = Number(config.maxSelect) || 0;
+      const minSelect = Number(config.minSelect) || 0;
+      const confirmLabel = minSelect ? '确认选择' : '确认调度';
       const hasCards = choices.some(function (choice) {
         return Boolean(choice && choice.card && !choice.card.hidden);
       });
@@ -224,9 +234,9 @@
             const card = choice.card;
             if (card && !card.hidden) {
               return (
-                '<button class="v2-choice-card" type="button" data-choice-id="' + V2.escapeAttr(choice.id) + '">' +
-                  hoverCardMarkup(card) +
-                '</button>'
+                '<div class="v2-choice-card-wrap"><button class="v2-choice-card" type="button" data-choice-id="' + V2.escapeAttr(choice.id) + '">' +
+                  TABLE.handCardHtml(card, { selection: true }) +
+                '</button><button class="v2-choice-detail" type="button" data-choice-detail="' + V2.escapeAttr(choice.id) + '" aria-label="查看' + V2.escapeAttr(card.name) + '详情">详情</button></div>'
               );
             }
             return (
@@ -236,10 +246,15 @@
               '</button>'
             );
           }).join('') : '<p class="subtle">没有候选。</p>') + '</div>' +
-          (maxSelect ? '<button class="primary-btn" id="v2-choice-confirm" type="button">确认调度（0 / ' + maxSelect + '）</button>' : '') +
+          (maxSelect ? '<button class="primary-btn" id="v2-choice-confirm" type="button"' + (minSelect ? ' disabled' : '') + '>' + confirmLabel + '（0 / ' + maxSelect + '）</button>' : '') +
         '</div>';
+      choiceOverlay.classList.remove('is-divination');
       choiceOverlay.classList.add('open');
       choiceOverlay.setAttribute('aria-hidden', 'false');
+      if (ctx.setSelectionView) ctx.setSelectionView({
+        key: 'choice:' + (config.title || '') + ':' + choices.map(function (choice) { return choice.id; }).join('|'),
+        label: '选择', region: choiceOverlay,
+      });
       document.getElementById('v2-choice-close').addEventListener('click', function () {
         markRaisedCard(ctx.localChoice && ctx.localChoice.cardId, false);
         ctx.localChoice = null;
@@ -248,6 +263,7 @@
       });
       const confirm = choiceOverlay.querySelector('#v2-choice-confirm');
       if (confirm) confirm.addEventListener('click', function () {
+        if (selectedIds.size < minSelect) return;
         ctx.localChoice = null;
         closeOverlay(choiceOverlay);
         config.onPick({ ids: Array.from(selectedIds) });
@@ -261,13 +277,27 @@
             ctx.localChoice = { kind: 'server-multi' };
             button.classList.toggle('is-selected', selectedIds.has(picked.id));
             button.setAttribute('aria-pressed', String(selectedIds.has(picked.id)));
-            confirm.textContent = '确认调度（' + selectedIds.size + ' / ' + maxSelect + '）';
+            confirm.textContent = confirmLabel + '（' + selectedIds.size + ' / ' + maxSelect + '）';
+            confirm.disabled = selectedIds.size < minSelect;
             return;
           }
           ctx.localChoice = null;
           closeOverlay(choiceOverlay);
           if (picked) config.onPick(picked);
         });
+      });
+      choiceOverlay.querySelectorAll('[data-choice-detail]').forEach(function (button) {
+        const choice = choices.find(function (item) { return String(item.id) === button.getAttribute('data-choice-detail'); });
+        function preview(event) {
+          if (event.pointerType === 'touch') return;
+          showHoverPreview({ kind: 'card', card: choice.card }, button,
+            { pointerType: event.type === 'focus' ? 'keyboard' : 'mouse' });
+        }
+        button.addEventListener('pointerenter', preview);
+        button.addEventListener('focus', preview);
+        button.addEventListener('pointerleave', function () { hideHoverPreview(); });
+        button.addEventListener('blur', function () { hideHoverPreview(); });
+        button.addEventListener('click', function () { showCardDetail(choice.card, null, button); });
       });
     }
 
@@ -858,9 +888,8 @@
         const awakenBtn = event.target.closest('[data-ultimate-id], [data-awaken-id]');
         if (awakenBtn) {
           event.preventDefault();
-          ctx.submitEntry(ctx.findAction('ultimate', {
-            character_id: awakenBtn.getAttribute('data-ultimate-id') || awakenBtn.getAttribute('data-awaken-id'),
-          }));
+          const cid = awakenBtn.getAttribute('data-ultimate-id') || awakenBtn.getAttribute('data-awaken-id');
+          ctx.submitEntry(ctx.findUltimateAction(cid));
           return;
         }
         const inspect = event.target.closest('[data-inspect-character]');
@@ -873,27 +902,33 @@
 
     page.addEventListener('pointerover', function (event) {
       if (event.pointerType === 'touch' || ctx.dragState || ctx.busy) return;
-      if (ctx.game && ctx.game.phase === 'mulligan') return;
-      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      const source = event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
       if (!source || source.classList.contains('v2-hidden-card')) return;
       const payload = payloadFromNode(source);
       if (payload) showHoverPreview(payload, source, { pointerType: event.pointerType || 'mouse' });
     });
     page.addEventListener('pointerout', function (event) {
-      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      const source = event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
       if (!source) return;
       if (source.contains(event.relatedTarget)) return;
       hideHoverPreview();
     });
     page.addEventListener('focusin', function (event) {
-      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      const source = event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
       const payload = source ? payloadFromNode(source) : null;
       if (payload) showHoverPreview(payload, source, { pointerType: 'keyboard' });
     });
     page.addEventListener('focusout', function (event) {
-      const source = event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
+      const source = event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card');
       if (!source || source.contains(event.relatedTarget)) return;
       hideHoverPreview();
+    });
+
+    page.addEventListener('click', function (event) {
+      const logCard = event.target.closest('[data-log-seq]');
+      if (!logCard) return;
+      const payload = payloadFromNode(logCard);
+      if (payload) showHoverPreview(payload, logCard, { pinned: true, pointerType: 'touch' });
     });
 
     page.addEventListener('click', function (event) {
@@ -937,11 +972,6 @@
 
     nodes.endTurnBtn.addEventListener('click', function () { ctx.submitEntry(ctx.findAction('end_turn')); });
     nodes.concedeBtn.addEventListener('click', function () { ctx.submitEntry(ctx.findAction('concede')); });
-    nodes.mulliganToggle.addEventListener('click', function () {
-      const collapsed = ctx.page.classList.toggle('mulligan-collapsed');
-      nodes.mulliganToggle.setAttribute('aria-expanded', String(!collapsed));
-      nodes.mulliganToggle.textContent = collapsed ? '展开换牌' : '收起换牌';
-    });
     nodes.mulliganBtn.addEventListener('click', ctx.submitMulligan);
     nodes.playerDiscard.addEventListener('click', function () { openPile('我方弃牌', TABLE.sideState(ctx.game, ctx.viewer()).discard || []); });
     nodes.opponentDiscard.addEventListener('click', function () { openPile('对手弃牌', TABLE.sideState(ctx.game, ctx.opponent()).discard || []); });
@@ -957,6 +987,7 @@
     });
     choiceOverlay.addEventListener('click', function (event) {
       if (event.target === choiceOverlay) {
+        if (ctx.localChoice && ctx.localChoice.kind === 'server-divination') return;
         markRaisedCard(ctx.localChoice && ctx.localChoice.cardId, false);
         ctx.localChoice = null;
         closeOverlay(choiceOverlay);
@@ -1019,7 +1050,7 @@
     });
     document.addEventListener('pointerdown', function (event) {
       if (!cardPreview.classList.contains('is-pinned') && !cardPreview.classList.contains('is-touch')) return;
-      if (event.target.closest('#v2-card-preview') || event.target.closest('[data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card')) return;
+      if (event.target.closest('#v2-card-preview') || event.target.closest('[data-log-seq], [data-drag-kind], [data-public-copy], [data-character-id], .v2-hand-card')) return;
       hideHoverPreview({ force: true });
     });
 
@@ -1034,6 +1065,7 @@
     ctx.handleActivate = handleActivate;
     ctx.legalDrop = legalDrop;
     ctx.groupedPlay = groupedPlay;
+    if (TABLE.bindDivination) TABLE.bindDivination(ctx, function (card) { return TABLE.handCardHtml(card, { selection: true }); });
   }
 
   TABLE.bindInteraction = bindInteraction;

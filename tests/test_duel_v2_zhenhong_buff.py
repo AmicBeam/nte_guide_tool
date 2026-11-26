@@ -24,7 +24,7 @@ class ZhenhongBuffTest(unittest.TestCase):
     def protect(self, state, side='a'):
         fire(EffectContext(state, side, 'zhenhong', {'side': side}), 'on_surplus', actor_only=True)
 
-    def test_surplus_attack_stacks_and_expires_with_damage_limit_preserving_other_buffs(self):
+    def test_surplus_once_each_turn_and_expires_with_damage_limit_preserving_other_buffs(self):
         from app.modules.card_game.engine.duel_v2.state import add_atk_buff, attack_value
         s = self.game()
         h = hero(s, 'a', 'zhenhong')
@@ -34,14 +34,14 @@ class ZhenhongBuffTest(unittest.TestCase):
         self.protect(s)
         s['deferred_actions'] = []
         move_out(s, 'a', 'zhenhong')
-        self.assertEqual(attack_value(h, s, 'a'), base + 2)
+        self.assertEqual(attack_value(h, s, 'a'), base + 1)
         s = clone_state(json.loads(json.dumps(s)))
         h = hero(s, 'a', 'zhenhong')
         begin_turn(s, 'b')
-        self.assertEqual(attack_value(h, s, 'a'), base + 2)
+        self.assertEqual(attack_value(h, s, 'a'), base + 1)
         self.protect(s)  # Opponent-turn trigger has the same next-own-turn expiry.
         s['deferred_actions'] = []
-        self.assertEqual(attack_value(h, s, 'a'), base + 3)
+        self.assertEqual(attack_value(h, s, 'a'), base + 2)
         opening, seq = capture_public_board(s), s['event_seq']
         s['_public_board'] = deepcopy(opening)
         begin_turn(s, 'a')
@@ -80,7 +80,7 @@ class ZhenhongBuffTest(unittest.TestCase):
                     self.assertEqual([c['card_id'] for c in team['hand']], [wanted])
                     self.assertEqual(team['deck'], [c for c in before if c['card_id'] != wanted])
                     attacks = [e for e in s['events'] if e['type'] == 'attack']
-                    self.assertEqual(attacks[-1]['amount'], {'R02': 1, 'R03': 2, 'R04': 3}[key])
+                    self.assertEqual(attacks[-1]['amount'], {'R02': 2, 'R03': 2, 'R04': 3}[key])
                     if surplus:
                         held = self.hold(s, key)
                         s['sides']['a']['ap'] = 0
@@ -167,6 +167,7 @@ class ZhenhongBuffTest(unittest.TestCase):
     def test_limit_expires_before_own_start_damage_but_not_enemy_start(self):
         s = self.game()
         self.protect(s)
+        hero(s, 'a', 'zhenhong')['shield'] = 0  # Isolate the lifetime of the limit.
         s['deferred_actions'] = []
         s['sides']['a']['front'] = 'zhenhong'
         hero(s, 'b', 'yi').update(shape='I07', beast_fangs=6, awakened=True, ultimate_turns=2)
@@ -188,6 +189,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         from app.modules.card_game.engine.duel_v2.state import knockdowns
         s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
         self.protect(s, 'b')
+        hero(s, 'b', 'zhenhong')['shield'] = 0  # Isolate uncapped penetration.
         s['deferred_actions'] = []
         s['sides']['b']['front'] = 'zhenhong'
         hero(s, 'a', 'bohe')['base_attack'] = 20
@@ -197,6 +199,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         # A lethal capped hit still uses the pre-hit life for overkill.
         s = self.game(team=('zhenhong', 'bohe', 'zero', 'jiuyuan'))
         self.protect(s, 'b')
+        hero(s, 'b', 'zhenhong')['shield'] = 0  # Isolate uncapped penetration.
         s['deferred_actions'] = []
         s['sides']['b']['front'] = 'zhenhong'
         hero(s, 'a', 'bohe')['base_attack'] = 20
@@ -267,7 +270,7 @@ class ZhenhongBuffTest(unittest.TestCase):
         self.assertFalse(h['damage_immune'])
         self.assertEqual(h['damage_limit'], 1)
 
-    def test_ultimate_moves_and_harmonizes_without_attack_or_combat_resources(self):
+    def test_ultimate_moves_without_harmony_attack_or_combat_resources(self):
         s = self.game()
         s['sides']['a']['front'] = 'jiuyuan'
         hero(s, 'a', 'jiuyuan')['harmony'] = 2
@@ -275,11 +278,11 @@ class ZhenhongBuffTest(unittest.TestCase):
         before = s['sides']['a']['ap']
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zhenhong'})
         self.assertEqual(s['sides']['a']['front'], 'zhenhong')
-        self.assertEqual(hero(s, 'a', 'jiuyuan')['harmony'], 0)
-        self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 1)
+        self.assertEqual(hero(s, 'a', 'jiuyuan')['harmony'], 2)
+        self.assertEqual(hero(s, 'a', 'zhenhong')['harmony'], 2)
         self.assertTrue(s['sides']['a']['normal_attack_available'])
         self.assertEqual(s['sides']['a']['ap'], before)
-        self.assertEqual(s['sides']['b']['hp'], 98)
+        self.assertEqual(s['sides']['b']['hp'], 100)
         self.assertFalse(any(e['type'] == 'attack' for e in s['events']))
         self.assertTrue(all(h['energy'] == 0 for h in s['sides']['a']['characters'].values()))
 
@@ -295,9 +298,9 @@ class ZhenhongBuffTest(unittest.TestCase):
         hero(s, 'a', 'zhenhong')['energy'] = 5
         front_debuff(s, 'b')['delay'] = {'left': 2, 'by': 'a', 'tick_side': 'a'}
         s = apply_action(s, 'a', {'type': 'ultimate', 'character_id': 'zhenhong'})
-        self.assertEqual(hero(s, 'a', 'zhenhong')['extra_attacks'], 1)
+        self.assertFalse(hero(s, 'a', 'zhenhong').get('surplus_passive_triggers'))
         self.assertEqual(hero(s, 'a', 'zhenhong')['energy'], 0)
-        self.assertEqual(damage_limit(s, 'a', 'zhenhong'), 1)
+        self.assertEqual(damage_limit(s, 'a', 'zhenhong'), None)
         self.assertFalse(s.get('deferred_actions'))
 
     def test_movement_checks_owner_turn_and_never_attacks(self):
@@ -306,10 +309,10 @@ class ZhenhongBuffTest(unittest.TestCase):
             s['active_side'] = active
             s['sides']['a']['front'] = 'jiuyuan'
             hero(s, 'a', 'jiuyuan')['harmony'] = 2
-            self.assertEqual(harmony_marks(s, 'a')['available'], active == 'a')
+            self.assertFalse(harmony_marks(s, 'a')['available'])
             EffectContext(s, 'a', 'zhenhong', {'side': 'a'}).enter_front()
             self.assertEqual(s['sides']['a']['front'], 'zhenhong')
-            self.assertEqual(hero(s, 'a', 'jiuyuan')['harmony'], 0 if active == 'a' else 2)
+            self.assertEqual(hero(s, 'a', 'jiuyuan')['harmony'], 2)
             self.assertFalse(any(e['type'] == 'attack' for e in s['events']))
 
     def test_opponent_response_enters_without_consuming_harmony(self):
@@ -336,8 +339,8 @@ class ZhenhongBuffTest(unittest.TestCase):
 
     def test_typed_draw_precedes_entry_that_first_triggers_surplus(self):
         s = self.game()
-        s['sides']['a']['front'] = 'jiuyuan'
-        hero(s, 'a', 'jiuyuan')['harmony'] = 2
+        s['sides']['a'].update(front='jiuyuan',last_front='jiuyuan')
+        hero(s, 'a', 'jiuyuan')['harmony'] = 3
         front_debuff(s, 'b')['delay'] = {'left': 2, 'by': 'a', 'tick_side': 'a'}
         s['sides']['a'].update(ap=1, deck=[card_instance(s, 'I03', 'a')])
         s = self.play(s, 'R02')

@@ -42,10 +42,10 @@ class HaniyaTest(unittest.TestCase):
         self.assertEqual(hero(s,'a','haniya')['protagonist_aura'],0)
         self.assertEqual((CHARACTERS['haniya']['attribute'], CHARACTERS['haniya']['attack'], CHARACTERS['haniya']['max_hp']), ('魂',2,4))
         self.assertEqual(CHARACTERS['haniya']['energy_max'],6)
-        self.assertNotIn('haniya', {h['id'] for h in get_catalog(include_test_characters=False)['characters']})
+        self.assertIn('haniya', {h['id'] for h in get_catalog(include_test_characters=False)['characters']})
         cards = [c for c in CARDS.values() if c['character_id']=='haniya']
         self.assertEqual(len(cards),8)
-        self.assertEqual([c['name'] for c in cards][-2:], ['名为哈尼娅的旋律','引爆全场'])
+        self.assertEqual([c['name'] for c in cards][-2:], ['青春注脚','引爆全场'])
         for field in ('avatar','portrait'):
             self.assertTrue(Path('app'+CHARACTERS['haniya'][field]).is_file())
         self.assertEqual(hero(self.game(),'a','haniya')['protagonist_aura'],1)
@@ -115,7 +115,7 @@ class HaniyaTest(unittest.TestCase):
 
     def test_dark_star_count_retained_while_down_and_weapon_does_not_spend(self):
         s=self.game();hero(s,'a','haniya').update(shape='V06',protagonist_aura=4)
-        s['sides']['a']['front']='anhunqu';hero(s,'a','anhunqu')['harmony']=2
+        s['sides']['a'].update(front='anhunqu',last_front='anhunqu',last_actor_entity_id=hero(s,'a','anhunqu').entity_id,last_actor_turn=s['turn']);hero(s,'a','anhunqu')['harmony']=3
         s=self.attack(s,'haniya')
         self.assertEqual(s['sides']['a']['dark_star_count'],1)
         self.assertEqual(s['sides']['b']['hp'],23)

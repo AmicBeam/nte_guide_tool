@@ -9,7 +9,8 @@
       return V2.findLegalEntry(ctx.game, function (action) {
         if (action.type !== type) return false;
         return Object.keys(extra).every(function (key) {
-          if (key === 'card_ids') return V2.sameIdSet(action.card_ids, extra.card_ids);
+          if (key === 'card_ids' || key === 'bottom_card_ids') return type === 'choose_deck_order'
+            ? TABLE.sameDeckOrder(action[key], extra[key]) : V2.sameIdSet(action.card_ids, extra.card_ids);
           return String(action[key] || '') === String(extra[key] || '');
         });
       });
@@ -23,6 +24,9 @@
     }
 
     ctx.findAction = findAction;
+    ctx.findUltimateAction = function (cid) {
+      return findAction('exit_ultimate', { character_id: cid }) || findAction('ultimate', { character_id: cid });
+    };
     ctx.actionsOf = actionsOf;
     ctx.playEntries = function (cardId) {
       return actionsOf('play_card', function (action) {
@@ -137,6 +141,7 @@
         sendAction: ctx.sendAction,
         showMulligan: ctx.forceMulliganStage ? true : (ctx.mulliganFinished ? false : undefined),
         findAction: locked ? function () { return null; } : findAction,
+        findUltimateAction: locked ? function () { return null; } : ctx.findUltimateAction,
         playEntries: locked ? function () { return []; } : ctx.playEntries,
       };
     }
@@ -205,6 +210,7 @@
       if (ctx.endBoardTargetSelect) ctx.endBoardTargetSelect();
       ctx.lastVersion = -1;
       ctx.page.classList.remove('presentation-busy');
+      if (ctx.clearSelectionView) ctx.clearSelectionView();
       if (ctx.player && typeof ctx.player.cancel === 'function') {
         ctx.player.cancel();
       }
@@ -257,6 +263,8 @@
     }
 
     function renderEmpty(title, copy, kind) {
+      ctx.page.setAttribute('data-escalation-stage', '0');
+      if (ctx.clearSelectionView) ctx.clearSelectionView();
       ctx.emptyTitle.textContent = title;
       ctx.emptyCopy.textContent = copy;
       V2.setHidden(ctx.emptyState, false);
@@ -274,12 +282,10 @@
       const inMulligan = Boolean(ctx.forceMulliganStage || (ctx.game && ctx.game.phase === 'mulligan' && !ctx.mulliganFinished));
       const canMulligan = inMulligan && actionsOf('mulligan').length > 0;
       ctx.page.classList.toggle('is-mulligan', inMulligan);
-      V2.setHidden(ctx.nodes.mulliganToggle, !inMulligan);
-      if (!inMulligan) {
-        ctx.page.classList.remove('mulligan-collapsed');
-        ctx.nodes.mulliganToggle.setAttribute('aria-expanded', 'true');
-        ctx.nodes.mulliganToggle.textContent = '收起换牌';
-      }
+      if (inMulligan && ctx.setSelectionView) ctx.setSelectionView({
+        key: 'mulligan:' + (ctx.room && ctx.room.room_code), label: '换牌', region: ctx.nodes.mulliganStage,
+      });
+      else if (ctx.clearSelectionView) ctx.clearSelectionView(ctx.nodes.mulliganStage);
       if (ctx.nodes.mulliganStage) V2.setHidden(ctx.nodes.mulliganStage, !inMulligan);
       V2.setHidden(ctx.nodes.mulliganBtn, !canMulligan);
       const selected = ctx.mulliganIds.length;
@@ -294,15 +300,28 @@
     function renderChoiceFromServer() {
       if (ctx.replayMode) return;
       const pending = ctx.game && ctx.game.pending_choice;
+      if (ctx.localChoice && ctx.localChoice.kind === 'server-divination' &&
+          (!pending || pending.side !== ctx.viewer() || (pending.kind !== 'heiyu_divination' && !pending.hand_placement) ||
+          TABLE.divinationChoiceKey(pending) !== ctx.localChoice.key)) {
+        ctx.localChoice = null;
+        ctx.divinationDraft = null;
+        ctx.closeOverlay(ctx.choiceOverlay);
+      }
       if (ctx.localChoice || ctx.dragState) return;
       if (!pending || pending.side !== ctx.viewer()) {
         if (!ctx.localChoice) ctx.closeOverlay(ctx.choiceOverlay);
+        return;
+      }
+      if (ctx.busy || ctx.playingEvents) return;
+      if ((pending.kind === 'heiyu_divination' || pending.hand_placement) && ctx.openDivinationChoice) {
+        ctx.openDivinationChoice(pending);
         return;
       }
       ctx.openChoice({
         title: pending.prompt || '请选择',
         choices: pending.choices || [],
         maxSelect: pending.max_select,
+        minSelect: pending.min_select,
         onPick: function (choice) {
           if (pending.max_select) {
             ctx.submitEntry(findAction('choose_cards', { card_ids: choice.ids }));

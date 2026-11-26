@@ -1,0 +1,18 @@
+{% macro article_inline(block) -%}
+{%- if block.runs is defined -%}
+{%- for run in block.runs -%}
+{%- if run.src is defined -%}<img class="guide-article-emoji" src="{{ run.src }}" alt="{{ run.alt }}" width="32" height="32" loading="lazy">
+{%- elif run.color is defined and run.color in ['blue', 'red', 'purple'] -%}<span class="guide-article-{{ run.color }}">{{ run.text }}</span>
+{%- else -%}{{ run.text }}{%- endif -%}
+{%- endfor -%}
+{%- else -%}{{ block.text }}{%- endif -%}
+{%- endmacro %}
+{% for block in value %}
+{% if block.type == 'heading' %}<h3 id="article-{{ block.id }}">{{ block.text }}</h3>
+{% elif block.type == 'formula' %}<p class="guide-text"><strong>{{ article_inline(block) }}</strong></p>
+{% elif block.type == 'link' %}<p class="guide-links"><a href="{{ block.url }}" target="_blank" rel="noopener noreferrer">{{ block.text }} ↗</a></p>
+{% elif block.type == 'missing' %}<p class="guide-text guide-article-missing">{{ block.text }}</p>
+{% elif block.type == 'video' %}<div class="guide-article-video"><iframe src="https://player.bilibili.com/player.html?bvid={{ block.bvid }}&amp;page=1&amp;autoplay=0" title="{{ block.title }}" allow="fullscreen; picture-in-picture; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+{% elif block.type == 'image' %}<figure class="guide-article-figure" style="width:min(100%, {{ block.width }}px)"><a href="{{ block.src }}" target="_blank" rel="noopener noreferrer" aria-label="查看{{ block.alt }}原图"><img src="{{ block.src }}" alt="{{ block.alt }}" width="{{ block.width }}" height="{{ block.height }}" loading="lazy" decoding="async"></a></figure>
+{% else %}<p class="guide-text">{{ article_inline(block) }}</p>{% endif %}
+{% endfor %}

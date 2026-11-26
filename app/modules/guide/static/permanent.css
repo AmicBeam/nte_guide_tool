@@ -1,0 +1,19 @@
+.guide-permanent-furniture { padding: 20px 0; border-bottom: 1px solid var(--guide-border, #303745); }
+.guide-permanent-furniture:first-child { padding-top: 0; }
+.guide-permanent-furniture h3 { font-size: 21px; margin: 0 0 12px; }
+.guide-permanent-furniture h3 small { display: block; color: var(--guide-muted, #aeb8c8); font-size: 14px; font-weight: 400; margin-top: 6px; }
+.guide-permanent-summary { padding: 16px; border-radius: 12px; background: rgba(110, 215, 171, .07); margin: 16px 0; }
+.guide-permanent-summary strong { display: block; margin-bottom: 10px; }
+.guide-permanent-bonuses { display: flex; gap: 6px 16px; flex-wrap: wrap; }
+.guide-permanent-bonuses span { color: #8ce3b8; white-space: nowrap; }
+.guide-training-table { min-width: 740px; }
+.guide-training-table td:last-child { min-width: 290px; }
+.guide-permanent-furniture .guide-data-table { min-width: 540px; }
+
+.guide-furniture-heading { display: flex; align-items: center; gap: 20px; }
+.guide-furniture-heading > div { min-width: 0; }
+.guide-furniture-image { flex: 0 0 auto; width: 128px; height: 128px; object-fit: contain; }
+@media (max-width: 600px) {
+  .guide-furniture-heading { align-items: flex-start; gap: 12px; }
+  .guide-furniture-image { width: 88px; height: 88px; }
+}

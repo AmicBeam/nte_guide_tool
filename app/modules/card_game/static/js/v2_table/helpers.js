@@ -562,7 +562,7 @@
     if (action.type === 'attack') {
       return { kind: 'attack', actor_id: entityId(side, action.character_id), target_ids: [] };
     }
-    if (action.type === 'ultimate') {
+    if (action.type === 'ultimate' || action.type === 'exit_ultimate') {
       return { kind: 'ultimate', actor_id: entityId(side, action.character_id), target_ids: [] };
     }
     if (action.type === 'play_card') {
@@ -584,7 +584,7 @@
       }
       return { kind: 'cast', actor_id: card ? entityId(side, card.character_id) : null, target_ids: [] };
     }
-    if (action.type === 'choose' || action.type === 'cycle' || action.type === 'mulligan') {
+    if (action.type === 'choose' || action.type === 'choose_deck_order' || action.type === 'cycle' || action.type === 'mulligan') {
       return { kind: 'choice', actor_id: null, target_ids: [] };
     }
     return { kind: 'other', actor_id: null, target_ids: [] };
@@ -694,6 +694,7 @@
       '环合 ' + (data.harmony == null ? 0 : data.harmony),
       (data.resource_name || '能量') + ' ' + (data.energy == null ? 0 : data.energy) + '/' + (data.energy_max == null ? 5 : data.energy_max),
     ];
+    if (data.signal_level != null) bits.push(['低信号', '中信号', '高信号'][data.signal_level] || '低信号');
     if (data.protagonist_aura != null) bits.push('主角光环 ' + data.protagonist_aura + '/6');
     if (data.truth_keys != null) bits.push('真理之匙 ' + data.truth_keys);
     if (data.arid != null) bits.push('荒时 ' + data.arid);
@@ -709,7 +710,7 @@
     if (data.collapse) {
       bits.push('倾陷');
     } else if (data.collapse_count) {
-      bits.push('倾陷 ' + data.collapse_count + '/' + (data.collapse_max == null ? 5 : data.collapse_max));
+      bits.push('倾陷 ' + data.collapse_count + '/' + (data.collapse_max == null ? 3 : data.collapse_max));
     }
     if (Number(data.down_turns) > 0) {
       bits.push('倒地 ' + data.down_turns);

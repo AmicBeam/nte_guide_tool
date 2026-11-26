@@ -40,7 +40,7 @@ class DuelV2TutorialTest(unittest.TestCase):
         tutorial = observe(state, 'a')['tutorial']
         self.assertEqual(tutorial['step_id'], 'l12_empty')
         self.assertIn('自己的回合开始时，抽 1 张牌。', tutorial['modal']['body'])
-        self.assertIn('抽牌时若牌库已空，会立刻失败。', tutorial['modal']['body'])
+        self.assertIn('抽牌时若牌库已空，会立即失败。', tutorial['modal']['body'])
         self.assertNotIn('先手', tutorial['modal']['body'])
         self.assertNotIn('构筑时要留足牌库', tutorial['modal']['body'])
         state = apply_action(state, 'a', {'type': 'tutorial_ack'})

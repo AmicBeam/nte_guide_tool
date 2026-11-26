@@ -7,6 +7,10 @@
 {% endblock %}
 {% block body %}
 <main class="v2-page v2-table-page" id="v2-table-page">
+    <div class="v2-escalation-edge" aria-hidden="true">
+        <i class="v2-edge-flame top"></i><i class="v2-edge-flame bottom"></i>
+        <i class="v2-edge-flame left"></i><i class="v2-edge-flame right"></i>
+    </div>
     <div class="v2-rotate-hint">
         <strong>请横屏游玩</strong>
         <span id="v2-rotate-copy">旋转手机后即可继续对战。</span>
@@ -22,6 +26,7 @@
             <strong class="v2-hp" id="v2-opponent-hp">-</strong>
             <div class="v2-hud-subline">
                 <small id="v2-opponent-shield">护盾 -</small>
+                <small data-player-max-hp hidden></small>
             </div>
         </article>
         <div class="v2-hud-center">
@@ -43,7 +48,6 @@
             <span class="phase-chip" id="v2-phase-chip">加载中</span>
             <span class="v2-room-chip" id="v2-room-chip">房间 --</span>
             <span class="v2-connection-chip" id="v2-connection-chip">同步中</span>
-            <button class="secondary-btn" id="v2-mulligan-toggle" type="button" aria-expanded="true" aria-controls="v2-mulligan-rail" hidden>收起换牌</button>
             <button class="secondary-btn" id="v2-menu-btn" type="button">菜单</button>
         </div>
     </header>
@@ -83,7 +87,6 @@
                 <div class="v2-harmony-source" id="v2-opponent-harmony-source" hidden></div>
             </div>
             <div class="v2-combat-core">
-                <aside class="v2-escalation" id="v2-escalation" aria-label="对局白热化" hidden></aside>
                 <div class="v2-turn-board">
                     <p id="v2-turn-copy">等待局面。</p>
                     <div class="v2-recent-plays" id="v2-records" aria-label="浔的公开记录" hidden></div>
@@ -116,6 +119,7 @@
             </div>
         </div>
         <aside class="v2-side-actions" aria-label="行动力与回合">
+            <aside class="v2-escalation" id="v2-escalation" aria-label="对局白热化" hidden></aside>
             <div class="v2-ap-readout">
                 <span>行动力</span>
                 <strong id="v2-player-ap" data-tutorial-id="ap">-</strong>
@@ -165,6 +169,7 @@
             <strong class="v2-hp" id="v2-player-hp">-</strong>
             <div class="v2-hud-subline">
                 <small id="v2-player-shield">护盾 -</small>
+                <small data-player-max-hp hidden></small>
             </div>
         </article>
         <div class="v2-hand-stack">
@@ -239,6 +244,7 @@
             </div>
         </div>
     </section>
+    <button class="secondary-btn v2-selection-toggle" id="v2-selection-toggle" type="button" aria-expanded="true" hidden>查看战场</button>
     <section class="v2-choice-overlay" id="v2-choice-overlay" aria-hidden="true"></section>
     <section class="v2-pile-modal" id="v2-pile-modal" aria-hidden="true"></section>
     <aside class="v2-hover-preview" id="v2-card-preview" aria-hidden="true"></aside>
@@ -255,7 +261,9 @@
 <script src="{{ url_for('card_game_module.static', filename='js/v2_api.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_animation.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/helpers.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table/selection_view.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/render.js') }}"></script>
+<script src="{{ url_for('card_game_module.static', filename='js/v2_table/divination.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/interaction.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/tutorial.js') }}"></script>
 <script src="{{ url_for('card_game_module.static', filename='js/v2_table/sync.js') }}"></script>

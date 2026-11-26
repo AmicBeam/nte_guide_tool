@@ -110,11 +110,29 @@ def recommend(state, side, baseline, *, seed=None, seconds=SECONDS, max_plans=MA
         worlds = [sample_world(state, side, seed + 104729*i, runtime=runtime) for i in range(3)]
     except (ValueError, KeyError, TypeError, NotImplementedError):
         result['reason'] = 'unsupported_information_set'; return result
+    result = plan_worlds(state, side, baseline, worlds, result, max_plans,
+                         budget=lambda: time.monotonic() >= end)
+    result['seconds'] = time.monotonic() - start
+    return result
+
+
+def plan_worlds(state, side, baseline, worlds, result, max_plans, budget=None):
+    """Shared deterministic plan ordering; optional host deadline only.
+
+    GPU callers supply three legal information-set worlds and a fixed plan
+    budget. They never supply a host callback or use wall-clock plan pruning.
+    """
+    from app.modules.card_game.engine.duel_v2 import legal_actions, acting_side
+    from app.modules.card_game.engine.duel_v2.state import effective_card
+    from app.modules.card_game.engine.duel_v2.simulation import simulate_action
+    from app.modules.card_game.engine.duel_v2.combat import resolved_harmony_kind
+    own = state['sides'][side]
+    legal = [a for a in legal_actions(state, side) if a['type'] != 'concede']
     result['worlds'] = 3; result['stage_before'] = _features(worlds[0], side)
     options = []
 
     def evaluate(route, starts):
-        if result['plans'] >= max_plans or time.monotonic() >= end:
+        if result['plans'] >= max_plans or (budget is not None and budget()):
             return None
         result['plans'] += 1
         action = route[-1]
@@ -124,7 +142,7 @@ def recommend(state, side, baseline, *, seed=None, seconds=SECONDS, max_plans=MA
             after = [simulate_action(w, side, action) for w in starts]
         except (ValueError, KeyError, TypeError, NotImplementedError):
             return None
-        ranks = [_rank(w, a, side) for w, a in zip(worlds, after)]
+        ranks = [_rank(worlds[i], after[i], side) for i in range(len(worlds))]
         entry = (min(ranks), route, after)
         options.append(entry)
         return entry
@@ -134,7 +152,7 @@ def recommend(state, side, baseline, *, seed=None, seconds=SECONDS, max_plans=MA
         result['reason'] = 'budget_or_unsupported_baseline'; return result
     # Preserve the existing planner's winning action in every sampled world.
     if original[0][0] == 2:
-        result.update(reason='preserve_winning_action', seconds=time.monotonic()-start); return result
+        result.update(reason='preserve_winning_action'); return result
     hand = {c['instance_id']: c for c in own['hand']}
     features = result['stage_before']
     result['priority_routes'] = []
@@ -198,10 +216,11 @@ def recommend(state, side, baseline, *, seed=None, seconds=SECONDS, max_plans=MA
             evaluate(route+[action], starts)
     best = max(options, key=lambda row: (row[0], -len(row[1]), row[1][0] == baseline))
     result.update(reason='keep_model', baseline_rank=list(original[0]), best_rank=list(best[0]),
-                  route=deepcopy(best[1]), seconds=time.monotonic()-start)
+                  route=deepcopy(best[1]))
     if best[0] > original[0] and best[1][0] != baseline:
         reason = ('zero_battle_yi_battle' if len(best[1]) == 2 else 'yi_battle_finish_setup') if best[1] in result['priority_routes'] else 'setup_progress_or_safety'
         result.update(selected=deepcopy(best[1][0]), changed=True, reason=reason,
-                      sampled_checks=[dict(features=_features(w, side), rank=list(_rank(base, w, side)))
-                                      for base, w in zip(worlds, best[2])])
+                      sampled_checks=[dict(features=_features(best[2][i], side),
+                                          rank=list(_rank(worlds[i], best[2][i], side)))
+                                      for i in range(len(worlds))])
     return result

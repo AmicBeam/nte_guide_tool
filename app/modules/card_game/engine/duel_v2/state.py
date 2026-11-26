@@ -44,6 +44,10 @@ def hero(state, side, cid):
     return state['sides'][side]['characters'][cid]
 
 
+def player_max_hp(state, side):
+    return int(state['sides'][side].get('max_hp', 30))
+
+
 def alive(state, side, cid):
     characters = state['sides'][side]['characters']
     return cid in characters and characters[cid]['hp'] > 0
@@ -112,7 +116,9 @@ def add_atk_buff(character, amount=1, *, source_entity_id=None, source_key='atta
 
 
 def energy_max(character):
-    return energy_max_for_attribute(character.get('attribute'))
+    template = CHARACTERS.get(character.get('id')) or {}
+    override = template.get('energy_max_override', character.get('energy_max_override'))
+    return int(override) if override is not None else energy_max_for_attribute(character.get('attribute'))
 
 
 def round_half_up(value):
@@ -200,11 +206,13 @@ def victory(state):
 
 
 def upgrade_harmony_residue(state):
-    """Legacy snapshots lack evidence that a benched source was full at departure."""
-    if state.get('harmony_residue_version') != 1:
+    """Old departure records are not evidence of an actual card/sortie action."""
+    if state.get('harmony_residue_version') != 3:
         for team in state['sides'].values():
             team['last_front'] = None
-        state['harmony_residue_version'] = 1
+            team['last_actor_entity_id'] = None
+            team['last_actor_turn'] = None
+        state['harmony_residue_version'] = 3
 
 
 def clear_harmony_source(state, side, cid):
@@ -212,6 +220,7 @@ def clear_harmony_source(state, side, cid):
     team = state['sides'][side]
     if team['last_front'] == cid:
         team['last_front'] = None
+        team['last_actor_entity_id'] = None
 
 
 def move_out(state, side, cid, *, reason=None):
@@ -224,10 +233,7 @@ def move_out(state, side, cid, *, reason=None):
         from .summons import dismiss
         dismiss(state, side, cid)
         return
-    from .escalation import harmony_cap
-    # Capture eligibility at departure; later bench resource gains cannot create it.
-    team['last_front'] = (cid if alive(state, side, cid)
-                          and h['harmony'] >= harmony_cap(state) else None)
+    # Returning to the bench never creates or transfers an action source.
     if reason == 'replace' and alive(state, side, cid) and not h.get('summoned'):
         from app.modules.card_game.content.duel_v2.registry import fire
         from .context import EffectContext
@@ -343,6 +349,22 @@ def damage_immune(state, side, cid):
     return alive(state, side, cid) and bool(evaluate(state, side, h, 'rule.damage_immune', False)['value'])
 
 
+def protection_state(state, side, cid):
+    """Public protection traits, shared by live boards and replay patches."""
+    from .modifiers import evaluate
+    from .context import EffectContext
+    from app.modules.card_game.content.duel_v2.registry import decide
+    if not alive(state, side, cid):
+        return dict(combat_immune=False, noncombat_immune=False, hp_floor=0)
+    target = hero(state, side, cid)
+    context = EffectContext(state, side, cid, state.get('operation') or {'side': side})
+    return dict(
+        combat_immune=bool(evaluate(state, side, target, 'rule.combat_immune', False)['value']),
+        noncombat_immune=bool(decide(context, 'noncombat_damage_immune', False, actor_only=True)),
+        hp_floor=int(decide(context, 'hp_floor', 0, target_id=cid) or 0),
+    )
+
+
 def damage_limit(state, side, cid):
     """Public per-event damage cap; None means there is no active limit."""
     if not alive(state, side, cid):
@@ -353,7 +375,8 @@ def damage_limit(state, side, cid):
 
 
 def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage', settle=True,
-           group_id=None, damage_class=None, reason=None, counter_immunity=None):
+           group_id=None, damage_class=None, reason=None, counter_immunity=None,
+           attribute=None, additional_attack=False, _additional_bonus_applied=False):
     if finished(state):
         return 0
     esper = is_esper(cid)
@@ -364,24 +387,43 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
     from .modifiers import evaluate
     amount = max(0, int(evaluate(state, side, target, 'damage.amount', amount,
                                query={'kind': kind, 'source': source})['value']))
-    src_side, _ = source_parts(source)
+    src_side, src_cid = source_parts(source)
+    if not _additional_bonus_applied and src_side and src_cid in state['sides'][src_side]['characters']:
+        from .context import EffectContext
+        from app.modules.card_game.content.duel_v2.registry import decide
+        source_context = EffectContext(state, src_side, src_cid, {'side': src_side})
+        additional_attack = bool(decide(source_context, 'damage_is_additional', additional_attack,
+                                        actor_only=True, target_side=side, target_id=cid, damage_kind=kind))
+        if additional_attack:
+            amount += int(decide(source_context, 'additional_attack_damage_bonus', 0,
+                                 target_side=side, target_id=cid) or 0)
     if damage_class == 'attachment' and src_side:
         from .context import EffectContext
         from app.modules.card_game.content.duel_v2.registry import tally
         amount += tally(EffectContext(state, src_side, team_order(state, src_side)[0],
                                       {'side': src_side}), 'attachment_damage_bonus')
+    immunity_kind = None
     if esper:
         from app.modules.card_game.content.duel_v2.registry import decide
         from .context import EffectContext
+        incoming_amount = amount
+        incoming_immunity = decide(EffectContext(state, side, cid, {'side': side}),
+                                   'incoming_damage_immunity', None,
+                                   kind=kind, target_id=cid, source=source)
         amount = decide(EffectContext(state, side, cid, {'side': side}), 'incoming_damage',
                         amount, kind=kind, target_id=cid, source=source)
         amount = max(0, int(amount or 0))
+        if incoming_amount > 0 and amount == 0 and incoming_immunity:
+            immunity_kind = incoming_immunity
     klass = damage_class_for(kind, damage_class)
-    attr = source_attribute(state, source)
+    attr = attribute or source_attribute(state, source)
     zone = front_debuff(state, side)
     immune = ((esper and damage_immune(state, side, cid))
+              or (kind == 'combat' and evaluate(state, side, target, 'rule.combat_immune', False)['value'])
               or (counter_immunity == 'support' and kind == 'combat'))
     if immune:
+        if amount > 0 and not (counter_immunity == 'support' and kind == 'combat'):
+            immunity_kind = ('all' if esper and damage_immune(state, side, cid) else 'combat')
         amount = 0
     if (not immune and kind == 'combat' and attr in ('魂', '相') and zone.get('stain')
             and (state['sides'][side]['front'] == cid or (not esper and not state['sides'][side]['front']))):
@@ -427,6 +469,10 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         loss = 0
     target['hp'] = max(floor, target['hp'] - loss)
     after = {'hp': target['hp'], 'shield': target['shield']}
+    if kind in ('genesis', 'overlay') and src_side in SIDES and src_side != side:
+        dealt = absorbed + max(0, min(before['hp'], before['hp'] - after['hp']))
+        team = state['sides'][src_side]
+        team['genesis_weave_damage'] = int(team.get('genesis_weave_damage', 0)) + dealt
     # Public, team-wide history: count each positive genesis hit on the opposing
     # player that reduces life. Flowers and equipment hits are distinct.
     if (kind == 'genesis' and not esper and src_side in SIDES and src_side != side
@@ -434,6 +480,10 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
         team = state['sides'][src_side]
         team['genesis_player_hits'] = int(team.get('genesis_player_hits', 0)) + 1
     extra = {}
+    if immunity_kind:
+        extra['immunity_kind'] = immunity_kind
+    if attribute is not None or additional_attack:
+        extra.update(attribute=attr, additional_attack=bool(additional_attack))
     if group_id:
         extra['group_id'] = group_id
     if counter_immunity == 'support' and kind == 'combat' and amount == 0:
@@ -467,9 +517,16 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
                 fire(EffectContext(state, src_side, src_cid, {'side': src_side}),
                      'on_damage_dealt', actor_only=True, target_side=side, target_id=cid, amount=loss,
                      damage_kind=kind)
+            if src_side in SIDES:
+                from app.modules.card_game.engine.events import GameEvent
+                carrier = team_order(state, src_side)[0]
+                fire(EffectContext(state, src_side, carrier, {'side': src_side}),
+                     GameEvent.V2_ALLIED_DAMAGE, target_side=side, target_id=cid, amount=loss,
+                     damage_kind=kind, damage_reason=reason, source=source)
     if redirect_loss and redirect and not finished(state):
         damage(state, side, redirect, redirect_loss, source=source, kind=kind, settle=settle,
-               group_id=group_id, damage_class=damage_class, reason='护盾破碎，溢出伤害转移')
+               group_id=group_id, damage_class=damage_class, reason='护盾破碎，溢出伤害转移',
+               attribute=attribute, additional_attack=additional_attack, _additional_bonus_applied=True)
         return loss
     if settle:
         knockdowns(state)
@@ -478,9 +535,15 @@ def damage(state, side, cid, amount, *, bypass=False, source=None, kind='damage'
 
 
 def reduce_max_hp(state, side, cid, amount, *, source=None, settle=True, group_id=None):
-    if finished(state) or not is_esper(cid):
+    if finished(state):
         return 0
-    h = hero(state, side, cid)
+    esper = is_esper(cid)
+    cid = cid if esper else PLAYER_ID
+    h = hero(state, side, cid) if esper else state['sides'][side]
+    if not esper:
+        if h.get('life_locked'):
+            return 0
+        h.setdefault('max_hp', 30)
     if h['hp'] <= 0:
         return 0
     amount = max(0, int(amount))
@@ -510,6 +573,23 @@ def reduce_max_hp(state, side, cid, amount, *, source=None, settle=True, group_i
     return cut
 
 
+def collapse_max(character):
+    """Temporary limits and permanent, entity-scoped reductions compose."""
+    base = int((character.get('flags') or {}).get('collapse_max') or 3)
+    return max(1, base - collapse_reduction(character))
+
+
+def collapse_reduction(character):
+    return min(1, sum(int(n) for n in (character.get('collapse_reductions') or {}).values()))
+
+
+def collapse_border_cut(character):
+    if collapsed(character):
+        return 100
+    count = int((character.get('flags') or {}).get('collapse_count', 0))
+    return min(100, max(0, count / collapse_max(character) * 100))
+
+
 def force_collapse(state, side, cid, *, by=None):
     """Put a living esper straight into 倾陷. Duration matches a full collapse."""
     if finished(state) or not is_esper(cid) or not alive(state, side, cid):
@@ -523,6 +603,14 @@ def force_collapse(state, side, cid, *, by=None):
     flags['collapse'] = {'side': applier, 'until': state['sides'][applier]['turn_count'] + 1}
     log(state, f"{h['name']}进入倾陷。", 'collapse', side=side, source=cid,
         target=f'{side}:{cid}', after={'collapse': True})
+    from app.modules.card_game.content.duel_v2.registry import fire
+    from app.modules.card_game.engine.events import GameEvent
+    from .context import EffectContext
+    carrier = next((key for key in team_order(state, applier)
+                    if not hero(state, applier, key).get('summoned')), None)
+    if carrier:
+        fire(EffectContext(state, applier, carrier, {'side': applier}),
+             GameEvent.V2_COLLAPSE_ENTERED, target_side=side, target_id=cid)
 
 
 def add_collapse(state, side, cid, amount=1, *, by=None):
@@ -531,20 +619,18 @@ def add_collapse(state, side, cid, amount=1, *, by=None):
     h = hero(state, side, cid)
     flags = h.setdefault('flags', {})
     before = int(flags.get('collapse_count') or 0)
-    flags['collapse_count'] = before + max(0, int(amount))
+    amount = max(0, int(amount))
+    flags['collapse_count'] = before + amount
     actor = None
     if by and state['sides'][by].get('front'):
         actor = f"{by}:{state['sides'][by]['front']}"
-    log(state, f"{h['name']}倾陷值 +{amount}（{flags['collapse_count']}/5）。", 'collapse',
-        side=side, source=cid, actor=actor, target=f'{side}:{cid}', amount=amount,
-        before={'collapse_count': before}, after={'collapse_count': flags['collapse_count']})
-    limit = int(flags.get('collapse_max') or 5)
+    limit = collapse_max(h)
+    if amount:
+        log(state, f"{h['name']}倾陷值 +{amount}（{flags['collapse_count']}/{limit}）。", 'collapse',
+            side=side, source=cid, actor=actor, target=f'{side}:{cid}', amount=amount,
+            before={'collapse_count': before}, after={'collapse_count': flags['collapse_count']})
     if flags['collapse_count'] >= limit and not flags.get('collapse'):
-        flags['collapse_count'] = 0
-        applier = by or other(side)
-        flags['collapse'] = {'side': applier, 'until': state['sides'][applier]['turn_count'] + 1}
-        log(state, f"{h['name']}进入倾陷。", 'collapse', side=side, source=cid,
-            target=f'{side}:{cid}', after={'collapse': True})
+        force_collapse(state, side, cid, by=by)
 
 
 def heal(state, side, cid, amount, *, reason=None, source=None):
@@ -560,7 +646,7 @@ def heal(state, side, cid, amount, *, reason=None, source=None):
         team = state['sides'][side]
         if team.get('life_locked'):
             return
-        actual = min(amount, 30 - team['hp'])
+        actual = min(amount, player_max_hp(state, side) - team['hp'])
         if actual <= 0:
             return
         before = {'hp': team['hp'], 'shield': team['shield']}
@@ -635,7 +721,7 @@ def energy(state, side, cid, amount=1):
     h['energy'] = min(energy_cap(state, h), h['energy'] + amount)
 
 
-def add_hand(state, side, card, *, reveal=False, reason=None):
+def add_hand(state, side, card, *, reveal=False, reason=None, emit_gain=True):
     from .presentation import public_card
     if finished(state):
         return
@@ -648,7 +734,7 @@ def add_hand(state, side, card, *, reveal=False, reason=None):
         from .context import EffectContext
         fire(EffectContext(state, side, team_order(state, side)[0], {'side': side}),
              'on_hand_added', card=card)
-        if reveal or card.get('copy') or card.get('derived'):
+        if emit_gain and (reveal or card.get('copy') or card.get('derived')):
             log(state, (f'{reason}：' if reason else '') + f"{name(state, side)}获得{'临时复制' if card.get('copy') else ''}「{card['name']}」。",
                 'gain', side=side, card=public_card(card), actor=f'{side}:player')
 
@@ -666,7 +752,9 @@ def draw(state, side, count=1, *, card_type=None):
                 break
         if team['deck']:
             card = team['deck'].pop(index)
-            add_hand(state, side, card)
+            # The draw event owns this hand movement, even for derived/copy cards.
+            # Do not publish a second gain event or reveal the drawn identity.
+            add_hand(state, side, card, emit_gain=False)
             log(state, f"{name(state, side)}抽 1 张牌。", 'draw', side=side,
                 actor=f'{side}:player', private_side=side, private_card=public_card(effective_card(state, side, card)))
         else:

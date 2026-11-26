@@ -36,3 +36,35 @@ class RevisionSnapshotTest(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+
+class FrozenSourceSnapshotTest(unittest.TestCase):
+    def test_verified_manifest_owns_a_standalone_copy_without_git(self):
+        from app.modules.card_game.rl.offline_sources import snapshot
+        from hashlib import sha256
+        import json
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)/'isolated';root.mkdir();(root/'scripts').mkdir()
+            data=b'print("task source")\n';(root/'scripts/check.py').write_bytes(data)
+            declared={'scripts/check.py':dict(bytes=len(data),sha256=sha256(data).hexdigest())}
+            readme = root/'app/modules/card_game/README.md'
+            readme.parent.mkdir(parents=True)
+            readme.write_bytes(b'# Training module\n')
+            declared['app/modules/card_game/README.md'] = dict(
+                bytes=readme.stat().st_size, sha256=sha256(readme.read_bytes()).hexdigest())
+            (root/'source-manifest.json').write_text(json.dumps(declared))
+            out=Path(temp)/'nested/output'
+            self.assertEqual(snapshot(root,out),declared)
+            self.assertEqual((out/'scripts/check.py').read_bytes(),data)
+            (root/'scripts/check.py').write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError,'Frozen source changed'):snapshot(root,Path(temp)/'changed')
+
+    def test_empty_git_source_still_creates_its_manifest_directory(self):
+        from app.modules.card_game.rl.offline_sources import snapshot
+        from unittest.mock import patch
+        import subprocess
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);out=root/'empty/output'
+            with patch('app.modules.card_game.rl.offline_sources.subprocess.run',return_value=subprocess.CompletedProcess([],0,stdout=b'')):
+                self.assertEqual(snapshot(root,out),{})
+            self.assertTrue((out/'source-manifest.json').is_file())

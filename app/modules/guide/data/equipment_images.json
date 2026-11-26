@@ -1,0 +1,432 @@
+{
+  "cell2_style1_1": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen2.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_Hen2": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen2.webp",
+    "kind": "drive"
+  },
+  "cell2_style1_1_Blue": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen2.webp",
+    "kind": "drive"
+  },
+  "cell2_style1_1_Purple": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen2.webp",
+    "kind": "drive"
+  },
+  "cell2_style1_1_Orange": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen2.webp",
+    "kind": "drive"
+  },
+  "cell2_style2_1": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu2.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_Shu2": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu2.webp",
+    "kind": "drive"
+  },
+  "cell2_style2_1_Blue": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu2.webp",
+    "kind": "drive"
+  },
+  "cell2_style2_1_Purple": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu2.webp",
+    "kind": "drive"
+  },
+  "cell2_style2_1_Orange": {
+    "name": "Ⅱ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu2.webp",
+    "kind": "drive"
+  },
+  "cell3_style1_1": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen3.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_Hen3": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen3.webp",
+    "kind": "drive"
+  },
+  "cell3_style1_1_Blue": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen3.webp",
+    "kind": "drive"
+  },
+  "cell3_style1_1_Purple": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen3.webp",
+    "kind": "drive"
+  },
+  "cell3_style1_1_Orange": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen3.webp",
+    "kind": "drive"
+  },
+  "cell3_style2_1": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu3.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_Shu3": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu3.webp",
+    "kind": "drive"
+  },
+  "cell3_style2_1_Blue": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu3.webp",
+    "kind": "drive"
+  },
+  "cell3_style2_1_Purple": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu3.webp",
+    "kind": "drive"
+  },
+  "cell3_style2_1_Orange": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu3.webp",
+    "kind": "drive"
+  },
+  "cell3_style3_1": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao1.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_ZhiJiao1": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao1.webp",
+    "kind": "drive"
+  },
+  "cell3_style3_1_Blue": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao1.webp",
+    "kind": "drive"
+  },
+  "cell3_style3_1_Purple": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao1.webp",
+    "kind": "drive"
+  },
+  "cell3_style3_1_Orange": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao1.webp",
+    "kind": "drive"
+  },
+  "cell3_style4_1": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao2.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_ZhiJiao2": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao2.webp",
+    "kind": "drive"
+  },
+  "cell3_style4_1_Blue": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao2.webp",
+    "kind": "drive"
+  },
+  "cell3_style4_1_Purple": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao2.webp",
+    "kind": "drive"
+  },
+  "cell3_style4_1_Orange": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao2.webp",
+    "kind": "drive"
+  },
+  "cell3_style5_1": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao3.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_ZhiJiao3": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao3.webp",
+    "kind": "drive"
+  },
+  "cell3_style5_1_Blue": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao3.webp",
+    "kind": "drive"
+  },
+  "cell3_style5_1_Purple": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao3.webp",
+    "kind": "drive"
+  },
+  "cell3_style5_1_Orange": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao3.webp",
+    "kind": "drive"
+  },
+  "cell3_style6_1": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao4.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_ZhiJiao4": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao4.webp",
+    "kind": "drive"
+  },
+  "cell3_style6_1_Blue": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao4.webp",
+    "kind": "drive"
+  },
+  "cell3_style6_1_Purple": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao4.webp",
+    "kind": "drive"
+  },
+  "cell3_style6_1_Orange": {
+    "name": "Ⅲ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_ZhiJiao4.webp",
+    "kind": "drive"
+  },
+  "cell4_style1_1": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen4.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_Hen4": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen4.webp",
+    "kind": "drive"
+  },
+  "cell4_style1_1_Blue": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen4.webp",
+    "kind": "drive"
+  },
+  "cell4_style1_1_Purple": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen4.webp",
+    "kind": "drive"
+  },
+  "cell4_style1_1_Orange": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Hen4.webp",
+    "kind": "drive"
+  },
+  "cell4_style2_1": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu4.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_Shu4": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu4.webp",
+    "kind": "drive"
+  },
+  "cell4_style2_1_Blue": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu4.webp",
+    "kind": "drive"
+  },
+  "cell4_style2_1_Purple": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu4.webp",
+    "kind": "drive"
+  },
+  "cell4_style2_1_Orange": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Shu4.webp",
+    "kind": "drive"
+  },
+  "cell4_style5_1": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z3.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_Z3": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z3.webp",
+    "kind": "drive"
+  },
+  "cell4_style5_1_Blue": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z3.webp",
+    "kind": "drive"
+  },
+  "cell4_style5_1_Purple": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z3.webp",
+    "kind": "drive"
+  },
+  "cell4_style5_1_Orange": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z3.webp",
+    "kind": "drive"
+  },
+  "cell4_style6_1": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z4.webp",
+    "kind": "drive"
+  },
+  "EquipmentGeometry_Z4": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z4.webp",
+    "kind": "drive"
+  },
+  "cell4_style6_1_Blue": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z4.webp",
+    "kind": "drive"
+  },
+  "cell4_style6_1_Purple": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z4.webp",
+    "kind": "drive"
+  },
+  "cell4_style6_1_Orange": {
+    "name": "Ⅳ型驱动",
+    "image": "/static/guide/equipment/EquipmentGeometry_Z4.webp",
+    "kind": "drive"
+  },
+  "attack": {
+    "name": "「影之信条」",
+    "aliases": [
+      "attack",
+      "「影之信条」",
+      "影之信条"
+    ],
+    "image": "/static/guide/equipment/attack.webp",
+    "kind": "core"
+  },
+  "chaos": {
+    "name": "「迪亚波罗斯」",
+    "aliases": [
+      "chaos",
+      "「迪亚波罗斯」",
+      "迪亚波罗斯"
+    ],
+    "image": "/static/guide/equipment/chaos.webp",
+    "kind": "core"
+  },
+  "cosmos": {
+    "name": "「失落光芒」",
+    "aliases": [
+      "cosmos",
+      "「失落光芒」",
+      "失落光芒"
+    ],
+    "image": "/static/guide/equipment/cosmos.webp",
+    "kind": "core"
+  },
+  "cosmos_guide": {
+    "name": "「失落光芒」",
+    "aliases": [
+      "cosmos_guide",
+      "「失落光芒」",
+      "失落光芒"
+    ],
+    "image": "/static/guide/equipment/cosmos_guide.webp",
+    "kind": "core"
+  },
+  "get_efficiency": {
+    "name": "「音速蓝刺猬」",
+    "aliases": [
+      "get_efficiency",
+      "「音速蓝刺猬」",
+      "音速蓝刺猬"
+    ],
+    "image": "/static/guide/equipment/get_efficiency.webp",
+    "kind": "core"
+  },
+  "heal": {
+    "name": "「缇娅的夜间酒馆」",
+    "aliases": [
+      "heal",
+      "「缇娅的夜间酒馆」",
+      "缇娅的夜间酒馆"
+    ],
+    "image": "/static/guide/equipment/heal.webp",
+    "kind": "core"
+  },
+  "incantation": {
+    "name": "「真红：双生蝶」",
+    "aliases": [
+      "incantation",
+      "「真红：双生蝶」",
+      "真红：双生蝶"
+    ],
+    "image": "/static/guide/equipment/incantation.webp",
+    "kind": "core"
+  },
+  "lakshana": {
+    "name": "「街头拳王」",
+    "aliases": [
+      "lakshana",
+      "「街头拳王」",
+      "街头拳王"
+    ],
+    "image": "/static/guide/equipment/lakshana.webp",
+    "kind": "core"
+  },
+  "mag": {
+    "name": "「小小大冒险」",
+    "aliases": [
+      "mag",
+      "「小小大冒险」",
+      "小小大冒险"
+    ],
+    "image": "/static/guide/equipment/mag.webp",
+    "kind": "core"
+  },
+  "nature": {
+    "name": "「森林萤火之心」",
+    "aliases": [
+      "nature",
+      "「森林萤火之心」",
+      "森林萤火之心"
+    ],
+    "image": "/static/guide/equipment/nature.webp",
+    "kind": "core"
+  },
+  "psyche": {
+    "name": "「恶魔之血：诅咒」",
+    "aliases": [
+      "psyche",
+      "「恶魔之血：诅咒」",
+      "恶魔之血：诅咒"
+    ],
+    "image": "/static/guide/equipment/psyche.webp",
+    "kind": "core"
+  },
+  "psychically": {
+    "name": "「静谧山庄」",
+    "aliases": [
+      "psychically",
+      "「静谧山庄」",
+      "静谧山庄"
+    ],
+    "image": "/static/guide/equipment/psychically.webp",
+    "kind": "core"
+  },
+  "shield": {
+    "name": "「守卫王国」",
+    "aliases": [
+      "shield",
+      "「守卫王国」",
+      "守卫王国"
+    ],
+    "image": "/static/guide/equipment/shield.webp",
+    "kind": "core"
+  }
+}

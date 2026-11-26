@@ -46,6 +46,9 @@ def serving_search(state,side,model,*,backend,budget_mode='simulations',seconds=
             budget_mode=budget_mode,stop_reason=reason,wall_seconds=finished-start,finished_monotonic=finished,
             tree_stop_reason=(tree or {}).get('stop_reason'),tree_complete=bool((tree or {}).get('complete',False)),
             deadline_reached=end is not None and finished>=end,
+            budget_complete=(reason in ('forced_action','public_terminal_win') or
+                reason=='tree_search' and bool((tree or {}).get('complete',False)) and
+                checks+int((tree or {}).get('simulations',0))==simulations),
             used_fallback=selection is None and reason in ('unsupported_root','no_complete_tree','deadline','cancelled'),
             surrogate_model_key=key,surrogate_model_version=version)
         return out

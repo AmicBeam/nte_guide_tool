@@ -1,0 +1,1028 @@
+{
+  "1003": {
+    "awaken": [
+      {
+        "name": "弥散性的朦白",
+        "icon": "/static/guide/passive-icons/1003_1.webp"
+      },
+      {
+        "name": "暌离性的轻巧",
+        "icon": "/static/guide/passive-icons/1003_2.webp"
+      },
+      {
+        "name": "黏附性的啮合",
+        "icon": "/static/guide/passive-icons/1003_3.webp"
+      },
+      {
+        "name": "祈愿性的依归",
+        "icon": "/static/guide/passive-icons/1003_4.webp"
+      },
+      {
+        "name": "失觉性的崩落",
+        "icon": "/static/guide/passive-icons/1003_5.webp"
+      },
+      {
+        "name": "溶解性的暴食",
+        "icon": "/static/guide/passive-icons/1003_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "不穷食欲",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "薄雾通彻",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1004": {
+    "awaken": [
+      {
+        "name": "不加班之宽赦",
+        "icon": "/static/guide/passive-icons/1004_6.webp"
+      },
+      {
+        "name": "闹钟响彻四方",
+        "icon": "/static/guide/passive-icons/1004_2.webp"
+      },
+      {
+        "name": "冰淇淋在烈阳中融化",
+        "icon": "/static/guide/passive-icons/1004_3.webp"
+      },
+      {
+        "name": "威严赫赫番茄酱大王",
+        "icon": "/static/guide/passive-icons/1004_4.webp"
+      },
+      {
+        "name": "强化玻璃径受审判",
+        "icon": "/static/guide/passive-icons/1004_5.webp"
+      },
+      {
+        "name": "早起出勤之咏",
+        "icon": "/static/guide/passive-icons/1004_1.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "困倦的火焰在心中燃烧",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "美梦的时刻即将来临",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1008": {
+    "awaken": [
+      {
+        "name": "排斥变节的规程",
+        "icon": "/static/guide/passive-icons/1008_1.webp"
+      },
+      {
+        "name": "秩序井然的待办",
+        "icon": "/static/guide/passive-icons/1008_2.webp"
+      },
+      {
+        "name": "异类处理的草案",
+        "icon": "/static/guide/passive-icons/1008_3.webp"
+      },
+      {
+        "name": "划定常规的决议",
+        "icon": "/static/guide/passive-icons/1008_4.webp"
+      },
+      {
+        "name": "社会适应的重任",
+        "icon": "/static/guide/passive-icons/1008_5.webp"
+      },
+      {
+        "name": "无谓形貌的立身",
+        "icon": "/static/guide/passive-icons/1008_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "职场生存守则",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "工作模范准则",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1010": {
+    "awaken": [
+      {
+        "name": "帮派初建成",
+        "icon": "/static/guide/passive-icons/1010_1.webp"
+      },
+      {
+        "name": "第二位成员",
+        "icon": "/static/guide/passive-icons/1010_2.webp"
+      },
+      {
+        "name": "要叫大姐头",
+        "icon": "/static/guide/passive-icons/1010_3.webp"
+      },
+      {
+        "name": "不是闯祸精",
+        "icon": "/static/guide/passive-icons/1010_4.webp"
+      },
+      {
+        "name": "小弟遍天下",
+        "icon": "/static/guide/passive-icons/1010_5.webp"
+      },
+      {
+        "name": "因为是家人",
+        "icon": "/static/guide/passive-icons/1010_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "「柯林斯秘辛·上」",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "「柯林斯秘辛·下」",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1019": {
+    "awaken": [
+      {
+        "name": "特遣行动",
+        "icon": "/static/guide/passive-icons/1019_1.webp"
+      },
+      {
+        "name": "二次补考",
+        "icon": "/static/guide/passive-icons/1019_2.webp"
+      },
+      {
+        "name": "全勤奖金",
+        "icon": "/static/guide/passive-icons/1019_3.webp"
+      },
+      {
+        "name": "午休时间",
+        "icon": "/static/guide/passive-icons/1019_4.webp"
+      },
+      {
+        "name": "第一直觉",
+        "icon": "/static/guide/passive-icons/1019_5.webp"
+      },
+      {
+        "name": "精英队员",
+        "icon": "/static/guide/passive-icons/1019_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "薄荷波波茶",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "蓬绒绒慕斯",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1020": {
+    "awaken": [
+      {
+        "name": "新人！天才转校生报道",
+        "icon": "/static/guide/passive-icons/1020_1.webp"
+      },
+      {
+        "name": "传说！后排靠窗的故乡",
+        "icon": "/static/guide/passive-icons/1020_2.webp"
+      },
+      {
+        "name": "集结！主角团正式成立",
+        "icon": "/static/guide/passive-icons/1020_3.webp"
+      },
+      {
+        "name": "海边！永恒的七八定律",
+        "icon": "/static/guide/passive-icons/1020_4.webp"
+      },
+      {
+        "name": "危机！濒临破碎的信任",
+        "icon": "/static/guide/passive-icons/1020_5.webp"
+      },
+      {
+        "name": "决战！终将到来的黎明",
+        "icon": "/static/guide/passive-icons/1020_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "前传",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "续作",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1021": {
+    "awaken": [
+      {
+        "name": "热爱异象的观察员",
+        "icon": "/static/guide/passive-icons/1021_1.webp"
+      },
+      {
+        "name": "尚在实习的异象猎人",
+        "icon": "/static/guide/passive-icons/1021_2.webp"
+      },
+      {
+        "name": "伊波恩侦探之一",
+        "icon": "/static/guide/passive-icons/1021_3.webp"
+      },
+      {
+        "name": "熟练的计划制定家",
+        "icon": "/static/guide/passive-icons/1021_4.webp"
+      },
+      {
+        "name": "古董店灯火的守望者",
+        "icon": "/static/guide/passive-icons/1021_5.webp"
+      },
+      {
+        "name": "好奇星球的来客",
+        "icon": "/static/guide/passive-icons/1021_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "热忱求知",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "敏锐洞察",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1023": {
+    "awaken": [
+      {
+        "name": "唷 队长！",
+        "icon": "/static/guide/passive-icons/1033_1.webp"
+      },
+      {
+        "name": "招魂幡",
+        "icon": "/static/guide/passive-icons/1033_2.webp"
+      },
+      {
+        "name": "恶诅不过一开口",
+        "icon": "/static/guide/passive-icons/1033_3.webp"
+      },
+      {
+        "name": "亦或是祝祷",
+        "icon": "/static/guide/passive-icons/1033_4.webp"
+      },
+      {
+        "name": "敬此月色",
+        "icon": "/static/guide/passive-icons/1033_5.webp"
+      },
+      {
+        "name": "于五色为白",
+        "icon": "/static/guide/passive-icons/1033_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "序属归藏",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "驻于此处",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1025": {
+    "awaken": [
+      {
+        "name": "精英快递员",
+        "icon": "/static/guide/passive-icons/1025_1.webp"
+      },
+      {
+        "name": "荆棘支配",
+        "icon": "/static/guide/passive-icons/1025_2.webp"
+      },
+      {
+        "name": "一翼失衡",
+        "icon": "/static/guide/passive-icons/1025_3.webp"
+      },
+      {
+        "name": "引擎共鸣",
+        "icon": "/static/guide/passive-icons/1025_4.webp"
+      },
+      {
+        "name": "例行三明治",
+        "icon": "/static/guide/passive-icons/1025_5.webp"
+      },
+      {
+        "name": "日常生活攻略中",
+        "icon": "/static/guide/passive-icons/1025_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "运力加倍",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "无阻通行",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1033": {
+    "awaken": [
+      {
+        "name": "无色",
+        "icon": "/static/guide/passive-icons/1033_1.webp"
+      },
+      {
+        "name": "无受",
+        "icon": "/static/guide/passive-icons/1033_2.webp"
+      },
+      {
+        "name": "无想",
+        "icon": "/static/guide/passive-icons/1033_3.webp"
+      },
+      {
+        "name": "无行",
+        "icon": "/static/guide/passive-icons/1033_4.webp"
+      },
+      {
+        "name": "无识",
+        "icon": "/static/guide/passive-icons/1033_5.webp"
+      },
+      {
+        "name": "诸法空相",
+        "icon": "/static/guide/passive-icons/1033_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "辩觉之净业",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "慧佑之侍护",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1036": {
+    "awaken": [
+      {
+        "name": "瞳中深渊",
+        "icon": "/static/guide/passive-icons/1036_1.webp"
+      },
+      {
+        "name": "渊底之吻",
+        "icon": "/static/guide/passive-icons/1036_2.webp"
+      },
+      {
+        "name": "吻痕窥梦",
+        "icon": "/static/guide/passive-icons/1036_3.webp"
+      },
+      {
+        "name": "梦魇生花",
+        "icon": "/static/guide/passive-icons/1036_4.webp"
+      },
+      {
+        "name": "花开见血",
+        "icon": "/static/guide/passive-icons/1036_5.webp"
+      },
+      {
+        "name": "血染双瞳",
+        "icon": "/static/guide/passive-icons/1036_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "猩红盛宴",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "鸩火灼心",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1039": {
+    "awaken": [
+      {
+        "name": "欲盖弥彰的圣洁",
+        "icon": "/static/guide/passive-icons/1039_1.webp"
+      },
+      {
+        "name": "无可否认的本能",
+        "icon": "/static/guide/passive-icons/1039_2.webp"
+      },
+      {
+        "name": "诅咒祝福之人",
+        "icon": "/static/guide/passive-icons/1039_3.webp"
+      },
+      {
+        "name": "僭越禁忌之人",
+        "icon": "/static/guide/passive-icons/1039_4.webp"
+      },
+      {
+        "name": "回溯死亡之人",
+        "icon": "/static/guide/passive-icons/1039_5.webp"
+      },
+      {
+        "name": "爱与死的使徒",
+        "icon": "/static/guide/passive-icons/1039_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "不敬的「圣洁」之人",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "归一的「圣洁」之人",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1042": {
+    "awaken": [
+      {
+        "name": "叛逃者",
+        "icon": "/static/guide/passive-icons/1042_1.webp"
+      },
+      {
+        "name": "漫游记",
+        "icon": "/static/guide/passive-icons/1042_2.webp"
+      },
+      {
+        "name": "失明症",
+        "icon": "/static/guide/passive-icons/1042_3.webp"
+      },
+      {
+        "name": "坏骨头",
+        "icon": "/static/guide/passive-icons/1042_4.webp"
+      },
+      {
+        "name": "烂柯人",
+        "icon": "/static/guide/passive-icons/1042_5.webp"
+      },
+      {
+        "name": "死与生",
+        "icon": "/static/guide/passive-icons/1042_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "唤作谢罪的启示",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "聆听群星的悼词",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1046": {
+    "awaken": [
+      {
+        "name": "初明凝视",
+        "icon": "/static/guide/passive-icons/1009_1.webp"
+      },
+      {
+        "name": "探悉天职",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "奇异记叙",
+        "icon": "/static/guide/passive-icons/1009_3.webp"
+      },
+      {
+        "name": "未决迷数",
+        "icon": "/static/guide/passive-icons/1009_4.webp"
+      },
+      {
+        "name": "默示赋命",
+        "icon": "/static/guide/passive-icons/1009_5.webp"
+      },
+      {
+        "name": "诓定解放",
+        "icon": "/static/guide/passive-icons/1009_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "鉴解",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "零示",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1051": {
+    "awaken": [
+      {
+        "name": "初明凝视",
+        "icon": "/static/guide/passive-icons/1009_1.webp"
+      },
+      {
+        "name": "探悉天职",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "奇异记叙",
+        "icon": "/static/guide/passive-icons/1009_3.webp"
+      },
+      {
+        "name": "未决迷数",
+        "icon": "/static/guide/passive-icons/1009_4.webp"
+      },
+      {
+        "name": "默示赋命",
+        "icon": "/static/guide/passive-icons/1009_5.webp"
+      },
+      {
+        "name": "诓定解放",
+        "icon": "/static/guide/passive-icons/1009_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "鉴解",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "零示",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1052": {
+    "awaken": [
+      {
+        "name": "欣欣渐行",
+        "icon": "/static/guide/passive-icons/1052_1.webp"
+      },
+      {
+        "name": "忆昔告远",
+        "icon": "/static/guide/passive-icons/1052_2.webp"
+      },
+      {
+        "name": "垂目须臾",
+        "icon": "/static/guide/passive-icons/1052_3.webp"
+      },
+      {
+        "name": "旧藏遗散",
+        "icon": "/static/guide/passive-icons/1052_4.webp"
+      },
+      {
+        "name": "独窥全相",
+        "icon": "/static/guide/passive-icons/1052_5.webp"
+      },
+      {
+        "name": "时轮啮雪",
+        "icon": "/static/guide/passive-icons/1052_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "东零西碎的永恒",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "了然于中的至珍",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1054": {
+    "awaken": [
+      {
+        "name": "目",
+        "icon": "/static/guide/passive-icons/1054_1.webp"
+      },
+      {
+        "name": "机械游行",
+        "icon": "/static/guide/passive-icons/1054_2.webp"
+      },
+      {
+        "name": "造物之众",
+        "icon": "/static/guide/passive-icons/1054_3.webp"
+      },
+      {
+        "name": "于隐匿中",
+        "icon": "/static/guide/passive-icons/1054_4.webp"
+      },
+      {
+        "name": "完美真相",
+        "icon": "/static/guide/passive-icons/1054_5.webp"
+      },
+      {
+        "name": "湖心花",
+        "icon": "/static/guide/passive-icons/1054_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "秘密行动",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "晴光与归所",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1055": {
+    "awaken": [
+      {
+        "name": "知晓与制衡",
+        "icon": "/static/guide/passive-icons/1055_1.webp"
+      },
+      {
+        "name": "过往消息皆为利刃",
+        "icon": "/static/guide/passive-icons/1055_2.webp"
+      },
+      {
+        "name": "优势初成",
+        "icon": "/static/guide/passive-icons/1055_3.webp"
+      },
+      {
+        "name": "出手即致命",
+        "icon": "/static/guide/passive-icons/1055_4.webp"
+      },
+      {
+        "name": "掌握底细的优越",
+        "icon": "/static/guide/passive-icons/1055_5.webp"
+      },
+      {
+        "name": "知晓每一条秘密",
+        "icon": "/static/guide/passive-icons/1055_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "运力加倍",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "无阻通行",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1057": {
+    "awaken": [
+      {
+        "name": "教室后的吉他谱",
+        "icon": null
+      },
+      {
+        "name": "琴行中的变调夹",
+        "icon": null
+      },
+      {
+        "name": "树荫下的胶囊罐",
+        "icon": null
+      },
+      {
+        "name": "耳机里的底噪声",
+        "icon": null
+      },
+      {
+        "name": "乐队间的节拍器",
+        "icon": null
+      },
+      {
+        "name": "舞台前的超新星",
+        "icon": null
+      }
+    ],
+    "resonance": [
+      {
+        "name": "全音阶",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "复调式",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1070": {
+    "awaken": [
+      {
+        "name": "未来序曲",
+        "icon": "/static/guide/passive-icons/1070_1.webp"
+      },
+      {
+        "name": "一支特别的歌",
+        "icon": "/static/guide/passive-icons/1070_2.webp"
+      },
+      {
+        "name": "三重奏的休止符",
+        "icon": "/static/guide/passive-icons/1070_3.webp"
+      },
+      {
+        "name": "五线谱的空白处",
+        "icon": "/static/guide/passive-icons/1070_4.webp"
+      },
+      {
+        "name": "一支平凡的歌",
+        "icon": "/static/guide/passive-icons/1070_5.webp"
+      },
+      {
+        "name": "往日赋格",
+        "icon": "/static/guide/passive-icons/1070_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "万物于此和声",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "与你一同奏响",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1071": {
+    "awaken": [
+      {
+        "name": "灼见",
+        "icon": "/static/guide/passive-icons/1071_1.webp"
+      },
+      {
+        "name": "罪名/恶行",
+        "icon": "/static/guide/passive-icons/1071_2.webp"
+      },
+      {
+        "name": "烟火",
+        "icon": "/static/guide/passive-icons/1071_3.webp"
+      },
+      {
+        "name": "海潮漫延",
+        "icon": "/static/guide/passive-icons/1071_4.webp"
+      },
+      {
+        "name": "独见虚空",
+        "icon": "/static/guide/passive-icons/1071_5.webp"
+      },
+      {
+        "name": "伪原点",
+        "icon": "/static/guide/passive-icons/1071_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "正义/正确",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "光明/白昼",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1072": {
+    "awaken": [
+      {
+        "name": "万物电台已接通！",
+        "icon": "/static/guide/passive-icons/1072_1.webp"
+      },
+      {
+        "name": "幽灵其实很可爱！",
+        "icon": "/static/guide/passive-icons/1072_2.webp"
+      },
+      {
+        "name": "将孤岛彼此相连！",
+        "icon": "/static/guide/passive-icons/1072_3.webp"
+      },
+      {
+        "name": "星星也说悄悄话！",
+        "icon": "/static/guide/passive-icons/1072_4.webp"
+      },
+      {
+        "name": "向全频段呼唤爱！",
+        "icon": "/static/guide/passive-icons/1072_5.webp"
+      },
+      {
+        "name": "世界将予你回声！",
+        "icon": "/static/guide/passive-icons/1072_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "心跳重叠于此时！",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "万籁同频的刹那！",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1073": {
+    "awaken": [
+      {
+        "name": "太阳太阳请回答",
+        "icon": "/static/guide/passive-icons/1073_1.webp"
+      },
+      {
+        "name": "烟花，悄然无声",
+        "icon": "/static/guide/passive-icons/1073_2.webp"
+      },
+      {
+        "name": "倘若没有雨天",
+        "icon": "/static/guide/passive-icons/1073_3.webp"
+      },
+      {
+        "name": "致饭团·绷带·方斯",
+        "icon": "/static/guide/passive-icons/1073_4.webp"
+      },
+      {
+        "name": "日记的空白页",
+        "icon": "/static/guide/passive-icons/1073_5.webp"
+      },
+      {
+        "name": "三十三天",
+        "icon": "/static/guide/passive-icons/1073_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "是朋友，是家人",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "归乡",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1075": {
+    "awaken": [
+      {
+        "name": "重复囚徒困境",
+        "icon": "/static/guide/passive-icons/1075_1.webp"
+      },
+      {
+        "name": "策略：「一报还一报」",
+        "icon": "/static/guide/passive-icons/1075_2.webp"
+      },
+      {
+        "name": "策略特性：善良",
+        "icon": "/static/guide/passive-icons/1075_3.webp"
+      },
+      {
+        "name": "策略特性：可激怒",
+        "icon": "/static/guide/passive-icons/1075_4.webp"
+      },
+      {
+        "name": "策略特性：清晰",
+        "icon": "/static/guide/passive-icons/1075_5.webp"
+      },
+      {
+        "name": "策略特性：宽容",
+        "icon": "/static/guide/passive-icons/1075_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "身为万物的灵长",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "自诩宇宙的精华",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1076": {
+    "awaken": [
+      {
+        "name": "暴雨滂沱的小巷",
+        "icon": "/static/guide/passive-icons/1076_1.webp"
+      },
+      {
+        "name": "凌晨的训练场",
+        "icon": "/static/guide/passive-icons/1076_2.webp"
+      },
+      {
+        "name": "夕阳下的海滩",
+        "icon": "/static/guide/passive-icons/1076_3.webp"
+      },
+      {
+        "name": "雪飘落的坡道",
+        "icon": "/static/guide/passive-icons/1076_4.webp"
+      },
+      {
+        "name": "欢声笑语的客厅",
+        "icon": "/static/guide/passive-icons/1076_5.webp"
+      },
+      {
+        "name": "赤龙的藏宝地",
+        "icon": "/static/guide/passive-icons/1076_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "蜕变的决心",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "赤红的英雄",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1090": {
+    "awaken": [
+      {
+        "name": "404 遥望一座孤岛",
+        "icon": "/static/guide/passive-icons/1090_1.webp"
+      },
+      {
+        "name": "200 节点彼此相连",
+        "icon": "/static/guide/passive-icons/1090_2.webp"
+      },
+      {
+        "name": "504 访问响应超时",
+        "icon": "/static/guide/passive-icons/1090_3.webp"
+      },
+      {
+        "name": "302 祈愿重新定向",
+        "icon": "/static/guide/passive-icons/1090_4.webp"
+      },
+      {
+        "name": "304 今日一如往昔",
+        "icon": "/static/guide/passive-icons/1090_5.webp"
+      },
+      {
+        "name": "301 您访问的地址已被永久转移",
+        "icon": "/static/guide/passive-icons/1090_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "拜启，我的旧友",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "再会，我的新知",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  },
+  "1074": {
+    "awaken": [
+      {
+        "name": "print 你好，我的世界",
+        "icon": "/static/guide/passive-icons/1074_1.webp"
+      },
+      {
+        "name": "define X/Y",
+        "icon": "/static/guide/passive-icons/1074_2.webp"
+      },
+      {
+        "name": "for 永远一起玩",
+        "icon": "/static/guide/passive-icons/1074_3.webp"
+      },
+      {
+        "name": "kill 杀死进程",
+        "icon": "/static/guide/passive-icons/1074_4.webp"
+      },
+      {
+        "name": "null 空指针",
+        "icon": "/static/guide/passive-icons/1074_5.webp"
+      },
+      {
+        "name": "log 驱动骸骨的代码",
+        "icon": "/static/guide/passive-icons/1074_6.webp"
+      }
+    ],
+    "resonance": [
+      {
+        "name": "save 不曾想象的未来",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      },
+      {
+        "name": "load 不可证明的宝物",
+        "icon": "/static/guide/passive-icons/1009_2.webp"
+      }
+    ]
+  }
+}

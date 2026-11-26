@@ -1,0 +1,20 @@
+.guide-article-figure{margin:24px 0;max-width:960px}
+.guide-article-figure a{display:block}
+.guide-article-figure img{display:block;width:100%;max-width:100%;height:auto;border-radius:8px}
+.guide-article-emoji{display:inline-block;width:32px;height:32px;object-fit:contain;vertical-align:middle}
+.guide-detail-section h3[id^="article-"]{scroll-margin-top:100px;margin:32px 0 18px;overflow-wrap:anywhere}
+
+.guide-detail-body .guide-text{font-size:18px;line-height:1.9;overflow-wrap:anywhere}
+.guide-detail-body .guide-detail-section>h2{font-size:26px;line-height:1.5}
+.guide-detail-body .guide-detail-section>h3{font-size:22px;line-height:1.5}
+.guide-toc nav>a{font-size:15px}
+.guide-toc-skills>a{font-size:14px}
+
+.guide-article-video{width:100%;max-width:960px;aspect-ratio:16/9;margin:24px 0;background:#000;border-radius:8px;overflow:hidden}
+.guide-article-video iframe{display:block;width:100%;height:100%;border:0}
+
+.guide-detail-body .guide-article-missing{padding:12px 16px;border-left:3px solid var(--g-accent);background:#ffffff05;color:var(--g-dim);font-size:16px}
+
+.guide-article-blue{color:#8dbbff}
+.guide-article-red{color:#ff9b9b}
+.guide-article-purple{color:#c8a5ff}

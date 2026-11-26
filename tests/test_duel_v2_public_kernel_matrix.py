@@ -90,7 +90,7 @@ class PublicKernelMatrixTest(unittest.TestCase):
                     for index,cid in enumerate(state['sides'][side]['order']):
                         h=state['sides'][side]['characters'][cid]
                         h['energy']=index;h['harmony']=2
-                # Unique lowest energy makes the exact oracle comparison deterministic.
+                # All living characters gain energy without consuming randomness.
                 self.check(state,{'type':'end_turn'})
         state=new_game(seed=8,first_side='a',skip_mulligan=True,
                        decks={'a':preset_opponent_deck('starter'),'b':sample_public_deck(3)})
@@ -100,7 +100,7 @@ class PublicKernelMatrixTest(unittest.TestCase):
         state=self.check(state,{'type':'ultimate','character_id':'iloy'})
         self.assertFalse(any(a['type']=='ultimate' for a in legal_actions(state,'a')))
 
-    def test_tied_escalation_selects_one_lowest_and_is_repeatable(self):
+    def test_escalation_energizes_all_and_is_repeatable(self):
         from app.modules.card_game.rl.rule_ir.layout import OFFSETS
         from app.modules.card_game.rl.gpu_duel.catalog import SEAT_INDEX
         selected=set()
@@ -114,8 +114,8 @@ class PublicKernelMatrixTest(unittest.TestCase):
             two=self.backend.step_lists([row],[index])[0]
             self.assertEqual(one,two)
             energies={cid:one[OFFSETS['ch_energy']+6+SEAT_INDEX[cid]] for cid in state['sides']['b']['order']}
-            self.assertEqual(sum(energies.values()),1)
-            self.assertTrue(all(v in (0,1) for v in energies.values()))
+            self.assertEqual(sum(energies.values()),4)
+            self.assertTrue(all(v == 1 for v in energies.values()))
             selected.update(cid for cid,e in energies.items() if e)
         self.assertEqual(len(selected),4)
 

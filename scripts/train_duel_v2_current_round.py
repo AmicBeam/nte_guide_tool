@@ -54,8 +54,13 @@ def cross_pairs():
     return [(a, b) for a in ROSTER for b in ROSTER if a != b]
 
 
-def validate_round_launch(config, *, resume=False):
+def validate_round_launch(config, *, resume=False, output=None):
     """Check recovery evidence at every entry; keep historical formal cross closed."""
+    if isinstance(config,dict) and config.get('runtime')=='seven':
+        from app.modules.card_game.rl.seven_round import validate_launch,resume_completed_batches
+        completed=resume_completed_batches(output,config) if resume and output is not None else 0
+        validate_launch(config,resume=resume,completed_batches=completed)
+        return
     if isinstance(config,dict) and config.get('runtime')=='recovery':
         from app.modules.card_game.rl.recovery_round import validate_launch
         validate_launch(config,resume=resume)
@@ -233,7 +238,10 @@ def _rollback(out, config, nets, best_state, best_dir, decks, origins, learning_
     return learning_rate, folder
 
 
-def learn(out, config, *, resume=False):
+def learn(out, config, *, resume=False, device_driver=None):
+    if isinstance(config,dict) and config.get('runtime')=='seven':
+        from app.modules.card_game.rl.seven_round import run
+        return run(out,config,resume=resume,device_driver=device_driver)
     validate_round_launch(config,resume=resume)
     if config.get('runtime')=='recovery':
         from app.modules.card_game.rl.recovery_round import run
@@ -484,7 +492,7 @@ def learn(out, config, *, resume=False):
         for p in out.rglob('*') if p.is_file() and p.name != 'delivery-manifest.json'})
 
 
-def main():
+def main(*, device_driver=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--workers', type=int, default=6)
@@ -505,7 +513,16 @@ def main():
     p.add_argument('--worker', action='store_true')
     p.add_argument('--resume',action='store_true',help='Resume existing recovery config within its original deadline')
     p.add_argument('--smoke-batches',type=int,choices=(1,2,3),default=1)
-    p.add_argument('--runtime',choices=('recovery','cross'),default='recovery')
+    p.add_argument('--runtime',choices=('seven','recovery','cross'),default='seven',
+                   help='seven is the current roster; recovery/cross only reproduce historical contracts')
+    p.add_argument('--rule-backend',choices=('serial_cpu','resident_cpu','cuda_vm'),default='serial_cpu')
+    p.add_argument('--gpu-rule-program',type=Path)
+    p.add_argument('--gpu-validation-report',type=Path)
+    p.add_argument('--guard-standalone-entities',action='store_true')
+    p.add_argument('--search-roots',type=int,default=1600)
+    p.add_argument('--query-batch-rows',type=int,default=32)
+    p.add_argument('--gpu-memory-budget-mib',type=int,default=14336)
+    p.add_argument('--training-buffer-mib',type=int,default=8192)
     p.add_argument('--teacher-mode',choices=('network','covered_terminal','covered_expert','covered_value'),default='network',
                    help='Explicit recovery teacher; covered modes use visible rules and real-terminal leaves')
     p.add_argument('--recovery-source',type=Path)
@@ -514,6 +531,12 @@ def main():
     p.add_argument('--preflight',action='store_true',help='One all-five Gumbel32 batch, no strength approval')
     p.add_argument('--preflight-replicas',type=int,choices=(1,2,3),default=1,
                    help='New paired training and heldout games per matchup; never reuse old-rule data')
+    p.add_argument('--collection-replicas',type=int,default=1,
+                   help='Unique complete search collections per frozen seven-team batch; default 1')
+    p.add_argument('--async-rule-dispatch',choices=('auto','on','off'),default='auto',
+                   help='Resident rule submit/poll; auto uses backend capability, off keeps waves')
+    p.add_argument('--search-statistics-device',choices=('cuda',),default=None,
+                   help='Explicit CUDA tree statistics for the hybrid resident CPU path')
     p.add_argument('--planned-batches',type=int,choices=(4,5,6),default=6)
     p.add_argument('--gate-roots',type=int,default=32)
     p.add_argument('--search-gate-roots',type=int,default=2)
@@ -524,11 +547,17 @@ def main():
     p.add_argument('--value-check-replicas',type=int,choices=(1,2,3),default=1)
     a = p.parse_args()
     out = a.output.resolve()
+    if a.runtime=='seven' and (a.run or a.worker or a.resume):
+        from app.modules.card_game.rl.batched_search.device_execution_contract import require_closed_device_driver,DeviceExecutionNotReady
+        try:
+            require_closed_device_driver(device_driver,purpose='training')
+        except DeviceExecutionNotReady as exc:
+            p.error(str(exc))
     if a.worker:
         config = json.loads((out / 'config.json').read_text(encoding='utf-8'))
-        validate_round_launch(config,resume=a.resume)
+        validate_round_launch(config,resume=a.resume,output=out)
         try:
-            learn(out, config,resume=a.resume)
+            learn(out, config,resume=a.resume,device_driver=device_driver)
         except Exception as exc:
             write(out / 'failure.json', dict(error=repr(exc), time=time.time()))
             raise
@@ -536,14 +565,22 @@ def main():
     if a.resume:
         if not a.run: p.error('Resume requires --run and an existing recovery output')
         config=json.loads((out/'config.json').read_text())
-        if config.get('runtime')!='recovery': p.error('Only recovery runtime supports this resume')
+        if config.get('runtime') not in ('seven','recovery'): p.error('Only current/residual runtimes support exact resume')
+        if config.get('runtime')=='seven':
+            from app.modules.card_game.rl.batched_search.device_execution_contract import require_closed_device_driver,DeviceExecutionNotReady
+            try:
+                driver=require_closed_device_driver(device_driver,purpose='training')
+            except DeviceExecutionNotReady as exc:
+                p.error(str(exc))
+            driver.validate_frozen_inputs(config)
+            return driver.run_device_batch(config,output=out,resume=True)
         guard=json.loads((out/'guard.json').read_text())
         pid=guard.get('worker_pid')
         if type(pid) is int and pid>0:
             try: os.kill(pid,0)
             except ProcessLookupError: pass
             else: p.error('Previous worker is still live; refuse concurrent resume')
-        validate_round_launch(config,resume=True)
+        validate_round_launch(config,resume=True,output=out)
         if time.time()>=config['train_until']: p.error('Original learning deadline expired')
         supervise(out,config,resume=True)
         return
@@ -551,7 +588,31 @@ def main():
         p.error('workers must be 1..16')
     if not 5<=a.gate_roots<=64 or not 1<=a.search_gate_roots<=8 or not .5<=a.train_fraction<=.8:
         p.error('Bounded formal gate roots and training fraction required')
-    matrix_schedule(a.matrix_games)
+    if a.runtime=='seven':
+        from app.modules.card_game.rl.seven_schedule import ROSTER as roster, matrix_schedule as schedule
+    else:
+        roster, schedule = ROSTER, matrix_schedule
+    schedule(a.matrix_games)
+    if not 1<=a.search_roots<=1600 or not 1<=a.query_batch_rows<=32 or a.training_buffer_mib<1:
+        p.error('search-roots must be 1..1600, query-batch-rows 1..32 and training buffer positive')
+    if a.rule_backend!='serial_cpu' and a.runtime!='seven':
+        p.error('Batched training only supports the current seven-team contract')
+    if a.async_rule_dispatch!='auto' and a.runtime!='seven':
+        p.error('Async rule dispatch is a seven-team cooperative option')
+    if a.async_rule_dispatch=='on' and a.rule_backend!='resident_cpu':
+        p.error('Explicit async rules require resident_cpu')
+    if a.search_statistics_device and (a.runtime!='seven' or a.device!='cuda' or a.rule_backend=='serial_cpu'):
+        p.error('Explicit CUDA statistics require a cooperative CUDA seven-team path')
+    from app.modules.card_game.rl.training_config import validate_collection_option
+    try:
+        validate_collection_option(
+            a.collection_replicas, search_roots=a.search_roots,
+            training_buffer_mib=a.training_buffer_mib,
+            gpu_memory_budget_mib=a.gpu_memory_budget_mib,
+            rule_backend=a.rule_backend, runtime=a.runtime,
+            historical=not (a.smoke or a.preflight))
+    except ValueError as exc:
+        p.error(str(exc))
     now = datetime.now(shanghai_zone())
     hard = now.replace(hour=9, minute=0, second=0, microsecond=0)
     if hard <= now:
@@ -568,7 +629,7 @@ def main():
     if seconds < 300:
         p.error('Insufficient time before hard stop')
     from app.modules.card_game.rl.cross_lineup import identity
-    config = dict(kind='five_cross_grounded_v2', runtime='cross', roster=list(ROSTER),
+    config = dict(kind='five_cross_grounded_v2', runtime='cross', roster=list(roster),
         rule_hash=identity(), hidden=a.hidden, device=a.device, workers=a.workers,
         train_until=now.timestamp()+seconds*a.train_fraction, evaluate_until=hard.timestamp()-60,
         hard_deadline=hard.timestamp(), hard_deadline_iso=hard.isoformat(),
@@ -581,10 +642,10 @@ def main():
         policy_passes=a.policy_passes, max_row_reuse=a.max_row_reuse,
         website_approval=False, roster_source=str(a.roster_source) if a.roster_source else '',
         murk_source=str(a.murk_source) if a.murk_source else '')
-    if a.runtime=='recovery':
+    if a.runtime in ('seven','recovery'):
         if a.roster_source or a.murk_source:
             p.error('Old sources cannot initialize recovery; use explicit recovery-source')
-        config.update(started_at=now.timestamp(),kind='five_recovery_v1',runtime='recovery',smoke=a.smoke or a.preflight,
+        config.update(started_at=now.timestamp(),kind='seven_recovery_v1' if a.runtime=='seven' else 'five_recovery_v1',runtime=a.runtime,smoke=a.smoke or a.preflight,
             preflight=a.preflight,teacher_mode=a.teacher_mode,
             preflight_replicas=a.preflight_replicas if a.preflight else 1,
             covered_value_source=str(a.covered_value_source.resolve()) if a.covered_value_source else None,
@@ -602,15 +663,32 @@ def main():
             config['train_until']=hard.timestamp()-60
         elif not a.smoke:
             config['evaluate_until']=hard.timestamp()-900
+    if a.runtime=='seven':
+        from app.modules.card_game.rl.seven_lineup import identity as seven_identity
+        config['rule_hash']=seven_identity()
+        config.update(rule_backend=a.rule_backend,search_roots=a.search_roots,
+                      query_batch_rows=a.query_batch_rows,gpu_memory_budget_mib=a.gpu_memory_budget_mib,
+                      gpu_rule_program=str(a.gpu_rule_program.resolve()) if a.gpu_rule_program else None,
+                      gpu_validation_report=str(a.gpu_validation_report.resolve()) if a.gpu_validation_report else None,
+                      guard_standalone_entities=a.guard_standalone_entities)
+        config['training_buffer_mib']=a.training_buffer_mib
+        config['collection_replicas']=a.collection_replicas
+        config['async_rule_dispatch']={'auto':None,'on':True,'off':False}[a.async_rule_dispatch]
+        config['search_statistics_device']=a.search_statistics_device
     config['source_rule_hashes'] = json.loads(a.source_rule_hashes.read_text()) if a.source_rule_hashes else {}
     print(json.dumps(config, ensure_ascii=False, indent=2), flush=True)
     if not a.run:
         return
+    if a.runtime=='seven':
+        # The actual closed service owns its complete GPU orchestration. Do not
+        # fall through to the historical ProcessPool/cooperative supervisor.
+        device_driver.validate_frozen_inputs(config)
+        return device_driver.run_device_batch(config,output=out,resume=False)
     try:
         validate_round_launch(config)
     except (ValueError,OSError,KeyError) as exc:
         p.error(str(exc))
-    if a.runtime=='recovery':
+    if a.runtime in ('seven','recovery'):
         import torch
         if a.device=='cuda' and not torch.cuda.is_available():
             p.error('CUDA unavailable; no fallback, output or seeds created')

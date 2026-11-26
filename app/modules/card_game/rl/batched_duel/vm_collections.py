@@ -62,9 +62,10 @@ IMPLEMENTATION_STATUS: Mapping[str, str] = {
         "Omitted: multidimensional/numpy slicing."
     ),
     "collection_store": (
-        "Implemented: dict/entity key assignment; list positive/negative int index assignment. "
+        "Implemented: dict/entity key assignment; list positive/negative int index assignment; "
+        "list/tuple RHS slice assignment with arbitrary nonzero steps and alias preservation. "
         "Constant and immutable writes (tuple/str) rejected with ERROR_CONSTANT_WRITE. "
-        "Omitted: list slice assignment (list[a:b] = iterable)."
+        "Omitted: non-materialized iterable RHS slice assignment."
     ),
     "collection_delete": (
         "Implemented: dict/entity key deletion; list positive/negative int index deletion with shifting. "
@@ -247,6 +248,8 @@ __device__ inline int resolve_slice_indices(
 // Unified subscript access supporting dict/entity key access, list/tuple indexing,
 // and sequence slicing (list, tuple, string).
 __device__ inline int collection_subscript(Context* c, int owner, int key) {
+    int np_out=MISSING;if(numpy_try_subscript(c,owner,key,&np_out))return np_out;
+    c->error_value=key;c->error_kind=1;
     int tag = kind(c, owner);
     if (tag == TAG_DICT || (tag >= 8 && tag <= 10)) {
         if (kind(c, key) == T_SLICE) {
@@ -421,9 +424,54 @@ __device__ inline int collection_subscript(Context* c, int owner, int key) {
     return MISSING;
 }
 
-// Subscript assignment supporting dict/entity keys and list element assignment.
-// List slice assignment (list[a:b] = iterable) is omitted in this device subset.
+// Stage fresh edges before replacing the list header, preserving self-assignment
+// and every alias of the original list. Failed capacity admission is atomic.
+__device__ inline int collection_store_slice(Context* c,int owner,int key,int val){
+    int rhs=kind(c,val);
+    if(rhs!=TAG_LIST&&rhs!=TAG_TUPLE){c->error=UNSUPPORTED_TYPE;return 0;}
+    int old=length(c,owner),count=length(c,val);
+    long long start=0,stop=0,step=0;
+    if(c->error||!resolve_slice_indices(c,key,old,&start,&stop,&step))return 0;
+    long long selected=0;
+    if(step>0&&start<stop)selected=(stop-start-1)/step+1;
+    if(step<0&&start>stop)selected=(start-stop-1)/(-step)+1;
+    if(step!=1&&selected!=count){
+        const char* message="extended slice assignment size mismatch";
+        int text=make_utf8(&c->h,message,39);
+        c->raised=exception_create(c,exception_type(c,2),make_tuple(&c->h,&text,1));
+        return 0;
+    }
+    long long size=step==1?(long long)old-selected+count:old;
+    if(size<0||size>2147483647LL||(long long)c->h.counts[1]+size>c->h.max_edges){
+        c->h.error=ERROR_EDGE_CAPACITY;return 0;
+    }
+    int offset=c->h.counts[1];
+    for(int i=0;i<(int)size;i++){
+        int ref=MISSING;
+        if(step==1){
+            if(i<start)ref=edge(c,owner,i);
+            else if(i<start+count)ref=edge(c,val,(int)(i-start));
+            else ref=edge(c,owner,(int)(i-count+selected));
+        }else{
+            long long delta=(long long)i-start;
+            long long j=delta/step;
+            if(delta%step==0&&j>=0&&j<selected)ref=edge(c,val,(int)j);
+            else ref=edge(c,owner,i);
+        }
+        if(c->error||c->h.error)return 0;
+        c->h.edges[(offset+i)*2]=ref;c->h.edges[(offset+i)*2+1]=-1;
+    }
+    c->h.counts[1]+=(int)size;
+    c->h.nodes[owner*4+1]=offset;
+    c->h.nodes[owner*4+2]=(int)size;
+    c->h.nodes[owner*4+3]=0;
+    return 1;
+}
+
+// Subscript assignment supporting dict/entity keys and mutable lists.
 __device__ inline int collection_store(Context* c, int owner, int key, int val) {
+    if(numpy_try_store(c,owner,key,val))return !c->error&&!c->h.error;
+    c->error_value=key;c->error_kind=2;
     if (owner < 0) {
         c->h.error = ERROR_CONSTANT_WRITE;
         return 0;
@@ -435,8 +483,7 @@ __device__ inline int collection_store(Context* c, int owner, int key, int val) 
     }
     if (tag == TAG_LIST) {
         if (kind(c, key) == T_SLICE) {
-            c->error = UNSUPPORTED_OP; // slice assignment omitted in device VM
-            return 0;
+            return collection_store_slice(c,owner,key,val);
         }
         long long idx = 0;
         if (read_int64(&c->h, key, &idx) < 0) return 0;
@@ -457,6 +504,7 @@ __device__ inline int collection_store(Context* c, int owner, int key, int val) 
 
 // Subscript deletion supporting dict/entity keys and list element deletion.
 __device__ inline int collection_delete(Context* c, int owner, int key) {
+    c->error_value=key;c->error_kind=2;
     if (owner < 0) {
         c->h.error = ERROR_CONSTANT_WRITE;
         return 0;

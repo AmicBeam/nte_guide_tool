@@ -42,13 +42,14 @@ MAX_BUFF_RULES = 48
 MAX_BACKGROUND_ACTION_MULTIPLIER = 999
 VISIBILITIES = frozenset({'private', 'public'})
 MARKET_SORTS = frozenset({'dps', 'likes', 'favorites', 'new'})
-DEFAULT_UNPUBLISHED_CHARACTERS = {'char_akane': '明音凛'}
+DEFAULT_UNPUBLISHED_CHARACTERS = {'char_elyms': '曳尔沐', 'char_exe': 'Exe'}
 HALF_OPEN_CHARACTERS = {}
 RELEASED_CHARACTERS = {
     'char_0846d632e0': '灵可',
     'char_a01c39f576': '伊洛伊',
     'char_076a1f4e53': '残虹',
     'char_heiyu': '黑羽',
+    'char_akane': '明音凛',
 }
 ELEMENTS = ('光', '灵', '咒', '暗', '魂', '相')
 ZERO_ACTION_VISUAL_TICKS = 5
@@ -105,7 +106,30 @@ TEAM_PANEL_BONUS_DEFAULTS = {
     'furniture_flat_def': 30.0,
     'small_flat_atk': 420.0,
     'small_flat_hp': 5200.0,
+    # User-specified 噗咔特训 values, 2026-10-09; not an upstream data import.
+    'training_crit_rate': 0.02,
+    'training_crit_dmg': 0.04,
+    'training_flat_atk': 23.0,
+    'training_flat_def': 25.0,
+    'training_flat_hp': 340.0,
+    'training_harmony_strength': 10.0,
+    'training_stagger_strength': 10.0,
+    # User-provided food caps and blessing candidates, 2026-10-13; see module README.
+    'food_crit_rate': 0.0,
+    'food_crit_dmg': 0.0,
+    'food_flat_atk': 0.0,
 }
+TEAM_TRAINING_BONUS_CAPS = {
+    'training_crit_rate': 0.025,
+    'training_crit_dmg': 0.05,
+    'training_flat_atk': 28.0,
+    'training_flat_def': 30.0,
+    'training_flat_hp': 420.0,
+    'training_harmony_strength': 12.0,
+    'training_stagger_strength': 12.0,
+}
+TEAM_FOOD_BONUS_CAPS = {'food_crit_rate': 0.12, 'food_crit_dmg': 0.24, 'food_flat_atk': 150.0}
+TEAM_BLESSING_IDS = {'none', 'crit_rate', 'crit_dmg', 'all_dmg', 'atk_pct', 'stagger_strength', 'harmony_strength'}
 SKILL_LEVEL_KEYS = ('basic', 'skill', 'ultimate', 'support')
 SKILL_LEVEL_DEFAULTS = {
     'basic': 10,
@@ -118,7 +142,7 @@ CANHONG_CHARACTER_ID = 'char_076a1f4e53'
 LINGKE_CHARACTER_ID = 'char_0846d632e0'
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SHAFT_COMPUTE_SCRIPT = PROJECT_ROOT / 'scripts' / 'shaft_compute.js'
-SHAFT_SOURCE_VERSION = '异环云配队 1.0.6'
+SHAFT_SOURCE_VERSION = '异环云配队 1.5.1'
 
 
 class ShaftAxisNameConflictError(RuleValidationError):
@@ -126,6 +150,10 @@ class ShaftAxisNameConflictError(RuleValidationError):
         super().__init__(f'已存在名为「{title}」的排轴。')
         self.title = title
         self.axis_id = axis_id
+
+
+class ShaftAxisVersionConflictError(RuleValidationError):
+    pass
 
 
 def _ensure_private_axis_capacity(player: Player) -> None:
@@ -384,14 +412,15 @@ def _normalize_curtain_bonus(raw: Any, character_id: str, catalog: dict[str, Any
     default_bonus = defaults if isinstance(defaults, dict) else {}
     source = raw if isinstance(raw, dict) else {}
     default_stat = _normalize_stat_name(default_bonus.get('stat')) or next(iter(stat_options), '')
+    fixed = bool(default_bonus.get('fixed')) or character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
     stat = (
         default_stat
-        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
+        if fixed
         else (_normalize_stat_name(source.get('stat')) or default_stat)
     )
     passive_type = str(
         default_bonus.get('passive_type')
-        if character_id in {CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, 'char_heiyu'}
+        if fixed
         else (source.get('passive_type') or default_bonus.get('passive_type') or 'type3')
     )
     if passive_type not in CURTAIN_PASSIVE_TYPES:
@@ -706,6 +735,9 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
             values = action.get(field)
             if isinstance(values, dict):
                 names.update(str(name) for name in values if str(name) not in hidden_personal_resources)
+    for character_id, character in characters.items():
+        personal_resource_names.setdefault(character_id, set()).update(character.get('personal_resource_states') or {})
+        personal_resource_names[character_id].update(character.get('timeline_personal_resources') or [])
     loop_initial_resources: dict[str, dict[str, Any]] = {}
     for member in team:
         character_id = str(member.get('character_id') or '')
@@ -720,11 +752,14 @@ def _normalize_options(raw: Any, catalog: dict[str, Any], team: list[dict[str, A
         character_caps = personal_resource_caps.get(character_id)
         character_caps = character_caps if isinstance(character_caps, dict) else {}
         normalized_personal = {}
+        integer_resources = set((characters.get(character_id) or {}).get('personal_resource_integer_resources') or [])
         for name in sorted(personal_resource_names.get(character_id, set())):
             if name not in configured_personal:
                 continue
             maximum = max(0, _num(character_caps.get(name), 1_000_000))
             normalized_personal[name] = max(0, min(maximum, _num(configured_personal.get(name))))
+            if name in integer_resources:
+                normalized_personal[name] = int(normalized_personal[name])
         loop_initial_resources[character_id] = {
             'energy': max(0, min(energy_capacity, _num(configured.get('energy')))),
             'harmony': max(0, min(100, _num(configured.get('harmony')))),
@@ -757,7 +792,7 @@ def _team_panel_bonus_defaults(catalog: dict[str, Any]) -> dict[str, float]:
     return defaults
 
 
-def _normalize_team_panel_bonus(raw: Any, catalog: dict[str, Any]) -> dict[str, float]:
+def _normalize_team_panel_bonus(raw: Any, catalog: dict[str, Any]) -> dict[str, Any]:
     defaults = _team_panel_bonus_defaults(catalog)
     source = raw if isinstance(raw, dict) else {}
     version = max(0, _int(source.get('version')))
@@ -777,7 +812,7 @@ def _normalize_team_panel_bonus(raw: Any, catalog: dict[str, Any]) -> dict[str, 
     small_flat_atk = max(0.0, min(5000.0, _num(source.get('small_flat_atk'), defaults['small_flat_atk'])))
     if version < 2 and furniture_flat_atk == 20.0 and small_flat_atk == 440.0:
         small_flat_atk = 420.0
-    return {
+    bonus = {
         'version': 3,
         'furniture_crit_dmg': furniture_crit_dmg,
         'furniture_flat_atk': furniture_flat_atk,
@@ -785,6 +820,13 @@ def _normalize_team_panel_bonus(raw: Any, catalog: dict[str, Any]) -> dict[str, 
         'small_flat_atk': small_flat_atk,
         'small_flat_hp': max(0.0, min(100000.0, _num(source.get('small_flat_hp'), defaults['small_flat_hp']))),
     }
+    for key, cap in {**TEAM_TRAINING_BONUS_CAPS, **TEAM_FOOD_BONUS_CAPS}.items():
+        value = max(0.0, min(cap, _num(source.get(key), defaults[key])))
+        scale = 1000 if key.endswith(('_crit_rate', '_crit_dmg')) else 1
+        bonus[key] = int(value * scale + 0.5) / scale
+    blessing = source.get('blessing')
+    bonus['blessing'] = blessing if isinstance(blessing, str) and blessing in TEAM_BLESSING_IDS else 'none'
+    return bonus
 
 
 def _is_background_action(action: dict[str, Any]) -> bool:
@@ -1379,6 +1421,9 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
             record = _private_axis_query_for_player(axis_id, player)
             if record is None:
                 raise RuleValidationError('没有保存这个排轴的权限。')
+            expected = payload.get('expected_updated_at')
+            if expected is not None and expected != record.updated_at.isoformat():
+                raise ShaftAxisVersionConflictError('排轴已修改，请重新读取后再更新。')
         elif source_axis is not None:
             record = ShaftAxis.select().where(
                 (ShaftAxis.owner == player) &
@@ -1640,7 +1685,7 @@ def list_shaft_market(
         query = query.order_by(ShaftAxis.published_at.desc(), ShaftAxis.updated_at.desc())
     else:
         query = query.order_by(ShaftAxis.dps_x100.desc(), ShaftAxis.like_count.desc(), ShaftAxis.updated_at.desc())
-    items = list(query.paginate(page, page_size + 1))
+    items = list(query.limit(page_size + 1).offset((page - 1) * page_size))
     visible_items = items[:page_size]
     return {
         'items': [

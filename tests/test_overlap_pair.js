@@ -1,0 +1,153 @@
+/* Run with node tests/test_overlap_pair.js. Uses synthetic timing and real catalog. */
+'use strict';
+const assert = require('node:assert/strict');
+const engine = require('../app/modules/overlap/static/js/pair_engine.js');
+const data = require('../app/modules/overlap/static/data/tables.json');
+function row(intervals, release, extra = {}) {
+    return {requires_three_characters:false, foreground_intervals:intervals,
+        release_end_seconds:release, actions:['a1','a2'],
+        timeline:[{action:'a1', start_seconds:0, end_seconds:release, duration_seconds:release}], ...extra};
+}
+function check(plan) {
+    assert(plan);
+    const {period, segments, offsets, rows} = plan;
+    assert(period > 0);
+    for (let i = 1; i < segments.length; i++) {
+        assert(Math.abs(segments[i].start - segments[i-1].end) < 1e-7);
+        assert.notEqual(segments[i].role, segments[i-1].role);
+    }
+    const cuts = segments.slice(1).map(s => s.start);
+    if (!plan.sameEnd) cuts.push(period);
+    cuts.forEach((cut, i) => {
+        const next = i+1 < cuts.length ? cuts[i+1] : cuts[0]+period;
+        assert(next-cut >= 1.2-1e-7, `cyclic cooldown ${next-cut}`);
+    });
+    rows.forEach((r, role) => {
+        assert(period >= r.release_end_seconds-1e-7);
+        assert(period + (r.timeline[0].input_seconds ?? r.timeline[0].start_seconds) - r.timeline.at(-1).end_seconds
+            >= plan.recoveryDelays[role] - 1e-7, 'restart gap must survive the cycle seam');
+        r.foreground_intervals.forEach(([start,end], index) => {
+            const s=segments.find(s => s.role===role && s.index===index);
+            assert(s.start <= offsets[role]+start+1e-7);
+            assert(s.end >= offsets[role]+end-1e-7);
+        });
+        r.timeline.forEach(step => {
+            if (step.input_seconds == null) return;
+            const time=offsets[role]+step.input_seconds;
+            assert(segments.some(s=>s.role===role && time>=s.start-1e-7 && time<=s.end+1e-7), `input outside foreground ${time}`);
+        });
+    });
+}
+// Earliest cut 0.2s must be delayed. Both sides of the seam need 1.2s.
+const delayed=engine.schedule(row([[0,.2]],2), row([[0,.2]],2));
+check(delayed);
+assert.equal(delayed.period,2.4);
+assert.equal(delayed.segments[0].end,1.2);
+assert.equal(delayed.segments[1].end,2.4);
+// Resetting an unfinished basic chain needs 0.5s after its release, not its switch.
+const waited=engine.schedule(row([[0,.2]],2),row([[0,.2]],2),[.5,0]);
+check(waited); assert.equal(waited.period,2.5);
+assert.deepEqual(waited.recoveryLimited,[true,false]);
+const natural=engine.schedule(row([[0,.2]],2),row([[0,.2]],3),[.5,0]);
+assert.deepEqual(natural.recoveryLimited,[false,false]);
+const tied=engine.schedule(row([[0,.2]],2),row([[0,.2]],2.5),[.5,0]);
+assert.deepEqual(tied.recoveryLimited,[false,false]);
+const requiem=data.characters.find(c=>c.name==='安魂曲');
+const path=(character, names)=>character.rows.find(r=>JSON.stringify(r.actions)===JSON.stringify(names));
+const truncated=path(requiem,['a1远','a2远','a3远','a4远']);
+assert.equal(engine.recoveryDelay(requiem,truncated),.5);
+assert.equal(engine.recoveryDelay(requiem,path(requiem,['a1远','a2远','a3远','a4远','a5远'])),0);
+// Recovery belongs to the previous action, regardless of the next action type.
+const graph={actions:[{name:'a1',type:'普攻',successors:[]},{name:'a2',type:'普攻',recovery_seconds:.5,successors:[]},
+ {name:'z',type:'普攻',successors:[]},{name:'e',type:'E',successors:[]}]};
+const jump=(first,last)=>({actions:[first,last],timeline:[{action:first},{action:last}]});
+assert.equal(engine.recoveryDelay(graph,jump('a1','a2')),.5);
+assert.equal(engine.recoveryDelay(graph,jump('z','a2')),.5);
+assert.equal(engine.recoveryDelay(graph,jump('e','a2')),.5);
+assert.equal(engine.recoveryDelay(graph,jump('a1','z')),0);
+assert.equal(engine.recoveryDelay(graph,jump('a1','e')),0);
+const partly=jump('a1','a2'); partly.timeline[1].recovery_used_seconds=.2;
+assert(Math.abs(engine.recoveryDelay(graph,partly)-.3)<1e-8);
+graph.actions[1].successors=[{to:'a1',requires_previous:['z']}];
+assert.equal(engine.recoveryDelay(graph,jump('a1','a2')),.5);
+assert.equal(engine.recoveryDelay(graph,jump('z','a2')),.5);
+const contextual={actions:['a1','z','a2'],timeline:[{action:'a1'},{action:'z'},{action:'a2'}]};
+assert.equal(engine.recoveryDelay(graph,contextual),0);
+// A route requiring a third actor must never enter the matcher.
+assert.equal(engine.schedule(row([[0,.2]],2,{requires_three_characters:true}),row([[0,.2]],2)),null);
+// A returning A can end the cycle only after a legal full finish back to its start.
+const returning=row([[0,.4],[2,2.4]],2.4,{hold_reason:'cycle_to_start'});
+const same=engine.schedule(returning,row([[0,1.2]],1.8));
+check(same); assert(same.sameEnd);
+assert.equal(engine.schedule({...returning,hold_reason:'no_successor'}, row([[0,1.2]],1.8)),null);
+// Foreground windows that cannot interleave remain impossible, even with extra period.
+assert.equal(engine.schedule(row([[0,.8],[2,3]],3),row([[0,2],[2.5,3]],3)),null);
+// One does not call a wholly serial pair an overlap plan.
+assert.equal(engine.schedule(row([[0,2]],2),row([[0,2]],2)),null);
+// Same action sequence -> minimum period; extra ordered actions at no time cost dominate.
+const p=(actions,period)=>({actions,period});
+assert.deepEqual(engine.prune([p([['a'],['b']],3),p([['a'],['b']],2),p([['a','c'],['b']],2)]),[p([['a','c'],['b']],2)]);
+assert.equal(engine.prune([p([['a','c'],['b']],2),p([['c','a'],['b']],2)]).length,2);
+assert.throws(()=>engine.match([data.characters[0],data.characters[0]]),/不同/);
+let total=0;
+for (let i=0;i<data.characters.length;i++) for(let j=i+1;j<data.characters.length;j++) {
+    const result=engine.match([data.characters[i],data.characters[j]]);
+    if ([data.characters[i],data.characters[j]].some(character=>!engine.availableRows(character).length)) {
+        assert.equal(result.plans.length,0);
+    } else {
+        assert(result.plans.length>0);
+    }
+    result.plans.forEach(plan=>{
+        check(plan);assert(plan.rows.every(r=>!r.requires_three_characters));
+        plan.rows.forEach((r,role)=>assert.equal(plan.recoveryDelays[role],engine.recoveryDelay([data.characters[i],data.characters[j]][plan.roles[role]],r)));
+        assert.equal(plan.totalMultiplier,plan.rows.reduce((sum,r)=>sum+(r.multipliers.atk||0),0));
+        assert.equal(plan.multiplierRate,plan.totalMultiplier/plan.period);
+        plan.multipliers.forEach((m,role)=>assert.equal(m.atk,plan.rows[plan.roles.indexOf(role)].multipliers.atk));
+    });
+    for (const group of result.plans) {
+        assert(group.variants.length > 0);
+        assert(group.defaultVariant >= 0 && group.defaultVariant < group.variants.length);
+        group.variants.forEach((variant, index) => {
+            const rows = variant.rowIds.map((id, role) => [data.characters[i], data.characters[j]][variant.roles[role]].rows.find(r => r.id === id));
+            check({...group, ...variant, rows});
+            assert.equal(variant.period, group.period);
+            assert.deepEqual(variant.roles.map((role,k)=>[role,rows[k].actions]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]),group.actions);
+            assert(Math.abs(variant.foregroundSeconds[0]+variant.foregroundSeconds[1]-group.period)<1e-7);
+            if (index) assert(variant.foregroundSeconds[1]>=group.variants[index-1].foregroundSeconds[1]);
+        });
+    }
+    total+=result.plans.length;
+}
+const pictured=engine.match([data.characters[0],data.characters[1]]).plans.find(p=>
+    JSON.stringify(p.actions)===JSON.stringify([['a1远','a2远','a3远','a4远'],['a1','z','a5']]));
+assert(pictured); assert.equal(pictured.period,3.1);
+assert.equal(pictured.totalMultiplier,9.59);
+assert(Math.abs(pictured.multiplierRate - 9.59/3.1)<1e-9);
+const allocation=engine.match([data.characters[0],data.characters[1]]).plans.find(p=>
+    JSON.stringify(p.actions)===JSON.stringify([['a1远','a2远','a3远'],['a1','z','a5']]));
+assert.equal(allocation.period,3);
+assert(allocation.variants.length>1);
+assert.equal(allocation.variants[0].foregroundSeconds[1],1.2);
+assert.equal(allocation.variants.at(-1).foregroundSeconds[1],1.8);
+const last=allocation.variants.at(-1), residualRole=last.roles.indexOf(1);
+const returnAt=last.segments.find(s=>s.role===residualRole).start;
+const a5End=last.offsets[residualRole]; // previous cycle a5 ends at this cycle a1 start
+assert(a5End-returnAt>=.1-1e-7,'return during a5 recovery before a1 z pre-a5');
+const hei=engine.availableRows(data.characters[2]);
+assert(hei.length>0);
+assert(hei.some(r=>r.actions[0]==='魔e' && r.actions.at(-1)==='魔a5'));
+assert(hei.every(r=>r.actions.every((a,i,n)=>a!=='魔e' || n[(i+n.length-1)%n.length]==='魔a5')));
+const heiFixture={name:'黑羽',actions:[{name:'魔e'},{name:'魔a5'},{name:'魔a4'}],rows:[
+ row([[0,1.4]],2,{actions:['魔e','魔a5']}),
+ row([[0,1.4]],2,{actions:['魔e','魔a4']}),
+ row([[0,1.4]],2,{actions:['魔a5','魔e']}),
+ row([[0,1.4]],2,{actions:['魔a5','魔a4','魔e']}),
+]};
+assert.deepEqual(engine.availableRows(heiFixture).map(r=>r.actions),[['魔e','魔a5'],['魔a5','魔e']]);
+assert(engine.availableRows(data.characters[0]).every(r=>!r.original_actions.includes('e')));
+assert(engine.availableRows(data.characters[1]).every(r=>r.original_actions.every(n=>!n.startsWith('幻'))));
+for (const conditions of [{required_buff_key:'state'},{required_additional_buff_keys:['ready']},{cooldown_ticks:120},{energy_cost:1},{personal_resource_cost:{charge:1}}]) assert(!engine.unrestricted({conditions}));
+assert(engine.unrestricted({conditions:{cooldown_ticks:0,energy_cost:0,personal_resource_cost:{}}}));
+const clean=engine.match([data.characters[2],data.characters[1]],{withoutDodge:true});
+assert(clean.plans.every(p=>p.rows.every(r=>!r.has_dodge)));
+console.log(`PASS: synthetic seam/delay/dominance cases and ${total} real pair plans`);

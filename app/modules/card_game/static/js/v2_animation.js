@@ -21,7 +21,7 @@
   const NS = "http://www.w3.org/2000/svg";
   const MAX_EVENT_MS = 3600;
   const ACTOR_FX_CLASSES = [
-    "v2-fx-lunge", "v2-fx-enter", "v2-fx-hurt", "v2-fx-shield", "v2-fx-heal",
+    "v2-fx-support-immune", "v2-fx-lunge", "v2-fx-enter", "v2-fx-hurt", "v2-fx-shield", "v2-fx-heal",
     "v2-fx-down", "v2-fx-revive", "v2-fx-awaken", "v2-fx-shape", "v2-fx-growth",
   ];
   const BEATS = {
@@ -108,7 +108,9 @@
     if (characterId === "player") {
       return "玩家";
     }
-    return CHARACTER_NAMES[characterId] || (card && card.name) || characterId || "";
+    const api = typeof window !== "undefined" ? window.NTE_V2 : null;
+    const character = api && api.characterFallback ? api.characterFallback(characterId) : null;
+    return (character && character.name) || CHARACTER_NAMES[characterId] || (card && card.name) || characterId || "";
   }
 
   function typeLabel(card) {
@@ -430,6 +432,10 @@
         if (this._isSilent(event)) {
           return;
         }
+        if (event.immunity_kind) {
+          await this._presentDamage(event, instant);
+          return;
+        }
         if (kind === "rewind") {
           const curtain = this._el("div", "v2-rewind-curtain");
           this._ensureOverlay().appendChild(curtain);
@@ -464,8 +470,12 @@
           } catch (_error) {}
           return;
         }
-        if (kind === "play") {
-          if (this._isOpponentPlay(event) || this.options.presentOwnPlays) {
+        if (kind === "play" || (kind === "reveal" && event.card_source === "deck" && hasPublicCard(event.card))) {
+          if (event.response === true) {
+            await this._presentHarmony(event, instant, "响应");
+            if (this._cancelled) return;
+          }
+          if (kind === "reveal" || event.response === true || this._isOpponentPlay(event) || this.options.presentOwnPlays) {
             await this._presentPlay(event, instant);
           }
           return;
@@ -546,8 +556,12 @@
       const side = sideOf(event);
       const hand = this._hand(side);
       const stageRect = readRect(overlay) || { left: 0, top: 0, width: 800, height: 450, cx: 400, cy: 225, right: 800, bottom: 450 };
-      const sourceCard = this._sourceCard(hand, card, side);
-      const fromRect = readRect(sourceCard) || readRect(hand) || readRect(this._entity(event && (event.actor || event.source))) || stageRect;
+      const fromDeck = event.card_source === "deck";
+      const sourceCard = fromDeck ? null : this._sourceCard(hand, card, side);
+      const deck = fromDeck && this.root && this.root.querySelector
+        ? this.root.querySelector(this._isOpponentPlay(event) ? "#v2-opponent-deck" : "#v2-player-deck") : null;
+      const fromRect = readRect(deck) || readRect(sourceCard) || (!fromDeck && readRect(hand))
+        || readRect(this._entity(event && (event.actor || event.source))) || stageRect;
       const node = this._el("div", "v2-fx-play-card");
       node.setAttribute("data-v2-fx-kind", "play");
       if (card && card.card_id) {
@@ -731,9 +745,17 @@
       const shieldGained = shieldLost == null ? null : -shieldLost;
       const rawAmount = numericValue(amountOf(event));
       const isHeal = event && event.type === "heal";
-      if (event && event.type === "combat" && event.counter_immunity === "support") {
-        this._floater(point, stageRect, "无敌", "invincible");
-        await this._wait(this._duration(instant, BEATS.damageHold));
+      const supportImmune = event && event.type === "combat" && event.counter_immunity === "support";
+      const immunityKinds = {all: "invincible", combat: "combat-immune", noncombat: "noncombat-immune"};
+      const immunityTone = supportImmune ? "invincible" : immunityKinds[event && event.immunity_kind];
+      if (immunityTone) {
+        this._floater(point, stageRect, "免疫", immunityTone);
+        if (target && supportImmune) target.classList.add("v2-fx-support-immune");
+        try {
+          await this._wait(this._duration(instant, BEATS.damageHold));
+        } finally {
+          if (target && supportImmune) target.classList.remove("v2-fx-support-immune");
+        }
         return;
       }
       let shown = false;
@@ -844,15 +866,16 @@
       }
     }
 
-    async _presentHarmony(event, instant) {
+    async _presentHarmony(event, instant, keyword) {
       const overlay = this._ensureOverlay();
       const stageRect = readRect(overlay) || { cx: 400, cy: 225, left: 0, top: 0 };
       const names = { "创生": "01", "覆纹": "02", "黯星": "03", "浊燃": "04", "浸染": "05", "延滞": "06", "盈蓄": "07", "失谐": "08" };
       const text = String(event && event.text || "");
-      const name = Object.keys(names).find((value) => text.includes(value)) || "环合";
+      const name = keyword || Object.keys(names).find((value) => text.includes(value)) || "环合";
       const area = this.root && this.root.querySelector ? this.root.querySelector('#v2-play-area') : null;
       const point = centerOf(readRect(area), { x: stageRect.cx, y: stageRect.cy });
       const art = this._el("div", "v2-fx-harmony-art");
+      if (keyword === "响应") art.classList.add("is-response");
       art.setAttribute("aria-label", name);
       art.style.left = (point.x - stageRect.left) + "px";
       art.style.top = (point.y - stageRect.top) + "px";
@@ -874,7 +897,7 @@
         { transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.78 },
         { transform: "translate(-50%, -56%) scale(1.04)", opacity: 0 },
       ], this._duration(instant, 1100));
-      art.remove();
+      if (art.parentNode) art.parentNode.removeChild(art);
     }
 
     async _presentDot(event, instant, kind) {

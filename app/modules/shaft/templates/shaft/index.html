@@ -1,8 +1,9 @@
 {% extends 'common/base.html' %}
 {% block title %}异环云配队——排轴计算{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('shaft_module.static', filename='css/shaft-page.css', v=shaft_asset_version('css/shaft-page.css')) }}">{% endblock %}
+{% block head %}{% if request.args.get('embedded') == '1' and request.args.get('preview', '').isdigit() %}<link rel="stylesheet" href="{{ url_for('shaft_module.static', filename='css/shaft-preview-embedded.css', v=shaft_asset_version('css/shaft-preview-embedded.css')) }}">{% endif %}<link rel="stylesheet" href="{{ url_for('shaft_module.static', filename='css/shaft-page.css', v=shaft_asset_version('css/shaft-page.css')) }}">{% endblock %}
 {% block body %}
-<main class="shaft-page" data-active-page="{{ active_shaft_page }}">
+<main class="shaft-page" data-active-page="{{ active_shaft_page }}" data-preview-only="{{ 'true' if request.args.get('embedded') == '1' and request.args.get('preview', '').isdigit() else 'false' }}">
+    {% if request.args.get('embedded') == '1' %}<p id="shaft-embedded-preview-status" role="status">正在读取原生排轴预览…</p>{% endif %}
     <section class="glass-card panel-header shaft-header">
         <div>
             <p class="eyebrow">Shaft Lab</p>
@@ -89,12 +90,32 @@
                     <h2>全队总览</h2>
                 </div>
 
-                <section class="shaft-team-bonus-panel">
-                    <div class="section-title-row">
-                        <h2>家具上限</h2>
-                    </div>
+                <details class="shaft-team-bonus-panel">
+                    <summary class="section-title-row">
+                        <h2>家具增益</h2>
+                    </summary>
                     <div class="shaft-team-bonus-grid" id="shaft-team-bonus-grid"></div>
-                </section>
+                </details>
+
+                <details class="shaft-team-bonus-panel">
+                    <summary class="section-title-row">
+                        <h2>噗咔特训</h2>
+                    </summary>
+                    <div class="shaft-team-bonus-grid" id="shaft-training-bonus-grid"></div>
+                </details>
+
+                <details class="shaft-team-bonus-panel">
+                    <summary class="section-title-row"><h2>食品</h2></summary>
+                    <div class="shaft-team-bonus-grid" id="shaft-food-bonus-grid"></div>
+                </details>
+
+                <details class="shaft-team-bonus-panel">
+                    <summary class="section-title-row"><h2>赐福</h2></summary>
+                    <label class="shaft-team-bonus-tile">
+                        <span>赐福效果（单选）</span>
+                        <select id="shaft-blessing-select" aria-label="赐福效果（单选）"></select>
+                    </label>
+                </details>
 
                 <section class="shaft-result-panel">
                     <div class="section-title-row">
@@ -129,7 +150,6 @@
                         </div>
                     </div>
                     <div class="shaft-contribution-list" id="shaft-contribution-list"></div>
-                    <button class="primary-btn shaft-substat-contribution-open" id="shaft-substat-contribution-btn" type="button" aria-haspopup="dialog">副词条贡献度</button>
                 </section>
             </aside>
         </section>
@@ -300,8 +320,8 @@
         <div class="shaft-action-contribution-modal">
             <div class="section-title-row">
                 <div>
-                    <span class="shaft-panel-kicker">个人伤害分析</span>
-                    <h2 id="shaft-action-contribution-title">动作贡献分析</h2>
+                    <span class="shaft-panel-kicker">角色分析</span>
+                    <h2 id="shaft-action-contribution-title">角色分析详情</h2>
                 </div>
                 <button class="secondary-btn shaft-dialog-close" data-close-action-contribution type="button" aria-label="关闭">×</button>
             </div>
@@ -330,18 +350,6 @@
                 <button class="secondary-btn shaft-dialog-close" data-close-harmony-analysis type="button" aria-label="关闭">×</button>
             </div>
             <div id="shaft-harmony-analysis-content"></div>
-        </div>
-    </dialog>
-    <dialog class="shaft-action-contribution-dialog" id="shaft-substat-contribution-dialog" aria-labelledby="shaft-substat-contribution-title">
-        <div class="shaft-action-contribution-modal shaft-substat-contribution-modal">
-            <div class="section-title-row">
-                <div>
-                    <span class="shaft-panel-kicker">全队收益对比</span>
-                    <h2 id="shaft-substat-contribution-title">副词条贡献度</h2>
-                </div>
-                <button class="secondary-btn shaft-dialog-close" data-close-substat-contribution type="button" aria-label="关闭">×</button>
-            </div>
-            <div id="shaft-substat-contribution-content"></div>
         </div>
     </dialog>
     <dialog class="shaft-shortcut-dialog" id="shaft-shortcut-dialog" aria-labelledby="shaft-shortcut-dialog-title">

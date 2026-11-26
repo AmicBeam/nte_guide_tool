@@ -1,0 +1,178 @@
+{
+  "Boss_016_BP": {
+    "image": "/static/guide/monsters/Boss_016_BP.webp",
+    "swallowable": false
+  },
+  "Boss_017_BP": {
+    "image": "/static/guide/monsters/Boss_017_BP.webp",
+    "swallowable": false
+  },
+  "Boss_06_BP": {
+    "image": "/static/guide/monsters/Boss_06_BP.webp",
+    "swallowable": false
+  },
+  "Boss_07_BP": {
+    "image": "/static/guide/monsters/Boss_07_BP.webp",
+    "swallowable": false
+  },
+  "Boss_08_BP": {
+    "image": "/static/guide/monsters/Boss_08_BP.webp",
+    "swallowable": false
+  },
+  "Boss_15_BP": {
+    "image": "/static/guide/monsters/Boss_15_BP.webp",
+    "swallowable": false
+  },
+  "boss_05_BP": {
+    "image": "/static/guide/monsters/boss_05_BP.webp",
+    "swallowable": false
+  },
+  "boss_09_BP": {
+    "image": "/static/guide/monsters/boss_09_BP.webp",
+    "swallowable": false
+  },
+  "boss_18_BP": {
+    "image": "/static/guide/monsters/boss_18_BP.webp",
+    "swallowable": false
+  },
+  "boss_26_BP": {
+    "image": "/static/guide/monsters/boss_26_BP.webp",
+    "swallowable": false
+  },
+  "boss_33_BP": {
+    "image": "/static/guide/monsters/boss_33_BP.webp",
+    "swallowable": false
+  },
+  "mon_012_2_BP": {
+    "image": "/static/guide/monsters/mon_012_2_BP.webp",
+    "swallowable": false
+  },
+  "mon_015_BP": {
+    "image": "/static/guide/monsters/mon_015_BP.webp",
+    "swallowable": false
+  },
+  "mon_016_BP": {
+    "image": "/static/guide/monsters/mon_016_BP.webp",
+    "swallowable": false
+  },
+  "mon_019_BP": {
+    "image": "/static/guide/monsters/mon_019_BP.webp",
+    "swallowable": true
+  },
+  "mon_01_BP": {
+    "image": "/static/guide/monsters/mon_01_BP.webp",
+    "swallowable": true
+  },
+  "mon_020_BP": {
+    "image": "/static/guide/monsters/mon_020_BP.webp",
+    "swallowable": true
+  },
+  "mon_022_BP": {
+    "image": "/static/guide/monsters/mon_022_BP.webp",
+    "swallowable": false
+  },
+  "mon_023_BP": {
+    "image": "/static/guide/monsters/mon_023_BP.webp",
+    "swallowable": true
+  },
+  "mon_025_BP": {
+    "image": "/static/guide/monsters/mon_025_BP.webp",
+    "swallowable": false
+  },
+  "mon_025_double_1_BP": {
+    "image": "/static/guide/monsters/mon_025_double_1_BP.webp",
+    "swallowable": false
+  },
+  "mon_025_double_2_BP": {
+    "image": "/static/guide/monsters/mon_025_double_2_BP.webp",
+    "swallowable": false
+  },
+  "mon_029_BP": {
+    "image": "/static/guide/monsters/mon_029_BP.webp",
+    "swallowable": true
+  },
+  "mon_02_BP": {
+    "image": "/static/guide/monsters/mon_02_BP.webp",
+    "swallowable": true
+  },
+  "mon_030_BP": {
+    "image": "/static/guide/monsters/mon_030_BP.webp",
+    "swallowable": true
+  },
+  "mon_030_BP_Rain": {
+    "image": "/static/guide/monsters/mon_030_BP_Rain.webp",
+    "swallowable": true
+  },
+  "mon_030_BP_Snow": {
+    "image": "/static/guide/monsters/mon_030_BP_Snow.webp",
+    "swallowable": true
+  },
+  "mon_03_BP": {
+    "image": "/static/guide/monsters/mon_03_BP.webp",
+    "swallowable": false
+  },
+  "mon_04_BP": {
+    "image": "/static/guide/monsters/mon_04_BP.webp",
+    "swallowable": true
+  },
+  "mon_051_BP": {
+    "image": "/static/guide/monsters/mon_051_BP.webp",
+    "swallowable": false
+  },
+  "mon_05_BP": {
+    "image": "/static/guide/monsters/mon_05_BP.webp",
+    "swallowable": false
+  },
+  "mon_08_BP": {
+    "image": "/static/guide/monsters/mon_08_BP.webp",
+    "swallowable": false
+  },
+  "mon_14_BP": {
+    "image": "/static/guide/monsters/mon_14_BP.webp",
+    "swallowable": true
+  },
+  "mon_17_BP": {
+    "image": "/static/guide/monsters/mon_17_BP.webp",
+    "swallowable": false
+  },
+  "mon_18_2_BP": {
+    "image": "/static/guide/monsters/mon_18_2_BP.webp",
+    "swallowable": true
+  },
+  "mon_24_BP": {
+    "image": "/static/guide/monsters/mon_24_BP.webp",
+    "swallowable": false
+  },
+  "mon_27_BP": {
+    "image": "/static/guide/monsters/mon_27_BP.webp",
+    "swallowable": false
+  },
+  "mon_33_BP": {
+    "image": "/static/guide/monsters/mon_33_BP.webp",
+    "swallowable": true
+  },
+  "mon_35_BP_Blue": {
+    "image": "/static/guide/monsters/mon_35_BP_Blue.webp",
+    "swallowable": true
+  },
+  "mon_35_BP_Red": {
+    "image": "/static/guide/monsters/mon_35_BP_Red.webp",
+    "swallowable": true
+  },
+  "mon_38_BP": {
+    "image": "/static/guide/monsters/mon_38_BP.webp",
+    "swallowable": false
+  },
+  "mon_39_2_BP": {
+    "image": "/static/guide/monsters/mon_39_2_BP.webp",
+    "swallowable": false
+  },
+  "mon_39_BP": {
+    "image": "/static/guide/monsters/mon_39_BP.webp",
+    "swallowable": false
+  },
+  "mon_41_BP": {
+    "image": "/static/guide/monsters/mon_41_BP.webp",
+    "swallowable": false
+  }
+}

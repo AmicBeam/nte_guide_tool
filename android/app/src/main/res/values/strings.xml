@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">异能对决</string>
+    <string name="loading">正在打开异能对决…</string>
+    <string name="connection_error">暂时无法打开页面，请检查网络后重试。</string>
+    <string name="retry">重新连接</string>
+    <string name="home">返回大厅</string>
+    <string name="exit_title">退出异能对决？</string>
+    <string name="exit_message">退出应用不会自动结束正在进行的对局。</string>
+    <string name="exit">退出</string>
+    <string name="stay">继续游玩</string>
+    <string name="no_browser">未找到可打开此链接的浏览器。</string>
+</resources>

@@ -45,9 +45,30 @@
       "follow_dmg": 0,
       "attach_dmg": 0
     },
-    "element_dmg": {"光": 0, "灵": 0, "咒": 0, "暗": 0, "魂": 0, "相": 0},
+    "element_dmg": {
+      "光": 0,
+      "灵": 0,
+      "咒": 0,
+      "暗": 0,
+      "魂": 0,
+      "相": 0
+    },
     "source_row": 0,
     "source_note": "2026-08-04用户提供的腾讯文档；Nanoka当前未收录。基础24%暴击率与1精16%被动暴击率合并为40%面板。"
+  },
+  {
+    "id": "arc_elyms_waiting_ringtone",
+    "name": "静候彩铃",
+    "level": 80,
+    "rarity": "S",
+    "adaptation": "固态",
+    "base_atk": 570,
+    "detail": "攻击力提升15%/30%。释放极轨终结后累计造成3次追击伤害，全队无视防御12%/20%，装备者额外10%/20%，持续20秒。释放变轨技能时，全队无视敌人8%/20%光属性异能抗性，持续20秒。装备者进入战斗时直接触发以上全部效果；全队无视防御与无视光抗效果分别队伍唯一。",
+    "modifiers": {
+      "crit_rate": 0.24,
+      "atk_pct": 0.15
+    },
+    "element_dmg": {}
   },
   {
     "id": "arc_7d0ca08e3d",
@@ -165,7 +186,7 @@
   },
   {
     "id": "arc_1a476075cd",
-    "name": "无畏之棉",
+    "name": "无畏之绵",
     "level": 80,
     "rarity": "S",
     "adaptation": "固态",
@@ -203,7 +224,7 @@
   },
   {
     "id": "arc_57b6c49b66",
-    "name": "无畏之棉·满精",
+    "name": "无畏之绵·满精",
     "level": 80,
     "rarity": "S",
     "adaptation": "固态",
@@ -549,14 +570,14 @@
     "level": 80,
     "rarity": "",
     "adaptation": "液态",
-    "detail": "暴击率提升16%～32%。普攻命中后变轨伤害每层提升7%～14%，持续5秒，最多4层，0.3秒触发间隔；释放变轨后普攻伤害提升28%～56%，持续15秒。同时拥有两种效果时，相伤提升16%～32%。",
+    "detail": "暴击率提升15%～27%，变轨技能伤害常驻提升28%～56%。释放变轨技能后，普攻伤害提升28%～56%、相属性伤害提升20%～40%，持续15秒，重复触发刷新。",
     "base_atk": 570,
     "modifiers": {
       "crit_dmg": 0.48,
-      "crit_rate": 0.16
+      "crit_rate": 0.15
     },
     "element_dmg": {},
-    "source_note": "用户2026-09-21提供的腾讯文档《明音凛资料汇总》与工作簿；Everness按明音凛检索无匹配，非Nanoka核实数据。 精炼2–4等差插值。"
+    "source_note": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。 2–4档继续按已授权端点等差换算，每档3个百分点；相伤、变轨/普攻增伤与15秒窗口保持原值。"
   },
   {
     "id": "arc_bab179ec33",
@@ -636,7 +657,7 @@
   },
   {
     "id": "arc_126824ee1b",
-    "name": "极速之棉",
+    "name": "极速之绵",
     "level": 80,
     "rarity": "S",
     "adaptation": "液态",
@@ -674,7 +695,7 @@
   },
   {
     "id": "arc_b3c0b59d01",
-    "name": "极速之棉·满精",
+    "name": "极速之绵·满精",
     "level": 80,
     "rarity": "S",
     "adaptation": "液态",
@@ -788,7 +809,7 @@
   },
   {
     "id": "arc_e21ec2d386",
-    "name": "闪耀每一天",
+    "name": "闪耀的每一天",
     "level": 80,
     "rarity": "A",
     "adaptation": "液态",
@@ -884,8 +905,8 @@
       "all_dmg": 0,
       "basic_dmg": 0,
       "dodge_counter_dmg": 0,
-      "skill_dmg": 0.35,
-      "ultimate_dmg": 0.35,
+      "skill_dmg": 0,
+      "ultimate_dmg": 0,
       "mind_dmg": 0,
       "follow_dmg": 0,
       "attach_dmg": 0
@@ -940,7 +961,7 @@
   },
   {
     "id": "arc_8b67b6e360",
-    "name": "灵敏之棉",
+    "name": "灵敏之绵",
     "level": 80,
     "rarity": "S",
     "adaptation": "气态",
@@ -978,7 +999,7 @@
   },
   {
     "id": "arc_f36fcedbc8",
-    "name": "灵敏之棉·满精",
+    "name": "灵敏之绵·满精",
     "level": 80,
     "rarity": "S",
     "adaptation": "气态",
@@ -1317,6 +1338,20 @@
       "相": 0
     },
     "source_row": 35
+  },
+  {
+    "id": "arc_exe_dotted_horizon",
+    "name": "虚线彼方",
+    "level": 80,
+    "rarity": "S",
+    "adaptation": "等离子",
+    "base_atk": 570,
+    "detail": "暴击伤害提高28%–40%，攻击力提高28%–56%；装备者每造成一次暗属性伤害，召唤物伤害提高2%–4%，最多10层，持续20秒，重复获得刷新持续时间。",
+    "modifiers": {
+      "crit_dmg": 0.76,
+      "atk_pct": 0.28
+    },
+    "element_dmg": {}
   },
   {
     "id": "arc_614aec6ed1",
@@ -1815,7 +1850,7 @@
   },
   {
     "id": "arc_1ddecc32f3",
-    "name": "凶猛之棉",
+    "name": "凶猛之绵",
     "level": 80,
     "rarity": "S",
     "adaptation": "聚合",
@@ -1853,7 +1888,7 @@
   },
   {
     "id": "arc_92353a7626",
-    "name": "凶猛之棉·满精",
+    "name": "凶猛之绵·满精",
     "level": 80,
     "rarity": "S",
     "adaptation": "聚合",

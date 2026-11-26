@@ -22,6 +22,18 @@
     return data.name || data.id || '角色';
   }
 
+  function fillPlayerLife(node, team) {
+    const cap = team.max_hp == null ? 30 : team.max_hp;
+    node.textContent = team.hp == null ? '-' : team.hp;
+    node.title = '生命 ' + node.textContent + '/' + cap;
+    const hud = node.closest('.v2-player-hud');
+    const label = hud && hud.querySelector('[data-player-max-hp]');
+    if (label) {
+      label.textContent = '上限 ' + cap;
+      label.hidden = cap === 30;
+    }
+  }
+
   function fitResources(node) {
     const row = node.matches('.v2-resource-row') ? node : node.querySelector('.v2-resource-row');
     if (!row || !row.clientWidth) return;
@@ -56,6 +68,7 @@
     node.removeAttribute('data-drop-role');
     node.classList.toggle('legal', Boolean(options.canAttack || options.canAwaken || options.canTarget));
     node.classList.toggle('down', Number(data.down_turns) > 0);
+    node.classList.toggle('is-summoned', Boolean(data.summoned));
     const damageImmune = Boolean(data.damage_immune && !options.placeholder && !data.down_turns && data.hp > 0);
     const damageLimited = Boolean(typeof data.damage_limit === 'number' && data.damage_limit >= 0 &&
       !options.placeholder && !data.down_turns && data.hp > 0);
@@ -73,6 +86,8 @@
     node.classList.toggle('target-legal', Boolean(options.canTarget));
     node.classList.toggle('harmony-source', Boolean(data.harmony_source));
     node.classList.toggle('harmony-ready', Boolean(data.harmony_ready));
+    const showCollapse = Boolean(data.collapse && Number(data.hp) > 0 && !Number(data.down_turns) && !options.placeholder);
+    node.classList.toggle('is-collapsed', showCollapse);
     const compact = !options.usePortrait;
     const energyMax = data.energy_max == null ? 5 : data.energy_max;
     const energyNow = data.energy == null ? 0 : data.energy;
@@ -80,17 +95,20 @@
     const hp = (data.hp == null ? '-' : data.hp) + '/' + (data.max_hp == null ? '-' : data.max_hp);
     const shield = Number(data.shield) || 0;
     function combatStat(kind, shown, title) {
+      const value = '<em>' + V2.escapeHtml(String(shown)) + '</em>';
+      const icon = V2.statIconSvg(kind === 'signal' ? 'signal-' + data.signal_level : kind);
       return '<span class="v2-combat-stat is-' + kind + '" title="' + V2.escapeAttr(title) + '">' +
-        V2.statIconSvg(kind) + '<em>' + V2.escapeHtml(String(shown)) + '</em></span>';
+        (kind === 'signal' ? value + icon : icon + value) + '</span>';
     }
     const jinguHtml = data.jingu == null ? '' : combatStat('jingu', data.jingu, '金谷 ' + data.jingu + '（可为负，倒地保留）');
     const auraHtml = data.protagonist_aura == null ? '' : combatStat('aura', data.protagonist_aura, '主角光环 ' + data.protagonist_aura + '/6（倒地保留）');
+    const signalHtml = data.signal_level == null ? '' : combatStat('signal', ['低', '中', '高'][data.signal_level] || '低', '信号强度：' + (['低信号', '中信号', '高信号'][data.signal_level] || '低信号'));
     const fangHtml = Number(data.beast_fangs) > 0 ? combatStat('fang', data.beast_fangs, '兽牙影刺：剩余 ' + data.beast_fangs + ' 个己方回合') : '';
     const vitalsHtml = options.usePortrait
       ? ('<div class="v2-portrait-vitals">' +
           (shield > 0 ? combatStat('shield', shield, '护盾 ' + shield) : '') +
           '<div class="v2-portrait-vitals-row">' +
-            '<span class="v2-attack-stack">' + jinguHtml + auraHtml + fangHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' +
+            '<span class="v2-attack-stack">' + jinguHtml + auraHtml + signalHtml + fangHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' +
             combatStat('hp', hp, '生命 ' + hp) +
           '</div></div>')
       : '';
@@ -104,12 +122,19 @@
     const resourceHtml = (hideHarmony ? '' : resourceLabel('环合', '环', String(data.harmony || 0) + '/' + (data.harmony_max == null ? 2 : data.harmony_max), 'harmony')) +
       (hideEnergy ? '' : resourceLabel(data.resource_name || '能量', data.resource_name ? '时' : '能', energyNow + '/' + energyMax, 'energy'));
     const stats = compact ? [
-      { html: '<span class="v2-attack-stack">' + jinguHtml + auraHtml + fangHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' },
+      { html: '<span class="v2-attack-stack">' + jinguHtml + auraHtml + signalHtml + fangHtml + combatStat('atk', attack, '攻击 ' + attack) + '</span>' },
       { html: combatStat('hp', hp, '生命 ' + hp) },
       { html: combatStat('shield', shield, '护盾 ' + shield) },
     ] : [];
     if (data.truth_keys != null) stats.push({ cls: 'truth-keys', text: '真理之匙 ' + data.truth_keys });
     if (data.arid != null) stats.push({ cls: 'arid', text: '荒时 ' + data.arid });
+    if (data.lingke_chain && data.lingke_chain.count) {
+      const chain = data.lingke_chain;
+      const characters = options.characters || [];
+      const actor = characters.find(function (h) { return chain.entity_id && h.entity_id === chain.entity_id; }) ||
+        characters.find(function (h) { return h.id === chain.character_id; }) || V2.characterFallback(chain.character_id);
+      if (actor && actor.name) stats.push({ cls: '', text: actor.name + ' ' + chain.count + '/3' });
+    }
     if (resourceHtml && !data.summoned) stats.push({ html: '<div class="v2-resource-row">' + resourceHtml + '</div>' });
     if (!hideEnergy && data.awakened) stats.push({ cls: 'energy', text: '终结 ' + (data.ultimate_expires === 'turn_end' ? '本回合' : (data.ultimate_turns || 0)) });
     if (Number(data.growth) > 0) {
@@ -141,14 +166,31 @@
     const mobileCard = window.matchMedia('(pointer: coarse) and (max-width: 1200px)').matches;
     const actions = [];
     if (options.canAwaken) {
-      actions.push('<button class="v2-awaken-btn" type="button" data-ultimate-id="' + V2.escapeAttr(data.id) + '">终结</button>');
+      actions.push('<button class="v2-awaken-btn" type="button" data-ultimate-id="' + V2.escapeAttr(data.id) + '">' + V2.escapeHtml(options.ultimateLabel || '终结') + '</button>');
     }
-    const panelSig = [attack, hp, shield, data.harmony, energyNow, energyMax, data.awakened ? 1 : 0, data.jingu, data.protagonist_aura, data.beast_fangs].join('|');
+    const panelSig = [attack, hp, shield, data.harmony, energyNow, energyMax, data.awakened ? 1 : 0, data.jingu, data.protagonist_aura, data.beast_fangs, data.signal_level].join('|');
     const prevPanel = node.getAttribute('data-pop-sig');
     node.setAttribute('data-pop-sig', panelSig);
-    const protectionLabel = damageLimited ? '单次至多受到 ' + data.damage_limit + ' 点伤害' : '免疫伤害';
-    node.innerHTML = (damageImmune || damageLimited ? '<svg class="v2-immunity-frame' +
-      (damageLimited ? ' v2-damage-limit-frame' : '') + '" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="' + protectionLabel + '"><path d="M8 1 H92 Q99 1 99 8 V98 Q90 102 50 106 Q10 102 1 98 V8 Q1 1 8 1 Z"/></svg>' : '') +
+    const protectedAlive = !options.placeholder && !data.down_turns && data.hp > 0;
+    const protections = [
+      [damageImmune, '', '免疫'],
+      [damageLimited, 'v2-damage-limit-frame', '单次至多受到 ' + data.damage_limit + ' 点伤害'],
+      [protectedAlive && data.combat_immune, 'v2-combat-immunity-frame', '免疫战斗伤害'],
+      [protectedAlive && data.noncombat_immune, 'v2-noncombat-immunity-frame', '免疫对方非战斗伤害'],
+      [protectedAlive && data.hp_floor >= 1, 'v2-hp-floor-frame', '生命至少保留 1 点'],
+    ].filter(function (entry) { return entry[0]; });
+    node.classList.toggle('has-protection-frame', protections.length > 0);
+    const protectionFrames = protections.map(function (entry, index) {
+      return '<svg class="v2-immunity-frame ' + entry[1] + '" style="--protection-offset:' + index * 4 + 'px" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="' + entry[2] + '"><path d="M8 1 H92 Q99 1 99 8 V98 Q90 102 50 106 Q10 102 1 98 V8 Q1 1 8 1 Z"/></svg>';
+    }).join('');
+    const collapseHalo = showCollapse ? '<svg class="v2-collapse-halo" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="倾陷">' +
+      '<circle class="v2-collapse-ring" cx="50" cy="50" r="37"/>' +
+      '<g class="v2-collapse-orbit"><path d="M50 5l3 7 7 1-6 5 2 8-6-4-6 4 2-8-6-5 7-1z"/>' +
+      '<path d="M82 63l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>' +
+      '<path d="M18 63l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></g></svg>' : '';
+    const collapseFrame = !options.placeholder && typeof data.collapse_border_cut === 'number'
+      ? '<span class="v2-collapse-frame" style="--collapse-frame-cut:' + data.collapse_border_cut + '%" aria-hidden="true"></span>' : '';
+    node.innerHTML = collapseFrame + collapseHalo + protectionFrames +
       '<div class="v2-character-art' + (actions.length && !mobileCard ? ' has-ultimate' : '') + '">' + (data.summoned && !portrait ? '<div class="v2-summon-art" aria-label="召唤物">⌛</div>' : V2.imageMarkup(portrait, data.name, options.usePortrait ? 'v2-portrait' : 'v2-avatar')) +
       vitalsHtml + (mobileCard ? '' : actions.join('')) + '</div>' +
       '<div class="v2-character-panel">' +
@@ -177,7 +219,7 @@
     if (prevPanel && prevPanel !== panelSig) {
       const previous = prevPanel.split('|');
       const current = panelSig.split('|');
-      [['.is-atk', 0], ['.is-hp', 1], ['.is-shield', 2], ['.harmony', 3], ['.energy', 4], ['.is-jingu', 7], ['.is-aura', 8], ['.is-fang', 9]].forEach(function (stat) {
+      [['.is-atk', 0], ['.is-hp', 1], ['.is-shield', 2], ['.harmony', 3], ['.energy', 4], ['.is-jingu', 7], ['.is-aura', 8], ['.is-fang', 9], ['.is-signal', 10]].forEach(function (stat) {
         if (previous[stat[1]] === current[stat[1]]) return;
         node.querySelectorAll(stat[0]).forEach(function (badge) {
           badge.classList.add('v2-stat-pop');
@@ -221,17 +263,25 @@
     if (!Array.isArray(markers) || !markers.length) return '';
     return '<div class="' + className + '">' + markers.map(function (marker) {
       const detail = [marker.name, marker.description, marker.timing, marker.clears_on_down ? '倒地时失去' : '倒地后保留'].filter(Boolean).join(' · ');
-      if (className === 'v2-character-effects') {
+      if (className === 'v2-character-effects' || className === 'v2-player-effects') {
         // Older replay markers predate the explicit presentation kind.
         const debuff = marker.kind ? marker.kind === 'debuff' : ['timed_attack', 'next_resistance'].includes(marker.id);
         const label = debuff ? '减益' : '增益';
         const path = debuff ? 'M12 4v16m-6-6 6 6 6-6' : 'M12 20V4m-6 6 6-6 6 6';
-        return '<span class="v2-effect-icon is-' + (debuff ? 'debuff' : 'buff') + '" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(label + '：' + detail) + '">' +
+        const attribute = resistanceAttribute(marker);
+        const icon = attribute ? V2.imageMarkup(V2.elementIcon(attribute), attribute, 'v2-effect-attribute') : '';
+        return '<span class="v2-effect-icon is-' + (debuff ? 'debuff' : 'buff') + (attribute ? ' is-resistance' : '') + '" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(label + '：' + detail) + '">' + icon +
           '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg></span>';
       }
-      return '<span class="v2-chip" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(detail) + '">' +
+      return '<span class="v2-chip is-' + (marker.kind === 'debuff' ? 'debuff' : 'buff') + '" title="' + V2.escapeAttr(detail) + '" aria-label="' + V2.escapeAttr(detail) + '">' +
         '<span class="v2-effect-name">' + V2.escapeHtml(marker.name) + '</span><small>' + V2.escapeHtml(marker.timing || '') + '</small></span>';
     }).join('') + '</div>';
+  }
+
+  function resistanceAttribute(marker) {
+    // Old replay markers only carried the resistance label.
+    const legacy = String(marker.name || '').match(/^([光灵相咒暗魂])(?:属性)?(?:伤害)?抗性/);
+    return marker.attribute || (legacy && legacy[1]) || '';
   }
 
   function fillFrontDebuff(node, state) {
@@ -308,7 +358,11 @@
         effects.className = 'v2-zone-effects';
         zone.appendChild(effects);
       }
-      effects.innerHTML = effectMarkersHtml(state && state.effect_markers, 'v2-zone-effect-list');
+      // Player resistance is already displayed beside player life.
+      const zoneMarkers = ((state && state.effect_markers) || []).filter(function (marker) {
+        return !resistanceAttribute(marker);
+      });
+      effects.innerHTML = effectMarkersHtml(zoneMarkers, 'v2-zone-effect-list');
       effects.hidden = !effects.innerHTML;
     }
     fillHarmonySourceCaption(zone, state, !frontId);
@@ -318,12 +372,16 @@
     }
     const character = TABLE.characterMap(state)[frontId] || V2.characterFallback(frontId);
     const node = ensureCharacterNode(ctx.pool, side, frontId);
+    const ultimate = canAct && !isOpponent && (ctx.findUltimateAction
+      ? ctx.findUltimateAction(frontId) : ctx.findAction('ultimate', { character_id: frontId }));
     fillCharacterCard(node, character, {
       side: side,
+      characters: state.characters,
       isOpponent: isOpponent,
       usePortrait: true,
       canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: frontId })),
-      canAwaken: canAct && !isOpponent && Boolean(ctx.findAction('ultimate', { character_id: frontId })),
+      canAwaken: Boolean(ultimate),
+      ultimateLabel: ultimate && ultimate.action.type === 'exit_ultimate' ? (ultimate.label || '退出') : '终结',
       records: frontId === 'xun' ? ((state && state.records) || []) : null,
     });
     slot.appendChild(node);
@@ -349,6 +407,7 @@
         ghost.className = 'v2-character-card is-placeholder';
         fillCharacterCard(ghost, character, {
           side: side,
+          characters: state.characters,
           isOpponent: isOpponent,
           usePortrait: true,
           ghost: true,
@@ -360,12 +419,16 @@
         return;
       }
       const node = ensureCharacterNode(ctx.pool, side, character.id);
+      const ultimate = canAct && !isOpponent && (ctx.findUltimateAction
+        ? ctx.findUltimateAction(character.id) : ctx.findAction('ultimate', { character_id: character.id }));
       fillCharacterCard(node, character, {
         side: side,
+        characters: state.characters,
         isOpponent: isOpponent,
         usePortrait: true,
         canAttack: canAct && !isOpponent && Boolean(ctx.findAction('attack', { character_id: character.id })),
-        canAwaken: canAct && !isOpponent && Boolean(ctx.findAction('ultimate', { character_id: character.id })),
+        canAwaken: Boolean(ultimate),
+        ultimateLabel: ultimate && ultimate.action.type === 'exit_ultimate' ? (ultimate.label || '退出') : '终结',
         placeholder: false,
         records: character.id === 'xun' ? ((state && state.records) || []) : null,
       });
@@ -386,12 +449,13 @@
     if (marked) classes.push('has-jingu-mark');
     const markText = marked ? (mark.delta > 0 ? '+' : '') + mark.delta : '';
     const markHtml = marked ? '<span class="v2-jingu-mark" title="本牌结算后，小吱金谷 ' + markText + '" aria-label="金谷 ' + markText + '">' + V2.statIconSvg('jingu') + '<em>' + markText + '</em></span>' : '';
-    const inMulligan = options.phase === 'mulligan';
+    const inMulligan = options.phase === 'mulligan' || options.selection;
     const unusable = !inMulligan && !options.legal;
     const reason = unusable ? (card.unavailable_reason || '现在不能使用') : '';
     if (options.legal && !unusable) classes.push('legal');
     if (options.selected) classes.push('selected');
     if (options.raised) classes.push('raised');
+    if (options.selection) classes.push('v2-selection-card');
     if (unusable) classes.push('is-unusable');
     if (options.groupStart) classes.push('v2-hand-group-start');
     if (card.action_point_free) classes.push('is-ap-free');
@@ -405,7 +469,7 @@
     const title = reason ? ' title="' + V2.escapeAttr(reason) + '"' : '';
     const label = (card.name || '卡牌') + (reason ? '，' + reason : '');
     return (
-      '<article class="' + classes.join(' ') + '" draggable="false" data-card-id="' + V2.escapeAttr(card.instance_id) + '" data-drag-kind="card" data-card-owner="' + V2.escapeAttr((card.hand_face || card).character_id || '') + '" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + instanceAttr + style + title + ' aria-label="' + V2.escapeAttr(label) + '">' +
+      '<article class="' + classes.join(' ') + '" draggable="false"' + (options.selection ? '' : ' data-card-id="' + V2.escapeAttr(card.instance_id) + '" data-drag-kind="card"') + ' data-card-owner="' + V2.escapeAttr((card.hand_face || card).character_id || '') + '" data-card-type="' + V2.escapeAttr(card.type || '') + '"' + instanceAttr + style + title + ' aria-label="' + V2.escapeAttr(label) + '">' +
         freeBorder + markHtml + (card.copy ? '<span class="v2-chip copy">复制</span>' : '') +
         '<strong>' + V2.escapeHtml(card.name || '卡牌') + '</strong>' +
         V2.cardDescriptionHtml(card.description, '正在读取卡牌效果。', 'subtle') +
@@ -462,6 +526,19 @@
     }
     if (ctx.nodes.playerHand) ctx.nodes.playerHand.setAttribute('data-hand-side', viewer);
     if (ctx.nodes.opponentHand) ctx.nodes.opponentHand.setAttribute('data-hand-side', opponent);
+  }
+
+  function fillPlayerEffects(node, markers) {
+    if (!node) return;
+    const line = node.querySelector('.v2-hud-subline');
+    if (!line) return;
+    let effects = line.querySelector('[data-player-effects]');
+    if (!effects) {
+      effects = document.createElement('span');
+      effects.setAttribute('data-player-effects', '');
+      line.appendChild(effects);
+    }
+    effects.innerHTML = effectMarkersHtml(markers, 'v2-player-effects');
   }
 
   function syncJinguOverlay(ctx) {
@@ -591,9 +668,12 @@
         if (!text) {
           return '';
         }
-        const desc = TABLE.historyDescription(event);
-        const extra = desc && desc !== text ? V2.cardDescriptionHtml(desc, '', 'subtle') : '';
-        return '<div class="v2-log-item"><div>' + V2.escapeHtml(text) + '</div>' + extra + '</div>';
+        const card = event.card || (event.item && event.item.card);
+        const visible = card && !card.hidden;
+        const portrait = visible && (card.portrait || card.avatar || V2.characterAsset(V2.characterFallback(card.character_id) || {}, 'portrait'));
+        const thumb = visible ? '<button type="button" class="v2-log-card" data-log-seq="' + V2.escapeAttr(event.seq) + '" aria-label="查看' + V2.escapeAttr(card.name || '卡牌') + '">' +
+          V2.imageMarkup(portrait, card.name || '卡牌', 'v2-log-card-art') + '<span>' + V2.escapeHtml(card.name || '') + '</span></button>' : '';
+        return '<div class="v2-log-item">' + thumb + '<div>' + V2.escapeHtml(text) + '</div></div>';
       }).filter(Boolean).join('');
     } else if (logs.length) {
       html = logs.filter(function (line) { return !/^「.*」进入弃牌堆[。！!]?$/u.test(String(line)); }).slice(-40).map(function (line) {
@@ -614,14 +694,15 @@
 
   function renderGame(ctx) {
     const game = ctx.game;
+    const progress = game && game.escalation;
+    ctx.page.setAttribute('data-escalation-stage', String(progress ? progress.stage : 0));
     const mine = TABLE.sideState(game, ctx.viewer);
     const theirs = TABLE.sideState(game, ctx.opponent);
     bindHudSides(ctx);
     const escalation = ctx.page.querySelector('#v2-escalation');
     if (escalation) {
-      const progress = game && game.escalation;
       escalation.hidden = !progress;
-      escalation.textContent = progress ? progress.hint : '';
+      escalation.textContent = progress ? (progress.short_hint || progress.hint) : '';
       escalation.title = progress ? [progress.description, (progress.active || []).length ? '已生效：' + progress.active.join('；') : '尚未生效'].filter(Boolean).join('\n') : '';
     }
     const tutorial = game && game.tutorial;
@@ -640,14 +721,16 @@
     if (ctx.nodes.opponentFrontZone) ctx.nodes.opponentFrontZone.setAttribute('data-zone-side', ctx.opponent);
     if (ctx.nodes.playerAp) ctx.nodes.playerAp.setAttribute('data-ap-side', ctx.viewer);
     ctx.nodes.roundLabel.textContent = game && game.turn ? ('第 ' + game.turn + ' 回合') : '第 - 回合';
-    ctx.nodes.opponentHp.textContent = theirs.hp == null ? '-' : theirs.hp;
+    fillPlayerLife(ctx.nodes.opponentHp, theirs);
     ctx.nodes.opponentShield.textContent = '护盾 ' + (theirs.shield == null ? '-' : theirs.shield);
     setPileLabel(ctx.nodes.opponentAp, '行动力', theirs.ap == null ? '-' : theirs.ap);
     popIfChanged(ctx.nodes.opponentAp, theirs.ap);
-    ctx.nodes.playerHp.textContent = mine.hp == null ? '-' : mine.hp;
+    fillPlayerLife(ctx.nodes.playerHp, mine);
     ctx.nodes.playerHp.closest('.v2-player-hud').classList.toggle('is-life-locked', Boolean(mine.life_locked));
     ctx.nodes.opponentHp.closest('.v2-player-hud').classList.toggle('is-life-locked', Boolean(theirs.life_locked));
     ctx.nodes.playerShield.textContent = '护盾 ' + (mine.shield == null ? '-' : mine.shield);
+    fillPlayerEffects(ctx.nodes.playerLife, mine.effect_markers);
+    fillPlayerEffects(ctx.nodes.opponentLife, theirs.effect_markers);
     ctx.nodes.playerAp.textContent = mine.ap == null ? '-' : mine.ap;
     const playerApReadout = ctx.nodes.playerAp && ctx.nodes.playerAp.closest('.v2-ap-readout');
     const instantSpent = Boolean(mine.used && mine.used.instant);
@@ -655,8 +738,8 @@
       playerApReadout.classList.toggle('is-instant-spent', instantSpent);
       playerApReadout.title = instantSpent ? '本回合第一张瞬发已用' : '本回合第一张瞬发不耗行动力';
     }
-    popIfChanged(ctx.nodes.opponentHp && ctx.nodes.opponentHp.closest('.v2-player-hud'), [theirs.hp, theirs.shield].join('|'));
-    popIfChanged(ctx.nodes.playerHp && ctx.nodes.playerHp.closest('.v2-player-hud'), [mine.hp, mine.shield].join('|'));
+    popIfChanged(ctx.nodes.opponentHp && ctx.nodes.opponentHp.closest('.v2-player-hud'), [theirs.hp, theirs.max_hp, theirs.shield].join('|'));
+    popIfChanged(ctx.nodes.playerHp && ctx.nodes.playerHp.closest('.v2-player-hud'), [mine.hp, mine.max_hp, mine.shield].join('|'));
     popIfChanged(playerApReadout, [mine.ap, instantSpent ? 1 : 0].join('|'));
     popIfChanged(ctx.nodes.normalAttack, mine.normal_attack_available ? '1' : '0');
     popIfChanged(ctx.nodes.ultimate, mine.ultimate_remaining == null ? (mine.ultimate_available ? '1' : '0') : String(mine.ultimate_remaining));
@@ -695,6 +778,7 @@
   }
 
   TABLE.fillCharacterCard = fillCharacterCard;
+  TABLE.fillPlayerLife = fillPlayerLife;
   TABLE.ensureCharacterNode = ensureCharacterNode;
   TABLE.handCardHtml = handCardHtml;
   TABLE.recordHtml = recordHtml;
@@ -702,4 +786,5 @@
   TABLE.setPileLabel = setPileLabel;
   TABLE.renderGame = renderGame;
   TABLE.renderHands = renderHands;
+  TABLE.fillPlayerEffects = fillPlayerEffects;
 }(window));

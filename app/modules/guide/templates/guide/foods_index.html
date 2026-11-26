@@ -1,0 +1,26 @@
+{% include 'guide/tabs.html' %}
+{% macro effect_text(segments) %}{% for segment in segments %}{% if segment.highlight %}<strong class="guide-food-bonus">{{ segment.text }}</strong>{% else %}{{ segment.text }}{% endif %}{% endfor %}{% endmacro %}
+<form class="guide-search" action="/guide" method="get" role="search">
+<input type="hidden" name="kind" value="foods">
+<label for="guide-query">搜索料理</label>
+<div class="guide-search-row"><input id="guide-query" name="q" type="search" value="{{ request.args.get('q','') }}" placeholder="名称、效果关键词…"><button type="submit">搜索 ↗</button></div>
+<div class="guide-icon-filters" data-guide-filters><fieldset><legend>料理加成</legend><div class="guide-filter-options">
+<label class="guide-filter-choice"><input type="radio" name="bonus" value="" {% if not request.args.get('bonus') %}checked{% endif %}><span>全部</span></label>
+{% for key, title in food_groups %}<label class="guide-filter-choice"><input type="radio" name="bonus" value="{{ key }}" {% if request.args.get('bonus') == key %}checked{% endif %}><span>{{ title }}</span></label>{% endfor %}
+</div></fieldset><input type="hidden" name="hide_story" value="0"><label class="guide-food-story-filter"><input type="checkbox" name="hide_story" value="1" {% if hide_story %}checked{% endif %}>隐藏剧情料理</label></div></form>
+<p class="guide-muted">生命恢复类按生命上限 22,000 估算排序，持续恢复按完整持续时间计算。</p>
+<div class="guide-section-heading"><h2>料理图鉴</h2><span data-guide-result-count role="status">{{ result_count }} 条结果</span></div>
+{% for key, title in food_groups %}{% set group = items|selectattr('bonus_group','equalto',key)|list %}{% if group %}
+{% set visible = namespace(count=0) %}{% for item in group if item.id in selected_ids %}{% set visible.count=visible.count+1 %}{% endfor %}
+<section class="guide-arc-group" data-guide-filter-group data-group-unit="种料理" {% if not visible.count %}hidden{% endif %}><div class="guide-section-heading"><h2>{{ title }}</h2><span data-guide-group-count>{{ visible.count }} 种料理</span></div>
+<div class="guide-grid">{% for item in group %}<button type="button" class="guide-card guide-food-card" aria-haspopup="dialog" data-food-open="{{ item.id }}" data-filter-card data-food-function="{{ item.function }}" data-food-bonus="{{ item.bonus_group }}" data-story-food="{{ 'true' if item.story_only else 'false' }}" data-filter-text="{{ item.filter_text }}" {% if item.id not in selected_ids %}hidden{% endif %}>
+<img src="{{ item.image }}" alt="" width="96" height="96" loading="lazy"><h3>{{ item.name }}</h3><p>{{ effect_text(item.card_segments) }}</p><span class="guide-food-price">{% if item.fons_price is not none %}{{ '{:,}'.format(item.fons_price) }} <small>方斯</small>{% else %}<small>未提供方斯售价</small>{% endif %}</span></button>{% endfor %}</div></section>{% endif %}{% endfor %}
+<div class="guide-empty" data-guide-empty {% if result_count %}hidden{% endif %}><h3>没有找到相关料理</h3><p>尝试名称、效果关键词，或清除筛选条件。</p><a href="?kind=foods">查看全部料理</a></div>
+<dialog class="guide-food-dialog" id="food-detail-dialog" aria-labelledby="food-detail-title"><header><span>料理详情</span><button type="button" data-food-close aria-label="关闭料理详情">×</button></header><div data-food-content></div></dialog>
+{% for item in items %}<template id="food-detail-{{ item.id }}">
+<div class="guide-food-dialog-hero"><img src="{{ item.image }}" alt="{{ item.name }}" width="112" height="112"><div><p class="guide-muted">{{ item.bonus_name }}</p><h2 id="food-detail-title">{{ item.name }}</h2><p>{% if item.fons_price is not none %}最低标价：{{ '{:,}'.format(item.fons_price) }} 方斯{% else %}未提供方斯售价{% endif %}</p></div></div>
+<section><h3>使用效果</h3><p>{{ effect_text(item.effect_segments) }}</p></section>
+<section><h3>物品说明</h3><p>{{ item.description or '未提供说明。' }}</p></section>
+<section><h3>获取途径</h3>{% if item.sources %}<ul>{% for source in item.sources %}<li>{{ source }}</li>{% endfor %}</ul>{% else %}<p class="guide-muted">未提供获取途径。</p>{% endif %}
+{% if item.offers %}<div class="guide-table-scroll"><table class="guide-data-table"><thead><tr><th scope="col">商店</th><th scope="col">方斯标价</th></tr></thead><tbody>{% for offer in item.offers %}<tr><td>{{ offer.shop }}{% if offer.limited %}<small>限时商品</small>{% endif %}{% if offer.requires_unlock %}<small>有解锁条件</small>{% endif %}</td><td>{{ '{:,}'.format(offer.price) }} 方斯</td></tr>{% endfor %}</tbody></table></div>{% endif %}</section>
+</template>{% endfor %}

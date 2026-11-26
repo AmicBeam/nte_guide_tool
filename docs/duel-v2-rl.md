@@ -2,13 +2,25 @@
 
 > **训练前先读：**[训练手册的当前链路与报告落点](duel-v2-public-training.md#当前训练链路与报告落点)及[完整训练、测试与报告要求](duel-v2-full-training-report-spec.md)。本页镜像、SB3、六人编译和早期PPO说明是历史技术背景，不覆盖已确认的信息集搜索学习链路；单轮报告和原始产物统一放在 `artifacts/rl-evals/`，不提交Git。
 
+设备批量改造和容量验收按[设备搜索协议](duel-v2-device-search-acceptance.md#mctx-批量改造与逐级容量验收)执行：8 → 32 → 128 → 400 → 1600 个真实独立根，每级完整 Gumbel32／cap16／covered_value horizon3、正常终局及 GPU 重放通过后再扩容。部件、CPU oracle、显存估算和 CUDA skip 不提供完整搜索或容量批准。
+
 > 当前网站已接入两套冻结模型，见文末 2026-09-15 章节。下方 2026-09-12 的单预组训练说明保留其适用范围；不能把旧镜像训练成绩当作公开角色自由构筑的验证结果。
 
 状态：2026-09-12，可运行短程训练与固定种子策略评估。游戏规则以 [V2.4 手册](everness-item-chain-card-design.md) 为准，接口以 [实现契约](duel-v2-implementation-contract.md) 为准。小样本结果只用于发现问题，不是平衡结论。
 
 ## 文件与边界
 
-离线批量搜索基础位于 `rl/batched_duel` 和 `rl/batched_search`，提供 CPU arena、无损实体图 codec、设备存储与随机原语、每根预算、批量推理、协作 Gumbel 遍历和设备统计池，验证及后续五队 native/CUDA 对拍见[批量搜索后端](duel-v2-batched-search.md)。完整正式规则通过有界 CPU 驻留进程池执行，离线评测入口 `scripts/evaluate_duel_v2_batched.py` 合并跨局网络推理和 GPU 搜索统计，并保存实际动作、原始记录及公开回放。`wall_clock` 从每根入队起严格截断 3 秒，共享最多 32 次证明／树模拟预算并记录实际完成次数；迟到结果丢弃。五队规则、合法动作、观察编码和采样的设备执行尚未接通，不自动接入服务或训练。合成根或重复推理行不算真实对局容量验收。
+七队研究编码追加当前环合来源、创生珠的层数／剩余时间／本回合计次、伊洛伊有序追加队列、创生／覆纹累计伤害及真红／九原每回合计次。珠按等价状态计数，不截断额外珠；追加队列保留至多64项的完整顺序，超限明确拒绝，不编码实体编号。历史谕石仅保留原数值列，不恢复卡池；无关公开角色不自动改变七队数值布局。旧模型可显式使用 `migrate_seven(..., expand_named_observation=True)` 迁入追加列：保留旧列及数值、冻结旧归一化范围、将新投影置零并保留可学习输入，再重新核对实际分数／WDL、CUDA与恢复；不继承旧规则或价值批准。
+
+显式授权的混合联合学习允许通过 `learning_keys` 限定七队中的学习子集。输入银行与恢复文件仍完整保留七队，只有选中策略接收样本、更新及下一步Adam核验，其余策略和价值张量逐项不变。恢复不得改变学习名单；价值准备、辅助模型、独立选择和候选配牌验收仍须另行完成。验证：`tests.test_duel_v2_harmony_observation`、`tests.test_duel_v2_seven_migration`、`tests.test_duel_v2_hybrid_joint_update`。
+
+`warm_value(..., keys=...)` 可在新的单次阶段只校准指定价值头，输出银行的其他模型原样复制；七头持久化拟合另保留原契约，不借此恢复未完成的子集拟合。联合更新的 `policy_batch_size`／`value_batch_size` 默认128，可在冻结配置中显式指定1–8192，并分别记录策略与额外价值更新次数；恢复必须保持两项批量参数。公平适应仍按真实预声明优化步数核验，不能以调整批量或截断样本伪造等量。冻结源码白名单支持本模块README，继续排除其他模块资料、凭据和数据库。
+
+公平适应可显式设置 `policy_batches_per_pass`，将每次完整新策略行通行均分为固定数量的非空批次（差至多1行），保留全部行与1／4／8通行次数；必须关闭旧回放，满足行数、单批上界和复用上界，否则拒绝。每队实际策略更新数与额外价值更新数分别保存，原／候选仍须达到相同预声明总优化步数。子集续训的价值重绑只接受对应学习头的当前独立报告，其他模型连价值参数也不能改变。相关检查另见 `tests.test_duel_v2_outcome_learning`。
+
+联合更新对冻结模型直接复制原数字文件及清单，张量、文件SHA与原身份都保持不变；不重新压缩相同数组或改写其训练来源。
+
+离线批量搜索基础位于 `rl/batched_duel` 和 `rl/batched_search`，提供 CPU arena、无损实体图 codec、设备存储与随机原语、每根预算、批量推理、协作 Gumbel 遍历和设备统计池，验证及后续五队 native/CUDA 对拍见[批量搜索后端](duel-v2-batched-search.md)。完整正式规则通过有界 CPU 驻留进程池执行，离线评测入口 `scripts/evaluate_duel_v2_batched.py` 合并跨局网络推理和 GPU 搜索统计，并保存实际动作、原始记录及公开回放。离线滚动窗口的`wall_clock`从搜索准入起计3秒，共享最多32次证明／树模拟预算，驻留等待与真实提交端到端延迟另报；网站从请求开始计时的协议不因此改变，迟到结果丢弃。五队规则、合法动作、观察编码和采样的设备执行尚未接通，不自动接入服务或训练。合成根或重复推理行不算真实对局容量验收。
 
 独立恢复研究组件：`residual_policy`／`residual_runtime` 管理正常幅度残差网络与数值版本；`preserved_policy` 保留三套旧策略，`recovery_runtime` 管理显式研究采集，`recovery_search` 管理自然WDL尺度对照，`recovery_checkpoint` 检查网络／Adam／RNG恢复；`policy_equivalence`、`search_stability`、`archive_diagnostics` 只做表示／目标／数值审计，`full_hand_diagnostic` 只对合成离线状态提供具名手牌权限，`offline_sources` 生成排除敏感文件的源码快照。它们不自动接入网站或正式长训；具体入口及CPU／CUDA验收见[策略学习恢复](duel-v2-policy-recovery.md)。
 
@@ -174,3 +186,32 @@ python scripts/train_duel_v2.py --train --sample-public --deck starter \
 ### 单队恢复辅助与残虹限次观察
 
 `recovery_round`的调度、批次更新和独立选择支持显式学习队子集，`recovery_capacity.fit(keys=...)`按同一子集检验完整搜索教材和独立留出。默认仍是五队；单队编排必须完成训练手册规定的同源码预检，不借此绕过正式启动保护。`murk_lineup`和`cross_lineup`新增双方残虹本回合持续伤害加攻已用状态；它来自公开信息，实体重新编号不改变编码。数值迁移需按具名列映射首层并将新增列置零。
+
+## 七队 GPU 搜索训练采样
+
+当前`train_duel_v2_current_round.py`默认seven，`seven_round.run`维护七队完整局学习、价值核验、历史对手、独立闸门、择优回退与两代恢复。GPU采样入口`batched_search/training_rollout.py`复用协作Gumbel、冻结VM规则、设备公开编码、FP32推理与设备统计，保持完整`pi`、真实终局WDL、探索和样本归属；覆盖教师及独立辅助价值按实际身份绑定。网络优化设备与规则后端分别指定，CPU默认路径保留。
+
+GPU源程序需包含训练教师，真实设备规则／教师对拍和CUDA32完整局、独立价值、梯度、数值／Adam／RNG恢复及独立行为证据后才能启动正式任务。七队自动预检不额外拟合策略容量副本；该工具保留为显式诊断，不单独决定真实候选能否学习或被接受。并发容量、显存与吞吐检查继续保留。1600根上限、32行工作区、设备预算与轨迹缓冲独立记录；标准七队一轮56局，历史轮112局，实际峰值据任务数计。源码或合成CPU验证不批准设备性能／强度，参数、命令和验证见[训练手册](duel-v2-public-training.md#七队-gpu-搜索训练采样)。
+
+
+## Mctx Q 配置的 NumPy / CUDA 对照
+
+`rl/mctx_q.py` 提供完整合法候选轴的默认缩放数值参考；`recovery_search` 和协作遍历显式接受 `mctx_default`，批量及设备统计池保持同配置的根／内部／最终选择与改进策略目标。SoA covered 工厂显式透传配置，设备搜索拒绝池配置不匹配。旧 `natural_wdl` 默认和冻结任务不自动切换，旧模型数组不改写。
+
+`rl/mctx_validation.py` 与 `scripts/prepare_duel_v2_mctx.py` 提供仅计划、CPU 参考、实际 CUDA 统计与重复图重放三个边界；官方库仅在独立参考环境按同数值树及固定噪声对拍。测试入口为 `tests.test_duel_v2_mctx_profiles`，完整规则、独立价值校准、真实终局、GPU容量和学习效果仍单独验收。后续冻结 A/B 与等量短训步骤见[训练手册](duel-v2-public-training.md#numpy--cuda-的-mctx-q-配置对照准备)。
+
+完整 H3 入口从真实任务的 `q_scale` 绑定配置，显式支持 `natural_wdl` 与 `mctx_default`，同批混用或未知值拒绝。统计池、covered 搜索、独立复核、逐根证明缓存及联合流程的冻结输入使用同一配置；原默认仍为 `natural_wdl`。策略记录按实际配置写入 `policy_source`，不同配置的检查点和证明不能互相恢复。主价值预检、独立辅助 scope、完整预算与真实终局门槛保持不变；入口接通不表示完整 GPU 对局或胜率改善已通过。相关验证为 `tests.test_duel_v2_soa_training_jobs`、`tests.test_duel_v2_soa_training_results`、`tests.test_duel_v2_device_h3_collection`、`tests.test_duel_v2_device_h3_proof_cache` 与联合流程的配置冻结测试。
+
+正式服务闸门、`DeviceSearchContract`、七队任务生成／readiness 和冻结评估 CLI 同样支持显式配置；新配置要求预检回执具名匹配，历史缺字段回执只代表 `natural_wdl`。`ClosedDeviceLearningContext` 在任何设备派发前拒绝搜索任务与服务配置不一致；这不提供实际设备服务或完整对局资格。验证入口包括 `tests.test_duel_v2_device_execution_contract`、`tests.test_duel_v2_device_learning_context` 及七队任务生成测试。
+
+### 信息集生成与辅助价值资格边界
+
+- 公开计数采样仍是近似先验，不是完整动作历史后验。已支持的旧分支及其随机流保持不变；只有旧约束无解时，才按公开的白热化回收次数上界，以及小吱同名常驻牌／谕石可进入牌库的机制补充分配。未知手牌真实身份和时序不用于限制粒子，观察与完整合法动作编码的一致性检查不豁免。
+- 辅助价值目标是六个探索动作后沿公开规则策略生成终局标签，H3叶子沿用同一公开规则续走。世界采样不参与这两个辅助计算函数。旧资格因无关采样依赖变化失配时，仅可通过明确的`value-computation-compatibility.json`收据承接：原报告字节、规则、模型身份、两项计算函数的AST、全部目标／推断依赖，以及特定采样器源码必须匹配；原数据完整性、种子分区和留出数值门槛仍逐项核验。不得重写原报告的算法身份或把兼容复核称为新采样的独立留出。
+- 新采样检查点同时绑定世界采样、辅助资格读取器和驻留进程后端源码。历史未完整绑定的检查点只能在其原冻结执行器和显式兼容证明下读取；不得更改旧合同或payload摘要冒充新执行器产物。域扩展须另冻结并证明旧成功世界／随机流不变、新域信息边界一致，优化器恢复仍要求其原算法身份。
+
+## 混合训练中的阶段隔离模型
+
+`phase_policy.py`、`phase_runtime.py` 和 `phase_checkpoint.py` 定义显式迁移的换牌／局内独立策略及共享的独立主WDL数值；`policy_runtime.py` 在保留旧七队身份的前提下分派加载、数值导出、校准和评估。`phase_replay.py` 按阶段均衡分批，`phase_update.py` 只更新激活策略及主价值，`phase_hybrid.py` 复用混合采集的完整终局与一次性更新事务，不重新采样对局。新检查点保存三个互不重叠的Adam参数组；冻结旧教师不属于可训练组。
+
+批量推理使用主机阶段分组和单分支前向，保持CPU驻留规则与CUDA推理／统计的混合架构。历史seven模型文件与算法路径不被迁移脚本原地覆盖；网站数值、旧任务和质量结论不自动变化。准备命令、显式启用方式及CPU／CUDA验收边界见[阶段隔离混合路径](duel-v2-public-training.md#换牌局内策略隔离的显式混合路径)。

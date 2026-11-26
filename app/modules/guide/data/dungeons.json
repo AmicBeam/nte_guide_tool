@@ -1,0 +1,6080 @@
+[
+  {
+    "id": "Trailclone_exp",
+    "name": "合订本",
+    "category": "经验与甲硬币",
+    "description": "《五年鉴定三年模拟》、《异象全解》、《奇点辨别38套》……尽在《异象猎人必读合订本》。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "characterupmaterial_lv3",
+            "name": "特级猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv1",
+            "name": "新锐猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "characterupmaterial_lv3",
+            "name": "特级猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv1",
+            "name": "新锐猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "characterupmaterial_lv3",
+            "name": "特级猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv1",
+            "name": "新锐猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "characterupmaterial_lv3",
+            "name": "特级猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv1",
+            "name": "新锐猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "characterupmaterial_lv3",
+            "name": "特级猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv1",
+            "name": "新锐猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "characterupmaterial_lv3",
+            "name": "特级猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv1",
+            "name": "新锐猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Trailclone_Wpexp",
+    "name": "万花筒",
+    "category": "经验与甲硬币",
+    "description": "迈达斯科技携手最伟大的魔术师胡迪尼先生，为您带来一场如万花筒般的绚烂表演！",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponupmaterial_lv3",
+            "name": "混沌染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv1",
+            "name": "淡色染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponupmaterial_lv3",
+            "name": "混沌染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv1",
+            "name": "淡色染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponupmaterial_lv3",
+            "name": "混沌染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv1",
+            "name": "淡色染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponupmaterial_lv3",
+            "name": "混沌染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv1",
+            "name": "淡色染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponupmaterial_lv3",
+            "name": "混沌染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv1",
+            "name": "淡色染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponupmaterial_lv3",
+            "name": "混沌染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv1",
+            "name": "淡色染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Trailclone_gold",
+    "name": "硬币记",
+    "category": "经验与甲硬币",
+    "description": "就算是谎言的力量，也无法让「甲」硬币变成「真」硬币。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 40000
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 60000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 80000
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 96000
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 108000
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 120000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_talent_001",
+    "name": "小心鸽子",
+    "category": "技能材料",
+    "description": "象征和平的白鸽哟，请不要抢走我的薯条。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_01_lv1",
+            "name": "雏鸟的希冀",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_01_lv1",
+            "name": "雏鸟的希冀",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_01_lv2",
+            "name": "白鸽的振翅",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_01_lv1",
+            "name": "雏鸟的希冀",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_01_lv2",
+            "name": "白鸽的振翅",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_01_lv1",
+            "name": "雏鸟的希冀",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_01_lv3",
+            "name": "「橄榄枝」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_01_lv2",
+            "name": "白鸽的振翅",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_01_lv1",
+            "name": "雏鸟的希冀",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_01_lv3",
+            "name": "「橄榄枝」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_01_lv2",
+            "name": "白鸽的振翅",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_01_lv1",
+            "name": "雏鸟的希冀",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_01_lv3",
+            "name": "「橄榄枝」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_01_lv2",
+            "name": "白鸽的振翅",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_01_lv1",
+            "name": "雏鸟的希冀",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_talent_002",
+    "name": "扑克茶会",
+    "category": "技能材料",
+    "description": "在花园里享受美味的下午茶……白蔷薇？这里可没有。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_02_lv1",
+            "name": "新兵的怯懦",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_02_lv1",
+            "name": "新兵的怯懦",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_02_lv2",
+            "name": "尉官的谨慎",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_02_lv1",
+            "name": "新兵的怯懦",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_02_lv2",
+            "name": "尉官的谨慎",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_02_lv1",
+            "name": "新兵的怯懦",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_02_lv3",
+            "name": "「白蔷薇」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_02_lv2",
+            "name": "尉官的谨慎",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_02_lv1",
+            "name": "新兵的怯懦",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_02_lv3",
+            "name": "「白蔷薇」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_02_lv2",
+            "name": "尉官的谨慎",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_02_lv1",
+            "name": "新兵的怯懦",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_02_lv3",
+            "name": "「白蔷薇」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_02_lv2",
+            "name": "尉官的谨慎",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_02_lv1",
+            "name": "新兵的怯懦",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_talent_003",
+    "name": "惊喜派对",
+    "category": "技能材料",
+    "description": "抽到好东西的前提是，你得把手伸进去。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_03_lv1",
+            "name": "初次的期许",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_03_lv1",
+            "name": "初次的期许",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_03_lv2",
+            "name": "已知的倦怠",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_03_lv1",
+            "name": "初次的期许",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_03_lv2",
+            "name": "已知的倦怠",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_03_lv1",
+            "name": "初次的期许",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_03_lv3",
+            "name": "「黑帽子」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_03_lv2",
+            "name": "已知的倦怠",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_03_lv1",
+            "name": "初次的期许",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_03_lv3",
+            "name": "「黑帽子」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_03_lv2",
+            "name": "已知的倦怠",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_03_lv1",
+            "name": "初次的期许",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_03_lv3",
+            "name": "「黑帽子」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_03_lv2",
+            "name": "已知的倦怠",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_03_lv1",
+            "name": "初次的期许",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_talent_004",
+    "name": "心电感应",
+    "category": "技能材料",
+    "description": "我猜你现在在想：午饭吃什么？",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_04_lv1",
+            "name": "思维的同频",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_04_lv1",
+            "name": "思维的同频",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_04_lv2",
+            "name": "信仰的共鸣",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_04_lv1",
+            "name": "思维的同频",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_04_lv2",
+            "name": "信仰的共鸣",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_04_lv1",
+            "name": "思维的同频",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_04_lv3",
+            "name": "「心跳夜」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_04_lv2",
+            "name": "信仰的共鸣",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_04_lv1",
+            "name": "思维的同频",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_04_lv3",
+            "name": "「心跳夜」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_04_lv2",
+            "name": "信仰的共鸣",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_04_lv1",
+            "name": "思维的同频",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_04_lv3",
+            "name": "「心跳夜」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_04_lv2",
+            "name": "信仰的共鸣",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_04_lv1",
+            "name": "思维的同频",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_talent_005",
+    "name": "越狱艺术",
+    "category": "技能材料",
+    "description": "在水淹没你的脖子前，找到出口！",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_05_lv1",
+            "name": "水波的迟疑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_05_lv1",
+            "name": "水波的迟疑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_05_lv2",
+            "name": "倒悬的轻响",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_05_lv1",
+            "name": "水波的迟疑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_05_lv2",
+            "name": "倒悬的轻响",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_05_lv1",
+            "name": "水波的迟疑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_05_lv3",
+            "name": "「第二人」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_05_lv2",
+            "name": "倒悬的轻响",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_05_lv1",
+            "name": "水波的迟疑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_05_lv3",
+            "name": "「第二人」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_05_lv2",
+            "name": "倒悬的轻响",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_05_lv1",
+            "name": "水波的迟疑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "skillupmaterial_05_lv3",
+            "name": "「第二人」",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_05_lv2",
+            "name": "倒悬的轻响",
+            "amount": null
+          },
+          {
+            "id": "skillupmaterial_05_lv1",
+            "name": "水波的迟疑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_forkbreakthrough_001",
+    "name": "泡影罐头·苹果核",
+    "category": "弧盘突破",
+    "description": "这个罐头里放着被咬了一口的毒苹果，吃了一半的坏苹果，和一个完整的甜美的苹果核。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv1",
+            "name": "铁制苹果核",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv1",
+            "name": "铁制苹果核",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv2",
+            "name": "银质苹果核",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv1",
+            "name": "铁制苹果核",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv2",
+            "name": "银质苹果核",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv1",
+            "name": "铁制苹果核",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv3",
+            "name": "金色苹果核",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv2",
+            "name": "银质苹果核",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv1",
+            "name": "铁制苹果核",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv3",
+            "name": "金色苹果核",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv2",
+            "name": "银质苹果核",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv1",
+            "name": "铁制苹果核",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv3",
+            "name": "金色苹果核",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv2",
+            "name": "银质苹果核",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_01_lv1",
+            "name": "铁制苹果核",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_forkbreakthrough_002",
+    "name": "泡影罐头·螺旋乐",
+    "category": "弧盘突破",
+    "description": "她是天才，她是艺术家。文字交织的螺旋体中，我的诞生是这个世纪最伟大的乐章。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv1",
+            "name": "螺旋乐碎屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv1",
+            "name": "螺旋乐碎屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv2",
+            "name": "螺旋乐小节",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv1",
+            "name": "螺旋乐碎屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv2",
+            "name": "螺旋乐小节",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv1",
+            "name": "螺旋乐碎屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv3",
+            "name": "螺旋乐齐奏",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv2",
+            "name": "螺旋乐小节",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv1",
+            "name": "螺旋乐碎屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv3",
+            "name": "螺旋乐齐奏",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv2",
+            "name": "螺旋乐小节",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv1",
+            "name": "螺旋乐碎屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv3",
+            "name": "螺旋乐齐奏",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv2",
+            "name": "螺旋乐小节",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_02_lv1",
+            "name": "螺旋乐碎屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_forkbreakthrough_003",
+    "name": "泡影罐头·液态梦",
+    "category": "弧盘突破",
+    "description": "一个美梦的价格可是很昂贵的，谁都想睡个好觉。或许你想看羊群奔跑吗？据说人类都喜欢数羊。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv1",
+            "name": "液态梦试用装",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv1",
+            "name": "液态梦试用装",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv2",
+            "name": "液态梦旅行装",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv1",
+            "name": "液态梦试用装",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv2",
+            "name": "液态梦旅行装",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv1",
+            "name": "液态梦试用装",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv3",
+            "name": "罐装液态梦",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv2",
+            "name": "液态梦旅行装",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv1",
+            "name": "液态梦试用装",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv3",
+            "name": "罐装液态梦",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv2",
+            "name": "液态梦旅行装",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv1",
+            "name": "液态梦试用装",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv3",
+            "name": "罐装液态梦",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv2",
+            "name": "液态梦旅行装",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_03_lv1",
+            "name": "液态梦试用装",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_forkbreakthrough_004",
+    "name": "泡影罐头·冷甜点",
+    "category": "弧盘突破",
+    "description": "「冰冰凉凉」的「可口」点心——它看起来是这样，罐头商人从不说谎。引火线？哦，那只是装饰品。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv1",
+            "name": "无味冷点心",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv1",
+            "name": "无味冷点心",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv2",
+            "name": "原味冷点心",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv1",
+            "name": "无味冷点心",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv2",
+            "name": "原味冷点心",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv1",
+            "name": "无味冷点心",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv3",
+            "name": "特制冷点心",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv2",
+            "name": "原味冷点心",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv1",
+            "name": "无味冷点心",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv3",
+            "name": "特制冷点心",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv2",
+            "name": "原味冷点心",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv1",
+            "name": "无味冷点心",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv3",
+            "name": "特制冷点心",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv2",
+            "name": "原味冷点心",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_04_lv1",
+            "name": "无味冷点心",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_forkbreakthrough_005",
+    "name": "泡影罐头·戏剧芯",
+    "category": "弧盘突破",
+    "description": "「你们这些愚蠢的土拨鼠！这一切都糟透了！玛丽奶奶一定会狠狠地踢你的屁股！」嘿，我的老伙计，要来点新罐头吗，这真是太不可思议了！",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv1",
+            "name": "入门级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 2700
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv1",
+            "name": "入门级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv2",
+            "name": "大师级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv1",
+            "name": "入门级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv2",
+            "name": "大师级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv1",
+            "name": "入门级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv3",
+            "name": "典藏级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv2",
+            "name": "大师级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv1",
+            "name": "入门级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv3",
+            "name": "典藏级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv2",
+            "name": "大师级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv1",
+            "name": "入门级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv3",
+            "name": "典藏级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv2",
+            "name": "大师级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "weaponbreakmaterial_05_lv1",
+            "name": "入门级戏剧芯",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_equipment_001",
+    "name": "钟表把戏",
+    "category": "空幕",
+    "description": "指针时而向前时而朝后，于是兔子洞里秩序与混沌并存。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "cosmos_purple",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_purple",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "chaos_blue",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "cosmos_blue",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "cosmos_purple",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_purple",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "chaos_blue",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "cosmos_blue",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "cosmos_orange",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_orange",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "cosmos_purple",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_purple",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "chaos_blue",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "cosmos_blue",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "cosmos_orange",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_orange",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "cosmos_purple",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_purple",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "chaos_blue",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "cosmos_blue",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "cosmos_orange",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_orange",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "cosmos_purple",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_purple",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "cosmos_orange",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_orange",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "cosmos_purple",
+            "name": "「失落光芒」",
+            "amount": null
+          },
+          {
+            "id": "chaos_purple",
+            "name": "「迪亚波罗斯」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_equipment_002",
+    "name": "雕塑展馆",
+    "category": "空幕",
+    "description": "请勿直视兔子雕像的眼睛！请记住这里没有兔子雕像！",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "psyche_purple",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_purple",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_blue",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "psyche_blue",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "psyche_purple",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_purple",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_blue",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "psyche_blue",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "psyche_orange",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_orange",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "psyche_purple",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_purple",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_blue",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "psyche_blue",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "psyche_orange",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_orange",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "psyche_purple",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_purple",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_blue",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "psyche_blue",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "psyche_orange",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_orange",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "psyche_purple",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_purple",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "psyche_orange",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_orange",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "psyche_purple",
+            "name": "「恶魔之血：诅咒」",
+            "amount": null
+          },
+          {
+            "id": "lakshana_purple",
+            "name": "「街头拳王」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_equipment_003",
+    "name": "纬线织机",
+    "category": "空幕",
+    "description": "兔子说要下雨，于是一根纬线上开始下雨了。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "nature_purple",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_purple",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "incantation_blue",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "nature_blue",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "nature_purple",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_purple",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "incantation_blue",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "nature_blue",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "nature_orange",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_orange",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "nature_purple",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_purple",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "incantation_blue",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "nature_blue",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "nature_orange",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_orange",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "nature_purple",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_purple",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "incantation_blue",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "nature_blue",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "nature_orange",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_orange",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "nature_purple",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_purple",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "nature_orange",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_orange",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "nature_purple",
+            "name": "「森林萤火之心」",
+            "amount": null
+          },
+          {
+            "id": "incantation_purple",
+            "name": "「真红：双生蝶」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_equipment_004",
+    "name": "守卫萝卜",
+    "category": "空幕",
+    "description": "吟唱——大复苏之术！为了萝卜战斗到最后一刻！",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "heal_purple",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_purple",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "shield_blue",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "heal_blue",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "heal_purple",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_purple",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "shield_blue",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "heal_blue",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "heal_orange",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_orange",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "heal_purple",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_purple",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "shield_blue",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "heal_blue",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "heal_orange",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_orange",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "heal_purple",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_purple",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "shield_blue",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "heal_blue",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "heal_orange",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_orange",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "heal_purple",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_purple",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "heal_orange",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_orange",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "heal_purple",
+            "name": "「缇娅的夜间酒馆」",
+            "amount": null
+          },
+          {
+            "id": "shield_purple",
+            "name": "「守卫王国」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_equipment_005",
+    "name": "精神图谱",
+    "category": "空幕",
+    "description": "像素点逐一亮起，在意识的边缘处会看到兔子。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "getefficiency_purple",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_purple",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "psychically_blue",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "getefficiency_blue",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "getefficiency_purple",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_purple",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "psychically_blue",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "getefficiency_blue",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "getefficiency_orange",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_orange",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "getefficiency_purple",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_purple",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "psychically_blue",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "getefficiency_blue",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "getefficiency_orange",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_orange",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "getefficiency_purple",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_purple",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "psychically_blue",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "getefficiency_blue",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "getefficiency_orange",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_orange",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "getefficiency_purple",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_purple",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "getefficiency_orange",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_orange",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "getefficiency_purple",
+            "name": "「音速蓝刺猬」",
+            "amount": null
+          },
+          {
+            "id": "psychically_purple",
+            "name": "「静谧山庄」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DLC_equipment_006",
+    "name": "轨道之夜",
+    "category": "空幕",
+    "description": "兔子头的列车，仅需一枚金色的萝卜车票。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 10,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "attack_purple",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_purple",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "mag_blue",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "attack_blue",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 4000
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "attack_purple",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_purple",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "mag_blue",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "attack_blue",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 5300
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "attack_orange",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_orange",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "attack_purple",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_purple",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "mag_blue",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "attack_blue",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv1",
+            "name": "井小屑",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 6350
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "attack_orange",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_orange",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "attack_purple",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_purple",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "mag_blue",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "attack_blue",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_blueticket",
+            "name": "胡萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 7200
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "attack_orange",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_orange",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "attack_purple",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_purple",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8000
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 40,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 200
+          },
+          {
+            "id": "attack_orange",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_orange",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "attack_purple",
+            "name": "「影之信条」",
+            "amount": null
+          },
+          {
+            "id": "mag_purple",
+            "name": "「小小大冒险」",
+            "amount": null
+          },
+          {
+            "id": "equipment_orangeticket",
+            "name": "金萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipment_purpleticket",
+            "name": "银萝卜币",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv3",
+            "name": "超屑井主",
+            "amount": null
+          },
+          {
+            "id": "equipmentupmaterial_lv2",
+            "name": "井屑达人",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 8500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "WeeklyClone_Boss05",
+    "name": "墨菲克斯",
+    "category": "异象巡礼",
+    "description": "月光当铺是异象墨菲克斯产生的单独空间，只有拥有强烈愿望的人才能进入。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a01_01",
+            "name": "好狗狗印章",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 10800
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a01_01",
+            "name": "好狗狗印章",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 16000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a01_01",
+            "name": "好狗狗印章",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 21200
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a01_01",
+            "name": "好狗狗印章",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 25400
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a01_01",
+            "name": "好狗狗印章",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 28800
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a01_01",
+            "name": "好狗狗印章",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 32000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 55,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a01_01",
+            "name": "好狗狗印章",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 34000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "WeeklyClone_Boss10",
+    "name": "永不谢幕的阿拉克涅",
+    "category": "异象巡礼",
+    "description": "何人惊扰她的安眠？\r\n何人牵起她的裙袂？\r\n何人……愿共舞一曲？",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a02_01",
+            "name": "名为炫耀的裙袂",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 10800
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a02_01",
+            "name": "名为炫耀的裙袂",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 16000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a02_01",
+            "name": "名为炫耀的裙袂",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 21200
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a02_01",
+            "name": "名为炫耀的裙袂",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 25400
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a02_01",
+            "name": "名为炫耀的裙袂",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 28800
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a02_01",
+            "name": "名为炫耀的裙袂",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 32000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 55,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a02_01",
+            "name": "名为炫耀的裙袂",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 34000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "WeeklyClone_Boss26",
+    "name": "讨债人",
+    "category": "异象巡礼",
+    "description": "妄图窃取时间的「负债者」，不过是在时间的仓鼠轮上徒劳地奔逃。",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a03_01",
+            "name": "记忆的永恒",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 10800
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a03_01",
+            "name": "记忆的永恒",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 16000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a03_01",
+            "name": "记忆的永恒",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 21200
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a03_01",
+            "name": "记忆的永恒",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 25400
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a03_01",
+            "name": "记忆的永恒",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 28800
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a03_01",
+            "name": "记忆的永恒",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 32000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 55,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a03_01",
+            "name": "记忆的永恒",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 34000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "WeeklyClone_Boss36",
+    "name": "贵腐巢母",
+    "category": "异象巡礼",
+    "description": "母亲将我栽种到花园里，那里有温暖的阳光，甘甜的露水，有我的兄弟姊妹……可是母亲啊，人应该被栽种吗？",
+    "stages": [
+      {
+        "id": 1,
+        "name": "难度 1",
+        "required_level": 5,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a04_01",
+            "name": "空心花籽",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 10800
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "难度 2",
+        "required_level": 20,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a04_01",
+            "name": "空心花籽",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 16000
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "难度 3",
+        "required_level": 30,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a04_01",
+            "name": "空心花籽",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 21200
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "难度 4",
+        "required_level": 40,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a04_01",
+            "name": "空心花籽",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 25400
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "难度 5",
+        "required_level": 45,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a04_01",
+            "name": "空心花籽",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 28800
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "name": "难度 6",
+        "required_level": 50,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a04_01",
+            "name": "空心花籽",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 32000
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "name": "难度 7",
+        "required_level": 55,
+        "stamina": 60,
+        "rewards": [
+          {
+            "id": "hunterlvexp",
+            "name": "猎人等级经验",
+            "amount": 300
+          },
+          {
+            "id": "weeklycloneboss_a04_01",
+            "name": "空心花籽",
+            "amount": null
+          },
+          {
+            "id": "characterupmaterial_lv2",
+            "name": "资深猎人攻略",
+            "amount": null
+          },
+          {
+            "id": "weaponupmaterial_lv2",
+            "name": "无彩染剂",
+            "amount": null
+          },
+          {
+            "id": "gold",
+            "name": "甲硬币",
+            "amount": 34000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "worldboss_01_drop",
+    "name": "异象追猎「塞润尼缇」",
+    "category": "异象追猎",
+    "description": "击败对应异象后领取角色突破材料。",
+    "stages": [],
+    "rewards": [
+      {
+        "id": "worldboss_material_01",
+        "name": "倾诉花种",
+        "amount": null
+      }
+    ]
+  },
+  {
+    "id": "worldboss_02_drop",
+    "name": "异象追猎「无首铁驭」",
+    "category": "异象追猎",
+    "description": "击败对应异象后领取角色突破材料。",
+    "stages": [],
+    "rewards": [
+      {
+        "id": "worldboss_material_02",
+        "name": "上膛骑士火花塞",
+        "amount": null
+      }
+    ]
+  },
+  {
+    "id": "worldboss_03_drop",
+    "name": "异象追猎「黑之书」",
+    "category": "异象追猎",
+    "description": "击败对应异象后领取角色突破材料。",
+    "stages": [],
+    "rewards": [
+      {
+        "id": "worldboss_material_03",
+        "name": "妄想彼端的一页",
+        "amount": null
+      }
+    ]
+  },
+  {
+    "id": "worldboss_04_drop",
+    "name": "异象追猎「音霸魔王」",
+    "category": "异象追猎",
+    "description": "击败对应异象后领取角色突破材料。",
+    "stages": [],
+    "rewards": [
+      {
+        "id": "worldboss_material_04",
+        "name": "水月色拨片",
+        "amount": null
+      }
+    ]
+  },
+  {
+    "id": "worldboss_06_drop",
+    "name": "异象追猎「囿巢鸟」",
+    "category": "异象追猎",
+    "description": "击败对应异象后领取角色突破材料。",
+    "stages": [],
+    "rewards": [
+      {
+        "id": "worldboss_material_05",
+        "name": "护巢残片",
+        "amount": null
+      }
+    ]
+  },
+  {
+    "id": "worldboss_07_drop",
+    "name": "异象追猎「斑蝶」",
+    "category": "异象追猎",
+    "description": "击败对应异象后领取角色突破材料。",
+    "stages": [],
+    "rewards": [
+      {
+        "id": "worldboss_material_06",
+        "name": "斑斓的票根",
+        "amount": null
+      }
+    ]
+  },
+  {
+    "id": "worldboss_05_drop",
+    "name": "异象追猎「海囚」",
+    "category": "异象追猎",
+    "description": "击败对应异象后领取角色突破材料。",
+    "stages": [],
+    "rewards": [
+      {
+        "id": "worldboss_material_07",
+        "name": "海之泪",
+        "amount": null
+      }
+    ]
+  }
+]

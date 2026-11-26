@@ -15,8 +15,8 @@ class DuelV2PresentationTest(unittest.TestCase):
     def test_front_knockdown_clears_harmony_marks_in_event_patches(self):
         from app.modules.card_game.engine.duel_v2.state import damage
         state = self.game()
-        state['sides']['a']['front'] = 'zero'
-        hero(state, 'a', 'zero')['harmony'] = 2
+        state['sides']['a'].update(front='zero', last_front='zero')
+        hero(state, 'a', 'zero')['harmony'] = 3
         before = capture_public_board(state)
         state['_public_board'] = deepcopy(before)
         self.assertTrue(before['sides']['a']['harmony_available'])

@@ -187,6 +187,7 @@ body:has(.v2-table-page) .shell {
 }
 
 .v2-side-actions {
+  position: relative;
   display: grid;
   justify-items: stretch;
   gap: calc(10px * var(--table-layout-scale, 1));
@@ -564,12 +565,6 @@ body:has(.v2-table-page) .shell {
   min-width: min(calc(168px * var(--table-layout-scale, 1)), 32vw);
 }
 
-.v2-front-zone.harmony-available .v2-front-frame {
-  outline: calc(2px * var(--table-layout-scale, 1)) solid rgba(120, 230, 210, 0.72);
-  outline-offset: calc(2px * var(--table-layout-scale, 1));
-  border-radius: calc(12px * var(--table-layout-scale, 1));
-}
-
 .v2-harmony-source {
   display: flex;
   align-items: center;
@@ -892,23 +887,21 @@ body:has(.v2-table-page) .shell {
   padding-block: calc(40px * var(--table-layout-scale, 1));
 }
 
-/* Keep the countdown inside the combat center, clear of the left bench. */
-.v2-combat-core:has(.v2-escalation:not([hidden])) { overflow: visible; }
+/* Anchor the compact countdown immediately to the left of the action panel. */
 .v2-escalation {
   position: absolute;
-  left: 0;
+  right: calc(100% + calc(8px * var(--table-layout-scale, 1)));
   top: 50%;
   transform: translateY(-50%);
-  width: min(45%, calc(180px * var(--table-layout-scale, 1)));
+  width: min(14vw, calc(116px * var(--table-layout-scale, 1)));
   box-sizing: border-box;
   padding: calc(6px * var(--table-layout-scale, 1));
   border-left: 2px solid #dcaa60;
   color: #f1d6a6;
   background: rgba(27, 23, 24, .72);
   font-size: calc(12px * var(--table-font-scale, 1));
-  line-height: 1.5;
+  line-height: 1.35;
+  white-space: pre-line;
   pointer-events: auto;
 }
 .v2-escalation[hidden] { display: none; }
-
-.v2-front-axis:has(.v2-escalation:not([hidden])) { overflow: visible; }

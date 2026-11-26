@@ -14,6 +14,15 @@ from app.modules.card_game.engine.duel_v2.summons import summon_front
 FLAVOR = '鬼郎丸似乎吃了什么不太妙的东西，需要拍打一下！'
 ITEMS = ('vinyl', 'collar', 'liquid')
 LABELS = {'vinyl': '黑胶唱片', 'collar': '好狗狗的项圈', 'liquid': '气味奇怪的液体'}
+ITEM_EFFECTS = {
+    'vinyl': '受到伤害时，随机弃置对方 1 张手牌。',
+    'collar': '受到伤害时，随机使 1 名对方异能者进入倾陷。',
+    'liquid': '受到伤害时，随机对 1 名对方异能者造成等同于本次所受伤害的伤害。',
+}
+
+
+def _gulang_passive(item):
+    return f'吞噬了{LABELS[item]}。{ITEM_EFFECTS[item]}倒地或离开战斗区时消失。'
 
 
 def _gulang(c):
@@ -38,7 +47,7 @@ def summon_gulang(c, item):
     h = hero(c.state, c.side, cid)
     h['flags']['gulang_item'] = item
     h['flavor'] = FLAVOR
-    h['passive'] = f'吞噬了{LABELS[item]}。受到伤害时触发。倒地或离开战斗区时消失。'
+    h['passive'] = _gulang_passive(item)
     c.history(f'召唤鬼郎丸，其吞噬了{LABELS[item]}。')
     return cid
 
@@ -61,10 +70,9 @@ def _s04(c):
 
 
 def _s05(c):
-    cid = _gulang(c)
-    if not cid:
-        return
-    damage(c.state, c.side, cid, 2, source=f'{c.side}:{c.cid}', reason='「失觉性的崩落」')
+    cid = c.state['sides'][c.side]['front']
+    if cid:
+        damage(c.state, c.side, cid, 2, source=f'{c.side}:{c.cid}', reason='「失觉性的崩落」')
     foe = other(c.side)
     for enemy_id in list(team_order(c.state, foe)):
         h = hero(c.state, foe, enemy_id)
@@ -88,7 +96,7 @@ def _maybe_recall(c):
         return
     item = _rng(c.state).choice(ITEMS)
     cid = summon_gulang(c, item)
-    damage(c.state, c.side, cid, 3, source=f'{c.side}:{c.cid}', reason='「小鬼头大胃口」')
+    damage(c.state, c.side, cid, 3, source=f'{c.side}:{c.cid}', reason='「小熊曲奇」')
 
 
 def _s07(c):
@@ -107,8 +115,15 @@ class Zaowu:
     target_policies = {'S04': 'any_summon'}
 
     @staticmethod
+    def summon_passive(character):
+        item = (character.get('flags') or {}).get('gulang_item')
+        if item in ITEM_EFFECTS:
+            return _gulang_passive(item)
+        return None
+
+    @staticmethod
     def can_play(c, current=True, card=None, **_data):
-        if card and card.get('card_id') in ('S05', 'S06') and not _gulang(c):
+        if card and card.get('card_id') == 'S06' and not _gulang(c):
             return False
         return None
 
@@ -121,12 +136,12 @@ class Zaowu:
         bonus = 3 if c.character.get('shape') == 'S08' else 2
         for cid in team_order(c.state, c.side):
             h = hero(c.state, c.side, cid)
-            if cid == c.cid or h.get('summoned') or h.get('hp', 0) <= 0:
+            if cid == c.cid or h.get('hp', 0) <= 0:
                 continue
             add_effect(h, 'zaowu.ultimate_atk', 'attack.panel', bonus, stacking='replace',
                        source_entity_id=c.entity_id, source_key='S-ultimate', label='饕餮宴',
                        expiry=deadline(c.state, c.side, 2, 'turn_start'))
-        c.history(f'发动终结：其他己方异能者攻击 +{bonus}，持续 2 个己方回合。')
+        c.history(f'发动终结：其他己方异能者及己方召唤物攻击 +{bonus}，持续 2 个己方回合。')
 
     @staticmethod
     def on_ally_summon_hurt(c, summon_id=None, amount=0, **_data):
@@ -160,4 +175,4 @@ class Zaowu:
             missing = energy_max(c.character) - int(c.character.get('energy') or 0)
             if missing:
                 energy(c.state, c.side, c.cid, missing)
-                c.history('鬼郎丸消灭对方异能者，「好狗狗走四方」触发：早雾回满能量。')
+                c.history('鬼郎丸消灭对方异能者，「南瓜魔法」触发：早雾回满能量。')

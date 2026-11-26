@@ -1,0 +1,44 @@
+.guide-challenge-resonance { border-left:4px solid #70dec2; background:linear-gradient(110deg,#70dec214,transparent); }
+.guide-stage-nav { border:0; padding:0; margin:0 0 24px; min-width:0; }
+.guide-stage-nav legend { margin-bottom:12px; padding:0; color:var(--g-dim); font-size:13px; }
+.guide-stage-nav .guide-filter-choice>span { padding:8px 14px; }
+.guide-challenge-stage[hidden] { display:none; }
+.guide-challenge-stage { margin:24px 0 40px; padding-top:16px; border-top:1px solid #ffffff26; scroll-margin-top:24px; }
+.guide-challenge-stage h3 { font-size:24px; margin:6px 0; }
+.guide-challenge-objectives { display:flex; gap:12px 28px; flex-wrap:wrap; padding-left:20px; color:#bbc7d4; }
+.guide-challenge-halves { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+.guide-challenge-half { min-width:0; }
+.guide-challenge-half h4 { font-size:21px; margin:20px 0 8px; }
+.guide-challenge-wave { margin:16px 0; }
+.guide-challenge-wave h5 { font-size:16px; margin:12px 0; }
+.guide-monster-grid { display:grid; gap:12px; }
+.guide-monster-card { position:relative; border:1px solid #ffffff26; border-radius:12px; padding:14px; background:#ffffff04; min-width:0; }
+.guide-monster-overview { padding-right:36px; display:flex; align-items:center; gap:14px; }
+.guide-monster-overview>img { width:112px; height:112px; object-fit:contain; flex-shrink:0; background:#ffffff08; border-radius:10px; }
+.guide-monster-overview h6 { font-size:18px; margin:0 0 8px; overflow-wrap:anywhere; }
+.guide-monster-overview p { margin:6px 0; font-size:14px; }
+.guide-monster-weakness { color:#70dec2; }
+.guide-swallow-badge { position:absolute; top:10px; right:10px; width:36px; height:36px; border-radius:50%; object-fit:cover; background:#f4e9df; border:1px solid #70dec280; }
+.guide-monster-details summary,.guide-wave-details summary { cursor:pointer; color:#bbc7d4; padding:8px 0; font-size:14px; }
+.guide-monster-details .guide-tree { margin-top:12px; }
+.guide-wave-details { margin-top:8px; }
+.guide-wave-details p { font-size:13px; color:#aab6c6; }
+.guide-monster-placeholder { display:grid; place-items:center; width:112px; height:112px; flex-shrink:0; color:#aab6c6; }
+@media(max-width:760px) { .guide-challenge-halves { grid-template-columns:1fr; gap:0; } .guide-monster-overview>img { width:88px; height:88px; } .guide-monster-card { padding:12px; } }
+
+.guide-monster-hp strong { font-variant-numeric:tabular-nums; color:var(--g-ink); }
+
+.guide-monster-name { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 8px; }
+.guide-monster-name>span { flex-shrink:0; }
+.guide-monster-name .guide-monster-id { font-size:11px; font-weight:400; color:var(--g-dim); font-family:ui-monospace,SFMono-Regular,monospace; overflow-wrap:anywhere; min-width:0; }
+
+.guide-monster-details .guide-resistance-weak { color:#70dec2; font-weight:650; }
+.guide-monster-details .guide-resistance-enhanced { color:#ffb178; font-weight:650; }
+
+.guide-endless-enemies { grid-template-columns:1fr; }
+.guide-endless-enemies .guide-monster-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); }
+
+.guide-endless-rules { margin:0 0 20px; padding:16px; border:1px solid #70dec240; border-radius:12px; background:#70dec208; }
+.guide-endless-buffs summary { cursor:pointer; font-weight:650; }
+.guide-endless-buffs td { min-width:180px; }
+.guide-endless-buffs td p { margin:4px 0; }

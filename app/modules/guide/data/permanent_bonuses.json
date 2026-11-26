@@ -1,0 +1,2291 @@
+[
+  {
+    "id": "furniture",
+    "name": "异象家具",
+    "description": "上阵角色的攻击力、防御力、暴击伤害，以及探索耐力和本性像素上限加成。",
+    "notes": [
+      "加成按当前家具等级读取，不把不同等级重复相加。解锁后1级即有对应效果。",
+      "升级表列的是当前等级升至下一级的单次材料或进度要求，满级不再显示升级消耗。",
+      "仅收录属性、耐力及本性像素上限相关家具，不包含产出和便捷服务家具。"
+    ],
+    "entries": [
+      {
+        "id": "SF_0011",
+        "name": "无名刃",
+        "max_level_name": "「无名」",
+        "image": "/static/guide/furniture/SF_0011.webp",
+        "unlock": [
+          "获得「异土的恻隐」×1后激活"
+        ],
+        "description": "提升上阵角色的攻击力",
+        "max_level": 10,
+        "levels": [
+          {
+            "level": 1,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 2.0,
+                "percent": false,
+                "text": "攻击力＋2"
+              }
+            ],
+            "next_level": 2,
+            "upgrade_costs": [
+              {
+                "name": "锻刀石",
+                "amount": 2
+              }
+            ]
+          },
+          {
+            "level": 2,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 4.0,
+                "percent": false,
+                "text": "攻击力＋4"
+              }
+            ],
+            "next_level": 3,
+            "upgrade_costs": [
+              {
+                "name": "锻刀石",
+                "amount": 4
+              }
+            ]
+          },
+          {
+            "level": 3,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 6.0,
+                "percent": false,
+                "text": "攻击力＋6"
+              }
+            ],
+            "next_level": 4,
+            "upgrade_costs": [
+              {
+                "name": "锻刀石",
+                "amount": 6
+              }
+            ]
+          },
+          {
+            "level": 4,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 8.0,
+                "percent": false,
+                "text": "攻击力＋8"
+              }
+            ],
+            "next_level": 5,
+            "upgrade_costs": [
+              {
+                "name": "锻刀石",
+                "amount": 9
+              }
+            ]
+          },
+          {
+            "level": 5,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 10.0,
+                "percent": false,
+                "text": "攻击力＋10"
+              }
+            ],
+            "next_level": 6,
+            "upgrade_costs": [
+              {
+                "name": "锻刀石",
+                "amount": 12
+              }
+            ]
+          },
+          {
+            "level": 6,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 12.0,
+                "percent": false,
+                "text": "攻击力＋12"
+              }
+            ],
+            "next_level": 7,
+            "upgrade_costs": [
+              {
+                "name": "锻刀石",
+                "amount": 15
+              }
+            ]
+          },
+          {
+            "level": 7,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 14.0,
+                "percent": false,
+                "text": "攻击力＋14"
+              }
+            ],
+            "next_level": 8,
+            "upgrade_costs": [
+              {
+                "name": "锻刀石",
+                "amount": 18
+              }
+            ]
+          },
+          {
+            "level": 8,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 16.0,
+                "percent": false,
+                "text": "攻击力＋16"
+              }
+            ],
+            "next_level": 9,
+            "upgrade_costs": [
+              {
+                "name": "锻刀石",
+                "amount": 21
+              }
+            ]
+          },
+          {
+            "level": 9,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 18.0,
+                "percent": false,
+                "text": "攻击力＋18"
+              }
+            ],
+            "next_level": 10,
+            "upgrade_costs": [
+              {
+                "name": "锻刀石",
+                "amount": 25
+              }
+            ]
+          },
+          {
+            "level": 10,
+            "bonuses": [
+              {
+                "name": "攻击力",
+                "value": 20.0,
+                "percent": false,
+                "text": "攻击力＋20"
+              }
+            ],
+            "next_level": null,
+            "upgrade_costs": []
+          }
+        ]
+      },
+      {
+        "id": "SF_0012",
+        "name": "休憩的拳王",
+        "max_level_name": "待战的拳王",
+        "image": "/static/guide/furniture/SF_0012.webp",
+        "unlock": [
+          "获得「拳王的战意」×1后激活"
+        ],
+        "description": "提升上阵角色的暴击伤害",
+        "max_level": 10,
+        "levels": [
+          {
+            "level": 1,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 0.4,
+                "percent": true,
+                "text": "暴击伤害＋0.4%"
+              }
+            ],
+            "next_level": 2,
+            "upgrade_costs": [
+              {
+                "name": "拳王的尊敬",
+                "amount": 1
+              }
+            ]
+          },
+          {
+            "level": 2,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 0.8,
+                "percent": true,
+                "text": "暴击伤害＋0.8%"
+              }
+            ],
+            "next_level": 3,
+            "upgrade_costs": [
+              {
+                "name": "拳王的尊敬",
+                "amount": 1
+              }
+            ]
+          },
+          {
+            "level": 3,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 1.2,
+                "percent": true,
+                "text": "暴击伤害＋1.2%"
+              }
+            ],
+            "next_level": 4,
+            "upgrade_costs": [
+              {
+                "name": "拳王的尊敬",
+                "amount": 1
+              }
+            ]
+          },
+          {
+            "level": 4,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 1.6,
+                "percent": true,
+                "text": "暴击伤害＋1.6%"
+              }
+            ],
+            "next_level": 5,
+            "upgrade_costs": [
+              {
+                "name": "拳王的尊敬",
+                "amount": 1
+              }
+            ]
+          },
+          {
+            "level": 5,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 2.0,
+                "percent": true,
+                "text": "暴击伤害＋2%"
+              }
+            ],
+            "next_level": 6,
+            "upgrade_costs": [
+              {
+                "name": "拳王的尊敬",
+                "amount": 1
+              }
+            ]
+          },
+          {
+            "level": 6,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 2.4,
+                "percent": true,
+                "text": "暴击伤害＋2.4%"
+              }
+            ],
+            "next_level": 7,
+            "upgrade_costs": [
+              {
+                "name": "拳王的尊敬",
+                "amount": 1
+              }
+            ]
+          },
+          {
+            "level": 7,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 2.8,
+                "percent": true,
+                "text": "暴击伤害＋2.8%"
+              }
+            ],
+            "next_level": 8,
+            "upgrade_costs": [
+              {
+                "name": "拳王的尊敬",
+                "amount": 1
+              }
+            ]
+          },
+          {
+            "level": 8,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 3.2,
+                "percent": true,
+                "text": "暴击伤害＋3.2%"
+              }
+            ],
+            "next_level": 9,
+            "upgrade_costs": [
+              {
+                "name": "拳王的尊敬",
+                "amount": 1
+              }
+            ]
+          },
+          {
+            "level": 9,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 3.6,
+                "percent": true,
+                "text": "暴击伤害＋3.6%"
+              }
+            ],
+            "next_level": 10,
+            "upgrade_costs": [
+              {
+                "name": "拳王的尊敬",
+                "amount": 1
+              }
+            ]
+          },
+          {
+            "level": 10,
+            "bonuses": [
+              {
+                "name": "暴击伤害",
+                "value": 4.0,
+                "percent": true,
+                "text": "暴击伤害＋4%"
+              }
+            ],
+            "next_level": null,
+            "upgrade_costs": []
+          }
+        ]
+      },
+      {
+        "id": "SF_0013",
+        "name": "空铠甲",
+        "max_level_name": "空铠甲",
+        "image": "/static/guide/furniture/SF_0013.webp",
+        "unlock": [
+          "获得「失落的甲胄」×1后激活"
+        ],
+        "description": "提升上阵角色的防御力",
+        "max_level": 10,
+        "levels": [
+          {
+            "level": 1,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 3.0,
+                "percent": false,
+                "text": "防御力＋3"
+              }
+            ],
+            "next_level": 2,
+            "upgrade_costs": [
+              {
+                "name": "未熄的鳞甲",
+                "amount": 2
+              }
+            ]
+          },
+          {
+            "level": 2,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 6.0,
+                "percent": false,
+                "text": "防御力＋6"
+              }
+            ],
+            "next_level": 3,
+            "upgrade_costs": [
+              {
+                "name": "未熄的鳞甲",
+                "amount": 3
+              }
+            ]
+          },
+          {
+            "level": 3,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 9.0,
+                "percent": false,
+                "text": "防御力＋9"
+              }
+            ],
+            "next_level": 4,
+            "upgrade_costs": [
+              {
+                "name": "未熄的鳞甲",
+                "amount": 4
+              }
+            ]
+          },
+          {
+            "level": 4,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 12.0,
+                "percent": false,
+                "text": "防御力＋12"
+              }
+            ],
+            "next_level": 5,
+            "upgrade_costs": [
+              {
+                "name": "未熄的鳞甲",
+                "amount": 5
+              }
+            ]
+          },
+          {
+            "level": 5,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 15.0,
+                "percent": false,
+                "text": "防御力＋15"
+              }
+            ],
+            "next_level": 6,
+            "upgrade_costs": [
+              {
+                "name": "未熄的鳞甲",
+                "amount": 6
+              }
+            ]
+          },
+          {
+            "level": 6,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 18.0,
+                "percent": false,
+                "text": "防御力＋18"
+              }
+            ],
+            "next_level": 7,
+            "upgrade_costs": [
+              {
+                "name": "未熄的鳞甲",
+                "amount": 7
+              }
+            ]
+          },
+          {
+            "level": 7,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 21.0,
+                "percent": false,
+                "text": "防御力＋21"
+              }
+            ],
+            "next_level": 8,
+            "upgrade_costs": [
+              {
+                "name": "未熄的鳞甲",
+                "amount": 8
+              }
+            ]
+          },
+          {
+            "level": 8,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 24.0,
+                "percent": false,
+                "text": "防御力＋24"
+              }
+            ],
+            "next_level": 9,
+            "upgrade_costs": [
+              {
+                "name": "未熄的鳞甲",
+                "amount": 10
+              }
+            ]
+          },
+          {
+            "level": 9,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 27.0,
+                "percent": false,
+                "text": "防御力＋27"
+              }
+            ],
+            "next_level": 10,
+            "upgrade_costs": [
+              {
+                "name": "未熄的鳞甲",
+                "amount": 12
+              }
+            ]
+          },
+          {
+            "level": 10,
+            "bonuses": [
+              {
+                "name": "防御力",
+                "value": 30.0,
+                "percent": false,
+                "text": "防御力＋30"
+              }
+            ],
+            "next_level": null,
+            "upgrade_costs": []
+          }
+        ]
+      },
+      {
+        "id": "SF_0015",
+        "name": "旧滑板",
+        "max_level_name": "波普艺术",
+        "image": "/static/guide/furniture/SF_0015.webp",
+        "unlock": [
+          "获得「波普的滑板」×1后激活"
+        ],
+        "description": "降低上阵角色冲刺、闪避的耐力消耗",
+        "max_level": 10,
+        "levels": [
+          {
+            "level": 1,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -2.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低2%"
+              }
+            ],
+            "next_level": 2,
+            "upgrade_costs": [
+              {
+                "name": "明日涂料",
+                "amount": 2
+              }
+            ]
+          },
+          {
+            "level": 2,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -4.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低4%"
+              }
+            ],
+            "next_level": 3,
+            "upgrade_costs": [
+              {
+                "name": "明日涂料",
+                "amount": 3
+              }
+            ]
+          },
+          {
+            "level": 3,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -6.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低6%"
+              }
+            ],
+            "next_level": 4,
+            "upgrade_costs": [
+              {
+                "name": "明日涂料",
+                "amount": 4
+              }
+            ]
+          },
+          {
+            "level": 4,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -8.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低8%"
+              }
+            ],
+            "next_level": 5,
+            "upgrade_costs": [
+              {
+                "name": "明日涂料",
+                "amount": 5
+              }
+            ]
+          },
+          {
+            "level": 5,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -10.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低10%"
+              }
+            ],
+            "next_level": 6,
+            "upgrade_costs": [
+              {
+                "name": "明日涂料",
+                "amount": 6
+              }
+            ]
+          },
+          {
+            "level": 6,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -12.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低12%"
+              }
+            ],
+            "next_level": 7,
+            "upgrade_costs": [
+              {
+                "name": "明日涂料",
+                "amount": 7
+              }
+            ]
+          },
+          {
+            "level": 7,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -14.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低14%"
+              }
+            ],
+            "next_level": 8,
+            "upgrade_costs": [
+              {
+                "name": "明日涂料",
+                "amount": 8
+              }
+            ]
+          },
+          {
+            "level": 8,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -16.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低16%"
+              }
+            ],
+            "next_level": 9,
+            "upgrade_costs": [
+              {
+                "name": "明日涂料",
+                "amount": 9
+              }
+            ]
+          },
+          {
+            "level": 9,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -18.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低18%"
+              }
+            ],
+            "next_level": 10,
+            "upgrade_costs": [
+              {
+                "name": "明日涂料",
+                "amount": 10
+              }
+            ]
+          },
+          {
+            "level": 10,
+            "bonuses": [
+              {
+                "name": "冲刺、闪避耐力消耗",
+                "value": -20.0,
+                "percent": true,
+                "text": "冲刺、闪避耐力消耗降低20%"
+              }
+            ],
+            "next_level": null,
+            "upgrade_costs": []
+          }
+        ]
+      },
+      {
+        "id": "SF_0016",
+        "name": "纸飞机",
+        "max_level_name": "纸飞机",
+        "image": "/static/guide/furniture/SF_0016.webp",
+        "unlock": [
+          "拍摄1张「纸飞机」的照片"
+        ],
+        "description": "降低上阵角色攀爬状态下的耐力消耗",
+        "max_level": 10,
+        "levels": [
+          {
+            "level": 1,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -2.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低2%"
+              }
+            ],
+            "next_level": 2,
+            "upgrade_costs": [
+              {
+                "name": "片羽",
+                "amount": 2
+              }
+            ]
+          },
+          {
+            "level": 2,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -4.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低4%"
+              }
+            ],
+            "next_level": 3,
+            "upgrade_costs": [
+              {
+                "name": "片羽",
+                "amount": 3
+              }
+            ]
+          },
+          {
+            "level": 3,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -6.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低6%"
+              }
+            ],
+            "next_level": 4,
+            "upgrade_costs": [
+              {
+                "name": "片羽",
+                "amount": 4
+              }
+            ]
+          },
+          {
+            "level": 4,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -8.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低8%"
+              }
+            ],
+            "next_level": 5,
+            "upgrade_costs": [
+              {
+                "name": "片羽",
+                "amount": 5
+              }
+            ]
+          },
+          {
+            "level": 5,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -10.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低10%"
+              }
+            ],
+            "next_level": 6,
+            "upgrade_costs": [
+              {
+                "name": "片羽",
+                "amount": 6
+              }
+            ]
+          },
+          {
+            "level": 6,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -12.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低12%"
+              }
+            ],
+            "next_level": 7,
+            "upgrade_costs": [
+              {
+                "name": "片羽",
+                "amount": 8
+              }
+            ]
+          },
+          {
+            "level": 7,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -14.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低14%"
+              }
+            ],
+            "next_level": 8,
+            "upgrade_costs": [
+              {
+                "name": "片羽",
+                "amount": 10
+              }
+            ]
+          },
+          {
+            "level": 8,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -16.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低16%"
+              }
+            ],
+            "next_level": 9,
+            "upgrade_costs": [
+              {
+                "name": "片羽",
+                "amount": 12
+              }
+            ]
+          },
+          {
+            "level": 9,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -18.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低18%"
+              }
+            ],
+            "next_level": 10,
+            "upgrade_costs": [
+              {
+                "name": "片羽",
+                "amount": 15
+              }
+            ]
+          },
+          {
+            "level": 10,
+            "bonuses": [
+              {
+                "name": "攀爬耐力消耗",
+                "value": -20.0,
+                "percent": true,
+                "text": "攀爬耐力消耗降低20%"
+              }
+            ],
+            "next_level": null,
+            "upgrade_costs": []
+          }
+        ]
+      },
+      {
+        "id": "SF_0017",
+        "name": "双鱼旗",
+        "max_level_name": "双鱼旗",
+        "image": "/static/guide/furniture/SF_0017.webp",
+        "unlock": [
+          "拍摄1张「鲤鱼旗」的照片"
+        ],
+        "description": "降低上阵角色游泳时的耐力消耗",
+        "max_level": 10,
+        "levels": [
+          {
+            "level": 1,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -2.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低2%"
+              }
+            ],
+            "next_level": 2,
+            "upgrade_costs": [
+              {
+                "name": "鳞纹",
+                "amount": 5
+              }
+            ]
+          },
+          {
+            "level": 2,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -4.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低4%"
+              }
+            ],
+            "next_level": 3,
+            "upgrade_costs": [
+              {
+                "name": "鳞纹",
+                "amount": 10
+              }
+            ]
+          },
+          {
+            "level": 3,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -6.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低6%"
+              }
+            ],
+            "next_level": 4,
+            "upgrade_costs": [
+              {
+                "name": "鳞纹",
+                "amount": 15
+              }
+            ]
+          },
+          {
+            "level": 4,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -8.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低8%"
+              }
+            ],
+            "next_level": 5,
+            "upgrade_costs": [
+              {
+                "name": "鳞纹",
+                "amount": 20
+              }
+            ]
+          },
+          {
+            "level": 5,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -10.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低10%"
+              }
+            ],
+            "next_level": 6,
+            "upgrade_costs": [
+              {
+                "name": "鳞纹",
+                "amount": 25
+              }
+            ]
+          },
+          {
+            "level": 6,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -12.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低12%"
+              }
+            ],
+            "next_level": 7,
+            "upgrade_costs": [
+              {
+                "name": "鳞纹",
+                "amount": 32
+              }
+            ]
+          },
+          {
+            "level": 7,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -14.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低14%"
+              }
+            ],
+            "next_level": 8,
+            "upgrade_costs": [
+              {
+                "name": "鳞纹",
+                "amount": 40
+              }
+            ]
+          },
+          {
+            "level": 8,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -16.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低16%"
+              }
+            ],
+            "next_level": 9,
+            "upgrade_costs": [
+              {
+                "name": "鳞纹",
+                "amount": 48
+              }
+            ]
+          },
+          {
+            "level": 9,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -18.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低18%"
+              }
+            ],
+            "next_level": 10,
+            "upgrade_costs": [
+              {
+                "name": "鳞纹",
+                "amount": 60
+              }
+            ]
+          },
+          {
+            "level": 10,
+            "bonuses": [
+              {
+                "name": "游泳耐力消耗",
+                "value": -20.0,
+                "percent": true,
+                "text": "游泳耐力消耗降低20%"
+              }
+            ],
+            "next_level": null,
+            "upgrade_costs": []
+          }
+        ]
+      },
+      {
+        "id": "SF_0009",
+        "name": "织梦结",
+        "max_level_name": "织梦网",
+        "image": "/static/guide/furniture/SF_0009.webp",
+        "unlock": [
+          "放置任意1张床(1)"
+        ],
+        "description": "提升「本性像素」上限",
+        "max_level": 10,
+        "levels": [
+          {
+            "level": 1,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 15.0,
+                "percent": false,
+                "text": "本性像素上限＋15"
+              }
+            ],
+            "next_level": 2,
+            "upgrade_costs": [
+              {
+                "name": "本性像素消耗进度",
+                "amount": 120
+              }
+            ]
+          },
+          {
+            "level": 2,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 30.0,
+                "percent": false,
+                "text": "本性像素上限＋30"
+              }
+            ],
+            "next_level": 3,
+            "upgrade_costs": [
+              {
+                "name": "本性像素消耗进度",
+                "amount": 200
+              }
+            ]
+          },
+          {
+            "level": 3,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 45.0,
+                "percent": false,
+                "text": "本性像素上限＋45"
+              }
+            ],
+            "next_level": 4,
+            "upgrade_costs": [
+              {
+                "name": "本性像素消耗进度",
+                "amount": 300
+              }
+            ]
+          },
+          {
+            "level": 4,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 60.0,
+                "percent": false,
+                "text": "本性像素上限＋60"
+              }
+            ],
+            "next_level": 5,
+            "upgrade_costs": [
+              {
+                "name": "本性像素消耗进度",
+                "amount": 450
+              }
+            ]
+          },
+          {
+            "level": 5,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 70.0,
+                "percent": false,
+                "text": "本性像素上限＋70"
+              }
+            ],
+            "next_level": 6,
+            "upgrade_costs": [
+              {
+                "name": "本性像素消耗进度",
+                "amount": 600
+              }
+            ]
+          },
+          {
+            "level": 6,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 80.0,
+                "percent": false,
+                "text": "本性像素上限＋80"
+              }
+            ],
+            "next_level": 7,
+            "upgrade_costs": [
+              {
+                "name": "本性像素消耗进度",
+                "amount": 750
+              }
+            ]
+          },
+          {
+            "level": 7,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 90.0,
+                "percent": false,
+                "text": "本性像素上限＋90"
+              }
+            ],
+            "next_level": 8,
+            "upgrade_costs": [
+              {
+                "name": "本性像素消耗进度",
+                "amount": 900
+              }
+            ]
+          },
+          {
+            "level": 8,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 100.0,
+                "percent": false,
+                "text": "本性像素上限＋100"
+              }
+            ],
+            "next_level": 9,
+            "upgrade_costs": [
+              {
+                "name": "本性像素消耗进度",
+                "amount": 1050
+              }
+            ]
+          },
+          {
+            "level": 9,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 110.0,
+                "percent": false,
+                "text": "本性像素上限＋110"
+              }
+            ],
+            "next_level": 10,
+            "upgrade_costs": [
+              {
+                "name": "本性像素消耗进度",
+                "amount": 1200
+              }
+            ]
+          },
+          {
+            "level": 10,
+            "bonuses": [
+              {
+                "name": "本性像素上限",
+                "value": 120.0,
+                "percent": false,
+                "text": "本性像素上限＋120"
+              }
+            ],
+            "next_level": null,
+            "upgrade_costs": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "puka-training",
+    "name": "噗咔特训",
+    "aliases": [
+      "噗卡特训"
+    ],
+    "description": "20级共需11,000,000方斯；满级提供攻击力＋28、防御力＋30、生命值＋420、暴击率＋2.5%、暴击伤害＋5%、环合强度＋12、倾陷强度＋12。",
+    "notes": [
+      "噗卡计划7级解锁首级特训，后续需满足对应噗卡计划等级并支付方斯。噗卡计划等级与特训等级分别记录。",
+      "表中属性是达到该特训等级后的总加成，各级之间不叠加；单次方斯为升入该等级所需，累计方斯为从未特训升至该等级的总花费。",
+      "家具和特训加成属于常驻属性。核对角色面板时先确认是否已包含，避免重复叠加。"
+    ],
+    "levels": [
+      {
+        "level": 1,
+        "required_puka_level": 7,
+        "fons_cost": 100000,
+        "total_fons": 100000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 2.0,
+            "percent": false,
+            "text": "攻击力＋2"
+          },
+          {
+            "name": "暴击率",
+            "value": 0.1,
+            "percent": true,
+            "text": "暴击率＋0.1%"
+          }
+        ]
+      },
+      {
+        "level": 2,
+        "required_puka_level": 9,
+        "fons_cost": 100000,
+        "total_fons": 200000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 2.0,
+            "percent": false,
+            "text": "攻击力＋2"
+          },
+          {
+            "name": "防御力",
+            "value": 2.0,
+            "percent": false,
+            "text": "防御力＋2"
+          },
+          {
+            "name": "暴击率",
+            "value": 0.1,
+            "percent": true,
+            "text": "暴击率＋0.1%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 0.2,
+            "percent": true,
+            "text": "暴击伤害＋0.2%"
+          }
+        ]
+      },
+      {
+        "level": 3,
+        "required_puka_level": 11,
+        "fons_cost": 100000,
+        "total_fons": 300000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 2.0,
+            "percent": false,
+            "text": "攻击力＋2"
+          },
+          {
+            "name": "防御力",
+            "value": 2.0,
+            "percent": false,
+            "text": "防御力＋2"
+          },
+          {
+            "name": "生命值",
+            "value": 20.0,
+            "percent": false,
+            "text": "生命值＋20"
+          },
+          {
+            "name": "暴击率",
+            "value": 0.1,
+            "percent": true,
+            "text": "暴击率＋0.1%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 0.2,
+            "percent": true,
+            "text": "暴击伤害＋0.2%"
+          },
+          {
+            "name": "环合强度",
+            "value": 1.0,
+            "percent": false,
+            "text": "环合强度＋1"
+          }
+        ]
+      },
+      {
+        "level": 4,
+        "required_puka_level": 13,
+        "fons_cost": 100000,
+        "total_fons": 400000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 2.0,
+            "percent": false,
+            "text": "攻击力＋2"
+          },
+          {
+            "name": "防御力",
+            "value": 2.0,
+            "percent": false,
+            "text": "防御力＋2"
+          },
+          {
+            "name": "生命值",
+            "value": 20.0,
+            "percent": false,
+            "text": "生命值＋20"
+          },
+          {
+            "name": "暴击率",
+            "value": 0.2,
+            "percent": true,
+            "text": "暴击率＋0.2%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 0.2,
+            "percent": true,
+            "text": "暴击伤害＋0.2%"
+          },
+          {
+            "name": "环合强度",
+            "value": 1.0,
+            "percent": false,
+            "text": "环合强度＋1"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 1.0,
+            "percent": false,
+            "text": "倾陷强度＋1"
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "required_puka_level": 15,
+        "fons_cost": 600000,
+        "total_fons": 1000000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 7.0,
+            "percent": false,
+            "text": "攻击力＋7"
+          },
+          {
+            "name": "防御力",
+            "value": 7.0,
+            "percent": false,
+            "text": "防御力＋7"
+          },
+          {
+            "name": "生命值",
+            "value": 100.0,
+            "percent": false,
+            "text": "生命值＋100"
+          },
+          {
+            "name": "暴击率",
+            "value": 0.7,
+            "percent": true,
+            "text": "暴击率＋0.7%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 1.2,
+            "percent": true,
+            "text": "暴击伤害＋1.2%"
+          },
+          {
+            "name": "环合强度",
+            "value": 3.0,
+            "percent": false,
+            "text": "环合强度＋3"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 3.0,
+            "percent": false,
+            "text": "倾陷强度＋3"
+          }
+        ]
+      },
+      {
+        "level": 6,
+        "required_puka_level": 17,
+        "fons_cost": 200000,
+        "total_fons": 1200000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 7.0,
+            "percent": false,
+            "text": "攻击力＋7"
+          },
+          {
+            "name": "防御力",
+            "value": 9.0,
+            "percent": false,
+            "text": "防御力＋9"
+          },
+          {
+            "name": "生命值",
+            "value": 100.0,
+            "percent": false,
+            "text": "生命值＋100"
+          },
+          {
+            "name": "暴击率",
+            "value": 0.7,
+            "percent": true,
+            "text": "暴击率＋0.7%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 1.2,
+            "percent": true,
+            "text": "暴击伤害＋1.2%"
+          },
+          {
+            "name": "环合强度",
+            "value": 4.0,
+            "percent": false,
+            "text": "环合强度＋4"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 3.0,
+            "percent": false,
+            "text": "倾陷强度＋3"
+          }
+        ]
+      },
+      {
+        "level": 7,
+        "required_puka_level": 19,
+        "fons_cost": 200000,
+        "total_fons": 1400000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 7.0,
+            "percent": false,
+            "text": "攻击力＋7"
+          },
+          {
+            "name": "防御力",
+            "value": 9.0,
+            "percent": false,
+            "text": "防御力＋9"
+          },
+          {
+            "name": "生命值",
+            "value": 120.0,
+            "percent": false,
+            "text": "生命值＋120"
+          },
+          {
+            "name": "暴击率",
+            "value": 0.7,
+            "percent": true,
+            "text": "暴击率＋0.7%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 1.2,
+            "percent": true,
+            "text": "暴击伤害＋1.2%"
+          },
+          {
+            "name": "环合强度",
+            "value": 4.0,
+            "percent": false,
+            "text": "环合强度＋4"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 4.0,
+            "percent": false,
+            "text": "倾陷强度＋4"
+          }
+        ]
+      },
+      {
+        "level": 8,
+        "required_puka_level": 21,
+        "fons_cost": 200000,
+        "total_fons": 1600000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 7.0,
+            "percent": false,
+            "text": "攻击力＋7"
+          },
+          {
+            "name": "防御力",
+            "value": 11.0,
+            "percent": false,
+            "text": "防御力＋11"
+          },
+          {
+            "name": "生命值",
+            "value": 120.0,
+            "percent": false,
+            "text": "生命值＋120"
+          },
+          {
+            "name": "暴击率",
+            "value": 0.8,
+            "percent": true,
+            "text": "暴击率＋0.8%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 1.2,
+            "percent": true,
+            "text": "暴击伤害＋1.2%"
+          },
+          {
+            "name": "环合强度",
+            "value": 4.0,
+            "percent": false,
+            "text": "环合强度＋4"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 4.0,
+            "percent": false,
+            "text": "倾陷强度＋4"
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "required_puka_level": 23,
+        "fons_cost": 200000,
+        "total_fons": 1800000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 9.0,
+            "percent": false,
+            "text": "攻击力＋9"
+          },
+          {
+            "name": "防御力",
+            "value": 11.0,
+            "percent": false,
+            "text": "防御力＋11"
+          },
+          {
+            "name": "生命值",
+            "value": 120.0,
+            "percent": false,
+            "text": "生命值＋120"
+          },
+          {
+            "name": "暴击率",
+            "value": 0.8,
+            "percent": true,
+            "text": "暴击率＋0.8%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 1.4,
+            "percent": true,
+            "text": "暴击伤害＋1.4%"
+          },
+          {
+            "name": "环合强度",
+            "value": 4.0,
+            "percent": false,
+            "text": "环合强度＋4"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 4.0,
+            "percent": false,
+            "text": "倾陷强度＋4"
+          }
+        ]
+      },
+      {
+        "level": 10,
+        "required_puka_level": 25,
+        "fons_cost": 1200000,
+        "total_fons": 3000000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 14.0,
+            "percent": false,
+            "text": "攻击力＋14"
+          },
+          {
+            "name": "防御力",
+            "value": 16.0,
+            "percent": false,
+            "text": "防御力＋16"
+          },
+          {
+            "name": "生命值",
+            "value": 200.0,
+            "percent": false,
+            "text": "生命值＋200"
+          },
+          {
+            "name": "暴击率",
+            "value": 1.3,
+            "percent": true,
+            "text": "暴击率＋1.3%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 2.4,
+            "percent": true,
+            "text": "暴击伤害＋2.4%"
+          },
+          {
+            "name": "环合强度",
+            "value": 6.0,
+            "percent": false,
+            "text": "环合强度＋6"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 6.0,
+            "percent": false,
+            "text": "倾陷强度＋6"
+          }
+        ]
+      },
+      {
+        "level": 11,
+        "required_puka_level": 27,
+        "fons_cost": 300000,
+        "total_fons": 3300000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 14.0,
+            "percent": false,
+            "text": "攻击力＋14"
+          },
+          {
+            "name": "防御力",
+            "value": 16.0,
+            "percent": false,
+            "text": "防御力＋16"
+          },
+          {
+            "name": "生命值",
+            "value": 220.0,
+            "percent": false,
+            "text": "生命值＋220"
+          },
+          {
+            "name": "暴击率",
+            "value": 1.3,
+            "percent": true,
+            "text": "暴击率＋1.3%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 2.4,
+            "percent": true,
+            "text": "暴击伤害＋2.4%"
+          },
+          {
+            "name": "环合强度",
+            "value": 6.0,
+            "percent": false,
+            "text": "环合强度＋6"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 7.0,
+            "percent": false,
+            "text": "倾陷强度＋7"
+          }
+        ]
+      },
+      {
+        "level": 12,
+        "required_puka_level": 29,
+        "fons_cost": 300000,
+        "total_fons": 3600000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 14.0,
+            "percent": false,
+            "text": "攻击力＋14"
+          },
+          {
+            "name": "防御力",
+            "value": 16.0,
+            "percent": false,
+            "text": "防御力＋16"
+          },
+          {
+            "name": "生命值",
+            "value": 240.0,
+            "percent": false,
+            "text": "生命值＋240"
+          },
+          {
+            "name": "暴击率",
+            "value": 1.4,
+            "percent": true,
+            "text": "暴击率＋1.4%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 2.4,
+            "percent": true,
+            "text": "暴击伤害＋2.4%"
+          },
+          {
+            "name": "环合强度",
+            "value": 6.0,
+            "percent": false,
+            "text": "环合强度＋6"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 7.0,
+            "percent": false,
+            "text": "倾陷强度＋7"
+          }
+        ]
+      },
+      {
+        "level": 13,
+        "required_puka_level": 31,
+        "fons_cost": 300000,
+        "total_fons": 3900000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 16.0,
+            "percent": false,
+            "text": "攻击力＋16"
+          },
+          {
+            "name": "防御力",
+            "value": 16.0,
+            "percent": false,
+            "text": "防御力＋16"
+          },
+          {
+            "name": "生命值",
+            "value": 240.0,
+            "percent": false,
+            "text": "生命值＋240"
+          },
+          {
+            "name": "暴击率",
+            "value": 1.4,
+            "percent": true,
+            "text": "暴击率＋1.4%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 2.6,
+            "percent": true,
+            "text": "暴击伤害＋2.6%"
+          },
+          {
+            "name": "环合强度",
+            "value": 6.0,
+            "percent": false,
+            "text": "环合强度＋6"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 7.0,
+            "percent": false,
+            "text": "倾陷强度＋7"
+          }
+        ]
+      },
+      {
+        "level": 14,
+        "required_puka_level": 33,
+        "fons_cost": 300000,
+        "total_fons": 4200000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 16.0,
+            "percent": false,
+            "text": "攻击力＋16"
+          },
+          {
+            "name": "防御力",
+            "value": 18.0,
+            "percent": false,
+            "text": "防御力＋18"
+          },
+          {
+            "name": "生命值",
+            "value": 240.0,
+            "percent": false,
+            "text": "生命值＋240"
+          },
+          {
+            "name": "暴击率",
+            "value": 1.4,
+            "percent": true,
+            "text": "暴击率＋1.4%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 2.6,
+            "percent": true,
+            "text": "暴击伤害＋2.6%"
+          },
+          {
+            "name": "环合强度",
+            "value": 7.0,
+            "percent": false,
+            "text": "环合强度＋7"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 7.0,
+            "percent": false,
+            "text": "倾陷强度＋7"
+          }
+        ]
+      },
+      {
+        "level": 15,
+        "required_puka_level": 35,
+        "fons_cost": 1800000,
+        "total_fons": 6000000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 21.0,
+            "percent": false,
+            "text": "攻击力＋21"
+          },
+          {
+            "name": "防御力",
+            "value": 23.0,
+            "percent": false,
+            "text": "防御力＋23"
+          },
+          {
+            "name": "生命值",
+            "value": 320.0,
+            "percent": false,
+            "text": "生命值＋320"
+          },
+          {
+            "name": "暴击率",
+            "value": 1.9,
+            "percent": true,
+            "text": "暴击率＋1.9%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 3.6,
+            "percent": true,
+            "text": "暴击伤害＋3.6%"
+          },
+          {
+            "name": "环合强度",
+            "value": 9.0,
+            "percent": false,
+            "text": "环合强度＋9"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 9.0,
+            "percent": false,
+            "text": "倾陷强度＋9"
+          }
+        ]
+      },
+      {
+        "level": 16,
+        "required_puka_level": 37,
+        "fons_cost": 500000,
+        "total_fons": 6500000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 23.0,
+            "percent": false,
+            "text": "攻击力＋23"
+          },
+          {
+            "name": "防御力",
+            "value": 23.0,
+            "percent": false,
+            "text": "防御力＋23"
+          },
+          {
+            "name": "生命值",
+            "value": 320.0,
+            "percent": false,
+            "text": "生命值＋320"
+          },
+          {
+            "name": "暴击率",
+            "value": 1.9,
+            "percent": true,
+            "text": "暴击率＋1.9%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 3.8,
+            "percent": true,
+            "text": "暴击伤害＋3.8%"
+          },
+          {
+            "name": "环合强度",
+            "value": 9.0,
+            "percent": false,
+            "text": "环合强度＋9"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 9.0,
+            "percent": false,
+            "text": "倾陷强度＋9"
+          }
+        ]
+      },
+      {
+        "level": 17,
+        "required_puka_level": 39,
+        "fons_cost": 500000,
+        "total_fons": 7000000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 23.0,
+            "percent": false,
+            "text": "攻击力＋23"
+          },
+          {
+            "name": "防御力",
+            "value": 25.0,
+            "percent": false,
+            "text": "防御力＋25"
+          },
+          {
+            "name": "生命值",
+            "value": 320.0,
+            "percent": false,
+            "text": "生命值＋320"
+          },
+          {
+            "name": "暴击率",
+            "value": 1.9,
+            "percent": true,
+            "text": "暴击率＋1.9%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击伤害＋4%"
+          },
+          {
+            "name": "环合强度",
+            "value": 9.0,
+            "percent": false,
+            "text": "环合强度＋9"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 9.0,
+            "percent": false,
+            "text": "倾陷强度＋9"
+          }
+        ]
+      },
+      {
+        "level": 18,
+        "required_puka_level": 41,
+        "fons_cost": 500000,
+        "total_fons": 7500000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 23.0,
+            "percent": false,
+            "text": "攻击力＋23"
+          },
+          {
+            "name": "防御力",
+            "value": 25.0,
+            "percent": false,
+            "text": "防御力＋25"
+          },
+          {
+            "name": "生命值",
+            "value": 340.0,
+            "percent": false,
+            "text": "生命值＋340"
+          },
+          {
+            "name": "暴击率",
+            "value": 1.9,
+            "percent": true,
+            "text": "暴击率＋1.9%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击伤害＋4%"
+          },
+          {
+            "name": "环合强度",
+            "value": 10.0,
+            "percent": false,
+            "text": "环合强度＋10"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 9.0,
+            "percent": false,
+            "text": "倾陷强度＋9"
+          }
+        ]
+      },
+      {
+        "level": 19,
+        "required_puka_level": 43,
+        "fons_cost": 500000,
+        "total_fons": 8000000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 23.0,
+            "percent": false,
+            "text": "攻击力＋23"
+          },
+          {
+            "name": "防御力",
+            "value": 25.0,
+            "percent": false,
+            "text": "防御力＋25"
+          },
+          {
+            "name": "生命值",
+            "value": 340.0,
+            "percent": false,
+            "text": "生命值＋340"
+          },
+          {
+            "name": "暴击率",
+            "value": 2.0,
+            "percent": true,
+            "text": "暴击率＋2%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 4.0,
+            "percent": true,
+            "text": "暴击伤害＋4%"
+          },
+          {
+            "name": "环合强度",
+            "value": 10.0,
+            "percent": false,
+            "text": "环合强度＋10"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 10.0,
+            "percent": false,
+            "text": "倾陷强度＋10"
+          }
+        ]
+      },
+      {
+        "level": 20,
+        "required_puka_level": 45,
+        "fons_cost": 3000000,
+        "total_fons": 11000000,
+        "bonuses": [
+          {
+            "name": "攻击力",
+            "value": 28.0,
+            "percent": false,
+            "text": "攻击力＋28"
+          },
+          {
+            "name": "防御力",
+            "value": 30.0,
+            "percent": false,
+            "text": "防御力＋30"
+          },
+          {
+            "name": "生命值",
+            "value": 420.0,
+            "percent": false,
+            "text": "生命值＋420"
+          },
+          {
+            "name": "暴击率",
+            "value": 2.5,
+            "percent": true,
+            "text": "暴击率＋2.5%"
+          },
+          {
+            "name": "暴击伤害",
+            "value": 5.0,
+            "percent": true,
+            "text": "暴击伤害＋5%"
+          },
+          {
+            "name": "环合强度",
+            "value": 12.0,
+            "percent": false,
+            "text": "环合强度＋12"
+          },
+          {
+            "name": "倾陷强度",
+            "value": 12.0,
+            "percent": false,
+            "text": "倾陷强度＋12"
+          }
+        ]
+      }
+    ]
+  }
+]

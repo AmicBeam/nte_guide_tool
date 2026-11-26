@@ -1,0 +1,634 @@
+{
+  "characters": [
+    {
+      "id": "1003",
+      "arc_type": {
+        "id": "4",
+        "name": "气态",
+        "icon": "/static/images/arc-types/YH_UI_icon_gas.webp"
+      },
+      "char_tags": [
+        {
+          "name": "增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_fuzhu01.webp"
+        },
+        {
+          "name": "控制",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_kongzhi.webp"
+        },
+        {
+          "name": "输出增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zengyi.webp"
+        }
+      ]
+    },
+    {
+      "id": "1004",
+      "arc_type": {
+        "id": "2",
+        "name": "液态",
+        "icon": "/static/images/arc-types/YH_UI_icon_liquid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        },
+        {
+          "name": "持续伤害",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_chixu.webp"
+        }
+      ]
+    },
+    {
+      "id": "1008",
+      "arc_type": {
+        "id": "4",
+        "name": "气态",
+        "icon": "/static/images/arc-types/YH_UI_icon_gas.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        }
+      ]
+    },
+    {
+      "id": "1010",
+      "arc_type": {
+        "id": "3",
+        "name": "等离子",
+        "icon": "/static/images/arc-types/YH_UI_icon_plasma.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        },
+        {
+          "name": "追加攻击",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuijiagongji.webp"
+        }
+      ]
+    },
+    {
+      "id": "1019",
+      "arc_type": {
+        "id": "2",
+        "name": "液态",
+        "icon": "/static/images/arc-types/YH_UI_icon_liquid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        }
+      ]
+    },
+    {
+      "id": "1020",
+      "arc_type": {
+        "id": "1",
+        "name": "固态",
+        "icon": "/static/images/arc-types/YH_UI_icon_solid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_fuzhu01.webp"
+        },
+        {
+          "name": "输出增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zengyi.webp"
+        }
+      ]
+    },
+    {
+      "id": "1021",
+      "arc_type": {
+        "id": "2",
+        "name": "液态",
+        "icon": "/static/images/arc-types/YH_UI_icon_liquid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "生存",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag02.webp"
+        },
+        {
+          "name": "治疗",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhiliao.webp"
+        }
+      ]
+    },
+    {
+      "id": "1023",
+      "arc_type": {
+        "id": "5",
+        "name": "聚合",
+        "icon": "/static/images/arc-types/YH_UI_icon_boson.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        },
+        {
+          "name": "持续伤害",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_chixu.webp"
+        }
+      ]
+    },
+    {
+      "id": "1025",
+      "arc_type": {
+        "id": "3",
+        "name": "等离子",
+        "icon": "/static/images/arc-types/YH_UI_icon_plasma.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "爆发输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_baofa.webp"
+        }
+      ]
+    },
+    {
+      "id": "1033",
+      "arc_type": {
+        "id": "5",
+        "name": "聚合",
+        "icon": "/static/images/arc-types/YH_UI_icon_boson.webp"
+      },
+      "char_tags": [
+        {
+          "name": "生存",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag02.webp"
+        },
+        {
+          "name": "护盾",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_hudun.webp"
+        },
+        {
+          "name": "持续伤害",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_chixu.webp"
+        }
+      ]
+    },
+    {
+      "id": "1036",
+      "arc_type": {
+        "id": "4",
+        "name": "气态",
+        "icon": "/static/images/arc-types/YH_UI_icon_gas.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        },
+        {
+          "name": "持续伤害",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_chixu.webp"
+        },
+        {
+          "name": "追加攻击",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuijiagongji.webp"
+        }
+      ]
+    },
+    {
+      "id": "1039",
+      "arc_type": {
+        "id": "5",
+        "name": "聚合",
+        "icon": "/static/images/arc-types/YH_UI_icon_boson.webp"
+      },
+      "char_tags": [
+        {
+          "name": "生存",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag02.webp"
+        },
+        {
+          "name": "伤害分摊",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_fentan.webp"
+        }
+      ]
+    },
+    {
+      "id": "1042",
+      "arc_type": {
+        "id": "4",
+        "name": "气态",
+        "icon": "/static/images/arc-types/YH_UI_icon_gas.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "即瞬环合",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_huanhe.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        },
+        {
+          "name": "输出增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zengyi.webp"
+        }
+      ]
+    },
+    {
+      "id": "1046",
+      "arc_type": {
+        "id": "1",
+        "name": "固态",
+        "icon": "/static/images/arc-types/YH_UI_icon_solid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "即瞬环合",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_huanhe.webp"
+        },
+        {
+          "name": "爆发输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_baofa.webp"
+        }
+      ]
+    },
+    {
+      "id": "1051",
+      "arc_type": {
+        "id": "1",
+        "name": "固态",
+        "icon": "/static/images/arc-types/YH_UI_icon_solid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "即瞬环合",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_huanhe.webp"
+        },
+        {
+          "name": "爆发输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_baofa.webp"
+        }
+      ]
+    },
+    {
+      "id": "1052",
+      "arc_type": {
+        "id": "1",
+        "name": "固态",
+        "icon": "/static/images/arc-types/YH_UI_icon_solid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_fuzhu01.webp"
+        },
+        {
+          "name": "爆发输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_baofa.webp"
+        },
+        {
+          "name": "输出增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zengyi.webp"
+        }
+      ]
+    },
+    {
+      "id": "1054",
+      "arc_type": {
+        "id": "2",
+        "name": "液态",
+        "icon": "/static/images/arc-types/YH_UI_icon_liquid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "爆发输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_baofa.webp"
+        },
+        {
+          "name": "倾陷增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_QingXiantisheng.webp"
+        }
+      ]
+    },
+    {
+      "id": "1055",
+      "arc_type": {
+        "id": "1",
+        "name": "固态",
+        "icon": "/static/images/arc-types/YH_UI_icon_solid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "爆发输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_baofa.webp"
+        },
+        {
+          "name": "控制",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_kongzhi.webp"
+        }
+      ]
+    },
+    {
+      "id": "1057",
+      "arc_type": {
+        "id": "2",
+        "name": "液态",
+        "icon": "/static/images/arc-types/YH_UI_icon_liquid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        }
+      ]
+    },
+    {
+      "id": "1070",
+      "arc_type": {
+        "id": "3",
+        "name": "等离子",
+        "icon": "/static/images/arc-types/YH_UI_icon_plasma.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        }
+      ]
+    },
+    {
+      "id": "1071",
+      "arc_type": {
+        "id": "5",
+        "name": "聚合",
+        "icon": "/static/images/arc-types/YH_UI_icon_boson.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        }
+      ]
+    },
+    {
+      "id": "1072",
+      "arc_type": {
+        "id": "3",
+        "name": "等离子",
+        "icon": "/static/images/arc-types/YH_UI_icon_plasma.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "爆发输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_baofa.webp"
+        },
+        {
+          "name": "追加攻击",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuijiagongji.webp"
+        }
+      ]
+    },
+    {
+      "id": "1073",
+      "arc_type": {
+        "id": "4",
+        "name": "气态",
+        "icon": "/static/images/arc-types/YH_UI_icon_gas.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        }
+      ]
+    },
+    {
+      "id": "1075",
+      "arc_type": {
+        "id": "2",
+        "name": "液态",
+        "icon": "/static/images/arc-types/YH_UI_icon_liquid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "生存",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag02.webp"
+        },
+        {
+          "name": "治疗",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhiliao.webp"
+        },
+        {
+          "name": "输出增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zengyi.webp"
+        }
+      ]
+    },
+    {
+      "id": "1076",
+      "arc_type": {
+        "id": "5",
+        "name": "聚合",
+        "icon": "/static/images/arc-types/YH_UI_icon_boson.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        }
+      ]
+    },
+    {
+      "id": "1090",
+      "arc_type": {
+        "id": "1",
+        "name": "固态",
+        "icon": "/static/images/arc-types/YH_UI_icon_solid.webp"
+      },
+      "char_tags": [
+        {
+          "name": "增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_fuzhu01.webp"
+        },
+        {
+          "name": "输出增益",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zengyi.webp"
+        },
+        {
+          "name": "追加攻击",
+          "description": null,
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuijiagongji.webp"
+        }
+      ]
+    },
+    {
+      "id": "1074",
+      "arc_type": {
+        "id": "3",
+        "name": "等离子",
+        "icon": "/static/images/arc-types/YH_UI_icon_plasma.webp"
+      },
+      "char_tags": [
+        {
+          "name": "输出",
+          "description": "",
+          "icon": "/static/images/character-tags/YH_UI_icon_MainTag01.webp"
+        },
+        {
+          "name": "主力输出",
+          "description": "",
+          "icon": "/static/images/character-tags/YH_UI_icon_Tag_zhuli.webp"
+        },
+        {
+          "name": "召唤",
+          "description": "",
+          "icon": "/static/images/character-tags/YH_UI_JueSe_Icon_ZhaoHuan.webp"
+        }
+      ]
+    }
+  ]
+}

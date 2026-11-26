@@ -1,0 +1,86 @@
+"""Shared material presentation for guide pages."""
+from functools import lru_cache
+import json
+import re
+from pathlib import Path
+from urllib.parse import urlencode
+
+
+@lru_cache(maxsize=1)
+def material_metadata():
+    return json.loads((Path(__file__).parent / 'data/material_metadata.json').read_text(encoding='utf-8'))
+
+
+@lru_cache(maxsize=1)
+def equipment_images():
+    return json.loads((Path(__file__).parent / 'data/equipment_images.json').read_text(encoding='utf-8'))
+
+
+def material_display(item):
+    from .dungeons import material_url
+    return {**material_metadata().get(str(item['id']).casefold(), {}),
+            'dungeon_url': material_url(item['id'])}
+
+
+def upgrade_material_preview(record):
+    """Unique upgrade materials, keeping the highest quality used per family."""
+    qualities = {'gray': 0, 'green': 1, 'blue': 2, 'purple': 3, 'orange': 4, 'red': 5}
+    families = {}
+
+    def visit(value):
+        if isinstance(value, dict):
+            for item in value.get('items', []):
+                identifier = str(item['id']).casefold()
+                if identifier in {'gold', 'fons', 'cityability_upmaterial'} or identifier.startswith('characterupmaterial_'):
+                    continue
+                family = re.sub(r'_lv\d+$', '', identifier)
+                quality = qualities.get(material_display(item).get('quality'), -1)
+                if family not in families or quality > families[family][0]:
+                    families[family] = (quality, {'id': item['id'], 'name': item['name']})
+            for key, child in value.items():
+                if key != 'items':
+                    visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+    visit(record.get('materials', {}))
+    return [item for _, item in families.values()]
+
+
+@lru_cache(maxsize=1)
+def kongmu_links():
+    return json.loads((Path(__file__).parent / 'data/kongmu_links.json').read_text(encoding='utf-8'))
+
+
+def kongmu_entry(record):
+    binding = kongmu_links().get(str(record['id']))
+    if not binding:
+        return None
+    params = {'character': binding['character_id']}
+    recommendations = binding['recommendations']
+    if recommendations:
+        params['cartridge'] = recommendations[0]['id']
+    return {'url': '/kongmu?' + urlencode(params), 'recommendations': recommendations}
+
+
+@lru_cache(maxsize=1)
+def overlap_links():
+    return json.loads((Path(__file__).parent / 'data/overlap_links.json').read_text(encoding='utf-8'))
+
+
+def overlap_entry(record):
+    identifier = overlap_links().get(str(record['id']))
+    return '/overlap?' + urlencode({'character': identifier}) if identifier else None
+
+
+@lru_cache(maxsize=1)
+def site_metadata():
+    return json.loads((Path(__file__).parent / 'data/site_metadata.json').read_text(encoding='utf-8'))
+
+
+def site_header():
+    metadata = site_metadata()
+    version = metadata.get('game_version')
+    if not isinstance(version, str) or not re.fullmatch(r'\d+(?:\.\d+){1,3}', version):
+        version = None
+    return {'title': metadata['title'], 'game_version': version}

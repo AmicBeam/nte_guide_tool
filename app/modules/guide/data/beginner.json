@@ -1,0 +1,3512 @@
+[
+  {
+    "id": "getting-started",
+    "name": "异环1.4版本新手入坑攻略",
+    "description": "完整图文攻略，含游戏玩法、货币与消费、版本活动和抽卡规划。文中版本信息与建议保留作者原意。",
+    "author": "拾花影.度浮生",
+    "article_url": "https://www.taptap.cn/moment/855919972260512544",
+    "intro": [
+      {
+        "type": "paragraph",
+        "text": "这篇攻略写在国庆假期的时候，那就先祝大家国庆快乐吧，要天天开心！"
+      },
+      {
+        "type": "paragraph",
+        "text": "异环目前已经来到了1.4版本，玩法不断增多，活动难度也在不断升高，如果你是刚入坑的萌新，面对没有摸索明白的游戏，体验可能不会太好，那本篇帖子就带大家明确下未来方向，并对于大家在游戏中可能遇到的问题做下讲解"
+      },
+      {
+        "type": "paragraph",
+        "text": "[TapTap表情｜TapFamilyxdoro2_粉狗挠头]",
+        "runs": [
+          {
+            "alt": "[TapTap表情｜TapFamilyxdoro2_粉狗挠头]",
+            "src": "/static/guide/beginner/getting-started/emoji-01.gif",
+            "width": 240,
+            "height": 240
+          }
+        ]
+      }
+    ],
+    "gameplay": [
+      {
+        "type": "paragraph",
+        "text": "简述：异环是一款都市二游，所以与其他开放大世界二游不同的是异环除了战斗玩法外，还有都市生活玩法，所以我们除了要赚环石来抽角色，抽专武外，还要赚方斯来买车买房，获得更好的都市生活体验"
+      },
+      {
+        "type": "paragraph",
+        "text": "开篇前提醒一下大家，开荒一定要先去推主线剧情，推了主线才能解锁东西，然后异环的日常是要做的，给的东西很多"
+      },
+      {
+        "type": "heading",
+        "id": "hunter",
+        "text": "1.1猎人玩法"
+      },
+      {
+        "type": "paragraph",
+        "text": "猎人等级是我们猎人玩法方面进度的最好体现，等级越高，解锁的等级奖励越多，同时到达一定等级后就可以提升鉴别等级"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 1",
+        "src": "/static/guide/beginner/getting-started/figure-01.webp",
+        "width": 1797,
+        "height": 858
+      },
+      {
+        "type": "paragraph",
+        "text": "提升鉴别等级后，我们角色等级的上限可以提高，当然我们世界中的怪物也会变强，但活动里的怪强度是固定的，例如轨外，所以提升鉴别等级对于我们肯定是正收益的，然后我们大世界刷怪(大家一般叫锄大地)和刷副本获得的材料产出都会得到提高"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 2",
+        "src": "/static/guide/beginner/getting-started/figure-02.webp",
+        "width": 1548,
+        "height": 891
+      },
+      {
+        "type": "paragraph",
+        "text": "环合反应，你可以看作是除了角色固定技能输出收益外的额外伤害收益，以轨外上半下半要两队来打举例，上半和下半对怪有不同的抗性削弱，所以我们需要养两队来应对不同情况"
+      },
+      {
+        "type": "paragraph",
+        "text": "当前大家是把环合反应分为上三环和下三环来养队伍，因为这样除了能根据情况吃到抗性削弱外，队伍还不会互相抢角色，可以看图中的这条红线，红线上为上三环，红线下为下三环，当然，只要异能属性相邻就可以激活环合，分为上下三环来养队伍，不过是一种常见的玩法"
+      },
+      {
+        "type": "paragraph",
+        "text": "上三环从左到右为：相 光 灵"
+      },
+      {
+        "type": "paragraph",
+        "text": "下三环从左到右为：魂 暗 咒"
+      },
+      {
+        "type": "paragraph",
+        "text": "而除了相邻异能属性可以打环合外，上三环和下三环还分别有进阶环和反应，以上三环为例，你触发了相光的「延滞」后再触发光灵的「创生花」，就可以打出「盈蓄」，效果是「创生花」命中处于「延滞」状态的目标时，当前驻场角色额外获得10点终结能量(大招充能)，也就是目前的真红队完整轴"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 3",
+        "src": "/static/guide/beginner/getting-started/figure-03.webp",
+        "width": 1688,
+        "height": 754
+      },
+      {
+        "type": "paragraph",
+        "text": "战斗方面，箭头一指向的怪物下方白条是韧性条，我们攻击就可以削减这个韧性条，当这个条被我们打破后，怪物就会进入瘫痪状态，这段时间怪物不会动，我们能站桩输出"
+      },
+      {
+        "type": "paragraph",
+        "text": "箭头二就是环合能量，角色攻击就可以获得，还和能量满后点击相邻异能属性的角色头像，就可以打出环合反应并且换人，也就是点击箭头3指向的亮起光圈"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 4",
+        "src": "/static/guide/beginner/getting-started/figure-04.webp",
+        "width": 1858,
+        "height": 1080
+      },
+      {
+        "type": "paragraph",
+        "text": "e技能是「变轨技能」小技能"
+      },
+      {
+        "type": "paragraph",
+        "text": "q技能是「极轨终结」大招"
+      },
+      {
+        "type": "paragraph",
+        "text": "网上这么叫，首先是因为电脑按键，后面特别普及的原因我猜测是因为输出简便，所以自然就推广开了，手机玩家看到这种叫法可能会一头雾水，所以在这边带大家了解下"
+      },
+      {
+        "type": "paragraph",
+        "text": "轮切一般是先放q再放e，因为大招有时停，小技能点了之后可以 直接切人，而放e后角色会继续驻场到打完e，不会被打断，可以缩短时间"
+      },
+      {
+        "type": "paragraph",
+        "text": "当然具体流程还看你所玩的阵容"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 5",
+        "src": "/static/guide/beginner/getting-started/figure-05.webp",
+        "width": 705,
+        "height": 454
+      },
+      {
+        "type": "paragraph",
+        "text": "本性像素，这是猎人玩法的体力"
+      },
+      {
+        "type": "paragraph",
+        "text": "每6分钟恢复1体力，24小时恢复240点，玩到后期上限最多360点，到上限后溢出的就不会保存了"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 6",
+        "src": "/static/guide/beginner/getting-started/figure-06.webp",
+        "width": 569,
+        "height": 505
+      },
+      {
+        "type": "paragraph",
+        "text": "体力可用于刷取以下副本，获取材料和经验"
+      },
+      {
+        "type": "paragraph",
+        "text": "合订本:刷取角色升级材料"
+      },
+      {
+        "type": "paragraph",
+        "text": "万花筒:刷取弧盘升级材料"
+      },
+      {
+        "type": "paragraph",
+        "text": "硬币记:刷取甲硬币"
+      },
+      {
+        "type": "paragraph",
+        "text": "空幕:刷取角色卡带和抽奖币，可在“倒带”中使用抽奖币抽“驱动块”，增强角色"
+      },
+      {
+        "type": "paragraph",
+        "text": "异象巡礼:异环周本，建议匹配打，每周只能打三次，用于提升角色技能等级"
+      },
+      {
+        "type": "paragraph",
+        "text": "异象巡猎:角色等级突破材料"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 7",
+        "src": "/static/guide/beginner/getting-started/figure-07.webp",
+        "width": 3276,
+        "height": 4096
+      },
+      {
+        "type": "heading",
+        "id": "city",
+        "text": "1.2都市玩法"
+      },
+      {
+        "type": "paragraph",
+        "text": "异环的都市玩法和猎人玩法类似，也有着一套独立的体系，嗯……不过1.4更新以后都市玩法好像变成两套体系了"
+      },
+      {
+        "type": "paragraph",
+        "text": "1.4版本之前查看大家都市玩法的养成进度可以通过大亨等级来看，但现在多了一个噗卡计划，还不继承进度，重新开始了……"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 8",
+        "src": "/static/guide/beginner/getting-started/figure-08.webp",
+        "width": 1920,
+        "height": 1060
+      },
+      {
+        "type": "paragraph",
+        "text": "当然，加新东西是好事，我们能获取的奖励也多了，老玩家也不至于长草躺平"
+      },
+      {
+        "type": "paragraph",
+        "text": "并且官方可能考虑到了新玩家面对两个计划的养成压力，1.4版本后，大亨计划获得方斯数速率直接提高了100%，也就是说，你获得1万方斯，在这个计划里能给你算2万方斯，呃，不过计入富爪榜还是按照正常获取量来记的"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 9",
+        "src": "/static/guide/beginner/getting-started/figure-09.webp",
+        "width": 1888,
+        "height": 1080
+      },
+      {
+        "type": "paragraph",
+        "text": "大亨计划主要能帮我们获得6+5小吱，这个角色前期开荒用着还可以，但是等到中后期，你有了限定金就用不到它了，再加上目前大亨计划有速率提高，进度肯定是比噗卡计划要快的"
+      },
+      {
+        "type": "paragraph",
+        "text": "而且异环很多重要功能都要通过大亨等级来解锁，像是咖舍，都市活力的上限，猎人商店的购买资格等等"
+      },
+      {
+        "type": "paragraph",
+        "text": "噗卡更像是大亨后的补足，所以新玩家要先升大亨计划到30级开通所有权限，再转战噗卡，这样同阶段资源获取多，而且有角色过渡也舒服"
+      },
+      {
+        "type": "paragraph",
+        "text": "下面说一下1.4新增的噗卡计划和捐赠功能"
+      },
+      {
+        "type": "paragraph",
+        "text": "噗卡计划大概需要累积获取5500万方斯加做一些任务升满，大概需要4个版本吧，当然，如果你是氪佬，直接点右上角的捐赠花5500万现有方斯也可以直接拉满，但没有这个必要"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果你是新玩家想要加快大亨计划进度，那可以在迷迭兑换里选择兑换爪爪礼盒进行捐赠，30级前买这个提升进度不算亏，爪爪礼盒只能用于大亨计划"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 10",
+        "src": "/static/guide/beginner/getting-started/figure-10.webp",
+        "width": 1870,
+        "height": 1080
+      },
+      {
+        "type": "paragraph",
+        "text": "顺带提一嘴，如果你想切换计划，一定要点击右下角的应用该计划，你只有应用了对应计划你获取的方斯，才会算到你选择的计划里，不要选错"
+      },
+      {
+        "type": "paragraph",
+        "text": "下面是噗卡计划的一些特殊奖励"
+      },
+      {
+        "type": "paragraph",
+        "text": "一个常驻弧盘自选"
+      },
+      {
+        "type": "paragraph",
+        "text": "两个常驻自选"
+      },
+      {
+        "type": "paragraph",
+        "text": "还有三个角色皮肤，再加上一些小装饰"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 11",
+        "src": "/static/guide/beginner/getting-started/figure-11.webp",
+        "width": 1920,
+        "height": 1080
+      },
+      {
+        "type": "paragraph",
+        "text": "噗卡特训，异环官方1.4版本的巅峰之作"
+      },
+      {
+        "type": "paragraph",
+        "text": "拉满需要1100万方斯，提供属性加成为"
+      },
+      {
+        "type": "paragraph",
+        "text": "28点攻击力，30点防御力，420点生命值，2.5%暴击率，5%爆伤，12环合强度，12倾陷强度"
+      },
+      {
+        "type": "paragraph",
+        "text": "不是养服大佬就不要碰了，提升太少性价比太低"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 12",
+        "src": "/static/guide/beginner/getting-started/figure-12.webp",
+        "width": 1920,
+        "height": 912
+      },
+      {
+        "type": "paragraph",
+        "text": "都市活力1点活力等于1000方斯，每周刷新，上限700活力，也就是说，一周70万方斯"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 13",
+        "src": "/static/guide/beginner/getting-started/figure-13.webp",
+        "width": 568,
+        "height": 438
+      },
+      {
+        "type": "paragraph",
+        "text": "都市活力可以通过送快递，开出租，钓鱼，店长特供等等很多方式消耗，自由选择感兴趣的即可，如果追求速度"
+      },
+      {
+        "type": "paragraph",
+        "text": "肯定是店长特供刷1-1关最快"
+      },
+      {
+        "type": "paragraph",
+        "text": "大亨激励金上限100万(上限随着噗卡计划等级的提高而提高所以我这里是105，貌似最多115万)，每14天一刷新，建议通过打排球周赛消耗(打排球还能同时消耗都市活力)，或者去跑粉爪大劫案也可以，即刻落槌给的是挂机小头，想要养成挂机收益，时间成本要投入很多，而且对于获取的速度提升也不大，不建议萌新操作"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 14",
+        "src": "/static/guide/beginner/getting-started/figure-14.webp",
+        "width": 1622,
+        "height": 964
+      },
+      {
+        "type": "paragraph",
+        "text": "关于房产，因为房产内会带有角色入驻槽位和异象家具，所以还是需要购买的，从家具的角度来看，只有老旧邮箱，玛门，绵绵，织梦网有用，其他的基本用不到，所以首先我们应该购买100万的伊登公寓，因为能提升老旧邮箱和本性像素到上限lv10，非常有用"
+      },
+      {
+        "type": "paragraph",
+        "text": "然后我就建议大家直接攒方斯一步到位800万房峰林别墅，因为这个能提升玛门等级到上限lv10，当然这个是不着急的，因为可以用好友的10级玛门然后其他房子就看个人喜好购入了，我到现在也只有一套100万的伊登公寓，方斯有1900万都输掉在1.2开放的刮刮乐上了[表情_豹哭]",
+        "runs": [
+          {
+            "text": "然后我就建议大家直接攒方斯一步到位800万房峰林别墅，因为这个能提升玛门等级到上限lv10，当然这个是不着急的，因为可以用好友的10级玛门然后其他房子就看个人喜好购入了，我到现在也只有一套100万的伊登公寓，方斯有1900万都输掉在1.2开放的刮刮乐上了"
+          },
+          {
+            "alt": "[表情_豹哭]",
+            "src": "/static/guide/beginner/getting-started/emoji-02.png",
+            "width": 108,
+            "height": 108
+          }
+        ]
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 15",
+        "src": "/static/guide/beginner/getting-started/figure-15.webp",
+        "width": 1920,
+        "height": 956
+      },
+      {
+        "type": "paragraph",
+        "text": "咖舍养成讲解"
+      },
+      {
+        "type": "paragraph",
+        "text": "作为大亨玩法里的大头，一咖舍带来的收益可是很多的，按毕业每小时2700方斯算，一天收益有2700*1.09*24=70632方斯，我说躺着赚钱有没有懂的，那接下来我就教给大家雇员选择以及商品选择的焚诀"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 16",
+        "src": "/static/guide/beginner/getting-started/figure-16.webp",
+        "width": 1920,
+        "height": 1000
+      },
+      {
+        "type": "paragraph",
+        "text": "关于一咖舍你必须要了解的是，挂机收益最多储存72小时，角色可以增加店铺收益，更换家具可以提供人气值，风向标可以获取更多方斯，风向标其实是个坑，低售价菜品的风向标，其实根本比不上无风向标的高售价菜品，所以后面定下阵容之后，有风向标就纯赚，没风向标也无需调整，按自己节奏来，每次领取挂机收益可以获得管理经验，升级店铺等级"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 17",
+        "src": "/static/guide/beginner/getting-started/figure-17.webp",
+        "width": 1318,
+        "height": 816
+      },
+      {
+        "type": "paragraph",
+        "text": "如图所示"
+      },
+      {
+        "type": "paragraph",
+        "text": "下面是管理等级解锁的功能详情"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 18",
+        "src": "/static/guide/beginner/getting-started/figure-18.webp",
+        "width": 780,
+        "height": 280
+      },
+      {
+        "type": "paragraph",
+        "text": "如果你的商铺经营指南还没有满，那建议先跟着商铺经营指南做满任务，我们能获取大量的果核，非常利于我们前期开角色的经营特技"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 19",
+        "src": "/static/guide/beginner/getting-started/figure-19.webp",
+        "width": 1588,
+        "height": 770
+      },
+      {
+        "type": "paragraph",
+        "text": "关于雇员的选择，优先选择加人流量的雇员，下面以狗哥和薄荷为例"
+      },
+      {
+        "type": "paragraph",
+        "text": "狗哥是两个加人流量的词条，薄荷是两个加方斯的词条，因为后期(真红满)方斯词条和小时收益的比率约为1:145，人流量和收益的比率约为1:1"
+      },
+      {
+        "type": "paragraph",
+        "text": "所以拉满的狗哥（+45/h）会比薄荷(+43.5/h）多+1.5/h左右的方斯收益"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果你没有真红，那么人流量雇员也会比方斯雇员多+0.07/h的方斯收益(看实际情况，不一定是0.07)"
+      },
+      {
+        "type": "paragraph",
+        "text": "最终收益来源，方斯和人流量肯定是有乘区的，所以上了真红，人流量雇员收益会比方斯雇员收益高很多，因为真红本身给的方斯收益很多，这就稀释了方斯乘区，而如果你没有真红，那么方斯乘区和人流量乘区的差别就会小"
+      },
+      {
+        "type": "paragraph",
+        "text": "总之，有人流量雇员优先上人流量雇员就好，已经拉满了方斯雇员的也没有必要去换，因为差距很小，重新拉一个雇员要56果核和2.2万的方斯，图那零点几的每小时收益，不计果核成本，方斯按1的差值算，回本要22000/1/1.09/24≈841天，没有这个必要"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 20",
+        "src": "/static/guide/beginner/getting-started/figure-20.webp",
+        "width": 1920,
+        "height": 732
+      },
+      {
+        "type": "paragraph",
+        "text": "三词条雇员>两词条雇员，这里以埃德加和狗哥为例，狗哥词条是和店长特供有关的，并不加咖舍收益，而埃德加中间词条为人流量加18，所以拉满埃德加后收益会比狗哥多+18/h的方斯"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 21",
+        "src": "/static/guide/beginner/getting-started/figure-21.webp",
+        "width": 4096,
+        "height": 1395
+      },
+      {
+        "type": "paragraph",
+        "text": "常驻角色中这些都是三词条角色，其中海月优先级>埃德加>哈尼亚，早雾需要看情况"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 22",
+        "src": "/static/guide/beginner/getting-started/figure-22.webp",
+        "width": 702,
+        "height": 176
+      },
+      {
+        "type": "paragraph",
+        "text": "常驻三天王+一念神魔早雾"
+      },
+      {
+        "type": "paragraph",
+        "text": "为什么呢？因为早雾要真红来启动，早雾需要三个相同菜品标签，而当前版本最贵售价菜品为2甜品+2饮料+1主食，强行把1主食换成1饮料给早雾凑词条反而会因为菜品售价降低导致负收益"
+      },
+      {
+        "type": "paragraph",
+        "text": "而如果早雾不触发第5个+0.3方斯的词条，那有效词条只有第1条+0.12方斯，那不就成1词条角色了吗？我为什么不去升其他无条件限制的两词条角色呢？"
+      },
+      {
+        "type": "paragraph",
+        "text": "所以总结下，早雾要在有真红的情况下才能用，没有真红的话可以用其他2词条角色"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 23",
+        "src": "/static/guide/beginner/getting-started/figure-23.webp",
+        "width": 8192,
+        "height": 2828
+      },
+      {
+        "type": "paragraph",
+        "text": "毕业雇员+菜品搭配照抄："
+      },
+      {
+        "type": "paragraph",
+        "text": "当前版本毕业是真红+海月+伊洛伊+埃德加+安魂曲+灵可+哈尼娅+早雾+随意两个人流量词条雇员"
+      },
+      {
+        "type": "paragraph",
+        "text": "菜品选择最贵的3饮料+2甜品"
+      },
+      {
+        "type": "paragraph",
+        "text": "拉满优先级为真红>海月>安魂曲≈伊洛伊=埃德加=灵可>哈尼娅=早雾>随意两个人流量词条雇员"
+      },
+      {
+        "type": "paragraph",
+        "text": "升级优先级为平均加点，因为等级越低，消耗越少，所以优先把所有雇员第1级先全点开，之后点开海月第2级，再点满真红，然后去点第3词条为有效词条的雇员，后面再按拉满优先级全部拉满即可"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 24",
+        "src": "/static/guide/beginner/getting-started/figure-24.webp",
+        "width": 1318,
+        "height": 944
+      },
+      {
+        "type": "paragraph",
+        "text": "如果没有真红就下早雾，换成人流量雇员，然后选最贵的5道菜，也就是2饮料+1主食+2甜品，其他限定金缺也同理，平替成人流量雇员，要注意的是，限定金娜娜莉由于第5词条生效0.3方斯要吃2主食，1饮料换1主食吃不到海月加成亏方斯，1甜品换1主食同样亏方斯，所以娜娜莉拉满是不如正常的2词条角色的，但是娜娜莉第1词条0.2方斯1主食就能吃，和我们最贵的5道菜正好能搭上，所以果核不够的情况下，可以优先点娜娜莉的词条1先过渡"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 25",
+        "src": "/static/guide/beginner/getting-started/figure-25.webp",
+        "width": 1174,
+        "height": 936
+      },
+      {
+        "type": "paragraph",
+        "text": "可以放心的是，未来随着限定金的产出，肯定会再出现很多3有效词条角色，甚至可能会出现颠覆真红的新咖舍搭配，所以不要着急，也没必要为了咖社去刻意补哪个角色，慢慢做日常积累果核，稳步过渡+提升就好"
+      },
+      {
+        "type": "paragraph",
+        "text": "真红：+161/h"
+      },
+      {
+        "type": "paragraph",
+        "text": "海月：+82/h"
+      },
+      {
+        "type": "paragraph",
+        "text": "埃德加：+63/h"
+      },
+      {
+        "type": "paragraph",
+        "text": "哈尼娅：+61/h"
+      },
+      {
+        "type": "paragraph",
+        "text": "2词条人流量雇员：+43/h"
+      },
+      {
+        "type": "paragraph",
+        "text": "我是按照我账号当前情况列的，每个人情况不固定，就拿真红和未来肯定会被踢掉的2词条人流量雇员对比，118*1.09*24*30≈92600，一个月才亏9万方斯，两张刮刮乐的事"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 26",
+        "src": "/static/guide/beginner/getting-started/figure-26.webp",
+        "width": 1318,
+        "height": 944
+      },
+      {
+        "type": "paragraph",
+        "text": "最省钱的装修方案"
+      },
+      {
+        "type": "paragraph",
+        "text": "10个抱扑四人座+7个奶油双人座+18个放空咻"
+      },
+      {
+        "type": "paragraph",
+        "text": "共需132500方斯，可带来1.09的乘算收益，一个月左右可收回成本，之后纯赚"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 27",
+        "src": "/static/guide/beginner/getting-started/figure-27.webp",
+        "width": 1920,
+        "height": 916
+      },
+      {
+        "type": "paragraph",
+        "text": "猎人交易所，我们可以通过方斯在猎人交易所中更换环石，钥匙，养成材料等"
+      },
+      {
+        "type": "paragraph",
+        "text": "其中环石+钥匙+海螺是我认为的必换项，共需253万方斯"
+      },
+      {
+        "type": "paragraph",
+        "text": "其他材料如果缺可以适当地用方斯购买来加速一下进度，不过无梦果核我是非常不推荐购买的"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 28",
+        "src": "/static/guide/beginner/getting-started/figure-28.webp",
+        "width": 1920,
+        "height": 860
+      },
+      {
+        "type": "paragraph",
+        "text": "富爪榜，看你累积获取的方斯数量来和你世界的 npc竞争排榜，达到一定排名可以获得称号奖励，累积获取的方斯数量在1.2版本刮刮乐的假账狂潮中显得很没有含金量，我一开始是冲着赚方斯去的，后面别人问我赚多少，我只是回答刷了一个亿多的假账"
+      },
+      {
+        "type": "paragraph",
+        "text": "现在刮刮乐虽然还在开放，但是已经刷不了假账了，勿碰"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 29",
+        "src": "/static/guide/beginner/getting-started/figure-29.webp",
+        "width": 1580,
+        "height": 900
+      },
+      {
+        "type": "paragraph",
+        "text": "车库，建议是喜欢什么买什么，如果想好好利用资源的话，建议暂时不买，直接抽版本盲盒，塞纳你先等着我吧！"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 30",
+        "src": "/static/guide/beginner/getting-started/figure-30.webp",
+        "width": 1920,
+        "height": 928
+      },
+      {
+        "type": "paragraph",
+        "text": "车队挑战，分为关卡和人机进行对战和与玩家进行对战，关卡对战能够拿星级奖励，有环石，在线对战，你冲段的话也能领环石和称号"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 31",
+        "src": "/static/guide/beginner/getting-started/figure-31.webp",
+        "width": 1604,
+        "height": 720
+      },
+      {
+        "type": "paragraph",
+        "text": "不过是要有好车才能有打关卡和冲段的资格，现在一辆千万级车都没有的我是瑟瑟发抖"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 32",
+        "src": "/static/guide/beginner/getting-started/figure-32.webp",
+        "width": 1908,
+        "height": 874
+      },
+      {
+        "type": "paragraph",
+        "text": "说实话，写这篇攻略前我都没有注意玩家在线对战还能冲段，而且还分赛季制，甚至还有奖励[TapTap表情｜TapFamilyxdoro2_粉狗破防]",
+        "runs": [
+          {
+            "text": "说实话，写这篇攻略前我都没有注意玩家在线对战还能冲段，而且还分赛季制，甚至还有奖励"
+          },
+          {
+            "alt": "[TapTap表情｜TapFamilyxdoro2_粉狗破防]",
+            "src": "/static/guide/beginner/getting-started/emoji-03.gif",
+            "width": 240,
+            "height": 240
+          }
+        ]
+      }
+    ],
+    "currencies": [
+      {
+        "type": "heading",
+        "id": "currency-types",
+        "text": "2.1异环货币讲解"
+      },
+      {
+        "type": "paragraph",
+        "text": "异晶、环石、方斯、失纬棋子、迷迭棋子"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 33",
+        "src": "/static/guide/beginner/getting-started/figure-33.webp",
+        "width": 1124,
+        "height": 224
+      },
+      {
+        "type": "paragraph",
+        "text": "异晶：氪金获得，可1:1兑换环石，同时可购买异晶皮肤和礼包"
+      },
+      {
+        "type": "paragraph",
+        "text": "环石：日常或活动获得，可用于兑换抽卡道具，体力，方斯，抽盲盒"
+      },
+      {
+        "type": "paragraph",
+        "text": "方斯：日常或活动获得，可用于买车买房，买礼物买方斯皮肤，抽盲盒，猎人交易所买抽卡资源和材料"
+      },
+      {
+        "type": "paragraph",
+        "text": "失纬棋子：抽卡衍生物，可用于兑换抽数，常驻角色，方斯，手写信等，但是兑换 UP 抽的性价比最高，不要换别的"
+      },
+      {
+        "type": "paragraph",
+        "text": "迷迭棋子：抽卡衍生物，可用于每个月兑换5抽 UP 5抽常驻和20抽钥匙以及20万方斯，以及兑换一些材料，兑换建议是只换5up>5常驻>20钥匙>20万方斯，萌新玩家大亨等级没有到30，可以换一些捐赠礼盒，多的迷迭棋子建议攒着，因为每个月都要换这些资源，压力并不小"
+      },
+      {
+        "type": "heading",
+        "id": "spending",
+        "text": "2.2氪金建议"
+      },
+      {
+        "type": "paragraph",
+        "text": "简述：氪金是按照你每个月对于异环的预算来看的，不要因为某个月的冲动消费而打乱后面的计划甚至影响日常生活喔"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果大家是月氪几十的平民玩家，那基本上只考虑30元的小月卡就好"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果每个月有百元以上的预算，那就建议稳定开小月卡+68档大月卡/氪双倍异晶买喜欢的皮肤"
+      },
+      {
+        "type": "paragraph",
+        "text": "[TapTap表情｜TapFamilyxdoro2_转圈]",
+        "runs": [
+          {
+            "alt": "[TapTap表情｜TapFamilyxdoro2_转圈]",
+            "src": "/static/guide/beginner/getting-started/emoji-04.gif",
+            "width": 240,
+            "height": 240
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "异环的底层充值就是直接氪异晶了，后面剖析性价比也应该从这个基础上来对比看"
+      },
+      {
+        "type": "paragraph",
+        "text": "异环一开始每个档位都是有双倍充值的(我这边氪了30块，所以说双倍没了)，双倍情况下你的钱包和异晶汇率比为1:20，1块钱可以买到20异晶，1000异晶的花费在50元，一个10连抽1600异晶的花费在80元"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 34",
+        "src": "/static/guide/beginner/getting-started/figure-34.webp",
+        "width": 1664,
+        "height": 814
+      },
+      {
+        "type": "paragraph",
+        "text": "如果你把双倍氪完了，那性价比就会锐减"
+      },
+      {
+        "type": "paragraph",
+        "text": "每个档位获取1000异晶要花费的钱如下所示"
+      },
+      {
+        "type": "paragraph",
+        "text": "6/60*1000=100"
+      },
+      {
+        "type": "paragraph",
+        "text": "30/330*1000≈90.9"
+      },
+      {
+        "type": "paragraph",
+        "text": "98/1090*1000≈89.9"
+      },
+      {
+        "type": "paragraph",
+        "text": "198/2240*1000≈88.4"
+      },
+      {
+        "type": "paragraph",
+        "text": "328/3880*1000≈84.5"
+      },
+      {
+        "type": "paragraph",
+        "text": "648/8080*1000≈80.2"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果要算一个10连抽的花费，那再乘以1.6就好，举例说648档位，获取一个10连抽大概要花80.2*1.6=128.32元"
+      },
+      {
+        "type": "paragraph",
+        "text": "可以看到直接氪金异晶抽卡的花费是很高的，所以异晶我是建议大家用来买喜欢的皮肤"
+      },
+      {
+        "type": "paragraph",
+        "text": "异环每个版本稳定产出至少两个氪金皮肤"
+      },
+      {
+        "type": "paragraph",
+        "text": "上半角色一个328皮肤打底，下半角色一个248皮肤打底，数量只多不少，如果是在当期(刚出皮肤的版本)氪金，会有打折优惠"
+      },
+      {
+        "type": "paragraph",
+        "text": "328皮肤优惠到268，248皮肤优惠到168"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 35",
+        "src": "/static/guide/beginner/getting-started/figure-35.webp",
+        "width": 1596,
+        "height": 432
+      },
+      {
+        "type": "paragraph",
+        "text": "如果你当期有特别喜欢的皮肤，我的建议是直接氪了，毕竟数值会膨胀，后面的角色越来越强，后面她在你号上的出场率只会越来越低，后面再买可能就是"
+      },
+      {
+        "type": "paragraph",
+        "text": "“欲买桂花同载酒，终不似少年游”"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果你已经错过了，那就没有必要再买了，或者说没有必要现在买，因为折扣没了"
+      },
+      {
+        "type": "paragraph",
+        "text": "328皮肤比当期买亏600异晶"
+      },
+      {
+        "type": "paragraph",
+        "text": "248皮肤比当期买亏800异晶"
+      },
+      {
+        "type": "paragraph",
+        "text": "这个情况完全可以等等等等，毕竟后面碰到春节或者是周年庆，我赌一包辣条这些皮肤肯定会再打折的"
+      },
+      {
+        "type": "paragraph",
+        "text": "新玩家的话，现在你直接买了皮肤也没角色用呀"
+      },
+      {
+        "type": "paragraph",
+        "text": "接下来带大家看一下充值礼包之类的性价比，方便大家比对"
+      },
+      {
+        "type": "paragraph",
+        "text": "一切性价比的换算，我会按照"
+      },
+      {
+        "type": "paragraph",
+        "text": "up抽1:160环石"
+      },
+      {
+        "type": "paragraph",
+        "text": "常驻抽1:80环石"
+      },
+      {
+        "type": "paragraph",
+        "text": "方斯1500:1环石"
+      },
+      {
+        "type": "paragraph",
+        "text": "来计算环石价格定位，其余材料礼物装饰等只提及，但是不作计算，以你自身情况为准"
+      },
+      {
+        "type": "paragraph",
+        "text": "（所以实际价格定位比我计算的只多不少）"
+      },
+      {
+        "type": "paragraph",
+        "text": "最后按照无双倍的648档位比例标注相应价值"
+      },
+      {
+        "type": "paragraph",
+        "text": "然后按照相应价值/官方售价计算性价比"
+      },
+      {
+        "type": "paragraph",
+        "text": "“真香”来袭，小月卡(异晶开采凭证)"
+      },
+      {
+        "type": "paragraph",
+        "text": "30块钱可以获得300异晶+2700环石+90万方斯"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果你玩云异环，还能领7天的云畅玩卡"
+      },
+      {
+        "type": "paragraph",
+        "text": "规则是购买后立刻获得300异晶+7天畅玩卡，然后在30天内每天登录获得90环石和3万方斯"
+      },
+      {
+        "type": "paragraph",
+        "text": "方斯和环石的汇率我就按照1500:1来算"
+      },
+      {
+        "type": "paragraph",
+        "text": "那么相当于我们可以获得相当于3300环石的资源+300异晶，最终定位为3600环石"
+      },
+      {
+        "type": "paragraph",
+        "text": "那获得这些资源在无双倍648档位计算的情况下要花288.72元，性价比为288.72/30=9.624"
+      },
+      {
+        "type": "paragraph",
+        "text": "而且手机玩家的话，玩云异环也更舒服，七天畅玩卡的性价比也是很高"
+      },
+      {
+        "type": "paragraph",
+        "text": "最贴心的是，小月卡直接给的是300异晶，而不是300环石，什么概念，就是说你一直开小月卡获取大量资源的同时也不耽误你买皮肤，就单从因为它能给1:1的异晶，性价比就能直接秒杀大月卡"
+      },
+      {
+        "type": "paragraph",
+        "text": "ps：我就是手机玩家，下载的异环画质低还卡，所以有时候为了做活动少用点免费时长，专门为了畅玩卡来续月卡，不过如果你是PC端玩家，那就完全可以忽视这个附加值🤧"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 36",
+        "src": "/static/guide/beginner/getting-started/figure-36.webp",
+        "width": 1274,
+        "height": 706
+      },
+      {
+        "type": "paragraph",
+        "text": "“很香”来袭，大月卡(精锐猎人补给)"
+      },
+      {
+        "type": "paragraph",
+        "text": "68块钱可以买到"
+      },
+      {
+        "type": "paragraph",
+        "text": "680环石+4up抽+2常驻抽+295万方斯+2封手写信+10个海螺+6瓶体力药+一些材料+21天云畅玩卡"
+      },
+      {
+        "type": "paragraph",
+        "text": "大月卡给的东西很多，很杂"
+      },
+      {
+        "type": "paragraph",
+        "text": "我先把大家都能用到的东西来计算下性价比"
+      },
+      {
+        "type": "paragraph",
+        "text": "4up抽=640环石(按1:160环石)"
+      },
+      {
+        "type": "paragraph",
+        "text": "2常驻抽=160环石(按1:80环石)"
+      },
+      {
+        "type": "paragraph",
+        "text": "295万方斯=1966环石(按1500:1环石)"
+      },
+      {
+        "type": "paragraph",
+        "text": "68元你可以买到价值3446环石的资源+很多材料"
+      },
+      {
+        "type": "paragraph",
+        "text": "关于手写信+海螺，一共可以获得8000的好感度，我按照400好感礼物1.5万方斯来算，这些至少值30万方斯"
+      },
+      {
+        "type": "paragraph",
+        "text": "当然，由于手写信不受每日次数限制，官方定价是390异晶1个，要是花钱买礼包，大概是13元一个，但肯定是溢价严重的，因为对于直接拉满好感度的氪佬而言是真的值这么多，但如果你和我一样，是平常送200好感度方斯礼物的平民来说……根本不值这么多"
+      },
+      {
+        "type": "paragraph",
+        "text": "所以这两个礼物我也不算到性价比里面了"
+      },
+      {
+        "type": "paragraph",
+        "text": "然后剩下的一些材料和体力药，更是仁者见仁，智者见智，依旧不记入"
+      },
+      {
+        "type": "paragraph",
+        "text": "看个人需求来换算他在你心中的价值吧"
+      },
+      {
+        "type": "paragraph",
+        "text": "总结下，给到3446环石的定位，换算为276.36元，性价比为4.06"
+      },
+      {
+        "type": "paragraph",
+        "text": "但由于我没有计算礼物和材料的价值，再加上大月卡赠送的云异环时长也要比同价位的小月卡多一些"
+      },
+      {
+        "type": "paragraph",
+        "text": "所以大月卡的性价比大概在小月卡的1/2"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 37",
+        "src": "/static/guide/beginner/getting-started/figure-37.webp",
+        "width": 1920,
+        "height": 940
+      },
+      {
+        "type": "paragraph",
+        "text": "“看情况香”来袭，关于大月卡进阶版的荣誉猎人补给，我的建议是不要买了"
+      },
+      {
+        "type": "paragraph",
+        "text": "多花60块钱才买5个骰子和50万方斯，再加一个手写信和一些装饰，然后多拿21天的畅玩卡"
+      },
+      {
+        "type": "paragraph",
+        "text": "单算骰子和方斯，我只能给到733环石的定位，换算为58.79元，性价比换算为0.98"
+      },
+      {
+        "type": "paragraph",
+        "text": "当然，由于装饰头像名片什么的是大月卡限定的，后面大概率不会返场，再算上手写信，实际价值会比这高"
+      },
+      {
+        "type": "paragraph",
+        "text": "关于大月卡295万方斯是怎么来的，除了升到满级累积给的95万外，升到30级，有一个自选弧盘，里面的弧盘都是大月卡专属但都没有什么用，所以你可以选择200万方斯，这是1.4版本的最新改动，1.4版本之前是没有的，就这200万方斯，成功地给大月卡性价比拉上来了"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 38",
+        "src": "/static/guide/beginner/getting-started/figure-38.webp",
+        "width": 564,
+        "height": 456
+      },
+      {
+        "type": "paragraph",
+        "text": "“很香”来袭，“奇遇单掷礼盒”（6块钱的礼包）"
+      },
+      {
+        "type": "paragraph",
+        "text": "这个礼包每个版本更新刷新一次"
+      },
+      {
+        "type": "paragraph",
+        "text": "给1up 抽+30万方斯"
+      },
+      {
+        "type": "paragraph",
+        "text": "可以给到360环石的定位，换算为28.8元"
+      },
+      {
+        "type": "paragraph",
+        "text": "性价比为4.8"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 39",
+        "src": "/static/guide/beginner/getting-started/figure-39.webp",
+        "width": 1222,
+        "height": 404
+      },
+      {
+        "type": "paragraph",
+        "text": "“有点香”来袭"
+      },
+      {
+        "type": "paragraph",
+        "text": "98块的10个专属up抽，只能抽对应池子，例图中这个只能抽黑羽的池子，但如果你抽数很少，也可以买来专属抽去池子里垫抽"
+      },
+      {
+        "type": "paragraph",
+        "text": "定位给到1600环石，换算为128.32元"
+      },
+      {
+        "type": "paragraph",
+        "text": "性价比为1.3"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 40",
+        "src": "/static/guide/beginner/getting-started/figure-40.webp",
+        "width": 1490,
+        "height": 636
+      },
+      {
+        "type": "paragraph",
+        "text": "30块钱的方斯礼包，能买100万方斯"
+      },
+      {
+        "type": "paragraph",
+        "text": "定位给到666.67环石，换算为53.47元"
+      },
+      {
+        "type": "paragraph",
+        "text": "性价比为1.78"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 41",
+        "src": "/static/guide/beginner/getting-started/figure-41.webp",
+        "width": 1434,
+        "height": 646
+      },
+      {
+        "type": "paragraph",
+        "text": "68块钱的方斯礼包，能买200万方斯"
+      },
+      {
+        "type": "paragraph",
+        "text": "定位给到1333.33环石，换算为106.93元"
+      },
+      {
+        "type": "paragraph",
+        "text": "性价比为1.57"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 42",
+        "src": "/static/guide/beginner/getting-started/figure-42.webp",
+        "width": 1626,
+        "height": 660
+      },
+      {
+        "type": "paragraph",
+        "text": "总结一下"
+      },
+      {
+        "type": "paragraph",
+        "text": "性价比越高越值得购买，“真香”的小月卡如果你氪异环就一定要买，“很香”档位的礼包和68档大月卡也是非常值得氪的，其他的一些礼包，大家按自己的氪金能力和对其需求程度来决定"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果想买异晶皮肤的话，选择直接氪异晶或者续小月卡就好"
+      },
+      {
+        "type": "paragraph",
+        "text": "不过小月卡和大月卡都是有缺点的，一个需要每天登录，另一个需要做任务升级，性价比高的氪金劳动所得啊，如果这两个月卡升不满的话，可以通过我的换算方式根据自己能拿到的资源来计算性价比[TapTap表情｜TapFamilyxdoro2_粉狗思考]",
+        "runs": [
+          {
+            "text": "不过小月卡和大月卡都是有缺点的，一个需要每天登录，另一个需要做任务升级，性价比高的氪金劳动所得啊，如果这两个月卡升不满的话，可以通过我的换算方式根据自己能拿到的资源来计算性价比"
+          },
+          {
+            "alt": "[TapTap表情｜TapFamilyxdoro2_粉狗思考]",
+            "src": "/static/guide/beginner/getting-started/emoji-05.gif",
+            "width": 240,
+            "height": 240
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "type": "heading",
+        "id": "calendar",
+        "text": "3.1版本活动更新规律"
+      },
+      {
+        "type": "paragraph",
+        "text": "关于异环版本活动的更新规律，这时候就要去看官方发布的活动日历了，如下图所示"
+      },
+      {
+        "type": "paragraph",
+        "text": "这也是异环的固定规律，后面版本也通用"
+      },
+      {
+        "type": "paragraph",
+        "text": "一个版本42天，一个版本有两个新up角色，根据两个角色卡池的交替时间分为上半和下半"
+      },
+      {
+        "type": "paragraph",
+        "text": "一个卡池持续21天"
+      },
+      {
+        "type": "paragraph",
+        "text": "每个版本会有10抽的7日签到"
+      },
+      {
+        "type": "paragraph",
+        "text": "每个版本都有开市预演让你试玩角色领环石"
+      },
+      {
+        "type": "paragraph",
+        "text": "版本中还会有持续14天的轨外(不断接替，有些会跨版本)"
+      },
+      {
+        "type": "paragraph",
+        "text": "然后还有一些陆续开放的小活动"
+      },
+      {
+        "type": "paragraph",
+        "text": "新版本上线的前一周，会在周三或者周六开放前瞻直播(时间不固定)，然后会有300环石的前瞻兑换码，有效时间很短，记得去领"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 43",
+        "src": "/static/guide/beginner/getting-started/figure-43.webp",
+        "width": 1920,
+        "height": 3327
+      },
+      {
+        "type": "paragraph",
+        "text": "还有些其他可以超前知道的事情"
+      },
+      {
+        "type": "paragraph",
+        "text": "在版本上半的中旬，官方会陆续爆料下个版本的 UP 角色立绘，这个也有规律，先爆出来的是下个版本的上半卡池角色，后爆出来的是下个版本的下半卡池角色"
+      },
+      {
+        "type": "paragraph",
+        "text": "例如说1.3版本先后爆料的黑羽和明音凛就成了1.4版本的上半和下半"
+      },
+      {
+        "type": "paragraph",
+        "text": "在我写攻略的这段时间里，官方也正好爆料了1.5上半的角色是曳尔沐，再过几天下半是谁也可以知道了"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 44",
+        "src": "/static/guide/beginner/getting-started/figure-44.webp",
+        "width": 1920,
+        "height": 1080
+      },
+      {
+        "type": "paragraph",
+        "text": "迷迭兑换，每个月的月初刷新"
+      },
+      {
+        "type": "paragraph",
+        "text": "兑换优先级up抽>常驻抽>钥匙>方斯>棉花"
+      },
+      {
+        "type": "paragraph",
+        "text": "材料不建议兑换，因为每个月都要换上述内容，这就要花掉2475的棋子，如果换多材料导致不能正循环，得不偿失"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 45",
+        "src": "/static/guide/beginner/getting-started/figure-45.webp",
+        "width": 1636,
+        "height": 740
+      },
+      {
+        "type": "paragraph",
+        "text": "猎人交易所，每个版本一刷新"
+      },
+      {
+        "type": "paragraph",
+        "text": "一定要兑换环石+40抽钥匙+5海螺礼物"
+      },
+      {
+        "type": "paragraph",
+        "text": "总共需要250万左右的方斯"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 46",
+        "src": "/static/guide/beginner/getting-started/figure-46.webp",
+        "width": 1920,
+        "height": 726
+      },
+      {
+        "type": "heading",
+        "id": "version-events",
+        "text": "3.2异环1.4版本活动简述"
+      },
+      {
+        "type": "paragraph",
+        "text": "先带大家看一下异环1.4版本的主推版本活动"
+      },
+      {
+        "type": "paragraph",
+        "text": "噗卡乐园游记，异环1.4版本地图右下角新增了一个噗卡乐园，进入里面我们可以体验游乐园玩法，还能赚噗卡票换环石奖励之类的"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 47",
+        "src": "/static/guide/beginner/getting-started/figure-47.webp",
+        "width": 8192,
+        "height": 7760
+      },
+      {
+        "type": "paragraph",
+        "text": "为什么说这是版本主推活动呢？因为限时奇遇，这个和1.2版本的999夜相似，对了还有1.3版本的排球，过了当时的版本之后，活动还在，但是限时奇遇(限时奖励)没有了"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 48",
+        "src": "/static/guide/beginner/getting-started/figure-48.webp",
+        "width": 1692,
+        "height": 1058
+      },
+      {
+        "type": "paragraph",
+        "text": "很多的游乐园玩法大家自己到乐园里去玩吧，要注意的是，攒够噗卡票之后首先换乐园金卡，这样我们就能花一折方斯体验游乐园项目"
+      },
+      {
+        "type": "paragraph",
+        "text": "然后拉满全部奖励，大概要5万的噗卡票吧，如果懒得玩项目，可以选择连点器在飞镖那里挂机，40分钟1万票，刚开始直接把飞镖全丢出去就可以"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 49",
+        "src": "/static/guide/beginner/getting-started/figure-49.webp",
+        "width": 8192,
+        "height": 7914
+      },
+      {
+        "type": "paragraph",
+        "text": "炭团的宝藏，版本限时活动，这个是需要打怪的，玩法类似塔防，代入角色养成进度"
+      },
+      {
+        "type": "paragraph",
+        "text": "2500积分有称号拿，7200分称号可以升级，结算可以获得花糖，2000花糖就可以搬空商店，如果花糖不够搬空商店后面又不想再打"
+      },
+      {
+        "type": "paragraph",
+        "text": "建议是优先兑换环石>方斯>好感度礼物>所需材料"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 50",
+        "src": "/static/guide/beginner/getting-started/figure-50.webp",
+        "width": 8192,
+        "height": 6910
+      },
+      {
+        "type": "paragraph",
+        "text": "全站深渊，轨外之境爬塔版，这个限时活动是打怪爬塔玩法，总共200层，有升级称号"
+      },
+      {
+        "type": "paragraph",
+        "text": "拿满环石奖励爬30层就可以"
+      },
+      {
+        "type": "paragraph",
+        "text": "拿满方斯奖励爬50层就可以"
+      },
+      {
+        "type": "paragraph",
+        "text": "该玩法同样带入角色养成进度，每爬10层为一轮，这10层里角色掉血了或死亡了是不会重置状态的，也不能更换角色，10层后刷新角色状态"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 51",
+        "src": "/static/guide/beginner/getting-started/figure-51.webp",
+        "width": 8192,
+        "height": 8168
+      },
+      {
+        "type": "paragraph",
+        "text": "黑羽的邀请函，这个活动属于是让正在玩的玩家去拉人，给正在玩的玩家布置了邀请5个回归玩家和邀请3个新人的任务，累计可获得540环石"
+      },
+      {
+        "type": "paragraph",
+        "text": "然后被邀请玩家填写邀请码也可以获得环石"
+      },
+      {
+        "type": "paragraph",
+        "text": "关于新人鉴定师活动资格认定"
+      },
+      {
+        "type": "paragraph",
+        "text": "1.活动期间内注册并创建游戏角色"
+      },
+      {
+        "type": "paragraph",
+        "text": "2.完成正篇剧情序章-上「不虞亦先兆」"
+      },
+      {
+        "type": "paragraph",
+        "text": "(就是推主线)"
+      },
+      {
+        "type": "paragraph",
+        "text": "回归鉴定师活动资格认定"
+      },
+      {
+        "type": "paragraph",
+        "text": "1.连续离线天数≥14天"
+      },
+      {
+        "type": "paragraph",
+        "text": "2.距离上一次激活回归状态≥40天"
+      },
+      {
+        "type": "paragraph",
+        "text": "3.猎人等级≥6级"
+      },
+      {
+        "type": "paragraph",
+        "text": "4.完成正篇剧情序章-下「生意经与招财宝」"
+      },
+      {
+        "type": "paragraph",
+        "text": "解释下回归鉴定师条件2，并通过这个条件来做一下活动攻略“距离上一次激活回归状态≥40天”，它意思是说你填完一次邀请码之后，再离线14天是不算的，必须要大于等于40天，就是为了防止你建一个号重复给大号填邀请码"
+      },
+      {
+        "type": "paragraph",
+        "text": "但实际上我们看黑羽的邀请函是9月24日开始的，40天后是11月3日，而活动是11月5日结束，也就是说，我们版本开始填一次邀请码之后一直不登录这个号，40天后版本要结束的时候还能再填一次邀请码，一号两吃(毕竟版本是42天嘛)"
+      },
+      {
+        "type": "paragraph",
+        "text": "然后我这里大胆做一下推断，邀请活动只在双数版本返场，毕竟上一次是1.2版本的伊波恩合伙人，1.3是没有的，那么1.4之后1.5应该也不会有，等1.6应该会上，而一个版本42天，等1.6我们建的回归号状态又刷新了，所以每次版本我们建的回归号都能吃两次回归奖励"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 52",
+        "src": "/static/guide/beginner/getting-started/figure-52.webp",
+        "width": 1920,
+        "height": 756
+      },
+      {
+        "type": "paragraph",
+        "text": "卜运礼遇，这个活动每个限时UP角色都会有，50累抽保底降落伞，120累抽涂装，200累抽保底角色皮肤"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 53",
+        "src": "/static/guide/beginner/getting-started/figure-53.webp",
+        "width": 1920,
+        "height": 776
+      },
+      {
+        "type": "paragraph",
+        "text": "盲盒「失速狂飙」和盲盒「骏影疾驰」"
+      },
+      {
+        "type": "paragraph",
+        "text": "前者是开服时候的一期保时捷(返场)，后者是这次1.4版本的新盲盒二期保时捷"
+      },
+      {
+        "type": "paragraph",
+        "text": "一个是一辆车带一个皮肤，另一个是两辆车"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 54",
+        "src": "/static/guide/beginner/getting-started/figure-54.webp",
+        "width": 1878,
+        "height": 806
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 55",
+        "src": "/static/guide/beginner/getting-started/figure-55.webp",
+        "width": 1920,
+        "height": 754
+      },
+      {
+        "type": "paragraph",
+        "text": "然后保时捷俱乐部会有特权(拥有相应保时捷后就可获得)"
+      },
+      {
+        "type": "paragraph",
+        "text": "918(白车)是给动力增幅（提速度用的）"
+      },
+      {
+        "type": "paragraph",
+        "text": "911(绿车)是给三辆车的涂装(皮肤)"
+      },
+      {
+        "type": "paragraph",
+        "text": "Taycan GT(紫车)是给名片、手机壳、装扮之类的"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 56",
+        "src": "/static/guide/beginner/getting-started/figure-56.webp",
+        "width": 1540,
+        "height": 908
+      },
+      {
+        "type": "paragraph",
+        "text": "如果你只看性能的话，抽918就对了，毕竟给改装件，总之喜欢什么抽什么就好"
+      },
+      {
+        "type": "paragraph",
+        "text": "关于价格，两个盲盒拉满都是1988万方斯或12980环石，具体可对应下表查看"
+      },
+      {
+        "type": "paragraph",
+        "text": "越往后用环石越值，因为兑换方斯的比率会越高，然后越往后抽也越贵，一定要做好保底的打算，要么不下池，下池就一定要抽出来，不然就是血本无归，以后不一定会返场了"
+      },
+      {
+        "type": "paragraph",
+        "text": "不过前面几抽便宜，试试运气也未尝不可，如果没有保底抽出的打算，9抽之后就不要再抽了"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 57",
+        "src": "/static/guide/beginner/getting-started/figure-57.webp",
+        "width": 505,
+        "height": 646
+      }
+    ],
+    "wishes": [
+      {
+        "type": "heading",
+        "id": "character-selection",
+        "text": "4.1角色自选"
+      },
+      {
+        "type": "paragraph",
+        "text": "推荐选择，早雾，达芙蒂尔、九原"
+      },
+      {
+        "type": "paragraph",
+        "text": "其他角色目前是不推荐选的，推荐选择的角色中早雾1命就可以，达芙蒂尔玩倾陷2命就够用，4命完全体，九原有本体就行"
+      },
+      {
+        "type": "paragraph",
+        "text": "在推荐选择的角色中，你如果达到了上述要求，那么就可以换其他角色，或留着备用了"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 58",
+        "src": "/static/guide/beginner/getting-started/figure-58.webp",
+        "width": 1080,
+        "height": 658
+      },
+      {
+        "type": "paragraph",
+        "text": "早雾优先级不必多说，如果你都没有的话，早雾优先级是最高的，早雾是下三环的聚怪增伤辅助，开大能提升全队攻击力加成，早雾的被动还能提升浊燃伤害是dot队的核心机制，然后能和灵属性打覆纹，前期开荒早雾+哈尼娅还能二拐一，泛用性非常高"
+      },
+      {
+        "type": "paragraph",
+        "text": "补命座方面，如果不打算选其他角色，建议点早雾的四觉"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 59",
+        "src": "/static/guide/beginner/getting-started/figure-59.webp",
+        "width": 2160,
+        "height": 2560
+      },
+      {
+        "type": "paragraph",
+        "text": "达芙蒂尔在你没有安魂曲的情况下，可以凭借暗属性进队来打dot，如果有点出五觉的残虹，达芙蒂尔还能进队打倾陷，如果是玩倾陷队的话建议给达芙蒂尔补到二命，点出三觉和五觉，完全体是四命，点出命座3542"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 60",
+        "src": "/static/guide/beginner/getting-started/figure-60.webp",
+        "width": 2160,
+        "height": 2560
+      },
+      {
+        "type": "paragraph",
+        "text": "九原是上三环的聚怪副c，用来前期聚怪打深渊过渡之类的会非常舒服，不过目前九原已经被伊洛伊平替掉，如果有伊洛伊的话，就不建议选九原了，或者你想要体验创生花队，那么九原+伊洛伊+娜娜莉+主角，可以考虑自选九原"
+      },
+      {
+        "type": "paragraph",
+        "text": "九原的命座是不建议选的，有个本体就可以，如果已经有九原了，建议把自选留给其他角色"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 61",
+        "src": "/static/guide/beginner/getting-started/figure-61.webp",
+        "width": 2160,
+        "height": 2560
+      },
+      {
+        "type": "paragraph",
+        "text": "最后，如果你常驻池如果快要保底了，那么建议等出货之后再考虑下一步怎么走"
+      },
+      {
+        "type": "heading",
+        "id": "character-pulls",
+        "text": "4.2角色抽取讲解"
+      },
+      {
+        "type": "paragraph",
+        "text": "异环的角色卡池分为三种"
+      },
+      {
+        "type": "paragraph",
+        "text": "新 UP 池，复刻 UP 池，还有常驻池"
+      },
+      {
+        "type": "paragraph",
+        "text": "例下图新up黑羽，复刻up安魂曲"
+      },
+      {
+        "type": "paragraph",
+        "text": "新up的强度都是高于老up的，如果你是强度党，那就无脑抽个黑羽好了，新手开荒也能玩得很舒服，而且用途广泛，抽高命座就要慎重考虑下了，异环3+1我是建议给再后面的纯血主c，以后出的类似真红、残红这种角色"
+      },
+      {
+        "type": "paragraph",
+        "text": "黑羽是带点拐，又带点主c，不够专一"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 62",
+        "src": "/static/guide/beginner/getting-started/figure-62.webp",
+        "width": 1920,
+        "height": 924
+      },
+      {
+        "type": "paragraph",
+        "text": "UP 池之间的抽数保底计算都是共享的，但是棋盘礼遇中的累抽奖励（车皮和时装这些）是单独计算的，你在哪个池子里抽就算到哪个池子里"
+      },
+      {
+        "type": "paragraph",
+        "text": "教一下抽时装玩法"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果说想抽这个池子的皮肤，但是又想要另一个池子的角色，首先如果进入左边拐角，那就用想要皮肤的池子来抽，有抽到皮肤的可能，然后抽卡的时候，前50抽都可以用想要皮肤的池子来垫，50抽往后再转要角色的池子这样垫抽，不过都是不太稳定，吃运气，想垫到200保底也很难，基本都是要进入左边拐角提前出"
+      },
+      {
+        "type": "paragraph",
+        "text": "所以想抽时装也可以考虑攒抽直接搞3+1，3命要4个角色，准备200抽，正好到时装保底，而且3+1玩起来会比平铺舒服"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果当期的皮肤你没有喜欢的，但想要个角色 那就只捞角色好了，不要垫抽，攒着抽数给到有喜欢皮肤的角色池子"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 63",
+        "src": "/static/guide/beginner/getting-started/figure-63.webp",
+        "width": 1920,
+        "height": 934
+      },
+      {
+        "type": "paragraph",
+        "text": "然后异环角色的专武是弧盘，在这里抽取，只能10连抽，不能单抽，记得要点进去看具体是哪个角色的专武，不要抽错了，一般都是左边为新 UP专武，右边为复刻 UP专武"
+      },
+      {
+        "type": "paragraph",
+        "text": "对了，你要知道的是，异环虽然角色不歪，但弧盘还是会歪的，你出的S级弧盘有25%的概率是当期up，不过80抽大保底是不会歪的"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 64",
+        "src": "/static/guide/beginner/getting-started/figure-64.webp",
+        "width": 1856,
+        "height": 500
+      },
+      {
+        "type": "paragraph",
+        "text": "关于异环，我是建议0+0或0+1平铺的，如果环石不够平铺可以跳一抽一，选喜欢的，如果是一命座比较强的主C，那可以1+1，因为异环没有什么数值焦虑，而且这样平铺可以把每个喜欢的角色都收集到，配的队多，玩法也多"
+      },
+      {
+        "type": "paragraph",
+        "text": "目前我全平铺也能随便打通轨外和版本活动的环石奖励，缺点只有那种高难称号凹不到，但我也根本不想凹，投入大量时间精力搞个只能用来装的称号，那还是算了吧……"
+      },
+      {
+        "type": "paragraph",
+        "text": "当然，3+1、6+1这种也是很爽，打伤害确实高，但你真的也得忍很长一段时间，也要跳很多角色，大家根据自身情况选择平铺或者攒高命吧"
+      },
+      {
+        "type": "paragraph",
+        "text": "[TapFamily庆生-万物皆可联动_躺]",
+        "runs": [
+          {
+            "alt": "[TapFamily庆生-万物皆可联动_躺]",
+            "src": "/static/guide/beginner/getting-started/emoji-06.gif",
+            "width": 240,
+            "height": 240
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "id": "resource-use",
+        "text": "4.3方斯和环石的使用"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果你想要角色又想要盲盒"
+      },
+      {
+        "type": "paragraph",
+        "text": "那一定要按照下面说的来"
+      },
+      {
+        "type": "paragraph",
+        "text": "1.钥匙不够宁愿0+0不要专武"
+      },
+      {
+        "type": "paragraph",
+        "text": "环石不要大量用于抽弧盘池，如果只差一点而且角色刚需弧盘才可以适当补"
+      },
+      {
+        "type": "paragraph",
+        "text": "（钥匙优先抽主c弧盘，如果要抽的主c上线时钥匙在60以下就不要辅助弧盘了）"
+      },
+      {
+        "type": "paragraph",
+        "text": "2.买常驻车房先放一放，方斯优先用于版本限时盲盒，等到不喜欢的盲盒版本再利用富余方斯买喜欢的常驻车房"
+      },
+      {
+        "type": "paragraph",
+        "text": "3.环石只用于盲盒的最后几抽和up池"
+      }
+    ],
+    "closing": [
+      {
+        "type": "paragraph",
+        "text": "错估了自己的实力，也错估了写超长帖的难度，本来是打算在国庆第1天写完发布的，没想到会写到4号，这国庆假期都快结束了"
+      },
+      {
+        "type": "image",
+        "alt": "攻略配图 65",
+        "src": "/static/guide/beginner/getting-started/figure-65.webp",
+        "width": 562,
+        "height": 360
+      },
+      {
+        "type": "paragraph",
+        "text": "写这篇帖子也遭受了很多挫折，忘记保存了一次，导致重新码字40分钟，保存失败了两次，后面才知道是字符超过tap上限了(因为我发布的时候也失败了，这时给了提示)，有些东西没有写出来，有些遗憾吧"
+      },
+      {
+        "type": "paragraph",
+        "text": "最后，如果这篇帖子能够帮助到你我将非常开心，也希望你能给我点个赞或关注，要是能填一下我的邀请码就更好不过了哈哈"
+      },
+      {
+        "type": "paragraph",
+        "text": "[TapTap表情｜TapFamilyxdoro2_粉狗比心]",
+        "runs": [
+          {
+            "alt": "[TapTap表情｜TapFamilyxdoro2_粉狗比心]",
+            "src": "/static/guide/beginner/getting-started/emoji-07.gif",
+            "width": 240,
+            "height": 240
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "祝大家都能抽出自己想要的角色和盲盒，不要碰刮刮乐喔！"
+      }
+    ]
+  },
+  {
+    "id": "damage-mechanics",
+    "name": "异环数据机制导论",
+    "description": "异环伤害乘区、环合、倾陷、终结能量与渔获等数据机制攻略。正文与图表全部展开，保留作者观点和附表链接。",
+    "author": "666bj",
+    "article_url": "https://bbs.nga.cn/read.php?tid=46659382",
+    "intro": [
+      {
+        "type": "paragraph",
+        "text": "各位好，这里是 666bj。最近几天研究了一下异环目前游戏的伤害乘区以及数值设计，本文是一些初步结论与各位分享：",
+        "runs": [
+          {
+            "text": "各位好，这里是 666bj。最近几天研究了一下异环目前游戏的伤害乘区以及数值设计，本文是一些初步结论与各位分享：",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "为简化起见，本文并不包含复杂的数学推导，相信各位只要在阅读本文前对异环的战斗系统有一些简单的了解即可顺利阅读。本文是指南性质，因此笔者会对一些内容做额外的阐述。",
+        "runs": [
+          {
+            "text": "为简化起见，本文并不包含复杂的数学推导，相信各位只要在阅读本文前对异环的战斗系统有一些简单的了解即可顺利阅读。本文是指南性质，因此笔者会对一些内容做额外的阐述。",
+            "color": "blue"
+          }
+        ]
+      }
+    ],
+    "chapter_titles": {
+      "intro": "前言",
+      "regular_damage": "PART 01 常规伤害",
+      "harmony": "PART 02 环合",
+      "stagger": "PART 03 倾陷",
+      "other_mechanics": "PART 04 其他数据机制",
+      "appendices": "PART 05 附表"
+    },
+    "regular_damage": [
+      {
+        "type": "formula",
+        "text": "常规伤害= 基础伤害区* 增伤区* 暴击区* 防御区* 抗性区* 浸染易伤区* 最终增伤区* 特殊乘区",
+        "runs": [
+          {
+            "text": "常规伤害= 基础伤害区* 增伤区* 暴击区* 防御区* 抗性区* 浸染易伤区* 最终增伤区* 特殊乘区",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "常规伤害乘区不仅适用于角色对敌人造成伤害，也适用于敌人对角色造成伤害。目前游戏中，伤害的显示是向下取整的。游戏默认的伤害上限为 9999999。"
+      },
+      {
+        "type": "paragraph",
+        "text": "联机会影响敌人的属性："
+      },
+      {
+        "type": "paragraph",
+        "text": "1/2/3/4 人联机，敌人生命上限 1/1.75/2.5/3.25 倍，攻击力 1/1.2/1.4/1.6 倍，倾陷值上限 1/2/3/4 倍。"
+      },
+      {
+        "type": "heading",
+        "text": "1.1'基础伤害区'",
+        "id": "base-damage"
+      },
+      {
+        "type": "formula",
+        "text": "基础伤害区= Σ(伤害倍率* 对应属性)+ 额外伤害值",
+        "runs": [
+          {
+            "text": "基础伤害区= Σ(伤害倍率* 对应属性)+ 额外伤害值",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "text": "1.1.1'伤害倍率'",
+        "id": "multipliers"
+      },
+      {
+        "type": "paragraph",
+        "text": "通常情况下，游戏中造成的伤害基于攻击者的攻击，即对应属性为攻击。"
+      },
+      {
+        "type": "paragraph",
+        "text": "在本作中，对于一个技能伤害，其伤害倍率默认分攻击倍率、生命上限倍率和防御倍率三种，其中大部分伤害的生命上限倍率和防御力倍率默认置空，而其他游戏大多默认采用攻击倍率，生命上限倍率和防御倍率需要额外标注，这点略有不同。"
+      },
+      {
+        "type": "paragraph",
+        "text": "角色技能的伤害倍率可以在面板中直接查阅，并且这部分面板显示的数值就是精确的，这里就不做赘述。"
+      },
+      {
+        "type": "paragraph",
+        "text": "敌人技能的伤害倍率大部分较为整齐，但也有少部分小数位数较多的。"
+      },
+      {
+        "type": "paragraph",
+        "text": "游戏中一部分效果会提升角色的伤害倍率，此时："
+      },
+      {
+        "type": "formula",
+        "text": "伤害倍率= 原始倍率* (1+ 提升率)",
+        "runs": [
+          {
+            "text": "伤害倍率= 原始倍率* (1+ 提升率)",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "角色攻击的计算公式默认如下："
+      },
+      {
+        "type": "formula",
+        "text": "攻击=( 角色基础攻击+ 武器基础攻击)* (1+ 攻击百分比加成)+ 攻击固定值加成",
+        "runs": [
+          {
+            "text": "攻击=( 角色基础攻击+ 武器基础攻击)* (1+ 攻击百分比加成)+ 攻击固定值加成",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "类似地，对于角色的生命上限和防御："
+      },
+      {
+        "type": "formula",
+        "text": "生命上限= 角色基础生命上限* (1+ 生命百分比加成)+ 生命固定值加成",
+        "runs": [
+          {
+            "text": "生命上限= 角色基础生命上限* (1+ 生命百分比加成)+ 生命固定值加成",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "防御力= 角色基础防御* (1+ 防御百分比加成)+ 防御固定值加成",
+        "runs": [
+          {
+            "text": "防御力= 角色基础防御* (1+ 防御百分比加成)+ 防御固定值加成",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "这几个属性在面板上的显示也是向下取整的。"
+      },
+      {
+        "type": "paragraph",
+        "text": "好在角色的基础攻击力、基础生命上限、基础防御和武器的基础攻击力都是整数，因此这部分计算时要修正误差因素时一般只需考虑百分比加成。"
+      },
+      {
+        "type": "heading",
+        "text": "1.1.2'额外伤害值'",
+        "id": "extra-damage"
+      },
+      {
+        "type": "paragraph",
+        "text": "额外伤害值即一部分不直接依赖于角色的攻击力、生命上限和防御力使伤害得到固定值提升的效果，目前仅出现在小吱'金谷'的效果中，这包括两种情况："
+      },
+      {
+        "type": "paragraph",
+        "text": "其一为处于'盈余'状态时，'变轨技能：粉爪在上原则'每段根据小吱持有的'金谷'数造成额外伤害，此时："
+      },
+      {
+        "type": "formula",
+        "text": "额外伤害值= 每个'金谷'额外伤害值* 持有'金谷'数",
+        "runs": [
+          {
+            "text": "额外伤害值= 每个'金谷'额外伤害值* 持有'金谷'数",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "其二为'变轨技能：半仓'期间每段攻击消耗'金谷'造成额外伤害，此时："
+      },
+      {
+        "type": "formula",
+        "text": "额外伤害值= 消耗每个'金谷'额外伤害值* 当段攻击消耗'金谷'数",
+        "runs": [
+          {
+            "text": "额外伤害值= 消耗每个'金谷'额外伤害值* 当段攻击消耗'金谷'数",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "小吱可持有的'金谷'上限和普通攻击、长按分支等获取的'金谷'数都是基于其等级成长的曲线，具体数值如下："
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-01.webp",
+        "alt": "数据机制图表 1",
+        "width": 1081,
+        "height": 694
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-02.webp",
+        "alt": "数据机制图表 2",
+        "width": 1081,
+        "height": 694
+      },
+      {
+        "type": "heading",
+        "text": "1.2'增伤区'",
+        "id": "damage-bonus"
+      },
+      {
+        "type": "formula",
+        "text": "增伤区= 1+ 通用伤害增强+ 伤害类型伤害增强+ 伤害来源伤害增强+ 其他伤害增强- 造成伤害降低",
+        "runs": [
+          {
+            "text": "增伤区= 1+ 通用伤害增强+ 伤害类型伤害增强+ 伤害来源伤害增强+ 其他伤害增强- 造成伤害降低",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "增伤区包含游戏中绝大多数描述为伤害增强、伤害强化、伤害提升和伤害加成的效果，但是按本游戏术语，最标注的描述词是“伤害增强”。"
+      },
+      {
+        "type": "paragraph",
+        "text": "属性异能伤害增强和心灵伤害增强是伤害类型伤害增强的两种不同类型，游戏中目前共包含 6 种异能属性：Cosmos：光；Nature：灵；Chaos：暗；Psyche：魂；Lakshana：相；Incantation：咒，以及不属于异能属性的 Psychically：心灵、Normal：普通和 True：真实。",
+        "runs": [
+          {
+            "text": "属性异能伤害增强和心灵伤害增强是"
+          },
+          {
+            "text": "伤害类型伤害增强",
+            "color": "purple"
+          },
+          {
+            "text": "的两种不同类型，游戏中目前共包含 6 种异能属性：Cosmos：光；Nature：灵；Chaos：暗；Psyche：魂；Lakshana：相；Incantation：咒，以及不属于异能属性的 Psychically：心灵、Normal：普通和 True：真实。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "注：普通伤害为汽车碰撞和跳车伤害等不具备属性的伤害，一些敌人也可能造成普通伤害。心灵伤害无视防御，真实伤害无视绝大部分乘区。目前游戏中，除黯星外，仅法帝娅的极轨终结可以造成心灵伤害。"
+      },
+      {
+        "type": "paragraph",
+        "text": "技能伤害增强是伤害来源伤害增强的一种，目前游戏中的伤害来源分类包括普通攻击、变轨技能、极轨终结、援护技、下落攻击、极限反击、Buff 伤害、弧盘伤害、被动伤害、环合伤害和无来源伤害等。",
+        "runs": [
+          {
+            "text": "技能伤害增强是"
+          },
+          {
+            "text": "伤害来源伤害增强",
+            "color": "purple"
+          },
+          {
+            "text": "的一种，目前游戏中的伤害来源分类包括普通攻击、变轨技能、极轨终结、援护技、下落攻击、极限反击、Buff 伤害、弧盘伤害、被动伤害、环合伤害和无来源伤害等。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "其他的提升特定技能造成的伤害或者未注明伤害加成类型的效果也基本属于该乘区。"
+      },
+      {
+        "type": "paragraph",
+        "text": "'囿巢鸟'：装备者释放'极轨终结'命中的敌人会被赋予标记'警告视线'，被标记的敌人造成的伤害降低 18%/21%/24%/27%/30%，持续 20 秒，该效果不可叠加。"
+      },
+      {
+        "type": "paragraph",
+        "text": "核心锚定：激活后，将为范围内生命值上限最高的目标附加持续 30 秒的'怒火'标记。被'怒火'标记的敌人造成的伤害降低 30%，同时队伍成员对其造成的伤害提升 30%。"
+      },
+      {
+        "type": "paragraph",
+        "text": "以上两种使敌人造成伤害降低的效果也属于该乘区。",
+        "runs": [
+          {
+            "text": "以上两种使敌人"
+          },
+          {
+            "text": "造成伤害降低",
+            "color": "purple"
+          },
+          {
+            "text": "的效果也属于该乘区。"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "text": "1.3'暴击区'",
+        "id": "critical"
+      },
+      {
+        "type": "paragraph",
+        "text": "已知："
+      },
+      {
+        "type": "formula",
+        "text": "暴击区= 1+ 暴击伤害，暴击时",
+        "runs": [
+          {
+            "text": "暴击区= 1+ 暴击伤害，暴击时",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "暴击区= 1，未暴击时",
+        "runs": [
+          {
+            "text": "暴击区= 1，未暴击时",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "由此可得："
+      },
+      {
+        "type": "formula",
+        "text": "暴击期望=( 1+ 暴击伤害)* 暴击率+ 1*( 1- 暴击率)= 1+ 暴击率* 暴击伤害",
+        "runs": [
+          {
+            "text": "暴击期望=( 1+ 暴击伤害)* 暴击率+ 1*( 1- 暴击率)= 1+ 暴击率* 暴击伤害",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "角色的基础暴击率为 5%，基础暴击伤害为 50%；敌人的基础暴击率和基础暴击伤害默认为 0。"
+      },
+      {
+        "type": "paragraph",
+        "text": "游戏中的一些伤害会采用固定暴击率，这通常是持续伤害，如'浊燃'伤害、阿德勒变轨技能的持续伤害、安魂曲的'噩梦'伤害和白藏的'判予秋'持续伤害暴击率固定为 50%。"
+      },
+      {
+        "type": "heading",
+        "text": "1.4'防御区'",
+        "id": "defense"
+      },
+      {
+        "type": "formula",
+        "text": "防御区= 1，当伤害为心灵伤害；",
+        "runs": [
+          {
+            "text": "防御区= 1，当伤害为心灵伤害；",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "防御区= 攻击方等级基数/( 受击方有效防御+ 攻击方等级基数)，当受击方有效防御≥0。",
+        "runs": [
+          {
+            "text": "防御区= 攻击方等级基数/( 受击方有效防御+ 攻击方等级基数)，当受击方有效防御≥0。",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "攻击方等级基数= 600+ 6* 攻击方等级",
+        "runs": [
+          {
+            "text": "攻击方等级基数= 600+ 6* 攻击方等级",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "受击方有效防御= [受击方基础防御* (1+ 受击方防御提升- 受击方防御降低)+ 受击方防御力固定值加成]* (1- 攻击方无视防御)",
+        "runs": [
+          {
+            "text": "受击方有效防御= [受击方基础防御* (1+ 受击方防御提升- 受击方防御降低)+ 受击方防御力固定值加成]* (1- 攻击方无视防御)",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "通常敌人不会有防御提升的效果，因此角色攻击敌人时："
+      },
+      {
+        "type": "formula",
+        "text": "敌人有效防御= 敌人基础防御* (1- 敌人防御降低)* (1- 角色无视防御)",
+        "runs": [
+          {
+            "text": "敌人有效防御= 敌人基础防御* (1- 敌人防御降低)* (1- 角色无视防御)",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "通常情况中，敌人的基础防御可以直接由等级计算："
+      },
+      {
+        "type": "formula",
+        "text": "敌人基础防御= 600+ 6* 敌人等级",
+        "runs": [
+          {
+            "text": "敌人基础防御= 600+ 6* 敌人等级",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "但实际上游戏中敌人的属性都是单独设置的，如果实际情况与此不符也属正常情况。"
+      },
+      {
+        "type": "paragraph",
+        "text": "例如轨外之境中敌人的基础防御就采用了比其等级低 10 级的数值，即："
+      },
+      {
+        "type": "formula",
+        "text": "轨外之境的敌人基础防御= 540+ 6* 敌人等级",
+        "runs": [
+          {
+            "text": "轨外之境的敌人基础防御= 540+ 6* 敌人等级",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "如果仅考虑角色对敌人造成伤害，则通常情况下："
+      },
+      {
+        "type": "formula",
+        "text": "敌人防御区= (100+ 角色等级)/ [(100+ 敌人等级)* (1- 防御降低)* (1- 无视防御)+ (100+ 角色等级)]",
+        "runs": [
+          {
+            "text": "敌人防御区= (100+ 角色等级)/ [(100+ 敌人等级)* (1- 防御降低)* (1- 无视防御)+ (100+ 角色等级)]",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "在轨外之境中："
+      },
+      {
+        "type": "formula",
+        "text": "敌人防御区= (100+ 角色等级)/ [(90+ 敌人等级)* (1- 防御降低)* (1- 无视防御)+ (100+ 角色等级)]",
+        "runs": [
+          {
+            "text": "敌人防御区= (100+ 角色等级)/ [(90+ 敌人等级)* (1- 防御降低)* (1- 无视防御)+ (100+ 角色等级)]",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "text": "1.5'抗性区'",
+        "id": "resistance"
+      },
+      {
+        "type": "paragraph",
+        "text": "经过测试，抗性区为一分段函数，判断为有理函数，具体分三段："
+      },
+      {
+        "type": "formula",
+        "text": "抗性区= 1/( 6.25* 有效抗性- 1.25)，当有效抗性>0.6；",
+        "runs": [
+          {
+            "text": "抗性区= 1/( 6.25* 有效抗性- 1.25)，当有效抗性>0.6；",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "抗性区= 1- 有效抗性，当0≤有效抗性≤0.6；",
+        "runs": [
+          {
+            "text": "抗性区= 1- 有效抗性，当0≤有效抗性≤0.6；",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "抗性区= 1- 有效抗性/( 1- 有效抗性)；当有效抗性<0。",
+        "runs": [
+          {
+            "text": "抗性区= 1- 有效抗性/( 1- 有效抗性)；当有效抗性<0。",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-03.webp",
+        "alt": "数据机制图表 3",
+        "width": 1600,
+        "height": 1000
+      },
+      {
+        "type": "formula",
+        "text": "有效抗性= 原始抗性- 无视抗性- 抗性降低",
+        "runs": [
+          {
+            "text": "有效抗性= 原始抗性- 无视抗性- 抗性降低",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "抗性基于异能属性、心灵和普通，默认情况下，敌人具有 20%的全异能属性伤害抗性、心灵伤害抗性和普通伤害抗性。部分敌人的伤害抗性可能为 28%。"
+      },
+      {
+        "type": "paragraph",
+        "text": "敌人对弱点属性的抗性会降低，默认情况下为 10%或 16%，但在副本中多是 0。"
+      },
+      {
+        "type": "paragraph",
+        "text": "注：阿德勒环合天赋“属性抗性降低 10%”也可以降低心灵伤害抗性和普通伤害抗性。"
+      },
+      {
+        "type": "paragraph",
+        "text": "由于不同位置、副本中相同敌人的属性也都是单独设置的，确定敌人抗性的最好方式是查表，具体相关数据可以参阅文末附表。"
+      },
+      {
+        "type": "paragraph",
+        "text": "即使是同种敌人在轨外之境中抗性也可能差异很大，因此在本游戏中想通过敌人类型直接判断抗性是几乎不可能的。"
+      },
+      {
+        "type": "heading",
+        "text": "1.6'浸染易伤区'",
+        "id": "vulnerability"
+      },
+      {
+        "type": "formula",
+        "text": "浸染易伤区= 1.2* 环合强度系数",
+        "runs": [
+          {
+            "text": "浸染易伤区= 1.2* 环合强度系数",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "目前游戏中，异能环合-浸染的效果可以使目标受到魂属性和相属性伤害时，所受伤害量提升，基础数值为 20%，实际数值可以被环合强度增幅，综合算法如上。"
+      },
+      {
+        "type": "paragraph",
+        "text": "本乘区的参数是直接以浸染命名的，因此几乎不可能再有其他应用于本乘区的效果。"
+      },
+      {
+        "type": "heading",
+        "text": "1.7'最终增伤区'",
+        "id": "final-bonus"
+      },
+      {
+        "type": "formula",
+        "text": "最终增伤区= 1+ 最终伤害提升",
+        "runs": [
+          {
+            "text": "最终增伤区= 1+ 最终伤害提升",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "最终增伤指一些使角色伤害提升但不属于增伤区的效果："
+      },
+      {
+        "type": "paragraph",
+        "text": "早雾天赋'浊燃'强化的效果："
+      },
+      {
+        "type": "paragraph",
+        "text": "'浊燃'状态下，目标身上每有一种持续伤害状态，受到的持续伤害提升 25%，上限提升 100%。持续伤害是一种伤害的状态标签。'浊燃'伤害亦属于持续伤害，因此效果可以增益'浊燃'伤害。注意九原的'致命玫约'虽然随时间造成伤害，但是其不属于持续伤害。"
+      },
+      {
+        "type": "paragraph",
+        "text": "阿德勒变轨技能'诛恶护持'消耗全部'业'使技能伤害提升的效果也属于该乘区。"
+      },
+      {
+        "type": "paragraph",
+        "text": "对于特殊乘区，目前游戏中暂未有具体实例，此处不做展开。不同来源的特殊乘区通常情况下都是各自独立乘算的。"
+      }
+    ],
+    "harmony": [
+      {
+        "type": "formula",
+        "text": "环合伤害= 环合基础伤害* 环合强度区* 暴击区* 防御区* 抗性区* 浸染易伤区* 最终增伤区* 特殊乘区",
+        "runs": [
+          {
+            "text": "环合伤害= 环合基础伤害* 环合强度区* 暴击区* 防御区* 抗性区* 浸染易伤区* 最终增伤区* 特殊乘区",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "text": "2.1'异能环合'",
+        "id": "harmony-overview"
+      },
+      {
+        "type": "paragraph",
+        "text": "一般情况下，角色在战斗中造成伤害时会累积当前角色的'环合值'；'环合值'充满时，队伍中能与该角色发生'异能环合'的角色头像会有特殊显示。",
+        "runs": [
+          {
+            "text": "一般情况下，角色在战斗中造成伤害时会累积当前角色的"
+          },
+          {
+            "text": "'环合值'",
+            "color": "red"
+          },
+          {
+            "text": "；"
+          },
+          {
+            "text": "'环合值'",
+            "color": "red"
+          },
+          {
+            "text": "充满时，队伍中能与该角色发生"
+          },
+          {
+            "text": "'异能环合'",
+            "color": "red"
+          },
+          {
+            "text": "的角色头像会有特殊显示。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "当前场上角色'环合值'充满时，切换能够与之发生'异能环合'的角色，入场角色会释放'入轨攻击'(援护技)并清空上一位角色的'环合值'；如果入场角色使用的'入轨攻击'命中了敌人则会根据两角色的属性触发对应'异能环合'效果。",
+        "runs": [
+          {
+            "text": "当前场上角色"
+          },
+          {
+            "text": "'环合值'",
+            "color": "red"
+          },
+          {
+            "text": "充满时，切换能够与之发生"
+          },
+          {
+            "text": "'异能环合'",
+            "color": "red"
+          },
+          {
+            "text": "的角色，入场角色会释放"
+          },
+          {
+            "text": "'入轨攻击'",
+            "color": "red"
+          },
+          {
+            "text": "(援护技)并清空上一位角色的"
+          },
+          {
+            "text": "'环合值'",
+            "color": "red"
+          },
+          {
+            "text": "；如果入场角色使用的"
+          },
+          {
+            "text": "'入轨攻击'",
+            "color": "red"
+          },
+          {
+            "text": "命中了敌人则会根据两角色的属性触发对应"
+          },
+          {
+            "text": "'异能环合'",
+            "color": "red"
+          },
+          {
+            "text": "效果。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "下面列出了目前游戏中存在的各种'异能环合'：",
+        "runs": [
+          {
+            "text": "下面列出了目前游戏中存在的各种"
+          },
+          {
+            "text": "'异能环合'",
+            "color": "red"
+          },
+          {
+            "text": "："
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "延滞：触发异能环合后的 5 秒内，目标进入延滞状态，移动及攻击速度降低，并随时间逐渐复原。如频繁进入延滞状态，目标恢复至常态的速度将会加快。属性要求：光、相。"
+      },
+      {
+        "type": "paragraph",
+        "text": "创生：触发异能环合后，目标附近将诞生 1 株'创生株'，并绽放 5 朵'创生花'。每隔 2 秒，'创生花'会陆续飞向射程内的目标并爆炸，造成一定范围伤害。场上最多同时存在 3 株'创生株'。属性要求：灵、光。",
+        "runs": [
+          {
+            "text": "创生：触发异能环合后，目标附近将诞生 1 株"
+          },
+          {
+            "text": "'创生株'",
+            "color": "blue"
+          },
+          {
+            "text": "，并绽放 5 朵"
+          },
+          {
+            "text": "'创生花'",
+            "color": "blue"
+          },
+          {
+            "text": "。每隔 2 秒，"
+          },
+          {
+            "text": "'创生花'",
+            "color": "blue"
+          },
+          {
+            "text": "会陆续飞向射程内的目标并爆炸，造成一定范围伤害。场上最多同时存在 3 株"
+          },
+          {
+            "text": "'创生株'",
+            "color": "blue"
+          },
+          {
+            "text": "。属性要求：灵、光。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "覆纹：触发异能环合后的 12 秒内，目标受到灵属性或咒属性异能伤害时，将额外受到一次原伤害 20% 的追加攻击伤害。覆纹状态不能叠加，新触发的覆纹会直接覆盖原覆纹状态。属性要求：灵、咒。",
+        "runs": [
+          {
+            "text": "覆纹：触发异能环合后的 12 秒内，目标受到"
+          },
+          {
+            "text": "灵属性或咒属性异能伤害",
+            "color": "blue"
+          },
+          {
+            "text": "时，将额外受到一次原伤害 20% 的"
+          },
+          {
+            "text": "追加攻击伤害",
+            "color": "blue"
+          },
+          {
+            "text": "。覆纹状态不能叠加，新触发的覆纹会直接覆盖原覆纹状态。属性要求：灵、咒。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "黯星：触发异能环合后的 5 秒内，目标进入黯星状态。该状态结束时，目标将受到一次高额心灵伤害。黯星状态不能叠加，新触发的黯星会立即结算原黯星状态。属性要求：暗、魂。",
+        "runs": [
+          {
+            "text": "黯星：触发异能环合后的 5 秒内，目标进入黯星状态。该状态结束时，目标将受到一次高额"
+          },
+          {
+            "text": "心灵伤害",
+            "color": "blue"
+          },
+          {
+            "text": "。黯星状态不能叠加，新触发的黯星会立即结算原黯星状态。属性要求：暗、魂。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "浊燃：触发异能环合后的 15 秒内，目标进入浊燃状态，期间每秒受到持续伤害，暴击率固定为 50% 。浊燃状态不能叠加，新触发的浊燃会直接覆盖原浊燃状态。属性要求：咒、暗。"
+      },
+      {
+        "type": "paragraph",
+        "text": "浸染：触发异能环合后的 12 秒内，目标受到魂属性或相属性异能伤害时，所受伤害量提升 20% 。属性要求：魂、相。",
+        "runs": [
+          {
+            "text": "浸染：触发异能环合后的 12 秒内，目标受到"
+          },
+          {
+            "text": "魂属性或相属性异能伤害",
+            "color": "blue"
+          },
+          {
+            "text": "时，所受伤害量提升 20% 。属性要求：魂、相。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "盈蓄：'创生花'命中处于延滞状态的目标时，当前驻场角色额外获得 10 点终结能量。盈蓄效果具有 0.8 秒的触发冷却。属性要求：灵、光 + 光、相。",
+        "runs": [
+          {
+            "text": "盈蓄："
+          },
+          {
+            "text": "'创生花'",
+            "color": "blue"
+          },
+          {
+            "text": "命中处于延滞状态的目标时，当前驻场角色额外获得 10 点"
+          },
+          {
+            "text": "终结能量",
+            "color": "blue"
+          },
+          {
+            "text": "。盈蓄效果具有 0.8 秒的触发冷却。属性要求：灵、光 + 光、相。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "失谐：对处于黯星(浊燃)状态的目标触发浊燃(黯星)时，扣除其一定比例的倾陷值，具体比例与敌人有关。在一个状态持续期间可以多次触发。属性要求：暗、魂 + 魂、咒。",
+        "runs": [
+          {
+            "text": "失谐：对处于黯星(浊燃)状态的目标触发浊燃(黯星)时，扣除其一定比例的"
+          },
+          {
+            "text": "倾陷值",
+            "color": "blue"
+          },
+          {
+            "text": "，具体比例与敌人有关。在一个状态持续期间可以多次触发。属性要求：暗、魂 + 魂、咒。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "失谐的倾陷值削减算法如下："
+      },
+      {
+        "type": "formula",
+        "text": "倾陷值削减= 0.15× 敌人倾陷值上限× 等级压制系数，",
+        "runs": [
+          {
+            "text": "倾陷值削减= 0.15× 敌人倾陷值上限× 等级压制系数，",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "等级压制系数= 1，当角色等级≥敌人等级；",
+        "runs": [
+          {
+            "text": "等级压制系数= 1，当角色等级≥敌人等级；",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "等级压制系数= 0.5，当0<敌人等级-角色等级≤5；",
+        "runs": [
+          {
+            "text": "等级压制系数= 0.5，当0<敌人等级-角色等级≤5；",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "等级压制系数= 0.2，当敌人等级-角色等级>5.",
+        "runs": [
+          {
+            "text": "等级压制系数= 0.2，当敌人等级-角色等级>5.",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "联机状态下，削减值还需/人数。"
+      },
+      {
+        "type": "heading",
+        "text": "2.2'环合基础伤害'",
+        "id": "harmony-base"
+      },
+      {
+        "type": "paragraph",
+        "text": "造成伤害的异能环合的基础伤害取决于环合结算者的等级："
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-04.webp",
+        "alt": "数据机制图表 4",
+        "width": 601,
+        "height": 562
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-05.webp",
+        "alt": "数据机制图表 5",
+        "width": 1024,
+        "height": 607
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-06.webp",
+        "alt": "数据机制图表 6",
+        "width": 1024,
+        "height": 608
+      },
+      {
+        "type": "paragraph",
+        "text": "上两图分别采用 y 轴线性坐标和对数坐标展示。"
+      },
+      {
+        "type": "paragraph",
+        "text": "注意：三种环合反应的基础伤害并不完全成比例。"
+      },
+      {
+        "type": "paragraph",
+        "text": "本节 2.4 会详解如何判断环合结算者。"
+      },
+      {
+        "type": "heading",
+        "text": "2.3'环合强度'",
+        "id": "harmony-strength"
+      },
+      {
+        "type": "paragraph",
+        "text": "游戏中对环合强度的效果描述如下："
+      },
+      {
+        "type": "paragraph",
+        "text": "环合强度会提高异能环合的效果。当异能环合触发时，生效的环合强度取决于参与异能环合的两者最终效果数值较高的一方。"
+      },
+      {
+        "type": "paragraph",
+        "text": "根据游戏中显示的数值进行拟合："
+      },
+      {
+        "type": "paragraph",
+        "text": "对于'创生'、'黯星'、'浊燃'造成的伤害："
+      },
+      {
+        "type": "formula",
+        "text": "环合强度区= 1+ 环合强度/ 600",
+        "runs": [
+          {
+            "text": "环合强度区= 1+ 环合强度/ 600",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "对于'覆纹'、'浸染'的效果："
+      },
+      {
+        "type": "formula",
+        "text": "环合强度系数= 1+ (0.2* 环合强度)/ (环合强度+ 180)",
+        "runs": [
+          {
+            "text": "环合强度系数= 1+ (0.2* 环合强度)/ (环合强度+ 180)",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-07.webp",
+        "alt": "数据机制图表 7",
+        "width": 800,
+        "height": 600
+      },
+      {
+        "type": "paragraph",
+        "text": "则："
+      },
+      {
+        "type": "formula",
+        "text": "'浸染'的实际易伤区= 1.2* 环合强度系数",
+        "runs": [
+          {
+            "text": "'浸染'的实际易伤区= 1.2* 环合强度系数",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "'覆纹'造成的追加攻击伤害= 原伤害* (1.2* 环合强度系数- 1)",
+        "runs": [
+          {
+            "text": "'覆纹'造成的追加攻击伤害= 原伤害* (1.2* 环合强度系数- 1)",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "text": "2.4'环合的结算'",
+        "id": "harmony-resolution"
+      },
+      {
+        "type": "paragraph",
+        "text": "对于多个角色参与触发的异能环合，最终的效果只取决于环合结算者，也就是上文说的参与异能环合的两者最终效果数值较高的一方，具体来说："
+      },
+      {
+        "type": "paragraph",
+        "text": "对于'创生'、'黯星'、'浊燃'造成的伤害，选择 (基础伤害* 环合强度区) 最高者，若二者相等，则选择发动入轨攻击的角色，该结果在触发环合时确定；",
+        "runs": [
+          {
+            "text": "对于'创生'、'黯星'、'浊燃'造成的伤害，选择"
+          },
+          {
+            "text": " (基础伤害* 环合强度区) ",
+            "color": "red"
+          },
+          {
+            "text": "最高者，若二者相等，则选择发动入轨攻击的角色，该结果在触发环合时确定；"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "对于'覆纹'的效果，以造成当次灵属性或咒属性异能伤害的角色为环合结算者；",
+        "runs": [
+          {
+            "text": "对于'覆纹'的效果，以造成当次"
+          },
+          {
+            "text": "灵属性或咒属性异能伤害",
+            "color": "blue"
+          },
+          {
+            "text": "的角色为环合结算者；"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "对于'浸染'的效果，以造成当次魂属性或相属性异能伤害的角色为环合结算者。",
+        "runs": [
+          {
+            "text": "对于'浸染'的效果，以造成当次"
+          },
+          {
+            "text": "魂属性或相属性异能伤害",
+            "color": "blue"
+          },
+          {
+            "text": "的角色为环合结算者。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "对于'创生'和'浊燃'伤害，其伤害属性为环合结算者的属性，受对应属性的伤害抗性影响，可以受益于环合结算者的无视防御、无视对应属性抗性效果，但灵属性的'创生'伤害并不能触发'覆纹'的效果，此处可以解释为'覆纹'只对异能伤害生效，环合伤害不会触发'覆纹'。"
+      },
+      {
+        "type": "paragraph",
+        "text": "对于'黯星'伤害，其固定为心灵伤害，受敌人的心灵伤害抗性影响。"
+      },
+      {
+        "type": "paragraph",
+        "text": "环合结算者在触发环合时确定，但每次结算环合效果时都实时计算环合结算者的属性。"
+      },
+      {
+        "type": "heading",
+        "text": "2.5'暴击区'",
+        "id": "harmony-critical"
+      },
+      {
+        "type": "paragraph",
+        "text": "默认情况下，'创生'和'黯星'伤害是不能暴击的。"
+      },
+      {
+        "type": "paragraph",
+        "text": "'浊燃'的伤害具有固定 50% 的暴击率，暴击伤害取决于贡献者。"
+      },
+      {
+        "type": "paragraph",
+        "text": "则对于'创生'和'黯星'伤害："
+      },
+      {
+        "type": "formula",
+        "text": "暴击期望= 1",
+        "runs": [
+          {
+            "text": "暴击期望= 1",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "对于'浊燃'伤害："
+      },
+      {
+        "type": "formula",
+        "text": "暴击期望= 1+ 0.5* 暴击伤害",
+        "runs": [
+          {
+            "text": "暴击期望= 1+ 0.5* 暴击伤害",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "text": "2.6'环合值'",
+        "id": "harmony-gauge"
+      },
+      {
+        "type": "paragraph",
+        "text": "角色默认的环合值上限为 100 点，可以通过除援护技和极轨终结外的几乎所有伤害进行累积，不同技能的环合值累积不同，具体数值可以查阅文末附表。"
+      },
+      {
+        "type": "paragraph",
+        "text": "角色的'变轨技能'通常能累积较多的环合值，一部分角色具有'即瞬环合'的标签，此时其'变轨技能'可直接提供 100 点环合值，'变轨技能'显示的环合值累积与默认的环合值累积方式不同。"
+      },
+      {
+        "type": "paragraph",
+        "text": "此外，角色成功发动'承轨反击'时也能获得一定量的环合值，具体数值与敌人技能有关。"
+      },
+      {
+        "type": "heading",
+        "text": "2.7'环合天赋'",
+        "id": "harmony-talents"
+      },
+      {
+        "type": "paragraph",
+        "text": "在目前游戏期间，每个角色都具有一个环合天赋，环合天赋直接强化对应的异能环合，环合天赋不能升级，将角色编入队伍即可直接生效，下表列出了各角色的环合天赋："
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-08.webp",
+        "alt": "数据机制图表 8",
+        "width": 1130,
+        "height": 1222
+      }
+    ],
+    "stagger": [
+      {
+        "type": "paragraph",
+        "text": "通常情况下，当敌人受到攻击时会扣除'倾陷值'，敌人的'倾陷值'会显示在生命值的下方；当'倾陷值'完全扣除时敌人会进入'倾陷状态'，陷入瘫痪无法行动并受到一次'倾陷伤害'，伤害量与队伍中所有角色相关。'倾陷状态'会在一段时间后解除。",
+        "runs": [
+          {
+            "text": "通常情况下，当敌人受到攻击时会扣除"
+          },
+          {
+            "text": "'倾陷值'",
+            "color": "red"
+          },
+          {
+            "text": "，敌人的"
+          },
+          {
+            "text": "'倾陷值'",
+            "color": "red"
+          },
+          {
+            "text": "会显示在生命值的下方；当"
+          },
+          {
+            "text": "'倾陷值'",
+            "color": "red"
+          },
+          {
+            "text": "完全扣除时敌人会进入"
+          },
+          {
+            "text": "'倾陷状态'",
+            "color": "red"
+          },
+          {
+            "text": "，陷入瘫痪无法行动并受到一次"
+          },
+          {
+            "text": "'倾陷伤害'",
+            "color": "red"
+          },
+          {
+            "text": "，伤害量与队伍中所有角色相关。"
+          },
+          {
+            "text": "'倾陷状态'",
+            "color": "red"
+          },
+          {
+            "text": "会在一段时间后解除。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "注意倾陷状态不提供易伤。"
+      },
+      {
+        "type": "paragraph",
+        "text": "倾陷伤害由队伍成员共同影响，当对敌人触发倾陷时，会立即基于队伍中所有角色的属性和敌人属性实时计算倾陷伤害，每个角色根据自身的异能属性各自结算抗性区："
+      },
+      {
+        "type": "formula",
+        "text": "角色贡献的倾陷伤害= 倾陷基础伤害* 倾陷增伤区* 倾陷上限区* 防御区* 抗性区* 特殊乘区",
+        "runs": [
+          {
+            "text": "角色贡献的倾陷伤害= 倾陷基础伤害* 倾陷增伤区* 倾陷上限区* 防御区* 抗性区* 特殊乘区",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "倾陷伤害与触发倾陷的方式无关，无论队伍中角色是否出场、参与攻击，都会贡献倾陷伤害。但是如果角色阵亡则不会参与倾陷伤害的贡献，最终的倾陷伤害就是角色贡献的倾陷伤害的累加："
+      },
+      {
+        "type": "formula",
+        "text": "倾陷伤害= Σ角色贡献的倾陷伤害",
+        "runs": [
+          {
+            "text": "倾陷伤害= Σ角色贡献的倾陷伤害",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "heading",
+        "text": "3.1'倾陷值'",
+        "id": "stagger-gauge"
+      },
+      {
+        "type": "formula",
+        "text": "倾陷值削减= 基础倾陷值削减* (1+ 倾陷破坏效率)* 倾陷抵抗效率",
+        "runs": [
+          {
+            "text": "倾陷值削减= 基础倾陷值削减* (1+ 倾陷破坏效率)* 倾陷抵抗效率",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "除环合伤害外，角色的绝大多数攻击都能削减敌人的倾陷值，倾陷效率分为倾陷破坏效率和倾陷抵抗效率两种："
+      },
+      {
+        "type": "paragraph",
+        "text": "角色的倾陷破坏效率默认为 0，对应 100%倾陷破坏，达芙蒂尔'变轨技能：同振'的倾陷值提升就是提升角色在此条件下的倾陷破坏效率；"
+      },
+      {
+        "type": "paragraph",
+        "text": "敌人的倾陷抵抗效率默认为 100%，对应 100%倾陷破坏，降低其倾陷抵抗效率会降低倾陷值累积，提升其倾陷抵抗效率可以提升倾陷值累积，阿德勒的环合天赋中倾陷效率提高 10%就是将敌人的倾陷抵抗效率提升 10%。"
+      },
+      {
+        "type": "paragraph",
+        "text": "通常情况下，角色的极限反击能削减敌人较多的倾陷值。角色技能造成的基础倾陷值削减可以在文末附表查阅。"
+      },
+      {
+        "type": "paragraph",
+        "text": "对于具有弱点异能的敌人，使用对应属性的援护技，可对其额外扣除倾陷值。数值需要确认。"
+      },
+      {
+        "type": "paragraph",
+        "text": "敌人的倾陷值上限变化很多，由于本作中敌人属性都是单独设置的，无法给出一个定论。敌人的倾陷值上限通常与其等级无关，大部分普通敌人的倾陷值上限在 8-15，精英敌人可能在 20 左右，首领和强敌则超过 30，具体相关数据可以参阅文末附表。"
+      },
+      {
+        "type": "paragraph",
+        "text": "实际上，游戏中敌人的倾陷条是分属性的，共包含光、灵、相、暗、魂、咒和普通共计 7 种类型，默认情况下，只有异能属性伤害才能削减倾陷，同时光、灵、相、暗、魂、咒这 6 种异能属性的伤害对以上 7 种属性倾陷条的默认倾陷效率为 1，即属性倾陷效率默认为 100%，因此通常情况下在倾陷的计算中无需考虑属性倾陷效率，而倾陷伤害也应包含属性伤害效率这一乘区，但其默认值也为 100%，因此一般情况下不作考虑，本文也不将这两项列入乘区中。"
+      },
+      {
+        "type": "heading",
+        "text": "3.2'倾陷基础伤害'",
+        "id": "stagger-base"
+      },
+      {
+        "type": "paragraph",
+        "text": "倾陷伤害的基础伤害直接受角色等级影响，具体数值如下："
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-09.webp",
+        "alt": "数据机制图表 9",
+        "width": 961,
+        "height": 694
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-10.webp",
+        "alt": "数据机制图表 10",
+        "width": 1024,
+        "height": 607
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-11.webp",
+        "alt": "数据机制图表 11",
+        "width": 1024,
+        "height": 608
+      },
+      {
+        "type": "paragraph",
+        "text": "上两图分别采用 y 轴线性坐标和对数坐标展示，读者也能看到，倾陷基础伤害在 1-20 级和 20-80 级两个区间内都是以接近指数增长的形式成长的。"
+      },
+      {
+        "type": "heading",
+        "text": "3.3'倾陷增伤区'",
+        "id": "stagger-bonus"
+      },
+      {
+        "type": "paragraph",
+        "text": "根据面板显示的倾陷强度对倾陷伤害的提升幅度进行拟合得如下公式："
+      },
+      {
+        "type": "formula",
+        "text": "倾陷增伤区= 1+ 倾陷强度/ 300+ 倾陷增伤",
+        "runs": [
+          {
+            "text": "倾陷增伤区= 1+ 倾陷强度/ 300+ 倾陷增伤",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "倾陷增伤主要来源于角色的倾陷强度，一些效果也会提供额外的倾陷增伤，目前游戏中仅达芙蒂尔的可以提供此类效果："
+      },
+      {
+        "type": "paragraph",
+        "text": "达芙蒂尔'普通攻击：分光'：光影分于两界。达芙蒂尔贡献的倾陷伤害提升 20%。"
+      },
+      {
+        "type": "paragraph",
+        "text": "达芙蒂尔觉醒'于隐匿中'：如果目标在'洞察'效果期间进入倾陷，每有 1 层'洞察'，达芙蒂尔额外造成的倾陷伤害提升 15%。"
+      },
+      {
+        "type": "heading",
+        "text": "3.4'倾陷上限区'",
+        "id": "stagger-cap"
+      },
+      {
+        "type": "formula",
+        "text": "倾陷上限区= 倾陷值上限/ 3",
+        "runs": [
+          {
+            "text": "倾陷上限区= 倾陷值上限/ 3",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "读者也能很容易地发现，倾陷伤害还与敌人的倾陷值上限有关，根据测试，本乘区直接应用敌人的倾陷值上限，计算时根据敌人情况查表代入即可。"
+      },
+      {
+        "type": "paragraph",
+        "text": "达芙蒂尔的环合天赋降低的是临时倾陷上限，不影响原始倾陷上限，因此不影响该乘区。"
+      },
+      {
+        "type": "paragraph",
+        "text": "为了防止读者将该乘区与倾陷强度区搞混，此处没有将该乘区命名为倾陷长度区。"
+      },
+      {
+        "type": "paragraph",
+        "text": "下面举一个简单案例，主线引导中 1 级主角和 1 级薄荷对 9 级无画框造成的倾陷伤害是 1076，查表可知，此处无画框的倾陷上限是 45，防御为 654，灵抗 0.16，其他全抗 0.2，则可以计算："
+      },
+      {
+        "type": "formula",
+        "text": "91* (45/ 3)* (606/ 1260)* 0.8+ 91* (45/ 3)* (606/ 1260)* 0.84= 1076.66"
+      },
+      {
+        "type": "paragraph",
+        "text": "向下取整为 1076。"
+      }
+    ],
+    "other_mechanics": [
+      {
+        "type": "heading",
+        "text": "4.1'渔获系统'",
+        "id": "fishing"
+      },
+      {
+        "type": "heading",
+        "text": "4.1.1'渔获系统简介'",
+        "id": "fishing-overview"
+      },
+      {
+        "type": "paragraph",
+        "text": "玩家达到大亨 3 级后即可解锁'海上钓客'，此时可以进行钓鱼玩法。"
+      },
+      {
+        "type": "paragraph",
+        "text": "默认情况下，玩家抛竿后 4~6 秒(该数值范围由钓点决定，但目前游戏中钓点都为 4-6 秒)内会有鱼或其他特殊渔获咬钩，此时按下相应按键可以开始钓鱼小游戏。"
+      },
+      {
+        "type": "paragraph",
+        "text": "在钓鱼小游戏下，渔获会随机开始游动(暂时无法预测)，每次游动结束后经过随机间隔(不同渔获游动间隔的随机范围不同，具体参阅附表)会再次开始游动，不同渔获的游动速度不同(具体参阅附表)。钓鱼小游戏期间，默认每隔 1 秒游戏会进行一次判定，减少 1 点鱼线，同时判定时若钓鱼光标处于渔获的光标块(不同渔获的光标长度不同，具体参阅附表)上，则会同时减少 1 点鱼耐力。鱼耐力归零则成功钓鱼，鱼线先归零则钓鱼失败。小游戏持续期间玩家可以通过按键移动光标使其保持在渔获的判定光标上。"
+      },
+      {
+        "type": "paragraph",
+        "text": "渔获的稀有度分为绿色、蓝色、紫色和金色四种，但鱼的实际稀有度分为绿色、蓝色、紫色、金色和鱼王五种，鱼王可以视为金色的一种子类。"
+      },
+      {
+        "type": "paragraph",
+        "text": "高稀有度渔获的鱼耐力通常会较高，高稀有度的鱼竿会拥有较高的鱼线长，可以更容易地钓到高稀有的渔获。"
+      },
+      {
+        "type": "heading",
+        "text": "4.1.2'渔获的获取'",
+        "id": "fishing-acquisition"
+      },
+      {
+        "type": "paragraph",
+        "text": "钓鱼时会根据当前钓点的渔获种类决定当前的渔获随机池，根据当前使用的鱼饵种类决定随机池中不同渔获的随机权重，渔获咬钩时根据权重在随机池中抽取一种。目前游戏中高稀有的鱼竿应不能提升获取高稀有度渔获的权重。"
+      },
+      {
+        "type": "paragraph",
+        "text": "各种渔获在不同稀有度鱼饵下的抽取权重参见附表。"
+      },
+      {
+        "type": "paragraph",
+        "text": "使用指定的鱼饵可以增加特定渔获的产出权重，但不能无中生有，有关数据参见文末附表。"
+      },
+      {
+        "type": "heading",
+        "text": "4.1.3'渔获的产出'",
+        "id": "fishing-output"
+      },
+      {
+        "type": "paragraph",
+        "text": "获取渔获时会根据渔获的质量判定其品质，分为 B、A 和 S 三档，不同鱼的品质分段不同。获取的渔获质量会先抽取高、中、低三个档位(注意与 S、A、B 不同)然后再在抽取到的档位范围内随机抽取到质量，不同渔获的质量档位不同，并且不同档位的权重也不同，特殊渔获的质量固定。例如下图是红龙鱼质量的累积概率分布曲线："
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-12.webp",
+        "alt": "数据机制图表 12",
+        "width": 1024,
+        "height": 678
+      },
+      {
+        "type": "paragraph",
+        "text": "使用新手鱼竿外的其他鱼竿可以加成获取到渔获的质量，不同鱼竿的加成效果不同，相同鱼竿对不同稀有度的鱼的加成范围不同，加成后渔获应不能超出其原有的质量范围，各鱼竿的加成范围如下："
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-13.webp",
+        "alt": "数据机制图表 13",
+        "width": 748,
+        "height": 133
+      },
+      {
+        "type": "paragraph",
+        "text": "获取的垂钓经验和渔获卖出时获取的鱼鳞币数由渔获种类和渔获质量共同决定，获取的经验和价格的计算公式如下："
+      },
+      {
+        "type": "formula",
+        "text": "经验= FLOOR(基础经验+ 经验系数* 渔获质量)",
+        "runs": [
+          {
+            "text": "经验= FLOOR(基础经验+ 经验系数* 渔获质量)",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "formula",
+        "text": "价格= FLOOR(基础价格+ 价格系数* 渔获质量)* (1+ 高阶收购涨幅)",
+        "runs": [
+          {
+            "text": "价格= FLOOR(基础价格+ 价格系数* 渔获质量)* (1+ 高阶收购涨幅)",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "上两式中 FLOOR()指向下取整。"
+      },
+      {
+        "type": "paragraph",
+        "text": "注意鱼鳞币获取是先取整再乘高价收购系数，举个例子，破晓流光的质量最大值为 5400，基础价格为 20，价格系数为 0.001079，则在 500%的高价收购涨幅下其能卖出的最大价格为："
+      },
+      {
+        "type": "formula",
+        "text": "FLOOR(20+ 0.001079* 5400)* (1+ 500%)= 150"
+      },
+      {
+        "type": "paragraph",
+        "text": "如果先计算再取整得到的结果会是"
+      },
+      {
+        "type": "formula",
+        "text": "FLOOR[(20+ 0.001079* 5400)* (1+ 500%)]= 154"
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-14.webp",
+        "alt": "数据机制图表 14",
+        "width": 1024,
+        "height": 465
+      },
+      {
+        "type": "paragraph",
+        "text": "这里也能看到，游戏中列出的范围是 120~150。"
+      },
+      {
+        "type": "paragraph",
+        "text": "渔获市场的高价收购也是随机的，具体数据可以参阅附表。"
+      },
+      {
+        "type": "paragraph",
+        "text": "出售渔获时，会根据卖出渔获的种类和数量消耗都市活力，不同种类鱼消耗的都市活力不同，每消耗 1 点都市活力可以获取 1000 方斯，高价收购时也会根据高价收购系数额外消耗都市活力，但没有都市活力时仍可出售渔获获取鱼鳞币，只是此时不会再获取方斯。"
+      },
+      {
+        "type": "paragraph",
+        "text": "由于鱼的质量分布并不均匀，并且涉及到向下取整，通常情况下获取的鱼鳞币数量也不会是显示范围的中点，具体情况读者可以尝试自行计算。"
+      },
+      {
+        "type": "paragraph",
+        "text": "根据本文给出的数据和计算方法，读者可以尝试计算各钓点的收益情况。"
+      },
+      {
+        "type": "heading",
+        "text": "4.2'终结能量'",
+        "id": "ultimate-energy"
+      },
+      {
+        "type": "paragraph",
+        "text": "对敌人造成伤害时将积累终结能量。当终结能量达到最大值，即可释放威力强大的极轨终结。",
+        "runs": [
+          {
+            "text": "对敌人造成伤害时将积累"
+          },
+          {
+            "text": "终结能量",
+            "color": "red"
+          },
+          {
+            "text": "。当"
+          },
+          {
+            "text": "终结能量",
+            "color": "red"
+          },
+          {
+            "text": "达到最大值，即可释放威力强大的"
+          },
+          {
+            "text": "极轨终结",
+            "color": "red"
+          },
+          {
+            "text": "。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "对于攻击造成的终结能量累积："
+      },
+      {
+        "type": "formula",
+        "text": "终结能量累积= 基础终结能量累积* 充能效率* 队伍分配系数",
+        "runs": [
+          {
+            "text": "终结能量累积= 基础终结能量累积* 充能效率* 队伍分配系数",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "除极轨终结外，角色的绝大多数攻击都能累积终结能量，具体数值参见文末附表。"
+      },
+      {
+        "type": "paragraph",
+        "text": "角色的充能效率显示在面板上，默认值为 100%。"
+      },
+      {
+        "type": "paragraph",
+        "text": "由角色攻击造成的终结能量累积除为本角色累积 100%的终结能量，还会为队伍中其他角色累积 60%的终结能量，这个比例与队伍人数无关，即："
+      },
+      {
+        "type": "formula",
+        "text": "队伍分配系数= 1，造成攻击的角色；",
+        "runs": [
+          {
+            "text": "队伍分配系数= 1，造成攻击的角色；",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "队伍分配系数= 0.6，队伍中其他角色。",
+        "runs": [
+          {
+            "text": "队伍分配系数= 0.6，队伍中其他角色。",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "此外，角色还可以通过盈蓄和觉醒天赋等方式累积或返还一定量终结能量，此类效果只作用于触发效果的角色，不能受益于充能效率，也不会为其他角色累积终结能量。"
+      },
+      {
+        "type": "paragraph",
+        "text": "目前游戏中，角色的终结能量上限都为 100 或 120，下表列出了各角色的终结能量上限："
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-15.webp",
+        "alt": "数据机制图表 15",
+        "width": 270,
+        "height": 595
+      },
+      {
+        "type": "paragraph",
+        "text": "此处的规律是，光、灵、相属性的角色是 100 终结能量上限，暗、魂、咒属性的角色是 120 终结能量上限。"
+      },
+      {
+        "type": "heading",
+        "text": "4.3'粉爪大劫案的伤害机制'",
+        "id": "heist-damage"
+      },
+      {
+        "type": "paragraph",
+        "text": "这部分其实比较简单，笔者之前不想做相关赘述，但是看到社区中很多玩家对此部分机制有疑惑，此处就做一些解析。"
+      },
+      {
+        "type": "paragraph",
+        "text": "另注：此部分主要是笔者看到这个帖子 后一时兴起添加的。"
+      },
+      {
+        "type": "paragraph",
+        "text": "游戏中开启剧情平衡模式后就会对角色和敌人造成的伤害进行调整，此时角色造成的伤害将会直接由剧情平衡倍率决定，对于指定角色的指定攻击，该系数固定。目前游戏中最明显的开启剧情平衡的场景即'粉爪大劫案'："
+      },
+      {
+        "type": "formula",
+        "text": "剧情平衡模式下角色造成的伤害= 剧情平衡倍率× 10000",
+        "runs": [
+          {
+            "text": "剧情平衡模式下角色造成的伤害= 剧情平衡倍率× 10000",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "通常情况下，基于攻击力的角色技能的剧情平衡倍率是与 1 级时的倍率一致的，但剧情平衡倍率是单独设置的，仅取决于对应的伤害实例，因此其可能与伤害倍率不符，而基于防御力的角色技能的剧情平衡倍率通常为 1 级倍率的 1.33 倍，基于生命上限则是 23 倍，具体数值参阅文末附表。",
+        "runs": [
+          {
+            "text": "通常情况下，基于攻击力的角色技能的剧情平衡倍率是与 1 级时的倍率一致的，"
+          },
+          {
+            "text": "但剧情平衡倍率是单独设置的",
+            "color": "purple"
+          },
+          {
+            "text": "，仅取决于对应的伤害实例，因此其可能与伤害倍率不符，而基于防御力的角色技能的剧情平衡倍率通常为 1 级倍率的 1.33 倍，基于生命上限则是 23 倍，具体数值参阅文末附表。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "对于几种特殊的伤害，下表列出了其剧情平衡倍率："
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-16.webp",
+        "alt": "数据机制图表 16",
+        "width": 417,
+        "height": 199
+      },
+      {
+        "type": "paragraph",
+        "text": "通常情况下，游戏中描述为倍率提升的效果可以提升角色技能的剧情平衡倍率，但这其实并不是因为剧情平衡倍率被系数调整了，而是因为此类效果强化前后是两个不同的伤害实例。"
+      },
+      {
+        "type": "paragraph",
+        "text": "值得一提的是，'覆纹'和'浸染'的效果对剧情平衡倍率有效。",
+        "runs": [
+          {
+            "text": "值得一提的是，'覆纹'和'浸染'的效果对剧情平衡倍率有效",
+            "color": "purple"
+          },
+          {
+            "text": "。"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "text": "下表列出的是粉爪大劫案下游戏中目前可以遇到的各种敌人的生命值上限："
+      },
+      {
+        "type": "image",
+        "src": "/static/guide/beginner/damage-mechanics/figure-17.webp",
+        "alt": "数据机制图表 17",
+        "width": 294,
+        "height": 463
+      }
+    ],
+    "appendices": [
+      {
+        "type": "paragraph",
+        "text": "鉴于目前已经有了 Everness.info 这样较为优秀的 wiki 网站，本部分仅用于信息补充，在文章发布会笔者会根据读者反馈的需求更新相应的数据："
+      },
+      {
+        "type": "link",
+        "text": "Everness.info",
+        "url": "https://everness.info/zh-Hans/"
+      },
+      {
+        "type": "heading",
+        "text": "5.1'角色属性'",
+        "id": "character-table"
+      },
+      {
+        "type": "paragraph",
+        "text": "下表包含角色的基础属性、技能描述、技能数值、觉醒效果："
+      },
+      {
+        "type": "link",
+        "text": "角色属性",
+        "url": "https://docs.qq.com/sheet/DUEVxck1xTFpoZ0ZU"
+      },
+      {
+        "type": "heading",
+        "text": "5.2'轨外之境'",
+        "id": "challenge-table"
+      },
+      {
+        "type": "paragraph",
+        "text": "下表包含轨外之境的全部敌人信息、站点信息、补给信息和奖励信息："
+      },
+      {
+        "type": "link",
+        "text": "轨外之境",
+        "url": "https://docs.qq.com/sheet/DUFFaVGFDRmxaRUF6"
+      },
+      {
+        "type": "heading",
+        "text": "5.3'敌人属性'",
+        "id": "enemy-table"
+      },
+      {
+        "type": "paragraph",
+        "text": "下表包含游戏中可能出现的所有敌人属性情况，尽可能添加了敌人的名称："
+      },
+      {
+        "type": "link",
+        "text": "敌人属性",
+        "url": "https://docs.qq.com/sheet/DUGxzWGhNc2RsZ3B0"
+      },
+      {
+        "type": "heading",
+        "text": "5.4'渔获'",
+        "id": "fishing-table"
+      },
+      {
+        "type": "link",
+        "text": "渔获",
+        "url": "https://docs.qq.com/sheet/DUGhWeGZ3YkNRUXJt"
+      }
+    ]
+  },
+  {
+    "id": "combat-mechanics",
+    "name": "战斗机制深入攻略",
+    "description": "异环战斗机制视频攻略，可直接在本页观看。",
+    "article_url": "https://www.bilibili.com/video/BV1JFeb6vE6o",
+    "gameplay": [
+      {
+        "type": "video",
+        "bvid": "BV1JFeb6vE6o",
+        "title": "战斗机制深入攻略"
+      }
+    ]
+  }
+]

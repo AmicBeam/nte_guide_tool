@@ -21,6 +21,10 @@ function makeEl(id) {
       toggle(name, on) { if (on) this.add(name); else this.remove(name); },
     },
     setAttribute(key, value) { el.attrs[key] = String(value); },
+    querySelectorAll() { return []; },
+    focus() {},
+    showModal() { el.open = true; },
+    close() { el.open = false; },
     getAttribute(key) { return Object.prototype.hasOwnProperty.call(el.attrs, key) ? el.attrs[key] : null; },
     addEventListener(type, fn) { el.listeners.push([type, fn]); },
     querySelectorAll() { return []; },
@@ -59,10 +63,9 @@ function loadBuildPage() {
     'v2-build-roster', 'v2-build-total', 'v2-build-source',
     'v2-build-name', 'v2-save-build-btn', 'v2-build-new-btn',
     'v2-build-delete-btn', 'v2-build-detail',
-    'v2-build-transfer', 'v2-build-text', 'v2-build-transfer-error',
-    'v2-build-import-apply', 'v2-build-import-btn', 'v2-build-export-btn',
-    'v2-build-transfer-close', 'v2-build-copy', 'v2-build-download',
-    'v2-build-transfer-title',
+    'v2-build-import-btn', 'v2-build-export-btn', 'v2-build-transfer',
+    'v2-build-text', 'v2-build-transfer-title', 'v2-build-transfer-error',
+    'v2-build-import-apply', 'v2-build-copy', 'v2-build-download', 'v2-build-transfer-close',
   ].forEach((id) => { nodes[id] = makeEl(id); });
   const context = {
     window: {

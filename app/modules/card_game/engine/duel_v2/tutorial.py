@@ -39,7 +39,8 @@ def new_tutorial_game(scenario_id, seed=0):
     player_shield = int(flags.get('player_shield') or 0)
     state = {
         'rules_version': 'duel_v2',
-        'design_version': 'V2.5',
+        'design_version': 'V2.6',
+        'harmony_residue_version': 3,
         'version': 0,
         'phase': 'playing',
         'active_side': opening_side,

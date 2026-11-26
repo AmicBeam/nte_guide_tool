@@ -209,16 +209,57 @@
     "character_id": "char_akane",
     "talent": 1,
     "name": "明音凛·绝对音准",
-    "description": "首次延滞后解锁：有效音浪形态每3秒施加延滞；重施延滞按剩余时间造成200%攻击力相伤，每剩余1秒整体提高20%，最多200%，1秒触发间隔。参数暂估。"
+    "description": "首次全队延滞后解锁：有效音浪形态每3秒施加延滞；重施延滞造成150%攻击力相属性变轨伤害，每剩余1秒整体提高20%，最多160%，同一目标1秒触发间隔。",
+    "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
   },
   {
     "id": "talent_2_akane",
     "character_id": "char_akane",
     "talent": 2,
     "name": "明音凛·烁星激昂",
-    "description": "释放音障爆鸣后，自身伤害提升20%，持续25秒。",
+    "description": "释放音障爆鸣第一段后，自身攻击力提升20%，持续20秒，不叠加，重复触发刷新。",
     "replaces_rule_ids": [
       "character_akane_talent2"
+    ],
+    "source_note": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。"
+  },
+  {
+    "id": "character_elyms_talent1",
+    "character_id": "char_elyms",
+    "talent": 1,
+    "name": "中继节点",
+    "description": "前台角色触发盈蓄回能时（包含能量溢出），全队光属性伤害提高3.75%，持续20秒，最多8层，重复触发刷新持续时间；全队施加延滞后等待7.5秒追加一次延滞，等待期间遇到零耗时遮罩动作时在其开始时结算；7秒触发冷却遇到零耗时遮罩动作时也会结束，无遮罩时保持7秒，回响不递归。",
+    "replaces_rule_ids": [
+      "character_elyms_energy_light",
+      "character_elyms_delay_echo"
+    ]
+  },
+  {
+    "id": "character_elyms_talent2",
+    "character_id": "char_elyms",
+    "talent": 2,
+    "name": "保底机制",
+    "description": "自身暴击伤害提高10%。",
+    "replaces_rule_ids": [
+      "character_elyms_talent2"
+    ]
+  },
+  {
+    "id": "character_exe_talent1",
+    "character_id": "char_exe",
+    "talent": 1,
+    "name": "额外得分",
+    "description": "「黯星」强化：队伍触发「黯星」时，若此时Exe的「评分」等级低于SS，则直接升至SS。"
+  },
+  {
+    "id": "character_exe_talent2",
+    "character_id": "char_exe",
+    "talent": 2,
+    "name": "临时超频",
+    "description": "「数字残像」的攻击每次造成伤害时，减少变轨技能1秒冷却，当前冷却时间低于2秒时不再触发；\r\n队伍的召唤物造成伤害时，Exe获得2.5%增伤，每位触发者最多提供2层，总层数最高为4层，该增益效果持续至本次战斗结束。",
+    "replaces_rule_ids": [
+      "character_exe_overclock",
+      "character_exe_cooldown"
     ]
   }
 ]

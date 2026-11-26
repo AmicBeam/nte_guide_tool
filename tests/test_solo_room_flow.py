@@ -327,6 +327,7 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         portal_html = portal.get_data(as_text=True)
         self.assertIn('卡牌桌游', portal_html)
         self.assertIn('空幕', portal_html)
+        self.assertNotIn('预配队', portal_html)
         self.assertNotIn('href="/preteam"', portal_html)
         self.assertIn('排轴计算', portal_html)
         self.assertIn('/card-game', portal_html)
@@ -870,7 +871,7 @@ class SoloRoomFlowTest(RoomFlowTestCase):
         self.assertEqual(resave_response.status_code, 200, resave_response.get_data(as_text=True))
         resaved_mine = self._get('/api/shaft/me/axes', token=token)
         unchanged_market = self._get('/api/shaft/market')
-        self.assertEqual(resaved_mine['items'][0]['source_version'], '异环云配队 1.0.6')
+        self.assertEqual(resaved_mine['items'][0]['source_version'], '异环云配队 1.5.1')
         self.assertEqual(unchanged_market['items'][0]['source_version'], '异环云配队 V0.2.7')
 
     def test_balance_analytics_requires_login(self) -> None:

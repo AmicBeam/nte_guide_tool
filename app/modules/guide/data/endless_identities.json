@@ -1,0 +1,804 @@
+{
+  "/Game/Blueprints/Character/Monster/Boss_06/Abyss/Boss_06_BP_AbyssInfinite": {
+    "name": "胶卷-MANISH",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/Boss_06_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/Boss_08/Abyss/Boss_08_BP_AbyssInfinite": {
+    "name": "斑蝶",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/Boss_08_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/Boss_15/Abyss/Boss_15_BP_AbyssInfinite": {
+    "name": "音霸魔王",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/Boss_15_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "cosmos",
+      "nature"
+    ],
+    "enhanced_resistances": [
+      "chaos",
+      "psyche"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/boss_04/Abyss/boss_04_BP_AbyssInfinite": {
+    "name": "塔吉多",
+    "is_boss": null,
+    "image": null,
+    "swallowable": null,
+    "weaknesses": [
+      "cosmos",
+      "nature"
+    ],
+    "enhanced_resistances": [
+      "chaos",
+      "psyche"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/boss_05/Abyss/boss_05_BP_AbyssInfinite": {
+    "name": "墨菲克斯",
+    "is_boss": true,
+    "image": "/static/guide/monsters/boss_05_BP.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "lakshana",
+      "cosmos"
+    ],
+    "enhanced_resistances": [
+      "incantation",
+      "chaos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/boss_07/Abyss/Boss_07_BP_AbyssInfinite": {
+    "name": "塞润尼缇",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/Boss_07_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "cosmos"
+    ],
+    "enhanced_resistances": [
+      "chaos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/boss_09/Abyss/boss_09_BP_AbyssInfinite": {
+    "name": "黑之书",
+    "is_boss": true,
+    "image": "/static/guide/monsters/boss_09_BP.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/boss_16/Abyss/Boss_016_BP_AbyssInfinite": {
+    "name": "随心泥",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/Boss_016_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/boss_17/Abyss/Boss_017_BP_AbyssInfinite": {
+    "name": "玛门",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/Boss_017_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/boss_18/Abyss/boss_18_BP_AbyssInfinite": {
+    "name": "番茄酱恶魔",
+    "is_boss": true,
+    "image": "/static/guide/monsters/boss_18_BP.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "cosmos",
+      "nature"
+    ],
+    "enhanced_resistances": [
+      "chaos",
+      "psyche"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/boss_26/Abyss/boss_26_BP_AbyssInfinite": {
+    "name": "讨债人",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/boss_26_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "psyche",
+      "lakshana"
+    ],
+    "enhanced_resistances": [
+      "nature",
+      "incantation"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/boss_33/Abyss/boss_33_BP_AbyssInfinite": {
+    "name": "囿巢鸟",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/boss_33_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "nature"
+    ],
+    "enhanced_resistances": [
+      "psyche"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_01/Abyss/mon_01_BP_AbyssInfinite": {
+    "name": "低语种",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_01_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_02/Abyss/mon_02_BP_AbyssInfinite": {
+    "name": "风洞种",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_02_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_02/Abyss/mon_02_Ghost_BP_AbyssInfinite": {
+    "name": "轰洞种",
+    "is_boss": null,
+    "image": null,
+    "swallowable": null,
+    "weaknesses": [
+      "psyche",
+      "lakshana"
+    ],
+    "enhanced_resistances": [
+      "nature",
+      "incantation"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_03/Abyss/mon_03_BP_AbyssInfinite": {
+    "name": "岩壳种",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_03_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "cosmos",
+      "nature"
+    ],
+    "enhanced_resistances": [
+      "chaos",
+      "psyche"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_04/Abyss/mon_04_BP_AbyssInfinite": {
+    "name": "迷失种",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_04_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "lakshana",
+      "cosmos"
+    ],
+    "enhanced_resistances": [
+      "incantation",
+      "chaos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_05/Abyss/mon_05_BP_AbyssInfinite": {
+    "name": "凭依种",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_05_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "psyche",
+      "lakshana"
+    ],
+    "enhanced_resistances": [
+      "nature",
+      "incantation"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_08/Abyss/mon_08_BP_AbyssInfinite": {
+    "name": "瑰夜魅影",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_08_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_12/ABYSS/mon_012_2_BP_AbyssInfinite": {
+    "name": "波普",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/mon_012_2_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_12/ABYSS/mon_012_2_BP_AbyssInfinite_diff": {
+    "name": "波普",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/mon_012_2_BP_AbyssInfinite_diff.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "cosmos",
+      "nature"
+    ],
+    "enhanced_resistances": [
+      "chaos",
+      "psyche"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_13/Abyss/mon_13_BP_AbyssInfinite": {
+    "name": "妖刀",
+    "is_boss": null,
+    "image": null,
+    "swallowable": null,
+    "weaknesses": [
+      "chaos",
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "cosmos",
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_14/Abyss/mon_14_BP_AbyssInfinite": {
+    "name": "分解者",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_14_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "lakshana",
+      "cosmos"
+    ],
+    "enhanced_resistances": [
+      "incantation",
+      "chaos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_15/Abyss/mon_015_BP_AbyssInfinite": {
+    "name": "拖车艄",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_015_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "lakshana",
+      "cosmos"
+    ],
+    "enhanced_resistances": [
+      "incantation",
+      "chaos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_15/Abyss/mon_015_BP_AbyssInfinite_diff": {
+    "name": "拖车艄",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_015_BP_AbyssInfinite_diff.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "chaos",
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "cosmos",
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_16/Abyss/mon_016_BP_AbyssInfinite": {
+    "name": "贩售机附电灵",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_016_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_17/Abyss/mon_17_BP_AbyssInfinite": {
+    "name": "雨人",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_17_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "chaos",
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "cosmos",
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_17/Abyss/mon_17_BP_AbyssInfinite_diff": {
+    "name": "雨人",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_17_BP_AbyssInfinite_diff.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_18_2/Abyss/mon_18_2_BP_AbyssInfinite": {
+    "name": "「肉改」棉绒绒",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_18_2_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "psyche",
+      "lakshana"
+    ],
+    "enhanced_resistances": [
+      "nature",
+      "incantation"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_19/Abyss/mon_019_BP_AbyssInfinite": {
+    "name": "伤心英熊",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_019_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_20/Abyss/mon_020_BP_AbyssInfinite": {
+    "name": "空铠甲",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_020_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_22/Abyss/mon_022_BP_AbyssInfinite": {
+    "name": "蜘识藏家",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/mon_022_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_23/Abyss/mon_023_BP_AbyssInfinite": {
+    "name": "长明灯",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_023_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_24/Abyss/mon_24_BP_AbyssInfinite": {
+    "name": "诡面筝",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_24_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "psyche",
+      "lakshana"
+    ],
+    "enhanced_resistances": [
+      "nature",
+      "incantation"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_25/Abyss/mon_025_BP_AbyssInfinite": {
+    "name": "洄天鱼幡",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_025_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "chaos",
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "cosmos",
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_25/Abyss/mon_025_double_1_BP_AbyssInfinite": {
+    "name": "洄天鱼幡",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_025_double_1_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "chaos",
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "cosmos",
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_25/Abyss/mon_025_double_2_BP_AbyssInfinite": {
+    "name": "洄天鱼幡",
+    "is_boss": false,
+    "image": "/static/guide/monsters/mon_025_double_2_BP.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "chaos",
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "cosmos",
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_27/Abyss/mon_27_BP_AbyssInfinite": {
+    "name": "诺诺斯",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_27_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "psyche",
+      "lakshana"
+    ],
+    "enhanced_resistances": [
+      "nature",
+      "incantation"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_29/Abyss/mon_029_BP_AbyssInfinite": {
+    "name": "唱片机附电灵",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_029_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_29/Abyss/mon_029_BP_AbyssInfinite_diff": {
+    "name": "唱片机附电灵",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_029_BP_AbyssInfinite_diff.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "chaos",
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "cosmos",
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_30/Abyss/mon_030_BP_Rain_AbyssInfinite": {
+    "name": "扫晴娘",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_030_BP_Rain_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_30/Abyss/mon_030_BP_Snow_AbyssInfinite": {
+    "name": "扫晴娘",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_030_BP_Snow_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_31/Abyss/mon_31_BP_AbyssInfinite": {
+    "name": "增殖的C",
+    "is_boss": null,
+    "image": null,
+    "swallowable": null,
+    "weaknesses": [
+      "psyche",
+      "lakshana"
+    ],
+    "enhanced_resistances": [
+      "nature",
+      "incantation"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_33/Abyss/mon_33_BP_AbyssInfinite": {
+    "name": "流梦种",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_33_BP_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "lakshana",
+      "cosmos"
+    ],
+    "enhanced_resistances": [
+      "incantation",
+      "chaos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_35/Abyss/mon_35_BP_Blue_AbyssInfinite": {
+    "name": "罐头锡兵·蓝枪",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_35_BP_Blue_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_35/Abyss/mon_35_BP_Blue_AbyssInfinite_diff": {
+    "name": "罐头锡兵·蓝枪",
+    "is_boss": false,
+    "image": "/static/guide/monsters/mon_35_BP_Blue.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_35/Abyss/mon_35_BP_Red_AbyssInfinite": {
+    "name": "罐头锡兵·红斧",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_35_BP_Red_AbyssInfinite.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_35/Abyss/mon_35_BP_Red_AbyssInfinite_diff": {
+    "name": "罐头锡兵·红斧",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_35_BP_Red_AbyssInfinite_diff.webp",
+    "swallowable": true,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_37/Abyss/mon_037_BP_AbyssInfinite": {
+    "name": "ReroRero电话亭",
+    "is_boss": null,
+    "image": "/static/guide/monsters/endless/mon_037_BP_AbyssInfinite.webp",
+    "swallowable": null,
+    "weaknesses": [
+      "cosmos",
+      "nature"
+    ],
+    "enhanced_resistances": [
+      "chaos",
+      "psyche"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_38/Abyss/mon_38_BP_AbyssInfinite": {
+    "name": "无明众",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_38_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_38/Abyss/mon_38_BP_AbyssInfinite_diff": {
+    "name": "无明众",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_38_BP_AbyssInfinite_diff.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "lakshana",
+      "cosmos"
+    ],
+    "enhanced_resistances": [
+      "incantation",
+      "chaos"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_38_2/Abyss/mon_38_2_BP_AbyssInfinite": {
+    "name": "无明众",
+    "is_boss": null,
+    "image": null,
+    "swallowable": null,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_39_2/Abyss/mon_39_2_BP_AbyssInfinite": {
+    "name": "无明众",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_39_2_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "nature",
+      "incantation"
+    ],
+    "enhanced_resistances": [
+      "psyche",
+      "lakshana"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_41/Abyss/mon_41_BP_AbyssInfinite": {
+    "name": "羽偶",
+    "is_boss": false,
+    "image": "/static/guide/monsters/endless/mon_41_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "chaos",
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "cosmos",
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_46/Abyss/mon_46_BP_AbyssInfinite": {
+    "name": "歧花",
+    "is_boss": null,
+    "image": null,
+    "swallowable": null,
+    "weaknesses": [
+      "cosmos",
+      "nature"
+    ],
+    "enhanced_resistances": [
+      "chaos",
+      "psyche"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_51/Abyss/mon_051_BP_AbyssInfinite": {
+    "name": "桀桀熊",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/mon_051_BP_AbyssInfinite.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "chaos",
+      "psyche"
+    ],
+    "enhanced_resistances": [
+      "cosmos",
+      "nature"
+    ]
+  },
+  "/Game/Blueprints/Character/Monster/mon_51/Abyss/mon_051_BP_AbyssInfinite_diff": {
+    "name": "桀桀熊",
+    "is_boss": true,
+    "image": "/static/guide/monsters/endless/mon_051_BP_AbyssInfinite_diff.webp",
+    "swallowable": false,
+    "weaknesses": [
+      "incantation",
+      "chaos"
+    ],
+    "enhanced_resistances": [
+      "lakshana",
+      "cosmos"
+    ]
+  },
+  "/Game/Maps_4N/Blueprints/Character/Monster/mon_52/mon_52_BP_AbyssInfinite": {
+    "name": "清道夫",
+    "is_boss": null,
+    "image": null,
+    "swallowable": null,
+    "weaknesses": [
+      "lakshana",
+      "cosmos"
+    ],
+    "enhanced_resistances": [
+      "incantation",
+      "chaos"
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+{% extends 'common/base.html' %}
+{% block title %}合轴收益表 · 异环工具{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('overlap_module.static', filename='css/overlap.css', v=asset_version) }}">
+{% endblock %}
+{% block body %}
+<main class="overlap-page" data-tables-url="{{ url_for('overlap_module.static', filename='data/tables.json', v=asset_version) }}">
+    <header class="glass-card overlap-header">
+        <div><p class="eyebrow">Overlap Reference</p><h1>合轴收益表</h1><p class="subtle">把占轴留给下一位，把收益留在这一段。</p></div>
+        <a class="secondary-btn" href="{{ url_for('main.default_page') }}">工具主页</a>
+    </header>
+    <nav class="overlap-tabs" aria-label="合轴模块">
+        <a href="{{ url_for('overlap_module.index') }}" aria-current="page">合轴收益表</a>
+        <a href="{{ url_for('overlap_module.index', page='pair') }}">双角色合轴</a>
+    </nav>
+    <section class="glass-card overlap-controls" aria-label="收益表筛选">
+        <div id="overlap-characters" class="overlap-characters" aria-label="选择角色"></div>
+        <div class="overlap-filters">
+            <label>首个动作<select id="overlap-first"><option value="">全部</option></select></label>
+            <label>收尾动作<select id="overlap-last"><option value="">全部</option></select></label>
+            <label>是否回场<select id="overlap-return"><option value="all">全部</option><option value="with">回场</option><option value="two">回场（两人合轴）</option><option value="three">回场（需三人合轴）</option><option value="without">不回场</option></select></label>
+            <label>路线类型<select id="overlap-kind"><option value="合轴">合轴操作</option><option value="normal">正常切人</option><option value="preinput">预输入合轴</option><option value="hold">末段打满（不切走）</option><option value="cycle_hold">可循环打满</option><option value="分段合轴">多轮合轴（涉及回场）</option><option value="all">全部操作与基准</option><option value="连招">完整连招</option></select></label>
+            <label>闪避替代<select id="overlap-dodge"><option value="all">全部</option><option value="without">不使用闪</option><option value="with">只看使用闪</option></select></label>
+            <label>排序<select id="overlap-sort"><option value="multiplier_rate">倍率 / 占轴最高</option><option value="foreground_seconds">占轴最短</option><option value="harmony_rate">环合 / 占轴最高</option><option value="energy_rate">回能 / 占轴最高</option></select></label>
+        </div>
+        <fieldset class="overlap-contains">
+            <legend>动作筛选</legend>
+            <div class="overlap-contains-heading"><span id="overlap-contains-hint">左键包含／取消，右键或 ▾ 选择排除及执行方式</span><button id="overlap-contains-clear" type="button" disabled>清空动作筛选</button></div>
+            <div id="overlap-contains" class="overlap-contains-options" aria-describedby="overlap-contains-hint"></div>
+        </fieldset>
+        <p id="overlap-status" role="status" aria-live="polite">正在读取收益表…</p>
+    </section>
+    <section class="glass-card overlap-results" aria-label="合轴操作收益">
+        <div class="overlap-result-heading"><h2 id="overlap-title">操作列表</h2><span class="subtle">实线前台 · 虚线后台 · 展开查看时刻</span></div>
+        <div class="overlap-table-scroll" tabindex="0" aria-label="收益表，窄屏可横向滚动">
+            <table class="overlap-table"><thead><tr>
+                <th scope="col">操作路线 / 合轴点</th><th scope="col">前台合计<br><span class="overlap-release-end">动作结束</span></th><th scope="col">合轴窗口时长</th><th scope="col">总倍率</th><th scope="col">倍率 / 秒</th><th scope="col">环合</th><th scope="col">环合 / 秒</th><th scope="col">回能</th><th scope="col">回能 / 秒</th><th scope="col">倾陷</th>
+            </tr></thead><tbody id="overlap-rows"></tbody></table>
+        </div>
+        <p id="overlap-empty" hidden>没有符合条件的路线，试试修改筛选条件。</p>
+        <button id="overlap-more" class="secondary-btn" type="button" hidden>显示更多</button>
+    </section>
+    <section class="glass-card overlap-reference">
+        <h2>动作衔接与合轴点</h2><p class="subtle">正常切人：动作开始后 0.2 秒结束前排占轴，完整收益继续后台结算。预输入合轴：默认动作开始后 0.4 秒输入下一段并切走，特殊切人节点见对应动作。z与闪不能被预输入，闪须完整释放后再接下一段。</p>
+        <div id="overlap-actions" class="overlap-action-grid"></div>
+    </section>
+</main>
+<script src="{{ url_for('overlap_module.static', filename='js/reference_rows.js', v=asset_version) }}" defer></script>
+<script src="{{ url_for('overlap_module.static', filename='js/overlap.js', v=asset_version) }}" defer></script>
+{% endblock %}

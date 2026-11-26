@@ -1,0 +1,42 @@
+{
+  "1010": {
+    "ability_id": "GA_Nanally_Melee",
+    "awaken_index": 2,
+    "damage_effect_id": "GE_Nanally010_Lv3_Damage",
+    "values": [
+      "50",
+      "54",
+      "58.3",
+      "63",
+      "68",
+      "73.5",
+      "79.3",
+      "85.7",
+      "92.5",
+      "100",
+      "107.9",
+      "116.6",
+      "125.9"
+    ]
+  },
+  "1072": {
+    "ability_id": "GA_Radio072_UltraSkill",
+    "awaken_index": 3,
+    "damage_effect_id": "GE_Player_Radio072_UltralSkillLTE_AOE_Level4_Damage",
+    "values": [
+      "100",
+      "108",
+      "116.6",
+      "126",
+      "136",
+      "146.9",
+      "158.7",
+      "171.4",
+      "185.1",
+      "199.9",
+      "215.9",
+      "233.2",
+      "251.8"
+    ]
+  }
+}

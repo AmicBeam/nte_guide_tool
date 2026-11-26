@@ -1,0 +1,527 @@
+{
+  "characterupmaterial_lv1": {
+    "name": "新锐猎人攻略",
+    "icon": "/static/images/materials/characterupmaterial_lv1.webp",
+    "quality": "green"
+  },
+  "characterupmaterial_lv2": {
+    "name": "资深猎人攻略",
+    "icon": "/static/images/materials/characterupmaterial_lv2.webp",
+    "quality": "blue"
+  },
+  "characterupmaterial_lv3": {
+    "name": "特级猎人攻略",
+    "icon": "/static/images/materials/characterupmaterial_lv3.webp",
+    "quality": "purple"
+  },
+  "cityability_upmaterial": {
+    "name": "无梦果核",
+    "icon": "/static/images/materials/cityability_upmaterial.webp",
+    "quality": "blue"
+  },
+  "fons": {
+    "name": "方斯",
+    "icon": "/static/images/item/方斯.webp",
+    "quality": "purple"
+  },
+  "gold": {
+    "name": "甲硬币",
+    "icon": "/static/images/item/甲硬币.webp",
+    "quality": "blue"
+  },
+  "ordinarymonmaterial_01_lv1": {
+    "name": "失落絮语",
+    "icon": "/static/images/item/失落絮语.webp",
+    "quality": "green"
+  },
+  "ordinarymonmaterial_01_lv2": {
+    "name": "茫昧絮语",
+    "icon": "/static/images/materials/ordinarymonmaterial_01_lv2.webp",
+    "quality": "blue"
+  },
+  "ordinarymonmaterial_01_lv3": {
+    "name": "悖谬絮语",
+    "icon": "/static/images/materials/ordinarymonmaterial_01_lv3.webp",
+    "quality": "purple"
+  },
+  "ordinarymonmaterial_02_lv1": {
+    "name": "褪色掠影",
+    "icon": "/static/images/item/褪色掠影.webp",
+    "quality": "green"
+  },
+  "ordinarymonmaterial_02_lv2": {
+    "name": "失焦掠影",
+    "icon": "/static/images/materials/ordinarymonmaterial_02_lv2.webp",
+    "quality": "blue"
+  },
+  "ordinarymonmaterial_02_lv3": {
+    "name": "晦暗掠影",
+    "icon": "/static/images/materials/ordinarymonmaterial_02_lv3.webp",
+    "quality": "purple"
+  },
+  "ordinarymonmaterial_03_lv1": {
+    "name": "模糊数符",
+    "icon": "/static/images/item/模糊数符.webp",
+    "quality": "green"
+  },
+  "ordinarymonmaterial_03_lv2": {
+    "name": "未解数符",
+    "icon": "/static/images/materials/ordinarymonmaterial_03_lv2.webp",
+    "quality": "blue"
+  },
+  "ordinarymonmaterial_03_lv3": {
+    "name": "扭曲数符",
+    "icon": "/static/images/materials/ordinarymonmaterial_03_lv3.webp",
+    "quality": "purple"
+  },
+  "ordinarymonmaterial_04_lv1": {
+    "name": "悬想幻妄",
+    "icon": "/static/images/item/悬想幻妄.webp",
+    "quality": "green"
+  },
+  "ordinarymonmaterial_04_lv2": {
+    "name": "渴念幻妄",
+    "icon": "/static/images/materials/ordinarymonmaterial_04_lv2.webp",
+    "quality": "blue"
+  },
+  "ordinarymonmaterial_04_lv3": {
+    "name": "超验幻妄",
+    "icon": "/static/images/materials/ordinarymonmaterial_04_lv3.webp",
+    "quality": "purple"
+  },
+  "skillupmaterial_01_lv1": {
+    "name": "雏鸟的希冀",
+    "icon": "/static/images/item/雏鸟的希冀.webp",
+    "quality": "green"
+  },
+  "skillupmaterial_01_lv2": {
+    "name": "白鸽的振翅",
+    "icon": "/static/images/materials/skillupmaterial_01_lv2.webp",
+    "quality": "blue"
+  },
+  "skillupmaterial_01_lv3": {
+    "name": "「橄榄枝」",
+    "icon": "/static/images/materials/skillupmaterial_01_lv3.webp",
+    "quality": "purple"
+  },
+  "skillupmaterial_02_lv1": {
+    "name": "新兵的怯懦",
+    "icon": "/static/images/item/新兵的怯懦.webp",
+    "quality": "green"
+  },
+  "skillupmaterial_02_lv2": {
+    "name": "尉官的谨慎",
+    "icon": "/static/images/materials/skillupmaterial_02_lv2.webp",
+    "quality": "blue"
+  },
+  "skillupmaterial_02_lv3": {
+    "name": "「白蔷薇」",
+    "icon": "/static/images/materials/skillupmaterial_02_lv3.webp",
+    "quality": "purple"
+  },
+  "skillupmaterial_03_lv1": {
+    "name": "初次的期许",
+    "icon": "/static/images/item/初次的期许.webp",
+    "quality": "green"
+  },
+  "skillupmaterial_03_lv2": {
+    "name": "已知的倦怠",
+    "icon": "/static/images/materials/skillupmaterial_03_lv2.webp",
+    "quality": "blue"
+  },
+  "skillupmaterial_03_lv3": {
+    "name": "「黑帽子」",
+    "icon": "/static/images/materials/skillupmaterial_03_lv3.webp",
+    "quality": "purple"
+  },
+  "skillupmaterial_04_lv1": {
+    "name": "思维的同频",
+    "icon": "/static/images/item/思维的同频.webp",
+    "quality": "green"
+  },
+  "skillupmaterial_04_lv2": {
+    "name": "信仰的共鸣",
+    "icon": "/static/images/materials/skillupmaterial_04_lv2.webp",
+    "quality": "blue"
+  },
+  "skillupmaterial_04_lv3": {
+    "name": "「心跳夜」",
+    "icon": "/static/images/materials/skillupmaterial_04_lv3.webp",
+    "quality": "purple"
+  },
+  "skillupmaterial_05_lv1": {
+    "name": "水波的迟疑",
+    "icon": "/static/images/item/水波的迟疑.webp",
+    "quality": "green"
+  },
+  "skillupmaterial_05_lv2": {
+    "name": "倒悬的轻响",
+    "icon": "/static/images/materials/skillupmaterial_05_lv2.webp",
+    "quality": "blue"
+  },
+  "skillupmaterial_05_lv3": {
+    "name": "「第二人」",
+    "icon": "/static/images/materials/skillupmaterial_05_lv3.webp",
+    "quality": "purple"
+  },
+  "weaponbreakmaterial_01_lv1": {
+    "name": "铁制苹果核",
+    "icon": "/static/images/item/铁制苹果核.webp",
+    "quality": "green"
+  },
+  "weaponbreakmaterial_01_lv2": {
+    "name": "银质苹果核",
+    "icon": "/static/images/materials/weaponbreakmaterial_01_lv2.webp",
+    "quality": "blue"
+  },
+  "weaponbreakmaterial_01_lv3": {
+    "name": "金色苹果核",
+    "icon": "/static/images/materials/weaponbreakmaterial_01_lv3.webp",
+    "quality": "purple"
+  },
+  "weaponbreakmaterial_02_lv1": {
+    "name": "螺旋乐碎屑",
+    "icon": "/static/images/item/螺旋乐碎屑.webp",
+    "quality": "green"
+  },
+  "weaponbreakmaterial_02_lv2": {
+    "name": "螺旋乐小节",
+    "icon": "/static/images/materials/weaponbreakmaterial_02_lv2.webp",
+    "quality": "blue"
+  },
+  "weaponbreakmaterial_02_lv3": {
+    "name": "螺旋乐齐奏",
+    "icon": "/static/images/materials/weaponbreakmaterial_02_lv3.webp",
+    "quality": "purple"
+  },
+  "weaponbreakmaterial_03_lv1": {
+    "name": "液态梦试用装",
+    "icon": "/static/images/item/液态梦试用装.webp",
+    "quality": "green"
+  },
+  "weaponbreakmaterial_03_lv2": {
+    "name": "液态梦旅行装",
+    "icon": "/static/images/materials/weaponbreakmaterial_03_lv2.webp",
+    "quality": "blue"
+  },
+  "weaponbreakmaterial_03_lv3": {
+    "name": "罐装液态梦",
+    "icon": "/static/images/materials/weaponbreakmaterial_03_lv3.webp",
+    "quality": "purple"
+  },
+  "weaponbreakmaterial_04_lv1": {
+    "name": "无味冷点心",
+    "icon": "/static/images/item/无味冷点心.webp",
+    "quality": "green"
+  },
+  "weaponbreakmaterial_04_lv2": {
+    "name": "原味冷点心",
+    "icon": "/static/images/materials/weaponbreakmaterial_04_lv2.webp",
+    "quality": "blue"
+  },
+  "weaponbreakmaterial_04_lv3": {
+    "name": "特制冷点心",
+    "icon": "/static/images/materials/weaponbreakmaterial_04_lv3.webp",
+    "quality": "purple"
+  },
+  "weaponbreakmaterial_05_lv1": {
+    "name": "入门级戏剧芯",
+    "icon": "/static/images/item/入门级戏剧芯.webp",
+    "quality": "green"
+  },
+  "weaponbreakmaterial_05_lv2": {
+    "name": "大师级戏剧芯",
+    "icon": "/static/images/materials/weaponbreakmaterial_05_lv2.webp",
+    "quality": "blue"
+  },
+  "weaponbreakmaterial_05_lv3": {
+    "name": "典藏级戏剧芯",
+    "icon": "/static/images/materials/weaponbreakmaterial_05_lv3.webp",
+    "quality": "purple"
+  },
+  "weeklycloneboss_a01_01": {
+    "name": "好狗狗印章",
+    "icon": "/static/images/item/好狗狗印章.webp",
+    "quality": "orange"
+  },
+  "weeklycloneboss_a02_01": {
+    "name": "名为炫耀的裙袂",
+    "icon": "/static/images/item/名为炫耀的裙袂.webp",
+    "quality": "orange"
+  },
+  "weeklycloneboss_a03_01": {
+    "name": "记忆的永恒",
+    "icon": "/static/images/item/记忆的永恒.webp",
+    "quality": "orange"
+  },
+  "worldboss_material_01": {
+    "name": "倾诉花种",
+    "icon": "/static/images/item/倾诉花种.webp",
+    "quality": "purple"
+  },
+  "worldboss_material_02": {
+    "name": "上膛骑士火花塞",
+    "icon": "/static/images/item/上膛骑士火花塞.webp",
+    "quality": "purple"
+  },
+  "worldboss_material_03": {
+    "name": "妄想彼端的一页",
+    "icon": "/static/images/item/妄想彼端的一页.webp",
+    "quality": "purple"
+  },
+  "worldboss_material_04": {
+    "name": "水月色拨片",
+    "icon": "/static/images/item/水月色拨片.webp",
+    "quality": "purple"
+  },
+  "worldboss_material_05": {
+    "name": "护巢残片",
+    "icon": "/static/images/item/护巢残片.webp",
+    "quality": "purple"
+  },
+  "worldboss_material_06": {
+    "name": "斑斓的票根",
+    "icon": "/static/images/item/斑斓的票根.webp",
+    "quality": "purple"
+  },
+  "worldboss_material_07": {
+    "name": "海之泪",
+    "icon": "/static/images/item/海之泪.webp",
+    "quality": "purple"
+  },
+  "weaponupmaterial_lv1": {
+    "name": "淡色染剂",
+    "icon": "/static/images/item/淡色染剂.webp",
+    "quality": "green"
+  },
+  "weaponupmaterial_lv2": {
+    "name": "无彩染剂",
+    "icon": "/static/images/materials/weaponupmaterial_lv2.webp",
+    "quality": "blue"
+  },
+  "weaponupmaterial_lv3": {
+    "name": "混沌染剂",
+    "icon": "/static/images/materials/weaponupmaterial_lv3.webp",
+    "quality": "purple"
+  },
+  "weeklycloneboss_a04_01": {
+    "name": "空心花籽",
+    "icon": "/static/images/materials/weeklycloneboss_a04_01.webp",
+    "quality": "orange"
+  },
+  "hunterlvexp": {
+    "name": "猎人等级经验",
+    "icon": "/static/images/materials/hunterlvexp.webp",
+    "quality": "orange"
+  },
+  "attack_blue": {
+    "name": "「影之信条」",
+    "icon": "/static/images/materials/attack_blue.webp",
+    "quality": "blue"
+  },
+  "attack_orange": {
+    "name": "「影之信条」",
+    "icon": "/static/images/materials/attack_orange.webp",
+    "quality": "orange"
+  },
+  "attack_purple": {
+    "name": "「影之信条」",
+    "icon": "/static/images/materials/attack_purple.webp",
+    "quality": "purple"
+  },
+  "chaos_blue": {
+    "name": "「迪亚波罗斯」",
+    "icon": "/static/images/materials/chaos_blue.webp",
+    "quality": "blue"
+  },
+  "chaos_orange": {
+    "name": "「迪亚波罗斯」",
+    "icon": "/static/images/materials/chaos_orange.webp",
+    "quality": "orange"
+  },
+  "chaos_purple": {
+    "name": "「迪亚波罗斯」",
+    "icon": "/static/images/materials/chaos_purple.webp",
+    "quality": "purple"
+  },
+  "cosmos_blue": {
+    "name": "「失落光芒」",
+    "icon": "/static/images/materials/cosmos_blue.webp",
+    "quality": "blue"
+  },
+  "cosmos_orange": {
+    "name": "「失落光芒」",
+    "icon": "/static/images/materials/cosmos_orange.webp",
+    "quality": "orange"
+  },
+  "cosmos_purple": {
+    "name": "「失落光芒」",
+    "icon": "/static/images/materials/cosmos_purple.webp",
+    "quality": "purple"
+  },
+  "equipment_blueticket": {
+    "name": "胡萝卜币",
+    "icon": "/static/images/item/胡萝卜币.webp",
+    "quality": "blue"
+  },
+  "equipment_orangeticket": {
+    "name": "金萝卜币",
+    "icon": "/static/images/item/金萝卜币.webp",
+    "quality": "orange"
+  },
+  "equipment_purpleticket": {
+    "name": "银萝卜币",
+    "icon": "/static/images/item/银萝卜币.webp",
+    "quality": "purple"
+  },
+  "equipmentupmaterial_lv1": {
+    "name": "井小屑",
+    "icon": "/static/images/item/井小屑.webp",
+    "quality": "green"
+  },
+  "equipmentupmaterial_lv2": {
+    "name": "井屑达人",
+    "icon": "/static/images/materials/equipmentupmaterial_lv2.webp",
+    "quality": "blue"
+  },
+  "equipmentupmaterial_lv3": {
+    "name": "超屑井主",
+    "icon": "/static/images/materials/equipmentupmaterial_lv3.webp",
+    "quality": "purple"
+  },
+  "getefficiency_blue": {
+    "name": "「音速蓝刺猬」",
+    "icon": "/static/images/materials/getefficiency_blue.webp",
+    "quality": "blue"
+  },
+  "getefficiency_orange": {
+    "name": "「音速蓝刺猬」",
+    "icon": "/static/images/materials/getefficiency_orange.webp",
+    "quality": "orange"
+  },
+  "getefficiency_purple": {
+    "name": "「音速蓝刺猬」",
+    "icon": "/static/images/materials/getefficiency_purple.webp",
+    "quality": "purple"
+  },
+  "heal_blue": {
+    "name": "「缇娅的夜间酒馆」",
+    "icon": "/static/images/materials/heal_blue.webp",
+    "quality": "blue"
+  },
+  "heal_orange": {
+    "name": "「缇娅的夜间酒馆」",
+    "icon": "/static/images/materials/heal_orange.webp",
+    "quality": "orange"
+  },
+  "heal_purple": {
+    "name": "「缇娅的夜间酒馆」",
+    "icon": "/static/images/materials/heal_purple.webp",
+    "quality": "purple"
+  },
+  "incantation_blue": {
+    "name": "「真红：双生蝶」",
+    "icon": "/static/images/materials/incantation_blue.webp",
+    "quality": "blue"
+  },
+  "incantation_orange": {
+    "name": "「真红：双生蝶」",
+    "icon": "/static/images/materials/incantation_orange.webp",
+    "quality": "orange"
+  },
+  "incantation_purple": {
+    "name": "「真红：双生蝶」",
+    "icon": "/static/images/materials/incantation_purple.webp",
+    "quality": "purple"
+  },
+  "lakshana_blue": {
+    "name": "「街头拳王」",
+    "icon": "/static/images/materials/lakshana_blue.webp",
+    "quality": "blue"
+  },
+  "lakshana_orange": {
+    "name": "「街头拳王」",
+    "icon": "/static/images/materials/lakshana_orange.webp",
+    "quality": "orange"
+  },
+  "lakshana_purple": {
+    "name": "「街头拳王」",
+    "icon": "/static/images/materials/lakshana_purple.webp",
+    "quality": "purple"
+  },
+  "mag_blue": {
+    "name": "「小小大冒险」",
+    "icon": "/static/images/materials/mag_blue.webp",
+    "quality": "blue"
+  },
+  "mag_orange": {
+    "name": "「小小大冒险」",
+    "icon": "/static/images/materials/mag_orange.webp",
+    "quality": "orange"
+  },
+  "mag_purple": {
+    "name": "「小小大冒险」",
+    "icon": "/static/images/materials/mag_purple.webp",
+    "quality": "purple"
+  },
+  "nature_blue": {
+    "name": "「森林萤火之心」",
+    "icon": "/static/images/materials/nature_blue.webp",
+    "quality": "blue"
+  },
+  "nature_orange": {
+    "name": "「森林萤火之心」",
+    "icon": "/static/images/materials/nature_orange.webp",
+    "quality": "orange"
+  },
+  "nature_purple": {
+    "name": "「森林萤火之心」",
+    "icon": "/static/images/materials/nature_purple.webp",
+    "quality": "purple"
+  },
+  "psyche_blue": {
+    "name": "「恶魔之血：诅咒」",
+    "icon": "/static/images/materials/psyche_blue.webp",
+    "quality": "blue"
+  },
+  "psyche_orange": {
+    "name": "「恶魔之血：诅咒」",
+    "icon": "/static/images/materials/psyche_orange.webp",
+    "quality": "orange"
+  },
+  "psyche_purple": {
+    "name": "「恶魔之血：诅咒」",
+    "icon": "/static/images/materials/psyche_purple.webp",
+    "quality": "purple"
+  },
+  "psychically_blue": {
+    "name": "「静谧山庄」",
+    "icon": "/static/images/materials/psychically_blue.webp",
+    "quality": "blue"
+  },
+  "psychically_orange": {
+    "name": "「静谧山庄」",
+    "icon": "/static/images/materials/psychically_orange.webp",
+    "quality": "orange"
+  },
+  "psychically_purple": {
+    "name": "「静谧山庄」",
+    "icon": "/static/images/materials/psychically_purple.webp",
+    "quality": "purple"
+  },
+  "shield_blue": {
+    "name": "「守卫王国」",
+    "icon": "/static/images/materials/shield_blue.webp",
+    "quality": "blue"
+  },
+  "shield_orange": {
+    "name": "「守卫王国」",
+    "icon": "/static/images/materials/shield_orange.webp",
+    "quality": "orange"
+  },
+  "shield_purple": {
+    "name": "「守卫王国」",
+    "icon": "/static/images/materials/shield_purple.webp",
+    "quality": "purple"
+  }
+}

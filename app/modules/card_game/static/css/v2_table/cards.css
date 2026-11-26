@@ -15,29 +15,65 @@
   pointer-events: none;
 }
 
-.v2-character-card.legal {
-  border-color: rgba(88, 216, 210, 0.92);
-  box-shadow: 0 0 0 calc(1px * var(--table-layout-scale, 1)) rgba(88, 216, 210, 0.28);
-}
-
 .v2-character-card.harmony-source {
-  border-color: rgba(232, 201, 136, 0.95);
-  box-shadow: 0 0 0 calc(1px * var(--table-layout-scale, 1)) rgba(232, 201, 136, 0.42), 0 0 calc(14px * var(--table-layout-scale, 1)) rgba(232, 201, 136, 0.22);
+  outline: calc(2px * var(--table-layout-scale, 1)) dashed #59b9ff;
+  outline-offset: calc(8px * var(--table-layout-scale, 1));
 }
 
-.v2-character-card.harmony-ready {
-  border-color: rgba(120, 230, 210, 0.95);
-  box-shadow: 0 0 0 calc(1px * var(--table-layout-scale, 1)) rgba(120, 230, 210, 0.45), 0 0 calc(14px * var(--table-layout-scale, 1)) rgba(120, 230, 210, 0.24);
-}
-
+.v2-character-card.harmony-ready,
 .v2-character-card.legal.harmony-ready {
-  border-color: rgba(120, 230, 210, 0.98);
-  box-shadow: 0 0 0 calc(2px * var(--table-layout-scale, 1)) rgba(88, 216, 210, 0.45), 0 0 calc(16px * var(--table-layout-scale, 1)) rgba(120, 230, 210, 0.28);
+  box-shadow: 0 0 calc(18px * var(--table-layout-scale, 1)) calc(4px * var(--table-layout-scale, 1)) rgba(120, 230, 210, 0.48);
 }
 
 .v2-character-card.down {
   opacity: 0.78;
   filter: grayscale(0.4);
+}
+
+.v2-character-card.is-collapsed {
+  overflow: visible;
+}
+
+.v2-collapse-halo {
+  position: absolute;
+  left: 18%;
+  top: 0;
+  width: 56%;
+  max-width: calc(64px * var(--table-layout-scale, 1));
+  height: auto;
+  aspect-ratio: 1.6;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  overflow: visible;
+  z-index: 7;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(255, 197, 67, .72));
+}
+
+.v2-collapse-ring {
+  fill: none;
+  stroke: #ffe39b;
+  stroke-width: 4;
+  opacity: .85;
+}
+
+.v2-collapse-orbit {
+  fill: #ffd05c;
+  stroke: #fff2b9;
+  stroke-width: 1;
+  transform-origin: 50% 50%;
+  animation: v2-collapse-orbit 2.8s linear infinite;
+}
+
+@keyframes v2-collapse-orbit {
+  to { transform: rotate(360deg); }
+}
+
+.v2-table-page[data-reduced-motion='1'] .v2-collapse-orbit {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-table-page:not([data-reduced-motion='0']) .v2-collapse-orbit { animation: none; }
 }
 
 .v2-down-badge {
@@ -66,6 +102,7 @@
   box-shadow: 0 0 0 calc(2px * var(--table-layout-scale, 1)) rgba(255, 191, 87, 0.9), 0 0 calc(18px * var(--table-layout-scale, 1)) rgba(255, 191, 87, 0.24);
 }
 
+.v2-character-card.has-protection-frame,
 .v2-character-card.is-damage-immune,
 .v2-character-card.is-damage-limited {
   overflow: visible;
@@ -73,9 +110,9 @@
 
 .v2-immunity-frame {
   position: absolute;
-  inset: calc(-5px * var(--table-layout-scale, 1));
-  width: calc(100% + 10px * var(--table-layout-scale, 1));
-  height: calc(100% + 10px * var(--table-layout-scale, 1));
+  inset: calc((-5px - var(--protection-offset, 0px)) * var(--table-layout-scale, 1));
+  width: calc(100% + (10px + var(--protection-offset, 0px) * 2) * var(--table-layout-scale, 1));
+  height: calc(100% + (10px + var(--protection-offset, 0px) * 2) * var(--table-layout-scale, 1));
   overflow: visible;
   z-index: 4;
   pointer-events: none;
@@ -97,6 +134,13 @@
   fill: rgba(82, 166, 255, 0.045);
   stroke: #75beff;
 }
+
+.v2-combat-immunity-frame { filter: drop-shadow(0 0 4px #b780ffb3); }
+.v2-combat-immunity-frame path { fill: #b780ff0b; stroke: #c397ff; }
+.v2-noncombat-immunity-frame { filter: drop-shadow(0 0 4px #63d990b3); }
+.v2-noncombat-immunity-frame path { fill: #63d9900b; stroke: #7ce6a2; }
+.v2-hp-floor-frame { filter: drop-shadow(0 0 4px #ff6262b3); }
+.v2-hp-floor-frame path { fill: #ff62620b; stroke: #ff7979; }
 
 .v2-character-art {
   position: relative;
@@ -396,10 +440,6 @@
   margin-left: calc(14px * var(--table-layout-scale, 1));
 }
 
-.v2-hand-card.legal {
-  box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) var(--card-type-glow, rgba(88, 216, 210, 0.28)), 0 0 0 calc(1px * var(--table-layout-scale, 1)) rgba(88, 216, 210, 0.72);
-}
-
 .v2-hand-card.legal.is-instant,
 .v2-hand-card.legal.is-instant-response {
   border-width: calc(2px * var(--table-layout-scale, 1));
@@ -493,8 +533,8 @@
   box-shadow: inset 0 0 0 calc(1px * var(--table-layout-scale, 1)) rgba(232, 201, 136, 0.12);
 }
 
-.v2-table-page.is-mulligan .v2-front-axis,
-.v2-table-page.is-mulligan .v2-side-actions {
+.v2-table-page.is-mulligan:not(.selection-collapsed) .v2-front-axis,
+.v2-table-page.is-mulligan:not(.selection-collapsed) .v2-side-actions {
   visibility: hidden;
   pointer-events: none;
 }
@@ -1169,15 +1209,24 @@
   position: relative;
   z-index: 5;
 }
-.v2-table-page.is-mulligan.mulligan-collapsed .v2-mulligan-rail {
+.v2-selection-toggle {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 84;
+  min-height: 40px;
+  max-width: calc(100vw - 32px);
+  pointer-events: auto;
+}
+.v2-selection-toggle:hover {
+  transform: translate(-50%, -2px);
+}
+.v2-selection-toggle[hidden] { display: none !important; }
+.v2-choice-overlay.open.is-selection-collapsed { display: none; }
+.v2-mulligan-stage.is-selection-collapsed {
   visibility: hidden;
   pointer-events: none;
-}
-.v2-table-page.is-mulligan.mulligan-collapsed .v2-mulligan-stage {
-  pointer-events: none;
-}
-.v2-table-page.is-mulligan.mulligan-collapsed #v2-mulligan-btn {
-  pointer-events: auto;
 }
 @media (max-height: 520px) {
   .v2-mulligan-stage { grid-template-rows: minmax(0, 1fr) auto; }
@@ -1187,6 +1236,7 @@
 
 /* Personal gold resource, directly above the attack value in both card sizes. */
 .v2-attack-stack { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.v2-combat-stat.is-signal { color: #89d9ed; }
 .v2-combat-stat.is-aura { color: #65bdff; }
 .v2-combat-stat.is-jingu { color: #ffda55; }
 
@@ -1237,10 +1287,57 @@
 .v2-hover-preview.has-references.is-left { left: calc(28px + min(160px * var(--table-layout-scale, 1), (100vw - 48px) / 3)); right: auto; }
 .v2-hover-preview.has-references.is-right { right: 16px; left: auto; }
 .v2-hover-preview.has-references.open { transform: translateY(0) scale(1); }
-.v2-hover-references { position: absolute; right: calc(100% + 12px); top: 0; width: 100%; display: grid; gap: 12px; transform: scale(.5); transform-origin: top right; }
-/* Compensate for the reference rail's half scale, keeping mechanism text readable. */
-.v2-hover-references .is-mechanism h2 { font-size: calc(44px * var(--table-font-scale, 1)); }
-.v2-hover-references .is-mechanism p { font-size: calc(28px * var(--table-font-scale, 1)); }
-.v2-hover-references .is-mechanism .v2-chip { font-size: calc(24px * var(--table-font-scale, 1)); }
+/* Keep reference cards compact without scaling their text. */
+.v2-hover-references { position: absolute; right: calc(100% + 12px); top: 0; width: 50%; display: grid; gap: 6px; }
+.v2-hover-references .v2-hover-card { min-width: 0; gap: calc(4px * var(--table-layout-scale, 1)); padding: calc(7px * var(--table-layout-scale, 1)); overflow-wrap: anywhere; }
+.v2-hover-references .v2-hover-art { height: calc(84px * var(--table-layout-scale, 1)); }
 
 .v2-combat-stat.is-fang { color: #ffda55; }
+
+/* Player resistance belongs beside player life, including public replays. */
+.v2-player-effects { display: inline-flex; gap: 3px; align-items: center; }
+.v2-player-effects .v2-effect-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex: 0 0 auto; border: 1px solid currentColor;
+  border-radius: 50%; color: #8de2c1; background: rgba(22, 25, 31, .96);
+}
+.v2-player-effects .v2-effect-icon.is-debuff,
+.v2-zone-effect-list .v2-chip.is-debuff { color: #ff9b9b; }
+
+.v2-effect-icon.is-resistance {
+  position: relative;
+  width: calc(30px * var(--table-layout-scale, 1));
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.v2-effect-icon .v2-effect-attribute { width: 70%; height: 100%; object-fit: contain; margin-right: auto; }
+.v2-effect-icon.is-resistance svg { position: absolute; right: -2px; bottom: -2px; width: 55%; height: 75%; filter: drop-shadow(0 1px 1px #000); }
+
+/* The green frame is eroded from the top by the backend's collapse fraction. */
+.v2-collapse-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  border: calc(2px * var(--table-layout-scale, 1)) solid #88c99b;
+  border-radius: inherit;
+  clip-path: inset(var(--collapse-frame-cut, 0%) 0 0 0);
+  pointer-events: none;
+}
+.v2-character-card.is-summoned { box-shadow: 0 0 0 3px #b69cf5; }
+.v2-log-item { display: flex; gap: 10px; align-items: center; }
+.v2-log-card {
+  position: relative;
+  flex: 0 0 54px;
+  width: 54px;
+  height: 74px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #b9c6d8;
+  border-radius: 5px;
+  background: #101820;
+  color: white;
+  cursor: zoom-in;
+}
+.v2-log-card-art { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.v2-log-card span { position: absolute; inset: auto 0 0; padding: 3px 1px; background: #0a1220dd; font-size: 9px; }

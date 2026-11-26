@@ -846,42 +846,134 @@
   "明音凛": [
     {
       "title": "A觉·教室后的吉他谱",
-      "description": "暴击率+12%；同调共振命中后回复100%基础攻击力生命。",
-      "implemented": true
+      "description": "短强E或长强E命中后回复1000%基础攻击力生命，并获得60%抗打断和50%防御力，持续15秒。",
+      "implemented": true,
+      "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
     },
     {
       "title": "B觉·琴行中的变调夹",
-      "description": "泛音列目标全抗-7.5%；音域内前台角色伤害+12.5%。",
-      "implemented": true
+      "description": "泛音列附着目标或音域内目标相属性抗性降低12%。",
+      "implemented": true,
+      "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
     },
     {
       "title": "C觉·树荫下的胶囊罐",
-      "description": "点按E倍率提高150%；范围扩大与聚怪不参与单敌伤害计算。",
-      "implemented": true
+      "description": "点按E额外增加1000%攻击倍率；音域范围扩大30%与聚怪不参与单敌伤害。",
+      "implemented": true,
+      "source_note": "用户2026-10-13提供的10月12日调整公告：烁星激昂攻击提升20%、C觉音域范围30%、月的对跖点暴击15%–27%；非Nanoka/NTEData新版本核实。 C点按E追加1000%沿用原值；范围与聚怪不参与单敌伤害。"
     },
     {
       "title": "D觉·耳机里的底噪声",
-      "description": "同调共振后攻击+16%，持续10秒。",
-      "implemented": true
+      "description": "短强E或长强E命中后暴击伤害+30%，持续15秒。",
+      "implemented": true,
+      "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
     },
     {
       "title": "E觉·乐队间的节拍器",
-      "description": "泛音列传导倍率提升至50%；音域传导增伤提升至60%。",
-      "implemented": true
+      "description": "泛音列传导倍率提升至64%；音域传导增伤提升至90%，弦刃与羽刃回响均可传导。",
+      "implemented": true,
+      "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
     },
     {
       "title": "F觉·舞台前的超新星",
-      "description": "烁星激昂额外使全队伤害+10%。",
-      "implemented": true
+      "description": "烁星激昂额外使自身无视防御16%，持续20秒。",
+      "implemented": true,
+      "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
     },
     {
       "title": "三觉共鸣·全音阶",
-      "description": "普攻、变轨、终结技能等级+1，攻击+20%。",
-      "implemented": true
+      "description": "普攻、变轨、终结技能等级+1；非循环入战30弦能。短强E、长强E各额外增加800%攻击倍率，Q2额外增加1000%攻击倍率。",
+      "implemented": true,
+      "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。 用户2026-10-12确认10月11日调整：强化技能追加倍率仍属三觉共鸣，750%改为800%，在技能等级换算后加算；基础倍率下调未给新值，保留现值。"
     },
     {
       "title": "六觉共鸣·复调式",
-      "description": "非循环入战30弦能；同调共振后返还10弦能并获得50%暴伤25秒。",
+      "description": "短强E或长强E命中后返还10弦能并获得64%暴伤，持续25秒。",
+      "implemented": true,
+      "source_note": "用户2026-10-12提供的10月11日明音调整：仅更新明确数值和机制；非NTEData/Nanoka新版本核实，未给具体值的基础倍率下调保留现值。"
+    }
+  ],
+  "曳尔沐": [
+    {
+      "title": "404 遥望一座孤岛",
+      "description": "释放极轨终结后，每累计消耗1层错视幻觉，全队暴击伤害提高10%，持续20秒；再次释放终结时移除旧增益，本次结算后清空累计消耗。",
+      "implemented": true
+    },
+    {
+      "title": "200 节点彼此相连",
+      "description": "极轨终结伤害倍率提升30%；e3每消耗1层错视幻觉，本次技能无视目标5%防御。",
+      "implemented": true
+    },
+    {
+      "title": "504 访问响应超时",
+      "description": "中等信号增强至强信号后获得3层错视幻觉；错视幻觉重复触发可叠层，上限4层。",
+      "implemented": true
+    },
+    {
+      "title": "302 祈愿重新定向",
+      "description": "在编队内且存活时，全队暴击伤害提升20%。",
+      "implemented": true
+    },
+    {
+      "title": "304 今日一如往昔",
+      "description": "e1伤害倍率+100%；非循环入战环合100点，单场一次。",
+      "implemented": true
+    },
+    {
+      "title": "301 您访问的地址已被永久转移",
+      "description": "释放极轨终结后，每累计消耗1层错视幻觉，自身追击伤害提高25%，持续20秒；再次释放终结时移除旧增益，本次结算后清空累计消耗。",
+      "implemented": true
+    },
+    {
+      "title": "拜启，我的旧友",
+      "description": "普攻、E、Q技能等级+1；弱信号时释放援护或e2后直接增强至强信号，增强至强信号时立即激活e3。",
+      "implemented": true
+    },
+    {
+      "title": "再会，我的新知",
+      "description": "在编队内且存活时，全队角色造成的伤害无视目标12%全属性抗性；e3末段命中且本次消耗错视幻觉时，额外造成每层168%攻击倍率光属性异能伤害（1级变轨技能，随技能等级换算）。",
+      "implemented": true
+    }
+  ],
+  "Exe": [
+    {
+      "title": "print 你好，我的世界",
+      "description": "Exe的「评分」等级为SS及以上时，获得20%暗属性增伤。",
+      "implemented": true
+    },
+    {
+      "title": "define X/Y",
+      "description": "Exe的「评分」等级为B/A/S/SS/SSS时，Exe分别可提升10%/12%/15%/20%/30%攻击力。",
+      "implemented": true
+    },
+    {
+      "title": "for 永远一起玩",
+      "description": "「变轨技能：数据穿透」可吸附范围内目标敌人，并降低目标15%的暗属性抗性，持续12秒。",
+      "implemented": true
+    },
+    {
+      "title": "kill 杀死进程",
+      "description": "场上召唤物造成的伤害增加10%，「数字残像」造成的伤害在此基础上额外增加30%。",
+      "implemented": true
+    },
+    {
+      "title": "null 空指针",
+      "description": "极轨终结的「方程构建」状态持续期间，「数字残像」会在消失时对范围内目标产生冲击，造成等同于12.9%*攻击力的额外伤害（倍率跟随普通攻击技能等级成长）。",
+      "implemented": true
+    },
+    {
+      "title": "log 驱动骸骨的代码",
+      "description": "每次获取「帧数」时，恢复此次获得的「帧数」点数*2%*攻击力的生命值；\r\n每次消耗「帧数」时，根据此次消耗的「帧数」点数提升「评分」。",
+      "implemented": true
+    },
+    {
+      "title": "save 不曾想象的未来",
+      "description": "「普通攻击」、「变轨技能」和「极轨终结」的技能等级提升1级。充能效率提高25%。\r\n直至脱离本次战斗，「评分」不会下降。",
+      "implemented": true
+    },
+    {
+      "title": "load 不可证明的宝物",
+      "description": "「评分」提升效率及抗打断能力提高50%。\r\n解锁「Ω评分」，处于「Ω评分」下，Exe获得更高的「帧数」累积效率且「觉醒：define X/Y」效果会更改为额外为Exe提供50%攻击力。\r\n极轨终结的「方程构建」期间，「普通攻击：纵深侵入」还可以斩杀生命值低于5%的BOSS目标。\n当前排轴不模拟斩杀。",
       "implemented": true
     }
   ]

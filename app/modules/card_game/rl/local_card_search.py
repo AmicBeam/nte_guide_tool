@@ -16,11 +16,35 @@ def replacement_delta(parent, candidate):
 def local_neighbors(parent, *, seed=0, two_limit=128):
     """All distance-one builds plus a deterministic sample of distance-two builds."""
     parent=assert_public_encoder_deck(parent)
-    if type(two_limit) is not int or not 0<=two_limit<=1024:raise ValueError('two_limit must be 0..1024')
     cards=[c for owner in parent['character_ids'] for c in public_kit_cards(owner)]
+    return _local_neighbors(parent,cards,assert_public_encoder_deck,seed=seed,two_limit=two_limit,
+                            mutable_characters=parent['character_ids'])
+
+
+def preselection_neighbors(parent, *, mutable_characters, seed=0, two_limit=128):
+    """Legal current-catalog candidates only; does not run inference or select a winner."""
+    from app.modules.card_game.content.duel_v2 import CARDS, PUBLIC_CHARACTER_IDS, validate_deck
+    from .build_acceptance import canonical_build
+    parent=canonical_build(parent)
+    if not set(parent['character_ids']) <= PUBLIC_CHARACTER_IDS:
+        raise ValueError('Preselection requires public characters')
+    mutable=tuple(mutable_characters)
+    if len(set(mutable)) != len(mutable) or not set(mutable) <= set(parent['character_ids']):
+        raise ValueError('Mutable characters must be unique members of the fixed team')
+    cards=[cid for owner in parent['character_ids'] for cid in sorted(CARDS)
+           if CARDS[cid]['character_id']==owner and not CARDS[cid].get('derived')]
+    if any(sum(CARDS[cid]['character_id']==owner for cid in cards)!=8 for owner in parent['character_ids']):
+        raise ValueError('Preselection requires eight buildable card kinds per character')
+    return _local_neighbors(parent,cards,validate_deck,seed=seed,two_limit=two_limit,
+                            mutable_characters=mutable)
+
+
+def _local_neighbors(parent,cards,validator,*,seed,two_limit,mutable_characters):
+    if type(two_limit) is not int or not 0<=two_limit<=1024:raise ValueError('two_limit must be 0..1024')
+    editable=[index for index,owner in enumerate(parent['character_ids']) if owner in mutable_characters]
     counts=Counter(parent['card_ids']);initial=tuple(counts[c] for c in cards)
     def moves(values):
-        for owner in range(4):
+        for owner in editable:
             for remove in range(owner*8,owner*8+8):
                 if not values[remove]:continue
                 for add in range(owner*8,owner*8+8):
@@ -38,7 +62,7 @@ def local_neighbors(parent, *, seed=0, two_limit=128):
     for values in chosen:
         identity='local-'+sha256(repr((parent['character_ids'],values)).encode()).hexdigest()[:12]
         build={**parent,'id':identity,'name':'局部配牌候选','card_ids':[c for c,n in zip(cards,values) for _ in range(n)]}
-        build=assert_public_encoder_deck(build)
+        build=validator(build)
         result.append({'id':identity,'build':build,'parent_id':parent['id'],**replacement_delta(parent,build)})
     return result
 

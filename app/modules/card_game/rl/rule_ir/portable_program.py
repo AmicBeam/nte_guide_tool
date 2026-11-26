@@ -137,11 +137,12 @@ ALLOWED_BUILTIN_INTRINSICS: frozenset[str] = frozenset({
     'zip',
     'Exception', 'ValueError', 'TypeError', 'KeyError', 'IndexError',
     'AttributeError', 'StopIteration', 'RuntimeError', 'AssertionError',
-    'ZeroDivisionError', 'OverflowError', 'LookupError', 'Warning',
+    'ZeroDivisionError', 'OverflowError', 'LookupError', 'Warning', 'NotImplementedError',
 })
 
 DEFAULT_EXPLICIT_INTRINSICS: frozenset[str] = frozenset({
     'app.modules.card_game.engine.duel_v2.entities.clone_state',
+    'app.modules.card_game.engine.duel_v2.entities.copy_state_graph',
     'copy.deepcopy',
     'random.Random',
     'contextvars.ContextVar',
@@ -534,6 +535,7 @@ class ProgramExporter:
         self._constant_memo: dict[int, dict[str, Any]] = {}
         self._constant_objects: dict[int, Any] = {}
         self._literal_memo: dict[tuple[type, Any], dict[str, Any]] = {}
+        self._frozen_self_modules: dict[str, types.ModuleType] = {}
 
     def check_source_validity(self, obj: Any) -> None:
         mod_name = getattr(obj, '__module__', None) or ''
@@ -640,6 +642,11 @@ class ProgramExporter:
         mod = getattr(cls, '__module__', '')
         name = getattr(cls, '__name__', '')
         qual = f"{mod}.{name}"
+        # CPython exposes this public constructor from the private _contextvars
+        # extension. Keep its declared intrinsic identity across host versions;
+        # this does not authorize any other private-module class.
+        if cls is contextvars.ContextVar:
+            qual = 'contextvars.ContextVar'
         if qual in self.explicit_intrinsics or name in self.explicit_intrinsics:
             int_name = qual if qual in self.explicit_intrinsics else name
             self.required_intrinsics.add(int_name)
@@ -661,6 +668,8 @@ class ProgramExporter:
         return {"kind": "class", "id": cid}
 
     def capture_constant_or_ref(self, val: Any) -> dict[str, Any]:
+        if val is sys.modules:
+            raise ExportError('Ambient sys.modules cannot be frozen as rule data')
         if val is None:
             return {"kind": "singleton", "name": "None"}
         if val is True:
@@ -899,6 +908,33 @@ class ProgramExporter:
             table[name]=self.capture_constant_or_ref(value)
             return value
 
+        def self_module_lookup(module, insts, index):
+            if module is not sys or insts[index].argval != 'modules':
+                return False
+            following = insts[index + 1:index + 3]
+            if (len(following) != 2 or following[0].opname != 'LOAD_GLOBAL'
+                    or following[0].argval != '__name__' or following[1].opname != 'BINARY_SUBSCR'):
+                raise ExportError('Only static sys.modules[__name__] lookup is permitted')
+            own = load_module(fn.__module__)
+            if own is None:
+                raise ExportError('Self-module lookup outside pure source scope')
+            self._frozen_self_modules[fn.__module__] = own
+            table = self.modules.setdefault(fn.__module__, {})
+            def plain(value, seen):
+                if type(value) in (str, int, float, bool, type(None)):return True
+                if id(value) in seen:return False
+                seen = seen | {id(value)}
+                if type(value) in (list, tuple):return all(plain(v,seen) for v in value)
+                if type(value) is dict:return all(plain(k,seen) and plain(v,seen) for k,v in value.items())
+                return False
+            # Encoding contracts expose their ordinary numeric/string constants.
+            # Do not capture the ambient process module registry or its objects.
+            for name, value in sorted(vars(own).items()):
+                if name.isupper() and plain(value, set()):
+                    table[name] = self.capture_constant_or_ref(value)
+            self.modules.setdefault('sys', {})['modules'] = self.capture_constant_or_ref(dict(self._frozen_self_modules))
+            return True
+
         def scan(code):
             insts=[i for i in dis.get_instructions(code) if i.opname!='EXTENDED_ARG']
             imported=None;pending=None
@@ -921,7 +957,9 @@ class ProgramExporter:
                 elif inst.opname in ('LOAD_FAST','LOAD_GLOBAL','LOAD_NAME','LOAD_DEREF') and inst.argval in bindings:
                     value=bindings[inst.argval];index=pos+1
                     while index<len(insts) and insts[index].opname in ('LOAD_ATTR','LOAD_METHOD'):
-                        if isinstance(value,types.ModuleType):value=symbol(value,insts[index].argval)
+                        if isinstance(value,types.ModuleType):
+                            if self_module_lookup(value,insts,index):break
+                            value=symbol(value,insts[index].argval)
                         else:break
                         index+=1
             for const in code.co_consts:
@@ -933,6 +971,18 @@ class ProgramExporter:
         if fid in self._processed_func_ids:
             return
         self._processed_func_ids.add(fid)
+
+        # A captured callable can also be reached through a module passed as
+        # a contract parameter. Preserve actual static module aliases, rather
+        # than capturing its code but omitting that module's callable binding.
+        # Only functions already in this capture queue are exposed; this does
+        # not discover or execute arbitrary additional module members.
+        module_name=fn.__globals__.get('__name__')
+        if module_name==fn.__module__:
+            table=self.modules.setdefault(module_name,{})
+            for alias,value in tuple(fn.__globals__.items()):
+                if value is fn:
+                    table[alias]={'kind':'function','id':fid}
 
         co = fn.__code__
         instructions = list(dis.get_instructions(co))

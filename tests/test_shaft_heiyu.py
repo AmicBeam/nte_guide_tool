@@ -50,16 +50,14 @@ class HeiyuTest(unittest.TestCase):
         self.assertEqual(assist['energy_gain'], 2)
         self.assertAlmostEqual(assist['harmony'], 3.34)
         self.assertAlmostEqual(assist['stagger'], .4)
-        self.assertEqual(actions['a1']['duration_ticks'], 4)
+        self.assertEqual(actions['a1']['duration_ticks'], 5)
         self.assertEqual(actions['a1']['duration_source'], 'user-authorized-estimate')
         self.assertEqual(sum(actions[f'a{i}']['duration_ticks'] for i in range(1, 6)), 40)
-        # 用户2026-09-19提供耗时，非Nanoka核实数据。
-        for name, ticks in {'魔a1': 5, '魔a2': 7, '魔a3': 12, '魔a4': 4,
-                            '魔a5': 14, '魔e': 10, '魔z2': 11}.items():
+        for name, ticks in {'魔a1': 6, '魔a2': 7, '魔a3': 12, '魔a4': 5,
+                            '魔a5': 14, '魔e': 11, '魔z2': 11}.items():
             self.assertEqual(actions[name]['duration_ticks'], ticks)
             self.assertEqual(actions[name]['duration_seconds'], ticks / 10)
-            self.assertEqual(actions[name]['duration_source'], 'user-supplied')
-        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 42)
+        self.assertEqual(sum(actions[f'魔a{i}']['duration_ticks'] for i in range(1, 6)), 44)
         self.assertEqual(len([a for a in actions.values() if a.get('source_row') == 19]), 1)
 
     def test_ntedata_energy_matches_damage_rows_and_interruptions(self):
@@ -131,10 +129,10 @@ class HeiyuTest(unittest.TestCase):
         detail = simulate_shaft_axis(axis)['result']['details'][0]
         self.assertAlmostEqual(detail['formula_parts']['raw_base'] / detail['panel']['atk'], .516)
 
-    def test_form_a5_optional_six_tick_detach_preserves_damage_and_resources(self):
-        # User 2026-09-23: optional detach occupies 0.6s; full cast stays 1.4s.
+    def test_form_a5_detached_duration_keeps_full_resolution(self):
         action = next(a for a in load_shaft_catalog()['actions_by_character'][CID] if a['name'] == '魔a5')
-        self.assertEqual(action['detached_duration_seconds'], 0.6)
+        self.assertEqual(action['duration_seconds'], 1.4)
+        self.assertTrue(action['can_detach'])
         self.assertEqual(action['detached_duration_ticks'], 6)
         results = []
         for detached in (False, True):
@@ -147,7 +145,7 @@ class HeiyuTest(unittest.TestCase):
             self.assertEqual(detail['duration_ticks'], 6 if detached else 14)
             self.assertEqual(detail['is_detached'], detached)
             results.append(detail)
-        for key in ('direct_damage', 'energy_gain', 'harmony', 'personal_resources_consumed'):
+        for key in ('direct_damage', 'energy_gain', 'harmony', 'stagger_amount', 'personal_resources_consumed'):
             self.assertEqual(results[0][key], results[1][key])
 
     def test_basic_malice_is_proportional_and_chain_totals_are_preserved(self):
@@ -162,10 +160,10 @@ class HeiyuTest(unittest.TestCase):
             for action, value in zip(chain, expected):
                 self.assertAlmostEqual(action[field]['恶意'], value)
                 self.assertNotIn('validation_note', action)
-        r = self.simulate([(0, f'action_heiyu_a{i+1}', t) for i,t in enumerate([0,4,10,18,28])])
+        r = self.simulate([(0, f'action_heiyu_a{i+1}', t) for i,t in enumerate([0,5,12,21,29])])
         self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 40)
         self.assertEqual(r['summary']['duration_ticks'], 40)
-        r = self.simulate([(0, 'action_heiyu_q1', 0)] + [(0, f'action_heiyu_form_a{i+1}', t) for i,t in enumerate([10,15,22,34,38])])
+        r = self.simulate([(0, 'action_heiyu_q1', 0)] + [(0, f'action_heiyu_form_a{i+1}', t) for i,t in enumerate([10,16,23,35,40])])
         self.assertAlmostEqual(r['details'][-1]['personal_resources_after']['恶意'], 8)
         self.assertTrue(all(d['resource_damage'] > 0 for d in r['details'][1:]))
 
@@ -187,7 +185,7 @@ class HeiyuTest(unittest.TestCase):
                 self.assertEqual(d['resource_damage'] > 0, hits > 0)
 
     def test_kongmu_access_and_topology(self):
-        c = next(c for c in get_kongmu_catalog_payload()['characters'] if c['id'] == CID)
+        c = next(c for c in get_kongmu_catalog_payload()['characters'] if c['id'] == '1042')
         self.assertEqual(c['element'], '魂')
         self.assertIn('暴击率增加8%', c['kongmu_passive']['text'])
         result = plan_kongmu_layout(CID, 'attack')

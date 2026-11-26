@@ -4,6 +4,7 @@
   const LOGIN_REDIRECT_KEY = 'nte_login_redirect';
   const CHARACTER_ORDER = ['zero', 'xun', 'zhenhong', 'nanali', 'jiuyuan', 'lingke', 'iloy', 'hathor', 'anhunqu', 'canhong', 'zaowu'];
   const CHARACTER_FALLBACK = {
+    heiyu: { id: 'heiyu', name: '黑羽', attribute: '魂', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/黑羽.webp', portrait: '/static/images/characters/portrait/黑羽.webp' },
     baicang: { id: 'baicang', portrait: '/static/images/characters/portrait/白藏.webp', avatar: '/static/images/characters/avatar/白藏.webp' },
     bohe: { id: 'bohe', portrait: '/static/images/characters/portrait/薄荷.webp', avatar: '/static/images/characters/avatar/薄荷.webp' },
     nanali: { id: 'nanali', name: '娜娜莉', attribute: '灵', attack: 2, max_hp: 5, avatar: '/static/images/characters/avatar/娜娜莉.webp', portrait: '/static/images/characters/portrait/娜娜莉.webp' },
@@ -30,6 +31,7 @@
     A08: { characterId: 'anhunqu', fashion: 'Fashion_1004_nighty' },
     C07: { characterId: 'canhong', fashion: 'Fashion_1036_1' },
     C08: { characterId: 'canhong', fashion: 'Fashion_1036_nighty' },
+    S07: { characterId: 'zaowu', fashion: 'Fashion_1003_2' },
     S08: { characterId: 'zaowu', fashion: 'Fashion_1003_1' },
     K07: { characterId: 'lingke', fashion: 'Fashion_1072_school' },
     K08: { characterId: 'lingke', fashion: 'Fashion_1072_nighty' },
@@ -41,8 +43,18 @@
     M08: { characterId: 'bohe', fashion: 'Fashion_1019_nighty' },
     Q07: { characterId: 'xiaozhi', fashion: 'Fashion_1073_1' },
     Q08: { characterId: 'xiaozhi', fashion: 'Fashion_1073_nighty' },
+    Z06: { characterId: 'zero', fashion: 'Fashion_1051_3' },
+    Z08: { characterId: 'zero', fashion: 'Fashion_1051_5' },
+    K03: { characterId: 'lingke', fashion: 'Fashion_1072_space' },
+    C06: { characterId: 'canhong', fashion: 'Fashion_1036_2' },
+    V07: { characterId: 'haniya', fashion: 'Fashion_1020_1' },
+    P07: { characterId: 'heiyu', fashion: 'Fashion_1042_1' },
+    P08: { characterId: 'heiyu', fashion: 'Fashion_1042_nighty' },
+    MU06: { characterId: 'elyms', fashion: 'Fashion_1090_1' },
+    MU07: { characterId: 'elyms', fashion: 'Fashion_1090_2' },
+    MU08: { characterId: 'elyms', fashion: 'Fashion_1090_nighty' },
   };
-  const CHARACTER_IMAGE_VERSION = 'ntedata-lingke-20261008-v5';
+  const CHARACTER_IMAGE_VERSION = 'elyms-costume-v11';
 
   // Server-provided identity/assets are authoritative; the static table only
   // supports old snapshots. Do not cache mutable combat stats across sides.
@@ -353,7 +365,7 @@
     const source = text == null ? fallback : text;
     return String(source || '').split(/(「[^」]+」)/g).map(function (part) {
       const referenced = part.startsWith('「') && cardsByName[part.slice(1, -1)];
-      const html = escapeHtml(part).replace(/(?:[二三四五六七八九十百X]|[0-9]+)选一|瞬发|响应|穿透|远程|可重复使用|不消耗行动力/g, function (keyword) {
+      const html = escapeHtml(part).replace(/\r?\n/g, '<br>').replace(/(?:[二三四五六七八九十百X]|[0-9]+)选一|瞬发|响应|穿透|远程|可重复使用|不消耗行动力/g, function (keyword) {
         return '<strong>' + keyword + '</strong>';
       });
       return referenced && referenced.tooltip
@@ -502,8 +514,8 @@
       return '';
     }
     const parts = [];
-    if (card.type === 'form') {
-      if (Number(card.attack) > 0) {
+    if (card.type === 'form' || card.summoned) {
+      if (Number(card.attack) > 0 || (card.summoned && Number.isFinite(Number(card.attack)))) {
         parts.push('攻击 ' + card.attack);
       }
       if (Number(card.hp) > 0) {
@@ -522,6 +534,11 @@
   }
 
   function statIconSvg(kind) {
+    if (kind === 'signal-0' || kind === 'signal-1' || kind === 'signal-2') {
+      const middle = kind !== 'signal-0' ? '<path d="M3.7 8Q8 4.7 12.3 8"/>' : '';
+      const outer = kind === 'signal-2' ? '<path d="M1.4 5.6Q8 .7 14.6 5.6"/>' : '';
+      return '<svg class="v2-stat-icon" data-signal-level="' + kind.slice(-1) + '" viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">' + outer + middle + '<path d="M5.8 10.5Q8 8.5 10.2 10.5"/></g><circle cx="8" cy="13.5" r="1.1" fill="currentColor"/></svg>';
+    }
     if (kind === 'fang') {
       return '<svg class="v2-stat-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 2h5c1 5-1 9-4 12L2 2zm7 0h5l-1 12c-3-3-5-7-4-12z"/></svg>';
     }
@@ -578,8 +595,8 @@
       return '';
     }
     const parts = [];
-    if (card.type === 'form') {
-      if (Number(card.attack) > 0) {
+    if (card.type === 'form' || card.summoned) {
+      if (Number(card.attack) > 0 || (card.summoned && Number.isFinite(Number(card.attack)))) {
         parts.push(statBadge('atk', String(card.attack), '攻击 ' + card.attack));
       }
       if (Number(card.hp) > 0) {

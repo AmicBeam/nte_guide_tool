@@ -17,7 +17,9 @@ Implementation Scope and Explicit Limits:
    Boolean seed values are strictly rejected. Integer seeds outside signed int64 range trigger
    explicit errors via numeric_int.
 3. Seeding logic parity: Seeds are converted into little-endian uint32 words matching CPython's
-   abs(seed) normalization and initialized via bmt_init_by_array().
+   abs(seed) normalization and initialized via bmt_init_by_array(). Integer
+   payloads up to 65 signed bytes are supported (including 257-bit search
+   seeds); wider seeds fail closed rather than truncating or reseeding.
 4. Per-object mutable state: Each Random instance stores its mutable bmt_state_t struct in
    heap.payload at an 8-byte aligned offset (tag 40, n[1]=offset). State is preserved per object;
    methods advance the generator naturally without secret reseeding. VM/workspace forks isolate
@@ -46,6 +48,7 @@ SUPPORTED_RANDOM_NAMES: tuple[str, ...] = ("random.Random",)
 SUPPORTED_RANDOM_METHODS: tuple[str, ...] = (
     "shuffle",
     "choice",
+    "sample",
     "getrandbits",
     "randrange",
     "randint",
@@ -98,7 +101,8 @@ enum RandomMethodCode {{
     METHOD_RANDOM_RANDOM = 6,
     METHOD_RANDOM_SEED = 7,
     METHOD_RANDOM_GETSTATE = 8,
-    METHOD_RANDOM_SETSTATE = 9
+    METHOD_RANDOM_SETSTATE = 9,
+    METHOD_RANDOM_SAMPLE = 10
 }};
 
 // Encode unsigned 64-bit integer into TAG_INT node (1 to 9 little-endian bytes)
@@ -146,11 +150,24 @@ __device__ inline int random_construct_instance(Context* c, int seed_ref, int* o
         c->error = UNSUPPORTED_TYPE;
         return 0;
     }}
-    long long seed_val = 0;
-    if (numeric_int(c, seed_ref, &seed_val) != 0 || c->h.error != ERROR_OK) {{
+    NodeView seed_node;
+    if (!get_node(&c->h, seed_ref, &seed_node) || seed_node.count < 1 || seed_node.count > 65) {{
         c->error = BAD_CALL;
         return 0;
     }}
+    const unsigned char* seed_bytes = get_payload_ptr(&c->h, &seed_node);
+    if (!seed_bytes) {{ c->error = BAD_CALL; return 0; }}
+    // Python seeds with abs(integer), not signed limbs or a fixed-width blob.
+    uint32_t words[17] = {{0}};
+    unsigned int negative = (seed_bytes[seed_node.count-1] & 128U) != 0;
+    unsigned int carry = negative;
+    for (int i=0; i<seed_node.count; i++) {{
+        unsigned int byte = negative ? (seed_bytes[i] ^ 255U) : seed_bytes[i];
+        byte += carry; carry = byte >> 8;
+        words[i/4] |= (uint32_t)(byte & 255U) << (8*(i%4));
+    }}
+    size_t key_len = (seed_node.count+3)/4;
+    while (key_len > 1 && words[key_len-1] == 0) key_len--;
 
     int current_payload = c->h.counts[2];
     unsigned long long base=(unsigned long long)c->h.payload;
@@ -169,17 +186,6 @@ __device__ inline int random_construct_instance(Context* c, int seed_ref, int* o
 
     // Initialize bmt_state_t with CPython exact abs(seed) little-endian uint32 words
     bmt_state_t* st = (bmt_state_t*)(c->h.payload + aligned_offset);
-    uint32_t words[2];
-    size_t key_len = 0;
-    if (seed_val == 0) {{
-        words[0] = 0;
-        key_len = 1;
-    }} else {{
-        unsigned long long uval = (seed_val < 0) ? (0ULL - (unsigned long long)seed_val) : (unsigned long long)seed_val;
-        words[0] = (uint32_t)(uval & 0xFFFFFFFFULL);
-        words[1] = (uint32_t)((uval >> 32) & 0xFFFFFFFFULL);
-        key_len = (words[1] != 0) ? 2 : 1;
-    }}
     bmt_init_by_array(st, words, key_len);
 
     // Commit payload count and node metadata after successful mutation
@@ -202,6 +208,8 @@ __device__ inline int random_attribute(Context* c, int owner, int name) {{
     if (otag == T_RANDOM_INSTANCE) {{
         if (vm_text_equals(c, name, "shuffle")) {{
             return meta(c, T_RANDOM_BOUND_METHOD, owner, 0, METHOD_RANDOM_SHUFFLE);
+        }} else if (vm_text_equals(c, name, "sample")) {{
+            return meta(c, T_RANDOM_BOUND_METHOD, owner, 0, METHOD_RANDOM_SAMPLE);
         }} else if (vm_text_equals(c, name, "choice")) {{
             return meta(c, T_RANDOM_BOUND_METHOD, owner, 0, METHOD_RANDOM_CHOICE);
         }} else if (vm_text_equals(c, name, "getrandbits")) {{
@@ -354,6 +362,54 @@ __device__ inline int random_call(Context* c, int callable, const int* args, int
                 }}
                 // Selects actual element reference from the sequence
                 *out = edge(c, seq_ref, (int)idx, 0);
+                return 1;
+            }}
+
+            case METHOD_RANDOM_SAMPLE: {{
+                // Uniform sampling of sequence positions without replacement.
+                // Keep pool-vs-selected allocation and rejection draws exact.
+                if (nargs != 2) {{ c->error = BAD_CALL; return 1; }}
+                int population=args[0];NodeView pv;
+                if (!get_node(&c->h,population,&pv) ||
+                    (pv.tag!=TAG_LIST && pv.tag!=TAG_TUPLE)) {{
+                    c->error=UNSUPPORTED_TYPE;return 1;
+                }}
+                long long requested=0;
+                if(kind(c,args[1])!=TAG_INT || numeric_int(c,args[1],&requested)!=0 ||
+                   requested<0 || requested>pv.count) {{ c->error=BAD_CALL;return 1; }}
+                int n=pv.count,k=(int)requested;
+                unsigned long long setsize=21;
+                if(k>5) {{
+                    unsigned long long power=1,target=3ULL*(unsigned long long)k;
+                    while(power<target) power*=4;
+                    setsize+=power;
+                }}
+                int result=make_list(&c->h);
+                if(c->h.error)return 1;
+                if((unsigned long long)n<=setsize) {{
+                    int pool=make_list(&c->h);
+                    for(int i=0;i<n&&!c->h.error;i++)list_append(&c->h,pool,edge(c,population,i,0));
+                    for(int i=0;i<k&&!c->h.error&&!c->error;i++) {{
+                        uint64_t j=0;
+                        if(bmt_below(rng,(uint64_t)(n-i),&j)!=BMT_OK){{c->error=BAD_CALL;break;}}
+                        list_append(&c->h,result,edge(c,pool,(int)j,0));
+                        list_set(&c->h,pool,(int)j,edge(c,pool,n-i-1,0));
+                    }}
+                }} else {{
+                    int selected=make_list(&c->h);
+                    for(int i=0;i<k&&!c->h.error&&!c->error;i++) {{
+                        uint64_t j=0;bool seen=false;
+                        do {{
+                            if(bmt_below(rng,(uint64_t)n,&j)!=BMT_OK){{c->error=BAD_CALL;break;}}
+                            seen=false;
+                            for(int q=0;q<i;q++){{long long old=0;numeric_int(c,edge(c,selected,q,0),&old);if(old==(long long)j){{seen=true;break;}}}}
+                        }} while(seen&&!c->error&&!c->h.error);
+                        if(c->error||c->h.error)break;
+                        list_append(&c->h,selected,make_int64(&c->h,(long long)j));
+                        list_append(&c->h,result,edge(c,population,(int)j,0));
+                    }}
+                }}
+                if(!c->error&&!c->h.error)*out=result;
                 return 1;
             }}
 

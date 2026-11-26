@@ -1,0 +1,38 @@
+{
+  "kind": "explicit_user_candidate",
+  "request": "定位一下覆纹和灵可为什么更差了，其他队伍更新模型吧；灵可启用并接入吧（保留旧模型）",
+  "quality_approved": false,
+  "runtime_rule_hash": "418f08493f0756af0d4e79c0d5b737849c05649731088059fedb5a7cae644ae3",
+  "models": {
+    "starter": {
+      "manifest_sha256": "b94c140e96ef43d0ffe8215c584f54a4d2eb107d88bac314af089abd6be1340a",
+      "model_sha256": "21201e4b18ce60c3ae88f2c4538ed02ac7c0d7256f81dd25e43477938af1a39b",
+      "build_sha256": "980a0da641a52f27d708c27277988c4413848146ce10c1adbf02558617aac257"
+    },
+    "quick-rush": {
+      "manifest_sha256": "358cc96b1731720898f8065bbaaa037c594d71de49125f649ebbaa95b07d8114",
+      "model_sha256": "88da7844d5f43ca97214933c2bd062b44a17417d2a710ac65832af509dc6afc9",
+      "build_sha256": "e7e2e5968279ef390967659c2eeeaf6e0949ed53b488eedf7b95cedf10c67da1"
+    },
+    "zhenhong": {
+      "manifest_sha256": "f37b204d536232efb1fbb8c5cfad5e53103db958c594cd867efc841d79c08774",
+      "model_sha256": "027c44d39c7096d6f6d13fc071fa2742d942e84bc4a13163907869e750520d5a",
+      "build_sha256": "5bc3923f78d31ef1d1b4cd0ed87bb97e64944822d4b8a9e0a67116f3e0e93bd1"
+    },
+    "murk": {
+      "manifest_sha256": "f6136a575528c5711703c438fa7a0d11f3ea602719653fe62006625f72b9d539",
+      "model_sha256": "070eb9b8f05590ed29b9c491b9ff5b10e02e7230f7b3ddd22203d29bae3e8662",
+      "build_sha256": "f9a748cf4f492fb40368695d37cc4123147e9a16a1cb0106fbc8702e3f6198be"
+    },
+    "collapse": {
+      "manifest_sha256": "6c3d8f6201ad49b00443f738a6d9f41573f69c5bf3794b2ce958a463aaf25af9",
+      "model_sha256": "86af75b36452978ff35040e9c0b1a9daa608c6c8ec0c990639fa3369c001f684",
+      "build_sha256": "3e3d30dfc0e04641379d6eeec014a1258f38929aeb1668fb92c4d5ce2a5d8e08"
+    },
+    "lingke": {
+      "manifest_sha256": "9c3ac686bccaaa16d3858b2b1cc7861cd6c64af0f62911a69c4771a8b3dd1013",
+      "model_sha256": "61c013ae08e981ff300deb307613bea23ad55fa40857f2d03ff7f093d6649015",
+      "build_sha256": "3d1b92d3b19c61c6c528298e4fafb48daa577bb20e0818491efeacf85fff1d88"
+    }
+  }
+}

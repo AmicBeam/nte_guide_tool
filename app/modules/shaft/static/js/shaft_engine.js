@@ -6,7 +6,7 @@
   }
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const ELEMENTS = ['光', '灵', '咒', '暗', '魂', '相'];
-  const ELEMENT_DAMAGE_KEYS = Object.fromEntries(ELEMENTS.map((element) => [element, `element_dmg_${element}`]));
+  const ELEMENT_DAMAGE_KEYS = {...Object.fromEntries(ELEMENTS.map((element) => [element, `element_dmg_${element}`])), 心灵: 'mind_dmg'};
   const ZERO_ACTION_VISUAL_TICKS = 5;
   const MIN_FOREGROUND_START_GAP_TICKS = 2;
   const MAX_BACKGROUND_ACTION_MULTIPLIER = 999;
@@ -24,6 +24,39 @@
     furniture_flat_def: 30,
     small_flat_atk: 420,
     small_flat_hp: 5200,
+    // User-specified 噗咔特训 values, 2026-10-09.
+    training_crit_rate: 0.02,
+    training_crit_dmg: 0.04,
+    training_flat_atk: 23,
+    training_flat_def: 25,
+    training_flat_hp: 340,
+    training_harmony_strength: 10,
+    training_stagger_strength: 10,
+    // User-provided food caps and blessing candidates, 2026-10-13; see module README.
+    food_crit_rate: 0,
+    food_crit_dmg: 0,
+    food_flat_atk: 0,
+  };
+  const TEAM_TRAINING_BONUS_CAPS = {
+    training_crit_rate: 0.025,
+    training_crit_dmg: 0.05,
+    training_flat_atk: 28,
+    training_flat_def: 30,
+    training_flat_hp: 420,
+    training_harmony_strength: 12,
+    training_stagger_strength: 12,
+  };
+  const TEAM_FOOD_BONUS_CAPS = {
+    food_crit_rate: 0.12, food_crit_dmg: 0.24, food_flat_atk: 150,
+  };
+  const TEAM_BLESSING_EFFECTS = {
+    none: {},
+    crit_rate: { crit_rate: 0.10 },
+    crit_dmg: { crit_dmg: 0.20 },
+    all_dmg: { all_dmg: 0.15 },
+    atk_pct: { atk_pct: 0.15 },
+    stagger_strength: { stagger_strength: 60 },
+    harmony_strength: { harmony_strength: 60 },
   };
   const DEFAULT_PERSONAL_RESOURCE_CAPS = {
     char_31c5130304: { '真理之匙': 3 },
@@ -53,7 +86,7 @@
     flat_def: 'flat_def',
   };
   const CURTAIN_PASSIVE_TYPES = ['type2', 'type3', 'type4'];
-  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'reaction_end', 'periodic_damage', 'dot_layer_applied', 'full_stack']);
+  const SUPPORTED_TRIGGER_EVENTS = new Set(['passive', 'battle_start', 'action_start', 'action_hit', 'action_end', 'foreground_enter', 'foreground_leave', 'loop_start', 'reaction_trigger', 'reaction_end', 'periodic_damage', 'dot_layer_applied', 'full_stack', 'energy_gain']);
   const PERMANENT_BUFF_END_TICK = 1000000000;
   const HARMONY_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
   const SPECIAL_DAMAGE_SOURCES = ['创生', '创生复制体', '覆纹', '浊燃', '黯星'];
@@ -271,9 +304,11 @@
       skill_dmg: 0,
       ultimate_dmg: 0,
       all_dmg: 0,
+      action_dmg: 0,
       other_dmg: 0,
       final_dmg: 0,
       base_multiplier_pct: 0,
+      base_atk_multiplier_add: 0,
     };
   }
 
@@ -323,16 +358,26 @@
       bonus.furniture_flat_def = Math.round(Math.max(0, Math.min(TEAM_PANEL_BONUS_DEFAULTS.furniture_flat_def, bonus.furniture_flat_def)));
     }
     bonus.version = TEAM_PANEL_BONUS_DEFAULTS.version;
+    Object.entries({...TEAM_TRAINING_BONUS_CAPS, ...TEAM_FOOD_BONUS_CAPS}).forEach(([key, cap]) => {
+      const scale = key.endsWith('_crit_rate') || key.endsWith('_crit_dmg') ? 1000 : 1;
+      bonus[key] = Math.round(Math.max(0, Math.min(cap, bonus[key])) * scale) / scale;
+    });
+    bonus.blessing = typeof source.blessing === 'string' && Object.prototype.hasOwnProperty.call(TEAM_BLESSING_EFFECTS, source.blessing)
+      ? source.blessing : 'none';
     return bonus;
   }
 
   function teamPanelBonusMods(raw, catalog) {
     const bonus = normalizeTeamPanelBonus(raw, catalog);
     const out = mods();
-    out.crit_dmg += bonus.furniture_crit_dmg;
-    out.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk;
-    out.flat_def += bonus.furniture_flat_def;
-    out.flat_hp += bonus.small_flat_hp;
+    out.crit_rate += bonus.training_crit_rate + bonus.food_crit_rate;
+    out.crit_dmg += bonus.furniture_crit_dmg + bonus.training_crit_dmg + bonus.food_crit_dmg;
+    out.flat_atk += bonus.furniture_flat_atk + bonus.small_flat_atk + bonus.training_flat_atk + bonus.food_flat_atk;
+    out.flat_def += bonus.furniture_flat_def + bonus.training_flat_def;
+    out.flat_hp += bonus.small_flat_hp + bonus.training_flat_hp;
+    out.harmony_strength += bonus.training_harmony_strength;
+    out.stagger_strength += bonus.training_stagger_strength;
+    Object.entries(TEAM_BLESSING_EFFECTS[bonus.blessing]).forEach(([key, value]) => { out[key] += value; });
     return out;
   }
 
@@ -361,10 +406,11 @@
     const source = member?.curtain_bonus && typeof member.curtain_bonus === 'object' ? member.curtain_bonus : {};
     const options = constants?.curtain_bonus_stat_options || {};
     const fallback = normalizeStatName(defaults.stat) || Object.keys(options)[0] || '';
-    const stat = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, HEIYU_CHARACTER_ID].includes(characterId)
+    const fixed = defaults.fixed === true || [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, HEIYU_CHARACTER_ID].includes(characterId);
+    const stat = fixed
       ? fallback
       : (normalizeStatName(source.stat) || fallback);
-    const passiveType = [CANHONG_CHARACTER_ID, LINGKE_CHARACTER_ID, HEIYU_CHARACTER_ID].includes(characterId)
+    const passiveType = fixed
       ? (CURTAIN_PASSIVE_TYPES.includes(String(defaults.passive_type || '')) ? String(defaults.passive_type) : 'type3')
       : (CURTAIN_PASSIVE_TYPES.includes(String(source.passive_type || ''))
         ? String(source.passive_type)
@@ -434,6 +480,7 @@
 
   function skillLevelCategory(action) {
     const explicitCategory = String(action?.skill_level_category || '');
+    if (explicitCategory === 'none') return '';
     if (['basic', 'skill', 'ultimate', 'support'].includes(explicitCategory)) {
       return explicitCategory;
     }
@@ -468,30 +515,46 @@
       ? 0
       : int(snapshot.skill_level_bonus);
     const effectiveLevel = Math.max(1, baseLevel + resonanceBonus);
+    const referenceLevel = Math.max(1, int(action?.multiplier_level, 1));
+    const exact = asList(action?.atk_multipliers_by_level);
+    const exactRatio = exact.length && num(action?.multipliers?.atk) > 0
+      ? num(exact[Math.min(exact.length, effectiveLevel) - 1]) / num(action.multipliers.atk) : null;
     return {
       category,
       level: effectiveLevel,
-      multiplier: Math.pow(1.08, effectiveLevel - 1),
+      multiplier: exactRatio == null ? Math.pow(1.08, effectiveLevel - referenceLevel) : exactRatio,
     };
   }
 
-  function actionTypeBonus(action, panelMods) {
+  function hasDamageType(action, type, tags = actionTags(action)) {
     const actionType = String(action?.action_type || '');
     const damageType = String(action?.damage_type || '');
+    if (type === '追击') return damageType === '追击' || tags.has('追击') || tags.has('追加攻击');
+    if (type === '附着') return tags.has('附着');
+    if (['普攻', '闪反', 'E', 'Q', '援护'].includes(type)) {
+      return actionType === type || damageType === type;
+    }
+    return damageType === type;
+  }
+
+  function actionCategoryBonus(action, panelMods) {
     const tags = actionTags(action);
-    let total = panelMods.all_dmg + panelMods.other_dmg;
-    if (actionType === '普攻' || damageType === '普攻') total += panelMods.basic_dmg;
-    if (actionType === '闪反' || damageType === '闪反') total += panelMods.dodge_counter_dmg;
-    if (actionType === 'E' || damageType === 'E') total += panelMods.skill_dmg;
-    if (actionType === 'Q' || damageType === 'Q') total += panelMods.ultimate_dmg;
-    if (damageType === '追击' || tags.has('追击') || tags.has('追加攻击')) total += panelMods.follow_dmg;
-    if (tags.has('心灵')) total += panelMods.mind_dmg;
-    if (tags.has('附着')) total += panelMods.attach_dmg;
+    let total = num(panelMods.action_dmg);
+    if (hasDamageType(action, '普攻', tags)) total += panelMods.basic_dmg;
+    if (hasDamageType(action, '闪反', tags)) total += panelMods.dodge_counter_dmg;
+    if (hasDamageType(action, 'E', tags)) total += panelMods.skill_dmg;
+    if (hasDamageType(action, 'Q', tags)) total += panelMods.ultimate_dmg;
+    if (hasDamageType(action, '追击', tags)) total += panelMods.follow_dmg;
+    if (hasDamageType(action, '附着', tags)) total += panelMods.attach_dmg;
     return total;
   }
 
+  function actionTypeBonus(action, panelMods) {
+    return panelMods.all_dmg + actionCategoryBonus(action, panelMods) + panelMods.other_dmg;
+  }
+
   function damageCharacterForAction(snapshot, action) {
-    const element = String(action?.damage_element || snapshot?.character?.element || '');
+    const element = actionTags(action).has('心灵') ? '心灵' : String(action?.damage_element || snapshot?.character?.element || '');
     return Object.assign({}, snapshot?.character || {}, {element});
   }
 
@@ -599,7 +662,7 @@
         def: num(stats.def),
         crit_rate: num(stats.crit_rate),
         crit_dmg: num(stats.crit_dmg),
-        ...Object.fromEntries(ELEMENTS.map((element) => [
+        ...Object.fromEntries([...ELEMENTS, '心灵'].map((element) => [
           elementDamageKey(element),
           elementDamage(panelMods, element),
         ])),
@@ -753,11 +816,35 @@
         multipliers[key] = num(multipliers[key]) + num(value);
       });
     });
+    Object.entries(action.multipliers_add_by_awakening_resonance || {}).forEach(([level, additions]) => {
+      if (!hasAwakeningResonance(snapshot, int(level)) || !additions || typeof additions !== 'object') return;
+      Object.entries(additions).forEach(([key, value]) => {
+        multipliers[key] = num(multipliers[key]) + num(value);
+      });
+    });
+    multipliers.atk = num(multipliers.atk) + panelMods.base_atk_multiplier_add * num(action.interrupt_damage_scale, 1);
     const rawScalingBase = stats.atk * num(multipliers.atk) + stats.hp * num(multipliers.hp) + stats.def * num(multipliers.def);
     const baseMultiplierFactor = Math.max(0, 1 + panelMods.base_multiplier_pct);
     const scalingBase = rawScalingBase * baseMultiplierFactor;
     const skill = skillLevelMultiplier(snapshot, action);
-    let base = scalingBase * skill.multiplier + num(multipliers.flat);
+    const finalAdditions = {};
+    const addFinalMultipliers = (values, enabled) => {
+      Object.entries(values || {}).forEach(([level, additions]) => {
+        if (!enabled(level) || !additions || typeof additions !== 'object') return;
+        Object.entries(additions).forEach(([key, value]) => {
+          finalAdditions[key] = num(finalAdditions[key]) + num(value);
+        });
+      });
+    };
+    addFinalMultipliers(action.final_multipliers_add_by_awakening_node,
+      (level) => hasAwakeningNode(snapshot, level));
+    addFinalMultipliers(action.final_multipliers_add_by_awakening_resonance,
+      (level) => hasAwakeningResonance(snapshot, int(level)));
+    const postSkillLevelBase = stats.atk * num(finalAdditions.atk)
+      + stats.hp * num(finalAdditions.hp) + stats.def * num(finalAdditions.def)
+      + num(finalAdditions.flat);
+    let base = scalingBase * skill.multiplier
+      + postSkillLevelBase * baseMultiplierFactor + num(multipliers.flat);
     let skillCategory = skill.category;
     let skillLevel = skill.level;
     let skillMult = skill.multiplier;
@@ -768,8 +855,9 @@
       skillMult = 1;
     }
     const actionDamageBonus = actionTypeBonus(action, panelMods);
-    const otherDamageBonus = actionDamageBonus - panelMods.all_dmg;
-    const damageElement = actionTags(action).has('心灵') ? '' : damageCharacterForAction(snapshot, action).element;
+    const actionBonus = actionCategoryBonus(action, panelMods);
+    const otherDamageBonus = panelMods.other_dmg;
+    const damageElement = actionTags(action).has('心灵') ? '心灵' : damageCharacterForAction(snapshot, action).element;
     const actionElementDamage = elementDamage(panelMods, damageElement);
     const dmgBonus = actionDamageBonus + actionElementDamage;
     const crit = critMultiplier(action, panelMods);
@@ -804,17 +892,19 @@
         crit_rate: stats.crit_rate,
         crit_dmg: stats.crit_dmg,
         all_dmg: panelMods.all_dmg,
-        ...Object.fromEntries(ELEMENTS.map((element) => [
+        ...Object.fromEntries([...ELEMENTS, '心灵'].map((element) => [
           elementDamageKey(element),
           elementDamage(panelMods, element),
         ])),
         follow_dmg: panelMods.follow_dmg,
+        action_dmg: actionBonus,
         other_dmg: otherDamageBonus,
         final_dmg: panelMods.final_dmg,
       },
       formula_parts: {
         base,
         raw_base: rawScalingBase + num(multipliers.flat),
+        post_skill_level_base: postSkillLevelBase,
         base_multiplier_factor: baseMultiplierFactor,
         skill_level_category: skillCategory,
         skill_level: skillLevel,
@@ -968,16 +1058,35 @@
     );
     return Object.assign({}, action, {
       multipliers: scaledMap(action.multipliers, damageRatio),
+      atk_multipliers_by_level: action.atk_multipliers_by_level && asList(action.ranked_resource_hits).length
+        ? action.atk_multipliers_by_level.map((_, level) => asList(action.ranked_resource_hits)
+          .slice(0, selectedHitCount).reduce((sum, hit) => sum + num(hit.atk_levels?.[level]), 0))
+        : action.atk_multipliers_by_level,
       multipliers_add_by_awakening_node: Object.fromEntries(
         Object.entries(action.multipliers_add_by_awakening_node || {})
           .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
       ),
+      multipliers_add_by_awakening_resonance: Object.fromEntries(
+        Object.entries(action.multipliers_add_by_awakening_resonance || {})
+          .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
+      ),
+      final_multipliers_add_by_awakening_node: Object.fromEntries(
+        Object.entries(action.final_multipliers_add_by_awakening_node || {})
+          .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
+      ),
+      final_multipliers_add_by_awakening_resonance: Object.fromEntries(
+        Object.entries(action.final_multipliers_add_by_awakening_resonance || {})
+          .map(([level, values]) => [level, scaledMap(values, damageRatio)]),
+      ),
+      interrupt_damage_scale: damageRatio,
       stagger: num(action.stagger) * staggerRatio,
       stagger_by_awakening_node: scaledMap(action.stagger_by_awakening_node, staggerRatio),
       harmony: num(action.harmony) * ratio('harmony'),
       energy_gain: num(action.energy_gain) * ratio('energy'),
-      personal_resource_gain: action.personal_resource_scale_with_damage_ratio
-        ? scaledMap(action.personal_resource_gain, damageRatio) : action.personal_resource_gain,
+      personal_resource_gain: action.personal_resource_gain_on_first_hit
+        ? scaledMap(action.personal_resource_gain, selectedHitCount > 0 ? 1 : 0)
+        : action.personal_resource_scale_with_damage_ratio
+          ? scaledMap(action.personal_resource_gain, damageRatio) : action.personal_resource_gain,
       personal_resource_cost: action.personal_resource_scale_with_damage_ratio
         ? scaledMap(action.personal_resource_cost, damageRatio) : action.personal_resource_cost,
       hit_count: selectedHitCount,
@@ -1034,11 +1143,44 @@
     );
   }
 
+  function migrateFormActionSteps(steps, actions) {
+    const selectors = new Map();
+    actions.forEach((action, actionId) => {
+      asList(action.legacy_form_action_migration?.forms).forEach((form) => {
+        asList(form.setup_action_ids).forEach((setupId) => {
+          const entries = selectors.get(setupId) || [];
+          entries.push({oldId: actionId, targetId: form.action_id});
+          selectors.set(setupId, entries);
+        });
+      });
+    });
+    const converted = asList(steps).slice();
+    const modes = new Map();
+    converted.map((step, index) => ({step, index}))
+      .sort((left, right) => num(left.step?.start_tick) - num(right.step?.start_tick) || left.index - right.index)
+      .forEach(({step, index}) => {
+        if (!step || typeof step !== 'object') return;
+        const slot = int(step.slot);
+        const actionId = String(step.action_id || '');
+        asList(selectors.get(actionId)).forEach(({oldId, targetId}) => {
+          modes.set(`${slot}:${oldId}`, targetId);
+        });
+        const policy = actions.get(actionId)?.legacy_form_action_migration;
+        if (!policy) return;
+        const targetId = modes.get(`${slot}:${actionId}`) || policy.default_action_id;
+        const target = actions.get(targetId);
+        if (target && !target.legacy_only) {
+          converted[index] = Object.assign({}, step, {action_id: targetId, action_name: target.name});
+        }
+      });
+    return converted;
+  }
+
   function migrateLingkeJointSteps(steps, team, catalog) {
     const actions = recordMap(catalog.actions);
     const characters = recordMap(catalog.characters);
     const members = asList(team).slice().sort((a, b) => int(a.slot) - int(b.slot));
-    return asList(steps).flatMap((step) => {
+    return migrateFormActionSteps(steps, actions).flatMap((step) => {
       const old = actions.get(String(step?.action_id || '')) || {};
       if (old.automatic_settlement) return [];
       if (!old.legacy_only || old.trigger_character_selector !== 'same_element_non_lingke') return [step];
@@ -1390,6 +1532,11 @@
     return Math.max(0, int(action?.hit_count));
   }
 
+  function canExportRankedDamage(action, snapshot) {
+    return Boolean(snapshot.character?.ranked_resource_system?.export_action)
+      && Math.max(int(action.ranked_export_limit), int(action.ranked_export_limit_empowered)) > 0;
+  }
+
   function actionEnemyDebuffs(action) {
     const out = new Set();
     actionTags(action).forEach((tag) => {
@@ -1439,12 +1586,13 @@
     const scope = String(source?.scope || 'registrar');
     if (scope === 'registrar' && int(step.slot) !== int(rule.owner_slot)
       && !(action.lingke_joint_source_slot != null && int(action.lingke_joint_source_slot) === int(rule.owner_slot)
-        && (asList(source?.tags).includes('同频合击') || asList(source?.action_types).includes('援护')))) return false;
+        && (asList(source?.tags).includes('同频合击') || asList(source?.action_types).includes('援护')
+          || asList(source?.damage_types).includes('援护')))) return false;
     if (scope === 'non_registrar' && int(step.slot) === int(rule.owner_slot)) return false;
     const actionTypes = strSet(source?.action_types);
     if (actionTypes.size && !actionTypes.has(String(action.action_type || ''))) return false;
     const damageTypes = strSet(source?.damage_types);
-    if (damageTypes.size && !damageTypes.has(String(action.damage_type || ''))) return false;
+    if (damageTypes.size && !Array.from(damageTypes).some((type) => hasDamageType(action, type))) return false;
     const actionNames = strSet(source?.action_names);
     if (actionNames.size && !actionNames.has(String(action.name || ''))) return false;
     const actionIds = strSet(source?.action_ids);
@@ -1503,6 +1651,8 @@
       if (type === 'expected_critical_hit') return num(context.expected_critical_hits) > 0;
       if (type === 'hit_count_positive') return num(context.hit_count) > 0;
       if (type === 'source_foreground_at_hit') return int(context.foreground_slot_at_hit, -1) === int(context.source_slot, -2);
+      if (type === 'energy_source') return String(context.energy_source || '') === String(condition.source || '');
+      if (type === 'reaction_not_echo') return context.reaction?.is_echo !== true;
       if (type === 'enemy_debuff_active') {
         const active = Object.entries(context.enemy_debuffs || {}).filter(([, value]) => num(value) > num(context.tick)).map(([key]) => key);
         return Array.from(strSet(condition.debuffs)).some((name) => active.includes(name));
@@ -1639,10 +1789,12 @@
   function eventMatchesRule(rule, event, step, action, snapshot, isBackground, context = {}) {
     const trigger = rule.trigger && typeof rule.trigger === 'object' ? rule.trigger : {};
     const matchesPeriodicDamage = event === 'periodic_damage' && trigger.periodic_damage === true;
-    if ((String(trigger.event || '') !== event && !matchesPeriodicDamage) || !SUPPORTED_TRIGGER_EVENTS.has(event)) return false;
+    const matchesBattleStart = event === 'battle_start' && trigger.on_battle_start === true;
+    if ((String(trigger.event || '') !== event && !matchesPeriodicDamage && !matchesBattleStart) || !SUPPORTED_TRIGGER_EVENTS.has(event)) return false;
     if (event === 'action_hit' && String(trigger.timing || 'start') !== String(context.action_hit_timing || 'start')) return false;
     const source = trigger.source && typeof trigger.source === 'object' ? trigger.source : {};
-    if (!sourceMatches(source, rule, step, action, snapshot, isBackground)) return false;
+    if (matchesBattleStart ? int(step.slot) !== int(rule.owner_slot)
+      : !sourceMatches(source, rule, step, action, snapshot, isBackground)) return false;
     const eventContext = Object.assign({}, context, {
       snapshot,
       owner_awakening: rule.owner_awakening,
@@ -1672,7 +1824,7 @@
     const actionIds = strSet(target?.action_ids);
     if (actionIds.size && !actionIds.has(String(action.id || ''))) return false;
     const damageTypes = strSet(target?.damage_types);
-    if (damageTypes.size && !damageTypes.has(String(action.damage_type || ''))) return false;
+    if (damageTypes.size && !Array.from(damageTypes).some((type) => hasDamageType(action, type))) return false;
     const actionNames = strSet(target?.action_names);
     if (actionNames.size && !actionNames.has(String(action.name || ''))) return false;
     const tags = strSet(target?.tags);
@@ -1694,6 +1846,8 @@
       if (int(tick) <= int(summary.start_tick)) {
         summary.cancelled = true;
       }
+      // Coverage ends at replacement; the earlier tooltip still counts down to expiry.
+      summary.countdown_end_tick ??= int(summary.end_tick);
       summary.end_tick = resetTick;
       summary.duration_ticks = Math.max(0, resetTick - int(summary.start_tick));
       summary.visual_end_tick = Math.min(int(summary.visual_end_tick, resetVisualTick), resetVisualTick);
@@ -1788,6 +1942,7 @@
     const definitionId = String(stacking.key || rule.id || '');
     const ownerSlot = int(rule.owner_slot);
     for (const instance of activeBuffs) {
+      if (triggerTick >= int(instance.end_tick)) continue;
       const existingRule = instance.rule && typeof instance.rule === 'object' ? instance.rule : {};
       const existingStacking = existingRule.stacking && typeof existingRule.stacking === 'object' ? existingRule.stacking : {};
       const existingDefinitionId = String(instance.definition_id || existingStacking.key || existingRule.id || '');
@@ -1821,7 +1976,7 @@
         return instance;
       }
       const previousActivationRuleId = String(instance._last_activation_rule_id || existingRule.id || '');
-      if (previousActivationRuleId !== String(rule.id || '')) {
+      if (previousActivationRuleId !== String(rule.id || '') || mode === 'replace') {
         truncateBuffTimelineAt(
           instance,
           startTick,
@@ -1829,6 +1984,10 @@
             ? int(context.visual_trigger_tick, startTick)
             : startTick,
         );
+      }
+      if (mode === 'replace') {
+        instance.rule = rule;
+        instance.name = rule.name || instance.name || '';
       }
       instance.start_tick = startTick;
       instance.end_tick = endTick;
@@ -1888,6 +2047,12 @@
     const dynamic = instance.rule?.dynamic_effects && typeof instance.rule.dynamic_effects === 'object'
       ? instance.rule.dynamic_effects
       : {};
+    const bands = dynamic.personal_resource_steps;
+    if (bands?.resource && bands.effect_key) {
+      const amount = num(context.personal_resources?.[bands.resource]);
+      const band = asList(bands.steps).filter((entry) => amount >= num(entry.min)).at(-1);
+      resolved[bands.effect_key] = num(resolved[bands.effect_key]) + num(band?.value);
+    }
     const negative = dynamic.negative_effect_count && typeof dynamic.negative_effect_count === 'object'
       ? dynamic.negative_effect_count
       : {};
@@ -2373,13 +2538,20 @@
     return {baseLimit, events, extraStagger, effectiveStagger, recoveryScale};
   }
 
-  function simulateAxis(axisPayload, catalog) {
+  function simulateAxis(axisPayload, catalog, analysisOptions = {}) {
+    return simulateAxisPass(axisPayload, catalog, analysisOptions, false, 2);
+  }
+
+  function simulateAxisPass(axisPayload, catalog, analysisOptions, captureLoopStackSources, stackHistoryPasses) {
     if (!catalog || typeof catalog !== 'object') {
       throw new Error('缺少排轴数据目录。');
     }
     const actionsById = recordMap(catalog.actions);
-    const teamPayload = asList(axisPayload?.team).length ? asList(axisPayload.team) : asList(catalog.starter_axis?.team);
-    const steps = migrateLingkeJointSteps(Array.isArray(axisPayload?.steps) ? axisPayload.steps : asList(catalog.starter_axis?.steps), teamPayload, catalog);
+    const eventBuffSummaries = [];
+    const originalTeam = asList(axisPayload?.team).length ? asList(axisPayload.team) : asList(catalog.starter_axis?.team);
+    const excludedSlot = analysisOptions.excluded_slot;
+    const teamPayload = originalTeam.filter((member) => int(member.slot) !== excludedSlot);
+    const steps = migrateLingkeJointSteps(Array.isArray(axisPayload?.steps) ? axisPayload.steps : asList(catalog.starter_axis?.steps), originalTeam, catalog);
     validateSteps(steps, actionsById);
 
     const teamPanelBonus = normalizeTeamPanelBonus(axisPayload?.team_panel_bonus, catalog);
@@ -2387,6 +2559,17 @@
       const snapshot = buildSnapshot(member, catalog, teamPanelBonus);
       return [snapshot.slot, snapshot];
     }));
+    // Absent characters only participate in harmony as their original element at
+    // level 80, with zero harmony strength and no build or character effects.
+    const removedMember = originalTeam.find((member) => int(member.slot) === excludedSlot);
+    const removedCharacter = removedMember && recordMap(catalog.characters).get(removedMember.character_id);
+    const reactionGhost = removedCharacter ? {
+      slot: excludedSlot, character: {...removedCharacter, level: 80},
+      mods: {...mods(), crit_dmg: 0.5}, base_stats: {atk: 0, hp: 0, def: 0},
+      awakening_nodes: [], awakening_resonances: [], analysis_reaction_only: true,
+    } : null;
+    const reactionSnapshot = (slot) => snapshots.get(int(slot))
+      || (int(slot) === excludedSlot ? reactionGhost : null);
     const enemy = normalizeEnemy(axisPayload?.enemy);
     let enemyDebuffs = Object.assign({}, enemy.debuffs || {});
     const options = axisPayload?.options && typeof axisPayload.options === 'object' ? axisPayload.options : {};
@@ -2394,6 +2577,13 @@
       && typeof catalog.formula_constants.personal_resource_caps === 'object'
       ? catalog.formula_constants.personal_resource_caps
       : DEFAULT_PERSONAL_RESOURCE_CAPS;
+    const integerPersonalResources = new Map(asList(catalog.characters).map((character) => [
+      character.id, new Set(asList(character.personal_resource_integer_resources)),
+    ]));
+    function integerPersonalResourceValue(characterId, name, value) {
+      return integerPersonalResources.get(characterId)?.has(name)
+        ? Math.max(0, Math.floor(num(value))) : value;
+    }
     const fonsFull = options.fons_full == null ? true : Boolean(options.fons_full);
     const switchLossTicks = Math.max(
       0,
@@ -2446,9 +2636,14 @@
     }
     const initialHarmonyBySlot = new Map(Array.from(snapshots.entries()).map(([slot, snapshot]) => {
       const characterResources = loopInitialResources[String(snapshot.character?.id || '')];
-      const harmony = options.loop_enabled
+      let harmony = options.loop_enabled
         ? (characterResources && typeof characterResources === 'object' ? num(characterResources.harmony) : 0)
         : num(snapshot.character?.initial_harmony_non_loop);
+      if (!options.loop_enabled) {
+        Object.entries(snapshot.character?.initial_harmony_non_loop_by_awakening_node || {}).forEach(([node, value]) => {
+          if (hasAwakeningNode(snapshot, int(node))) harmony = Math.max(harmony, num(value));
+        });
+      }
       return [slot, Math.max(0, Math.min(HARMONY_CAPACITY, harmony))];
     }));
     const harmonyBySlot = new Map(initialHarmonyBySlot);
@@ -2491,6 +2686,7 @@
       });
     }
     const cooldownUntil = new Map();
+    const actionSequenceUses = new Map();
     function recordActionCooldown(slot, action, snapshot, startTick, durationTicks) {
       if (snapshot?.character?.uses_cooldowns === false) return;
       const actionCooldownTicks = Math.max(0, int(actionValueForAwakeningNodes(
@@ -2509,6 +2705,18 @@
         cooldownKey,
         Math.max(cooldownUntil.get(cooldownKey) || 0, int(startTick) + occupiedTicks),
       );
+    }
+
+    function reduceActionCooldowns(activation, slot, tick, hitCount) {
+      const floor = tick + Math.max(0, int(activation.cooldown_floor_ticks));
+      Object.entries(activation.reduce_action_cooldowns || {}).forEach(([actionId, reduction]) => {
+        const configured = actionsById.get(actionId);
+        const key = configured ? actionCooldownKey(slot, configured) : `${slot}:${actionId}`;
+        const deadline = cooldownUntil.get(key);
+        if (deadline > floor) {
+          cooldownUntil.set(key, Math.max(floor, deadline - num(reduction) * Math.max(0, num(hitCount, 1))));
+        }
+      });
     }
     const forcedStaggerTargets = new Set();
     const periodicHealingStates = new Map();
@@ -2533,11 +2741,52 @@
         : {};
       Object.entries(configuredPersonal).forEach(([name, value]) => {
         const cap = num(personalResourceCaps[characterId]?.[name], 1000000);
-        resources[name] = Math.max(0, Math.min(cap, value));
+        resources[name] = integerPersonalResourceValue(characterId, name, Math.max(0, Math.min(cap, value)));
+      });
+      Object.entries(resources).forEach(([name, value]) => {
+        resources[name] = integerPersonalResourceValue(characterId, name, value);
+      });
+      Object.keys(snapshot.character?.personal_resource_states || {}).forEach((name) => {
+        const cap = num(personalResourceCaps[characterId]?.[name], 0);
+        resources[name] = integerPersonalResourceValue(characterId, name, Math.min(cap, Math.max(0, num(resources[name]))));
       });
       initialPersonalResourcesBySlot.set(slot, Object.assign({}, resources));
     });
     const buffRules = registeredBuffRules(teamPayload, catalog).concat(legacyBuffRules(axisPayload?.buff_rules));
+    const rankedResourceClocks = new Map();
+    const buffSourceStacks = new Map();
+    const personalResourceStateEvents = [];
+    const resourceStateBindings = Array.from(snapshots.values()).flatMap((snapshot) =>
+      Object.entries(snapshot.character?.personal_resource_states || {}).map(([resource, states]) => ({
+        slot: snapshot.slot, resource, states: asList(states).map((state) => ({
+          ...state,
+          rule: buffRules.find((rule) => int(rule.owner_slot) === snapshot.slot && rule.id === state.buff_rule_id),
+        })),
+      })));
+
+    function initializePersonalResourceStates(tick) {
+      resourceStateBindings.forEach(({slot, resource, states}) => {
+        const keys = new Set(states.filter((state) => state.rule).map((state) => state.rule.stacking?.key || state.rule.id));
+        activeBuffs = activeBuffs.filter((buff) => int(buff.owner_slot) !== slot || !keys.has(buff.definition_id));
+        const value = num(initialPersonalResourcesBySlot.get(slot)?.[resource]);
+        const state = states.find((candidate) => num(candidate.value) === value);
+        if (state?.rule) activateBuff(activeBuffs, state.rule, tick);
+      });
+    }
+
+    function syncPersonalResourceStates(tick) {
+      resourceStateBindings.forEach(({slot, resource, states}) => {
+        const state = states.slice().reverse().find((candidate) => candidate.rule && activeBuffs.some((buff) => (
+          int(buff.owner_slot) === slot && buff.definition_id === (candidate.rule.stacking?.key || candidate.rule.id)
+          && tick >= int(buff.start_tick) && tick < int(buff.end_tick)
+        )));
+        const value = num(state?.value);
+        const resources = personalResources.get(slot);
+        if (num(resources[resource]) !== value) personalResourceStateEvents.push({tick, slot, resource, value});
+        resources[resource] = value;
+      });
+    }
+
     function syncBuffLayerResources(tick) {
       const bindings = new Map();
       buffRules.forEach((rule) => {
@@ -2560,11 +2809,34 @@
         if (stackCount > 0) resources[resource] = stackCount;
         else delete resources[resource];
       });
+      syncPersonalResourceStates(tick);
     }
     const resolvedActions = resolveLingkeSupportActions(steps, actionsById, switchLossTicks, catalog.buffs);
     const {scheduledSteps, qVirtualIntervals, loopOpeningFrontSlot} = compileActionSchedule(
-      steps.filter((step) => snapshots.has(int(step.slot))), actionsById, switchLossTicks, resolvedActions, options.loop_enabled,
+      steps.filter((step) => originalTeam.some((member) => int(member.slot) === int(step.slot))), actionsById, switchLossTicks, resolvedActions, options.loop_enabled,
     );
+    if (excludedSlot != null) {
+      // Compile the original clock once; removal must not reclaim time or masks.
+      scheduledSteps.forEach((scheduled) => {
+        if (int(scheduled.slot) === excludedSlot
+          || scheduled.action.lingke_joint_source_slot === excludedSlot) {
+          // Lingke joint supports disappear together with their panel provider.
+          // The original foreground windows and time masks remain as empty space.
+          scheduled.analysis_removed = true;
+          scheduled.analysis_keep_reaction = int(scheduled.slot) === excludedSlot
+            && isSupportAction(scheduled.action) && scheduled.action.lingke_joint_source_slot == null;
+          scheduled.action = {id: scheduled.action.id,
+            action_type: scheduled.analysis_keep_reaction ? '援护' : '无', hit_count: 0,
+            disable_reaction: scheduled.action.disable_reaction,
+            preserve_harmony: scheduled.action.preserve_harmony,
+            reaction_trigger_offset_ticks: scheduled.action.reaction_trigger_offset_ticks,
+            is_background_damage: scheduled.is_background,
+            is_time_stop_zero: scheduled.action.is_time_stop_zero,
+            is_timeline_mask: scheduled.action.is_timeline_mask,
+            is_instant_switch: switchesForeground(scheduled.step, scheduled.action)};
+        }
+      });
+    }
     const scheduledLastTick = Math.max(
       0,
       ...scheduledSteps
@@ -2646,12 +2918,12 @@
       if (lingkeJointAwakeningEnabled(scheduled, 5)) {
         return lingkeJointTriggerSnapshot(scheduled);
       }
-      return snapshots.get(int(scheduled?.slot));
+      return reactionSnapshot(scheduled?.slot);
     }
 
     function lingkeJointReactionContext(scheduled) {
       const triggerSnapshot = lingkeJointTriggerSnapshot(scheduled);
-      const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
+      const previousSnapshot = reactionSnapshot(reactionPreviousSlot(scheduled));
       const reaction = triggerSnapshot && previousSnapshot && triggerSnapshot.slot !== previousSnapshot.slot
         ? reactionForElements(previousSnapshot.character?.element, triggerSnapshot.character?.element)
         : '';
@@ -2679,10 +2951,15 @@
       };
     }
 
-    function reactionTriggerTick(scheduled, offsetTicks = 0) {
+    function reactionTriggerVisualTick(scheduled) {
       const visualStartTick = int(scheduled?.visual_start_tick, int(scheduled?.start_tick));
+      const offset = scheduled.action?.reaction_trigger_offset_ticks;
+      if (offset != null && scheduled.action.lingke_joint_source_slot == null) {
+        const hitTick = int(scheduled.start_tick) + int(offset);
+        return Math.max(visualStartTick, visualTickFromCalculationTick(hitTick, qVirtualIntervals));
+      }
       const visualEndTick = int(scheduled?.visual_end_tick, int(scheduled?.end_tick, visualStartTick));
-      return Math.max(visualStartTick, visualEndTick - 2) + int(offsetTicks);
+      return Math.max(visualStartTick, visualEndTick - 2);
     }
 
     if (options.loop_enabled) {
@@ -2702,6 +2979,7 @@
       };
       scheduledSteps.forEach((scheduled) => {
         const slot = int(scheduled.slot);
+        if ((!snapshots.has(slot) || scheduled.analysis_removed) && !scheduled.analysis_keep_reaction) return;
         const start = int(scheduled.start_tick);
         const duration = Math.max(0, int(scheduled.duration_ticks));
         const action = scheduled.action;
@@ -2721,7 +2999,7 @@
         if (!isSupportAction(scheduled.action)) return;
         const isLingkeAwakeningJoint = lingkeJointAwakeningEnabled(scheduled, 5);
         if (scheduled.action?.disable_reaction === true && !isLingkeAwakeningJoint) return;
-        const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
+        const previousSnapshot = reactionSnapshot(reactionPreviousSlot(scheduled));
         const supportSnapshot = reactionSupportSnapshot(scheduled);
         if (!previousSnapshot || !supportSnapshot || previousSnapshot.slot === supportSnapshot.slot) return;
         if (!reactionForElements(previousSnapshot.character?.element, supportSnapshot.character?.element)) return;
@@ -2736,6 +3014,15 @@
     let activeBuffs = [];
     const buffTriggerCooldowns = new Map();
     const reactionEffects = [];
+    const selfReactionApplications = [];
+    const retainedSelfReactions = new Set(asList(analysisOptions.retained_self_reactions));
+    const retainedApplications = asList(analysisOptions.self_reaction_applications)
+      .filter((entry) => retainedSelfReactions.has(entry.reaction) && entry.kind !== 'initial');
+    function recordSelfReaction(reaction, snapshot, tick, kind, source = '', stepId = '', details = {}) {
+      if (analysisOptions.capture_self_reactions && snapshot && REACTION_DURATIONS[reaction]) {
+        selfReactionApplications.push({reaction, slot: snapshot.slot, tick: int(tick), kind, source, step_id: String(stepId || ''), ...details});
+      }
+    }
     const staggerReactionApplications = [];
     function recordStaggerReaction(effect) {
       if (['黯星', '浊燃'].includes(effect.reaction)) {
@@ -2850,12 +3137,14 @@
         active_buff_keys: activeAtTick.map((candidate) => String(candidate.definition_id || '')),
         active_periodic_action_ids: activePeriodicActionIds(tick),
         active_damage_sources: activeDamageSources(tick),
+        personal_resources: personalResources.get(snapshot.slot) || {},
       };
       const contributions = applicableBuffContributions(activeBuffs, syntheticStep, syntheticAction, snapshot, isBackground, context);
       contributions.forEach((contribution) => mergeMods(panelMods, contribution.effects));
       if (damageEvent) damageEvent.applied_buffs = contributions.map(({buff, effects}) => ({
         ...buffSummary(buff, context), effects: {...effects},
       }));
+      if (snapshot.analysis_reaction_only) panelMods.harmony_strength = 0;
       return panelMods;
     }
 
@@ -2982,6 +3271,8 @@
           && event !== settlement
         ) reactionDamageEvents.splice(index, 1);
       }
+      // Preserve the expiry shown before a later instance replaces this one.
+      effect.countdown_end_tick ??= int(effect.end_tick);
       effect.end_tick = int(tick);
       effect.evicted_at_tick = int(tick);
       effect.duration_ticks = Math.max(0, int(tick) - int(effect.start_tick));
@@ -3051,16 +3342,25 @@
       const nextEnergy = capacity > 0 ? Math.min(capacity, currentEnergy + amount) : currentEnergy + amount;
       const appliedAmount = Math.max(0, nextEnergy - currentEnergy);
       energyBySlot.set(slot, nextEnergy);
-      if (appliedAmount > 0) {
+      if (appliedAmount > 0 || source.reaction === '盈蓄') {
         energyEvents.push({
           tick: int(tick),
           slot: int(slot),
           amount: appliedAmount,
           energy_after: nextEnergy,
-          kind: 'action_gain',
+          kind: String(source.kind || 'action_gain'),
+          source_reaction: String(source.reaction || ''),
           source_step_id: String(source.step_id || ''),
           source_action_id: String(source.action_id || ''),
         });
+        if (buffRules.some((rule) => rule.trigger?.event === 'energy_gain')) {
+          const recipient = snapshots.get(slot);
+          const gains = triggerBuffsForEvent('energy_gain', tick, {id: source.step_id || '', slot},
+            {id: source.action_id || '', action_type: '无', damage_type: '无', hit_count: 0}, recipient,
+            runtimeFrontSlot !== slot, {foreground_slot_at_hit: runtimeFrontSlot, energy_amount: appliedAmount,
+              energy_source: String(source.reaction || '')});
+          eventBuffSummaries.push(...gains.map((summary) => ({step_id: source.step_id, summary})));
+        }
       }
       return appliedAmount;
     }
@@ -3130,9 +3430,25 @@
       });
     }
 
+    function applyYingxuEnergy(event) {
+      // Each creation hit on a delayed target grants one instant 盈蓄 return to the current front.
+      if (!['创生', '创生复制体'].includes(String(event.reaction || ''))
+        || event.damage <= 0 || !event._counted_in_total) return;
+      const tick = int(event.tick);
+      if (!activeReactionEffectsAtTick('延滞', tick).length) return;
+      const recipient = snapshots.get(runtimeFrontSlot);
+      if (!recipient || recipient.character?.uses_energy === false || !canReceiveEnergy(recipient, runtimeFrontSlot)) return;
+      const effect = reactionEffects.find((candidate) => candidate.id === event.effect_id);
+      applyEnergyDelta(runtimeFrontSlot, 10, tick, {
+        kind: 'yingxu_gain', reaction: '盈蓄', step_id: effect?.source_step_id,
+        action_id: `reaction:${event.reaction}`,
+      });
+    }
+
     function settleActionEnergy(targetTick) {
       const settledThroughTick = Math.max(lastEnergySettlementTick, int(targetTick));
       for (let tick = lastEnergySettlementTick + 1; tick <= settledThroughTick; tick += 1) {
+        settleReactionDamage(tick);
         pendingActionEnergy.forEach((stream) => {
           if (tick <= stream.start_tick || tick > stream.end_tick) return;
           stream.planned_by_slot.forEach((totalAmount, recipientSlot) => {
@@ -3217,7 +3533,9 @@
         const remaining = (previousEnd - tick) / 10;
         const multiplier = num(config.atk_multiplier) * (1 + Math.min(num(config.max_bonus), remaining * num(config.bonus_per_remaining_second)));
         enqueueTriggeredDamage(owner, {id: `reaction-reapply:${owner.character.id}`, name: config.source,
-          action_type: '被动', damage_type: '被动', multipliers: {atk: multiplier}, hit_count: 1}, tick,
+          action_type: '被动', damage_type: config.damage_type || '被动',
+          skill_level_category: config.skill_level_category || '',
+          multipliers: {atk: multiplier}, hit_count: 1}, tick,
         {remaining_seconds: remaining});
         reapplicationCooldowns.set(key, tick + Math.max(1, int(config.cooldown_ticks)));
       });
@@ -3246,7 +3564,7 @@
       const isLingkeAwakeningJoint = lingkeJointAwakeningEnabled(scheduled, 5);
       if (scheduled.action?.disable_reaction === true && !isLingkeAwakeningJoint) return { effect: null, warning: '' };
       const supportSnapshot = reactionSupportSnapshot(scheduled);
-      const previousSnapshot = snapshots.get(reactionPreviousSlot(scheduled));
+      const previousSnapshot = reactionSnapshot(reactionPreviousSlot(scheduled));
       if (!supportSnapshot || !previousSnapshot) {
         return {
           effect: null,
@@ -3398,6 +3716,7 @@
             loop_primed: primeLoop,
           };
           nextReactionEffectId += 1;
+          recordSelfReaction('创生', iloy, cloneEffect.start_tick, 'clone', '创生复制体', '', {contributor_slot: effect.contributor_slot});
           reactionEffects.push(cloneEffect);
           cloneDamageTicks.forEach((damageTick, index) => {
             reactionDamageEvents.push({
@@ -3423,9 +3742,10 @@
       return { effect, warning: underfundedWarning };
     }
 
-    function seedLoopInitialReaction(reaction, snapshot, startTick = 0) {
+    function seedLoopInitialReaction(reaction, snapshot, startTick = 0, origin = {}) {
       const durationTicks = Math.max(0, reaction === '延滞' ? enemyDebuffDurationTicks(reaction) : int(REACTION_DURATIONS[reaction]));
       if (!durationTicks || !snapshot) return null;
+      recordSelfReaction(reaction, snapshot, startTick, origin.kind || 'initial', origin.source || '循环起始');
       const instanceLimit = Math.max(1, int(REACTION_INSTANCE_LIMITS[reaction], 1));
       if (reaction === '黯星' && startTick >= 0) settleReactionDamage(startTick);
       const activeEffects = activeReactionEffectsAtTick(reaction, startTick)
@@ -3504,6 +3824,7 @@
           damage_ticks: cloneDamageTicks,
         };
         nextReactionEffectId += 1;
+        recordSelfReaction('创生', iloySnapshot(), cloneEffect.start_tick, 'clone', '创生复制体', '', {contributor_slot: effect.contributor_slot});
         reactionEffects.push(cloneEffect);
         cloneDamageTicks.forEach((damageTick, index) => {
           reactionDamageEvents.push({
@@ -3529,8 +3850,52 @@
       return effect;
     }
 
+    function applyRetainedSelfReaction(application) {
+      if (!reactionGhost) return;
+      const tick = int(application.tick);
+      if (application.kind === 'status') {
+        enemyDebuffs[application.reaction] = Math.max(int(enemyDebuffs[application.reaction]),
+          tick + enemyDebuffDurationTicks(application.reaction));
+        return;
+      }
+      // A provider can create a copy/recast whose original damage owner is a teammate.
+      const contributor = reactionSnapshot(application.contributor_slot ?? excludedSlot) || reactionGhost;
+      let effect;
+      if (application.kind === 'clone') {
+        const damageTicks = evenlySpacedDamageTicks(tick, 100, 20);
+        effect = {id: `reaction_${nextReactionEffectId++}`, reaction: '创生复制体', source_reaction: '创生',
+          source_step_id: '', support_slot: -1, previous_slot: -1,
+          contributor_slot: contributor.slot, contributor_character_id: contributor.character.id,
+          contributor_character_name: contributor.character.name, trigger_slot: contributor.slot,
+          start_tick: tick, end_tick: tick + 100, duration_ticks: 100,
+          damage_ticks: damageTicks, damage_scale: 0.375, frequency_multiplier: teamHasJiuyuan() ? 2 : 1};
+        reactionEffects.push(effect);
+        damageTicks.forEach((damageTick, index) => reactionDamageEvents.push({
+          effect_id: effect.id, reaction: effect.reaction, source_reaction: '创生', tick: damageTick,
+          sequence: index + 1, contributor_slot: contributor.slot,
+          contributor_character_id: contributor.character.id, contributor_character_name: contributor.character.name,
+          damage_scale: 0.375, frequency_multiplier: effect.frequency_multiplier, damage: null,
+        }));
+      } else {
+        effect = seedLoopInitialReaction(application.reaction, contributor, tick, {kind: 'retained'});
+        if (effect) {
+          effect.loop_initial = false;
+          effect.is_echo = application.kind === 'echo';
+        }
+      }
+      if (effect && !['clone', 'recast'].includes(application.kind)) triggerBuffsForEvent('reaction_trigger', tick,
+        {id: 'retained-self-reaction', slot: excludedSlot},
+        {id: 'retained-self-reaction', action_type: '被动', hit_count: 0}, reactionGhost, true,
+        {reaction: effect, loop_prime_only: tick < 0});
+    }
+
     function reactionDamageAtTick(event) {
-      const snapshot = snapshots.get(int(event.contributor_slot));
+      if (event.kind === 'analysis_retained_reaction') {
+        event.damage = 0; // A dark-star application can settle the queue recursively.
+        applyRetainedSelfReaction(event.application);
+        return 0;
+      }
+      const snapshot = event.kind ? snapshots.get(int(event.contributor_slot)) : reactionSnapshot(event.contributor_slot);
       if (!snapshot) return 0;
       if (event.effect_id) {
         const effect = reactionEffects.find((candidate) => String(candidate.id || '') === String(event.effect_id));
@@ -3541,6 +3906,17 @@
           || int(event.tick) > int(effect.end_tick)
         ) return 0;
       }
+      if (event.kind === 'reaction_echo') {
+        const effect = seedLoopInitialReaction(event.reaction, snapshot, int(event.tick), {kind: 'echo', source: '延滞回响'});
+        if (effect) {
+          effect.loop_initial = false;
+          effect.is_echo = true;
+          const gains = triggerBuffsForEvent('reaction_trigger', int(event.tick), {id: 'reaction-echo', slot: snapshot.slot},
+            {id: 'reaction-echo', action_type: '被动', damage_type: '被动', hit_count: 0}, snapshot, true, {reaction: effect});
+          eventBuffSummaries.push(...gains.map((summary) => ({step_id: event.source_step_id, summary})));
+        }
+        return 0;
+      }
       if (event.kind === 'reaction_pulse') {
         const instance = event._buff_instance;
         if (!activeBuffs.includes(instance) || int(event.tick) >= int(instance.end_tick)
@@ -3548,9 +3924,10 @@
         const pulse = instance.rule.reaction_pulse;
         const unlocked = reactionUnlocks.get(`${snapshot.slot}:${pulse.reaction}`);
         if (pulse.requires_reaction_unlock && (unlocked == null || int(event.tick) < unlocked)) return 0;
-        const effect = seedLoopInitialReaction(pulse.reaction, snapshot, int(event.tick));
+        const effect = seedLoopInitialReaction(pulse.reaction, snapshot, int(event.tick), {kind: 'pulse', source: instance.name});
         if (effect) {
           effect.loop_initial = false;
+          effect.is_reapplication = pulse.requires_reaction_unlock === true;
           triggerBuffsForEvent('reaction_trigger', int(event.tick), {id: 'reaction-pulse', slot: snapshot.slot},
             {id: 'reaction-pulse', action_type: '被动', damage_type: '被动', hit_count: 0}, snapshot, true, {reaction: effect});
         }
@@ -3637,7 +4014,8 @@
           atk, hp, def, crit_rate: critRate, crit_dmg: Math.max(0, num(panelMods.crit_dmg)),
           all_dmg: num(panelMods.all_dmg),
           [elementDamageKey(damageElement)]: elementDamage(panelMods, damageElement),
-          other_dmg: damageBonus - num(panelMods.all_dmg) - elementDamage(panelMods, damageElement),
+          action_dmg: actionCategoryBonus(periodicAction, panelMods),
+          other_dmg: num(panelMods.other_dmg),
           final_dmg: num(panelMods.final_dmg),
         };
         event.formula_parts = {
@@ -3671,7 +4049,9 @@
         return Math.max(0, base * (1 + damageBonus) * critical * defense * resistance * finalMultiplier);
       }
       const sourceReaction = String(event.source_reaction || event.reaction || '');
-      const reactionAction = sourceReaction === '浊燃'
+      const reactionAction = ['创生', '创生复制体'].includes(sourceReaction)
+        ? {name: sourceReaction, action_type: '环合', damage_type: '环合', tags: ['召唤物']}
+        : sourceReaction === '浊燃'
         ? {
           name: '浊燃',
           action_type: '环合',
@@ -3734,6 +4114,8 @@
         const original = reactionEffects.find((effect) => effect.id === event.effect_id);
         if (original && !original.heiyu_extra) {
           const start = int(event.tick);
+          const provider = Array.from(snapshots.values()).find((item) => item.character?.id === HEIYU_CHARACTER_ID);
+          recordSelfReaction('黯星', provider, start, 'recast', '黯星续生', '', {contributor_slot: original.contributor_slot});
           const extra = {...original, id: `reaction_${nextReactionEffectId++}`, start_tick: start,
             end_tick: start + 50, duration_ticks: 50, damage_ticks: [start + 50], heiyu_extra: true,
             heiyu_parent_id: original.id, source_step_id: '', evicted_by_instance_limit: false,
@@ -3757,7 +4139,7 @@
         (candidate) => String(candidate.id || '') === String(event.effect_id || ''),
       );
       const contributorSlot = int(event.contributor_slot);
-      const snapshot = snapshots.get(contributorSlot);
+      const snapshot = reactionSnapshot(contributorSlot);
       if (!effect || !snapshot) return;
       const reactionAction = {
         id: `reaction-end:${reactionName}`,
@@ -3774,7 +4156,7 @@
         reactionAction,
         snapshot,
         true,
-        {reaction: effect},
+        {reaction: effect, display_only: event._counted_in_total === false},
       );
     }
 
@@ -3788,6 +4170,7 @@
         .forEach((event) => {
           event.damage = reactionDamageAtTick(event);
           event._counted_in_total = int(event.tick) <= countedUntilTick;
+          applyYingxuEnergy(event);
           if (event._counted_in_total) {
             if (event.kind === 'triggered_damage') totalStagger += num(event._action?.stagger);
             directDamage += event.damage;
@@ -3802,13 +4185,14 @@
           if (event.kind === 'triggered_damage' && event.damage > 0 && event._counted_in_total) {
             const snapshot = snapshots.get(int(event.contributor_slot));
             event.triggered_buffs = triggerBuffsForEvent('action_hit', int(event.tick),
-              {id: event.action_id, slot: snapshot.slot}, event._action, snapshot, true);
+              {id: event.action_id, slot: snapshot.slot}, event._action, snapshot, true,
+              {triggered_damage_visual_tick: event.visual_tick});
           }
-          const triggersPeriodicDamageBuffs = (Boolean(event.kind) && !['passive_settlement', 'triggered_damage', 'reaction_pulse'].includes(event.kind))
+          const triggersPeriodicDamageBuffs = (Boolean(event.kind) && !['passive_settlement', 'triggered_damage', 'reaction_pulse', 'analysis_retained_reaction'].includes(event.kind))
             || ['浊燃', '创生', '创生复制体'].includes(reactionName);
           if (triggersPeriodicDamageBuffs && event.damage > 0) {
             const contributorSlot = int(event.contributor_slot);
-            const snapshot = snapshots.get(contributorSlot);
+            const snapshot = reactionSnapshot(contributorSlot);
             if (snapshot) {
               const isDotDamage = Boolean(event.kind) || reactionName === '浊燃';
               const periodicAction = {
@@ -3817,7 +4201,7 @@
                 action_type: String(event.action_type || '周期伤害'),
                 damage_type: String(event.damage_type || event.action_type || '周期伤害'),
                 extra_tag: isDotDamage ? 'DOT' : '',
-                tags: [...(isDotDamage ? ['DOT'] : []), ...asList(event.tags)],
+                tags: [...(isDotDamage ? ['DOT'] : []), ...(['创生', '创生复制体'].includes(reactionName) ? ['召唤物'] : []), ...asList(event.tags)],
                 tags_by_awakening_node: event.tags_by_awakening_node,
                 hit_count: 1,
               };
@@ -3828,6 +4212,7 @@
                 periodicAction,
                 snapshot,
                 true,
+                {display_only: event._counted_in_total === false},
               ));
             }
           }
@@ -4217,6 +4602,20 @@
       return multiplier;
     }
 
+    initializePersonalResourceStates(options.loop_enabled ? -loopDurationTicks : 0);
+    buffRules.forEach((rule) => {
+      const names = strSet(rule.stacking?.seed_from_arc_names);
+      if (!names.size) return;
+      const arcs = recordMap(catalog.arcs);
+      let stacks = 0;
+      teamPayload.forEach((member) => {
+        if (!names.has(String(arcs.get(member.arc_id)?.name || ''))) return;
+        const gain = Math.max(0, num(rule.stacking.max_stacks_per_source));
+        stacks += gain;
+        buffSourceStacks.set(`${rule.owner_slot}:${rule.id}:${int(member.slot)}`, gain);
+      });
+      if (stacks > 0) activateBuff(activeBuffs, rule, 0, stacks);
+    });
     buffRules.forEach((rule) => {
       if (String(rule.trigger?.event || '') !== 'passive') return;
       const snapshot = snapshots.get(int(rule.owner_slot));
@@ -4240,13 +4639,121 @@
       return String(rule.trigger?.event || '') === 'action_end' ? endTick : startTick;
     }
 
+    function advanceToTimelineMask(deadlineTick, triggerTick, extraContext) {
+      // Include adjacent cycles; virtual mask width is never elapsed time.
+      const shifts = options.loop_enabled && loopDurationTicks > 0
+        ? (extraContext.loop_prime_only ? [-loopDurationTicks, 0] : [0, loopDurationTicks]) : [0];
+      const visualTriggerTick = int(extraContext.visual_trigger_tick,
+        visualTickFromCalculationTick(triggerTick, qVirtualIntervals));
+      scheduledSteps.forEach((entry) => {
+        if (!isZeroForegroundQStep(entry.step, entry.action)) return;
+        shifts.forEach((shift) => {
+          const tick = int(entry.start_tick) + shift;
+          if (tick > triggerTick || (tick === triggerTick
+            && int(entry.visual_start_tick) + shift > visualTriggerTick)) {
+            deadlineTick = Math.min(deadlineTick, tick);
+          }
+        });
+      });
+      return deadlineTick;
+    }
+
+    function primeRankedDamageHit(action, owner, tick) {
+      const damage = reactionDamageAtTick({
+        kind: 'triggered_damage', contributor_slot: owner.slot, tick, _action: action,
+        atk_multiplier: num(action.multipliers?.atk),
+      });
+      if (damage > 0) {
+        triggerBuffsForEvent('action_hit', tick, {id: action.id, slot: owner.slot}, action, owner, true,
+          {loop_prime_only: true, prime_ranked_damage_hit: true});
+      }
+    }
+
+    function updateRankedResources(event, tick, step, action, snapshot, context) {
+      if (context.display_only === true) return;
+      snapshots.forEach((owner) => {
+        const model = owner.character?.ranked_resource_system;
+        if (!model) return;
+        const resources = personalResources.get(owner.slot);
+        const beforeResources = {...resources};
+        const ranks = asList(model.ranks).slice(0, hasAwakeningResonance(owner, 6) ? undefined : -1);
+        const rank = () => ranks.filter((entry) => num(resources[model.score_resource]) >= num(entry.threshold)).at(-1) || ranks[0];
+        const last = rankedResourceClocks.has(owner.slot) ? rankedResourceClocks.get(owner.slot) : Math.min(0, tick);
+        if (!hasAwakeningResonance(owner, 3)) {
+          for (let t = last + 1; t <= tick; t += 1) {
+            const scoreBeforeTick = num(resources[model.score_resource]);
+            resources[model.score_resource] = Math.max(0, num(resources[model.score_resource]) - num(rank().decay_per_second) / 10);
+            if (resources[model.score_resource] !== scoreBeforeTick) personalResourceStateEvents.push({
+              tick: t, slot: owner.slot, resource: model.score_resource, value: resources[model.score_resource],
+            });
+          }
+        }
+        rankedResourceClocks.set(owner.slot, Math.max(last, tick));
+        const addScore = (amount) => {
+          resources[model.score_resource] = Math.min(num(model.score_cap), num(resources[model.score_resource])
+            + amount * (hasAwakeningResonance(owner, 6) ? 1.5 : 1));
+        };
+        if (event === 'reaction_trigger') {
+          if (model.promote_reaction && context.reaction?.reaction === model.promote_reaction) {
+            resources[model.score_resource] = Math.max(num(resources[model.score_resource]), num(model.promote_score));
+          }
+          addScore(num(model.reaction_score));
+        }
+        if (int(step.slot) !== owner.slot || event !== 'action_hit' || context.action_hit_timing === 'end') {
+          if (resources[model.score_resource] !== beforeResources[model.score_resource]) personalResourceStateEvents.push({tick, slot: owner.slot, resource: model.score_resource, value: resources[model.score_resource]});
+          return;
+        }
+        const count = actionHitCount(action);
+        const hits = asList(action.ranked_resource_hits).slice(0, count);
+        const empowered = activeBuffs.some((buff) => int(buff.owner_slot) === owner.slot
+          && buff.definition_id === model.empowered_buff_key && tick >= int(buff.start_tick) && tick < int(buff.end_tick));
+        const exportLimit = empowered ? int(action.ranked_export_limit_empowered) : int(action.ranked_export_limit);
+        const exportAnchor = {source_step_id: step.id, visual_tick: context.visual_trigger_tick};
+        const exportCost = num(model.export_cost);
+        const settleExports = model.export_action && tick >= 0 && context.loop_prime_only !== true;
+        let exported = 0;
+        hits.forEach((hit, index) => {
+          const before = num(resources[model.frame_resource]);
+          resources[model.frame_resource] = Math.min(num(model.frame_cap), before + num(hit.frames) * num(rank().frame_multiplier, 1));
+          const gain = resources[model.frame_resource] - before;
+          addScore(num(hit.score));
+          if (gain > 0 && hasAwakeningNode(owner, 6) && tick >= 0 && context.loop_prime_only !== true) healingEvents.push({
+            kind: 'triggered_heal', source: `${owner.character.name}·${model.frame_resource}回复`, tick, slot: owner.slot,
+            character_id: owner.character.id, character_name: owner.character.name,
+            healing: gain * num(model.heal_atk_per_frame) * num(context.current_atk, owner.stats.atk),
+          });
+          const mayExport = action.ranked_export_last_hit !== true || index === int(action.original_hit_count, count) - 1;
+          if (!mayExport) return;
+          // Each summon can return frames before checking the same action's remaining budget.
+          while (exported < exportLimit && num(resources[model.frame_resource]) >= exportCost) {
+            resources[model.frame_resource] -= exportCost;
+            exported += 1;
+            if (hasAwakeningNode(owner, 6)) addScore(exportCost * num(model.score_per_consumed_frame));
+            if (model.export_action && context.loop_prime_only === true) {
+              primeRankedDamageHit(model.export_action, owner, tick);
+            } else if (settleExports) {
+              enqueueTriggeredDamage(owner, model.export_action, tick, exportAnchor);
+              settleReactionDamage(tick);
+            }
+          }
+        });
+        Object.keys(resources).forEach((resource) => {
+          if (resources[resource] !== beforeResources[resource]) personalResourceStateEvents.push({tick, slot: owner.slot, resource, value: resources[resource]});
+        });
+      });
+    }
+
     function triggerBuffsForEvent(event, triggerTick, step, action, snapshot, isBackground, extraContext = {}) {
+      const feedbackAfterBuffs = canExportRankedDamage(action, snapshot) && event === 'action_hit'
+        && extraContext.action_hit_timing !== 'end' && (triggerTick >= 0 || extraContext.loop_prime_only === true);
+      if (!feedbackAfterBuffs) updateRankedResources(event, triggerTick, step, action, snapshot, extraContext);
       const triggered = [];
       const dotLayerApplications = [];
       const decorateTriggeredSummary = (summary, runtimeRule, triggerEvent = event) => {
         summary.trigger_event = triggerEvent;
         summary.trigger_tick = triggerTick;
         const visualTriggerTick = int(extraContext.visual_trigger_tick, visualTickFromCalculationTick(triggerTick, qVirtualIntervals));
+        summary.visual_trigger_tick = visualTriggerTick;
         summary.visual_start_tick = int(summary.start_tick) === triggerTick
           ? visualTriggerTick
           : visualTickFromCalculationTick(int(summary.start_tick), qVirtualIntervals);
@@ -4268,7 +4775,13 @@
         fons_full: fonsFull,
         loop_enabled: options.loop_enabled,
       }, extraContext);
+      const primeRankedHit = extraContext.prime_ranked_damage_hit === true;
       buffRules.forEach((rule) => {
+        const activation = rule.activation && typeof rule.activation === 'object' ? rule.activation : {};
+        const triggeredDamage = rule.triggered_damage;
+        const immediateRankedDamage = primeRankedHit && !num(triggeredDamage?.delay_ticks)
+          && asList(triggeredDamage?.action?.ranked_resource_hits).length > 0;
+        if (primeRankedHit && !activation.reduce_action_cooldowns && !immediateRankedDamage) return;
         const ownerSlot = int(rule.owner_slot);
         const ownerInstances = activeBuffs.filter((instance) => (
           int(instance.owner_slot) === ownerSlot
@@ -4298,8 +4811,22 @@
           ? buffTriggerCooldowns.get(cooldownKey)
           : Number.NEGATIVE_INFINITY;
         if (cooldownTicks > 0 && triggerTick < cooldownUntilTick) return;
-        const activation = rule.activation && typeof rule.activation === 'object' ? rule.activation : {};
+        if (primeRankedHit) {
+          // Replay only the cooldown and resource feedback needed for warm-up.
+          reduceActionCooldowns(activation, ownerSlot, triggerTick, context.hit_count);
+          if (immediateRankedDamage) {
+            const owner = snapshots.get(ownerSlot);
+            if (owner) primeRankedDamageHit(triggeredDamage.action, owner, triggerTick);
+          }
+          return;
+        }
         const runtimeRule = clone(rule);
+        if (activation.stack_gain_from_key) {
+          runtimeRule.stacking = Object.assign({}, runtimeRule.stacking, {
+            stack_gain: ownerBuffs.filter((instance) => String(instance.definition_id) === String(activation.stack_gain_from_key))
+              .reduce((sum, instance) => sum + Math.max(0, num(instance.stack_count)), 0),
+          });
+        }
         if (runtimeRule.duration?.pause_off_field === true) {
           runtimeRule.duration.ticks = onFieldDurationTicks(ownerSlot, triggerTick, durationTicksForRule(rule));
         }
@@ -4321,7 +4848,7 @@
         const stackSourceKey = String(activation.effects_from_stack?.key || '');
         const stackSource = ownerBuffs.find((instance) => String(instance.definition_id || '') === stackSourceKey);
         if (stackSourceKey) {
-          const sourceStacks = Math.max(0, num(stackSource?.stack_count));
+          const sourceStacks = Math.min(num(activation.effects_from_stack.max_count, Infinity), Math.max(0, num(stackSource?.stack_count)));
           const sourceEffects = runtimeRule.effects && typeof runtimeRule.effects === 'object' ? runtimeRule.effects : {};
           const fullEffectKeys = new Set(asList(activation.effects_from_stack?.full_effect_keys).map(String));
           const perStackEntries = Object.entries(activation.effects_from_stack?.per_stack_from_effect || {});
@@ -4341,6 +4868,11 @@
           }
           runtimeRule.effects = resolvedEffects;
           runtimeRule.consumed_stacks = sourceStacks;
+          if (runtimeRule.triggered_damage?.action && runtimeRule.triggered_damage.atk_per_stack != null) {
+            runtimeRule.triggered_damage.action.multipliers = Object.assign({}, runtimeRule.triggered_damage.action.multipliers, {
+              atk: num(runtimeRule.triggered_damage.action.multipliers?.atk) + sourceStacks * num(runtimeRule.triggered_damage.atk_per_stack),
+            });
+          }
         }
         const ownerBase = activation.effects_from_owner_base && typeof activation.effects_from_owner_base === 'object'
           ? activation.effects_from_owner_base
@@ -4402,7 +4934,8 @@
         const activationResources = personalResources.get(ownerSlot) || {};
         Object.entries(resourceMap(activation.personal_resource_gain_per_hit)).forEach(([key, gain]) => {
           const cap = num(personalResourceCaps[String(rule.owner_character_id || '')]?.[key], Infinity);
-          activationResources[key] = Math.min(cap, num(activationResources[key]) + gain * Math.max(0, num(context.hit_count)));
+          activationResources[key] = integerPersonalResourceValue(String(rule.owner_character_id || ''), key,
+            Math.min(cap, num(activationResources[key]) + gain * Math.max(0, num(context.hit_count))));
         });
         if (num(activation.heal_base_atk_ratio) > 0 && triggerTick >= 0) {
           const owner = snapshots.get(ownerSlot);
@@ -4415,14 +4948,15 @@
             personalResourceCaps[String(rule.owner_character_id || '')]?.[key],
             Number.POSITIVE_INFINITY,
           );
-          activationResources[key] = Math.min(cap, (activationResources[key] || 0) + gain);
+          activationResources[key] = integerPersonalResourceValue(String(rule.owner_character_id || ''), key,
+            Math.min(cap, (activationResources[key] || 0) + gain));
         });
         asList(activation.personal_resource_set_to_cap).map(String).filter(Boolean).forEach((key) => {
           const cap = num(
             personalResourceCaps[String(rule.owner_character_id || '')]?.[key],
             Number.POSITIVE_INFINITY,
           );
-          if (Number.isFinite(cap)) activationResources[key] = cap;
+          if (Number.isFinite(cap)) activationResources[key] = integerPersonalResourceValue(String(rule.owner_character_id || ''), key, cap);
         });
         const activationEnergyGain = num(activation.energy_gain);
         if (activationEnergyGain !== 0) {
@@ -4480,8 +5014,15 @@
             triggerTick,
           );
         });
+        reduceActionCooldowns(activation, ownerSlot, triggerTick, context.hit_count);
         const previousInstances = new Set(activeBuffs);
-        const stackGain = stackGainForRule(runtimeRule, context);
+        let stackGain = stackGainForRule(runtimeRule, context);
+        if (num(runtimeRule.stacking?.max_stacks_per_source) > 0) {
+          const key = `${ownerSlot}:${runtimeRule.id}:${context.source_slot}`;
+          const previous = num(buffSourceStacks.get(key));
+          stackGain = Math.min(stackGain, Math.max(0, num(runtimeRule.stacking.max_stacks_per_source) - previous));
+          buffSourceStacks.set(key, previous + stackGain);
+        }
         const stackingDefinitionId = String(runtimeRule.stacking?.key || runtimeRule.id || '');
         const previousStackCount = activeBuffs
           .filter((candidate) => (
@@ -4492,8 +5033,20 @@
         const instance = activateBuff(activeBuffs, runtimeRule, triggerTick, stackGain, context);
         if (!instance) return;
         if (runtimeRule.triggered_damage?.action) {
+          const delay = Math.max(0, int(runtimeRule.triggered_damage.delay_ticks));
+          const visualTick = extraContext.triggered_damage_visual_tick ?? extraContext.visual_trigger_tick;
           enqueueTriggeredDamage(snapshots.get(ownerSlot), runtimeRule.triggered_damage.action,
-            triggerTick + Math.max(0, int(runtimeRule.triggered_damage.delay_ticks)));
+            triggerTick + delay, {visual_tick: delay === 0 ? visualTick : undefined});
+        }
+        if (runtimeRule.delayed_reaction?.reaction) {
+          let echoTick = triggerTick + Math.max(0, int(runtimeRule.delayed_reaction.delay_ticks));
+          if (runtimeRule.delayed_reaction.advance_on_timeline_mask === true) {
+            echoTick = advanceToTimelineMask(echoTick, triggerTick, extraContext);
+            instance.end_tick = echoTick;
+          }
+          reactionDamageEvents.push({kind: 'reaction_echo', reaction: runtimeRule.delayed_reaction.reaction,
+            tick: echoTick, sequence: 0,
+            contributor_slot: ownerSlot, source_step_id: step.id, damage: null});
         }
         if (runtimeRule.reaction_pulse) {
           instance._pulse_generation = num(instance._pulse_generation) + 1;
@@ -4520,7 +5073,11 @@
           }
         }
         if (instance.rule?.periodic_heal) registerPeriodicHealing(instance);
-        if (cooldownTicks > 0) buffTriggerCooldowns.set(cooldownKey, triggerTick + cooldownTicks);
+        if (cooldownTicks > 0) {
+          const cooldownEndTick = triggerTick + cooldownTicks;
+          buffTriggerCooldowns.set(cooldownKey, runtimeRule.trigger?.cooldown_advance_on_timeline_mask === true
+            ? advanceToTimelineMask(cooldownEndTick, triggerTick, extraContext) : cooldownEndTick);
+        }
         const summary = buffSummary(instance);
         if (dotLayerExpansion.additions.length) summary.dot_layer_additions = dotLayerExpansion.additions;
         if (turbidBurnStackCount > 0) summary.turbid_burn_stack_count = turbidBurnStackCount;
@@ -4543,7 +5100,8 @@
             decorateTriggeredSummary(buffSummary(addedBuff), addedBuff.rule),
           ));
         });
-        const fullStackBuffId = String(activation.full_stack_buff_id || '');
+        const fullStackBuffIds = (Array.isArray(activation.full_stack_buff_ids)
+          ? activation.full_stack_buff_ids : [activation.full_stack_buff_id]).map((id) => String(id || '')).filter(Boolean);
         const fullStackThreshold = Math.max(1, num(
           activation.full_stack_threshold,
           maxStacksForRule(runtimeRule),
@@ -4556,24 +5114,34 @@
             ))
             .reduce((sum, candidate) => sum + Math.max(0, num(candidate.stack_count, 1)), 0)
           : Math.max(0, num(instance.stack_count, 1));
-        if (fullStackBuffId && previousStackCount < fullStackThreshold && currentStackCount >= fullStackThreshold) {
-          const fullStackRule = buffRules.find((candidate) => (
-            int(candidate.owner_slot) === ownerSlot
-            && String(candidate.id || '') === fullStackBuffId
-          ));
-          if (fullStackRule) {
-            const fullStackInstance = activateBuff(activeBuffs, fullStackRule, triggerTick, 1, context);
-            if (fullStackInstance) {
-              triggered.push(trackBuffTimelineSummary(
-                fullStackInstance,
-                decorateTriggeredSummary(
-                  buffSummary(fullStackInstance),
-                  fullStackRule,
-                  'full_stack',
-                ),
-              ));
+        if (fullStackBuffIds.length && previousStackCount < fullStackThreshold && currentStackCount >= fullStackThreshold) {
+          fullStackBuffIds.forEach((fullStackBuffId) => {
+            const fullStackRule = buffRules.find((candidate) => (
+              int(candidate.owner_slot) === ownerSlot
+              && String(candidate.id || '') === fullStackBuffId
+            ));
+            if (fullStackRule) {
+              const fullStackInstance = activateBuff(activeBuffs, fullStackRule, triggerTick, 1, context);
+              if (fullStackInstance) {
+                triggered.push(trackBuffTimelineSummary(
+                  fullStackInstance,
+                  decorateTriggeredSummary(
+                    buffSummary(fullStackInstance),
+                    fullStackRule,
+                    'full_stack',
+                  ),
+                ));
+              }
             }
-          }
+          });
+          const fullStackClearKeys = new Set(asList(activation.full_stack_clear_keys).map(String));
+          activeBuffs = activeBuffs.filter((candidate) => {
+            if (int(candidate.owner_slot) !== ownerSlot || !fullStackClearKeys.has(String(candidate.definition_id || ''))) return true;
+            truncateBuffTimelineAt(candidate, triggerTick,
+              int(extraContext.visual_trigger_tick, visualTickFromCalculationTick(triggerTick, qVirtualIntervals)));
+            return false;
+          });
+          fullStackClearKeys.forEach((key) => sharedPeriodicDamageStates.delete(`${ownerSlot}:${key}`));
         }
       });
       if (event !== 'dot_layer_applied') {
@@ -4592,6 +5160,8 @@
           ));
         });
       }
+      if (feedbackAfterBuffs) updateRankedResources(event, triggerTick, step, action, snapshot, extraContext);
+      syncPersonalResourceStates(triggerTick);
       return triggered;
     }
 
@@ -4616,13 +5186,45 @@
       return addedInstances;
     }
 
+    function triggerRemovedSupportReaction(scheduled, primeLoop = false) {
+      if (!scheduled.analysis_keep_reaction) return;
+      const visualTick = reactionTriggerVisualTick(scheduled);
+      const tick = calculationTickFromVisualIntervals(visualTick, qVirtualIntervals)
+        - (primeLoop ? loopDurationTicks : 0);
+      const result = triggerReaction(scheduled, tick, {primeLoop});
+      if (result.effect) triggerBuffsForEvent('reaction_trigger', tick, scheduled.step,
+        scheduled.action, reactionGhost, scheduled.is_background,
+        {reaction: result.effect, loop_prime_only: primeLoop,
+          visual_trigger_tick: visualTick - (primeLoop ? loopDurationTicks : 0)});
+    }
+
     if (options.loop_enabled && loopDurationTicks > 0) {
+      const loopStackSourceKeys = new Set(buffRules
+        .filter((rule) => rule.duration?.loop_carry === true && rule.activation?.stack_gain_from_key)
+        .flatMap((rule) => [rule.activation.stack_gain_from_key, rule.stacking?.key || rule.id]
+          .map((key) => `${int(rule.owner_slot)}:${key}`)));
+      if (stackHistoryPasses > 0 && loopStackSourceKeys.size) {
+        // A consumed stack source can itself come from the cycle before the
+        // usual priming cycle. Two source-history passes also prepare the
+        // consumed counter used by a buff still active at the measured opening.
+        // Seed only those stacks; never replay their
+        // damage, resources, reactions or queued events into the measured axis.
+        const sources = simulateAxisPass(axisPayload, catalog, analysisOptions, true, stackHistoryPasses - 1);
+        sources.forEach((instance) => {
+          instance.start_tick = int(instance.start_tick) - loopDurationTicks;
+          instance.end_tick = int(instance.end_tick) - loopDurationTicks;
+          activeBuffs.push(instance);
+        });
+        initializePersonalResourceStates(-loopDurationTicks);
+      }
       const configuredLoopInitialReactions = [];
       const configuredLoopInitialDots = [];
-      snapshots.forEach((snapshot) => {
+      originalTeam.forEach((member) => {
+        const snapshot = reactionSnapshot(member.slot);
+        if (!snapshot) return;
         const configured = loopInitialResources[String(snapshot.character?.id || '')];
         const reaction = configured && typeof configured === 'object' ? String(configured.reaction || '') : '';
-        if (reaction) {
+        if (reaction && (!snapshot.analysis_reaction_only || retainedSelfReactions.has(reaction))) {
           configuredLoopInitialReactions.push({reaction, snapshot});
           seedLoopInitialReaction(reaction, snapshot, -loopDurationTicks);
         }
@@ -4647,10 +5249,15 @@
         const step = scheduled.step;
         const action = scheduled.action;
         const snapshot = snapshots.get(int(scheduled.slot));
-        if (!snapshot) return;
+        if (!snapshot || scheduled.analysis_removed) {
+          triggerRemovedSupportReaction(scheduled, true);
+          return;
+        }
         const startTick = int(scheduled.start_tick) - loopDurationTicks;
         const endTick = int(scheduled.end_tick) - loopDurationTicks;
         activeBuffs = activeBuffs.filter((instance) => startTick < int(instance.end_tick));
+        const hasRankedExports = canExportRankedDamage(action, snapshot);
+        if (hasRankedExports) recordActionCooldown(scheduled.slot, action, snapshot, startTick, scheduled.duration_ticks);
         const actionMultiplier = backgroundActionMultiplier(step, action);
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
           triggerBuffsForEvent(
@@ -4679,14 +5286,9 @@
             },
           );
         }
-        recordActionCooldown(
-          int(scheduled.slot),
-          action,
-          snapshot,
-          startTick,
-          int(scheduled.duration_ticks),
-        );
-        const reactionTick = calculationTickFromVisualIntervals(reactionTriggerTick(scheduled), qVirtualIntervals);
+        if (!hasRankedExports) recordActionCooldown(scheduled.slot, action, snapshot, startTick, scheduled.duration_ticks);
+        const reactionVisualTick = reactionTriggerVisualTick(scheduled);
+        const reactionTick = calculationTickFromVisualIntervals(reactionVisualTick, qVirtualIntervals);
         const previousInstances = new Set(activeBuffs);
         const reactionTrigger = triggerReaction(
           scheduled,
@@ -4703,7 +5305,7 @@
             scheduled.is_background,
             {
               reaction: reactionTrigger.effect,
-              visual_trigger_tick: reactionTriggerTick(scheduled),
+              visual_trigger_tick: reactionVisualTick,
               loop_prime_only: true,
             },
           );
@@ -4736,6 +5338,8 @@
             instance.looped = true;
           });
       });
+      retainedApplications.filter((entry) => int(entry.tick) < 0)
+        .sort((a, b) => int(a.tick) - int(b.tick)).forEach(applyRetainedSelfReaction);
       reactionDamageEvents
         .filter((event) => int(event.tick) < 0)
         .sort((left, right) => int(left.tick) - int(right.tick) || int(left.sequence) - int(right.sequence))
@@ -4757,6 +5361,9 @@
         Object.keys(resources).forEach((key) => delete resources[key]);
         Object.assign(resources, initialPersonalResourcesBySlot.get(slot) || {});
       });
+      rankedResourceClocks.clear();
+      initializePersonalResourceStates(0);
+      personalResourceStateEvents.length = 0;
       const expiredPrimedReactionIds = new Set(
         reactionEffects
           .filter((effect) => int(effect.end_tick) <= 0)
@@ -4811,7 +5418,18 @@
         if (carriedLayers.length > 0) return;
         seedLoopInitialDot(dotConfig, dotConfig.snapshot, dotConfig.layers, 0);
       });
+      if (captureLoopStackSources) {
+        return activeBuffs.filter((instance) => (
+          instance.rule?.duration?.loop_carry === true
+          && loopStackSourceKeys.has(`${int(instance.owner_slot)}:${instance.definition_id}`)
+        )).map((instance) => clone(instance));
+      }
     }
+
+    retainedApplications.filter((entry) => int(entry.tick) >= 0 && entry.kind !== 'status').forEach((application) => {
+      reactionDamageEvents.push({kind: 'analysis_retained_reaction', reaction: application.reaction,
+        tick: int(application.tick), sequence: -1, application, damage: null});
+    });
 
     let runtimeFrontSlot = options.loop_enabled ? loopOpeningFrontSlot : null;
     let runtimeFrontSinceTick = 0;
@@ -4897,11 +5515,45 @@
         });
     }
 
+    const battleStartBuffs = [];
+    if (!options.loop_enabled) snapshots.forEach((snapshot) => {
+      battleStartBuffs.push(...triggerBuffsForEvent(
+        'battle_start', 0, {id: 'battle-start', slot: snapshot.slot},
+        {id: 'battle-start', action_type: '无', hit_count: 0}, snapshot, true,
+      ));
+    });
+
     scheduledSteps.forEach((scheduled) => {
       const step = scheduled.step;
       const slot = int(scheduled.slot);
       const snapshot = snapshots.get(slot);
-      if (!snapshot) return;
+      if (!snapshot || scheduled.analysis_removed) {
+        if (excludedSlot != null && switchesForeground(step, scheduled.action)) {
+          const tick = int(scheduled.start_tick);
+          const previousSlot = runtimeFrontSlot;
+          const previous = snapshots.get(previousSlot);
+          settleActionEnergy(tick);
+          settleActionHarmony(tick);
+          runtimeFrontSlot = slot; // Vacant: no snapshot exists for this slot.
+          runtimeFrontSinceTick = tick;
+          settlePersonalResourceDrains(tick);
+          settlePeriodicHealing(tick);
+          settleReactionDamage(tick);
+          activeBuffs = activeBuffs.filter((buff) => tick < int(buff.end_tick)
+            && !activeBuffResetsOnActionStart(buff, step, scheduled.action, false, tick,
+              previousSlot, int(scheduled.visual_start_tick)));
+          syncBuffLayerResources(tick);
+          syncFrontTimeBuffs(tick);
+          if (previous) triggerBuffsForEvent('foreground_leave', tick,
+            {id: String(step.id || ''), slot: previousSlot},
+            {id: 'foreground_leave', action_type: '切人', tags: []}, previous, false,
+            {visual_trigger_tick: int(scheduled.visual_start_tick)});
+        }
+        retainedApplications.filter((entry) => entry.kind === 'status'
+          && entry.step_id === String(step.id || '')).forEach(applyRetainedSelfReaction);
+        triggerRemovedSupportReaction(scheduled);
+        return;
+      }
       const action = scheduled.action;
       periodicDamageWindows
         .filter((window) => String(window.step_id || '') === String(step.id || ''))
@@ -4921,6 +5573,7 @@
       const isInstantForegroundQ = isZeroForegroundQStep(step, action);
       const warnings = [];
       if (action.validation_note) warnings.push(String(action.validation_note));
+      if (action.requires_off_field && runtimeFrontSlot === slot) warnings.push('该协同攻击要求角色处于后台。');
       settleActionEnergy(isInstantForegroundQ ? startTick - 1 : startTick);
       settleActionHarmony(isInstantForegroundQ ? startTick - 1 : startTick);
       const instantHarmony = num(action.harmony_on_start) * actionMultiplier;
@@ -4986,7 +5639,8 @@
         ));
       }
       // Check the entry condition before this action creates its own form buff.
-      if (action.forbidden_buff_key && activeBuffs.some((buff) => String(buff.definition_id) === action.forbidden_buff_key
+      const forbiddenBuffKeys = new Set([...asList(action.forbidden_buff_any_keys), action.forbidden_buff_key].map((key) => String(key || '')).filter(Boolean));
+      if (forbiddenBuffKeys.size && activeBuffs.some((buff) => forbiddenBuffKeys.has(String(buff.definition_id))
         && int(buff.owner_slot) === slot && buffTick >= int(buff.start_tick) && buffTick < int(buff.end_tick))) {
         warnings.push('当前形态不能使用该动作。');
       }
@@ -5013,6 +5667,18 @@
         && buffTick < int(buff.end_tick)
       ))) {
         warnings.push(`动作需要处于 ${String(action.required_buff_name || requiredBuffKey)} 状态。`);
+      }
+      const sequenceStart = String(action.starts_action_sequence || '');
+      if (sequenceStart) actionSequenceUses.set(`${slot}:${sequenceStart}`, 0);
+      const sequence = String(action.action_sequence || '');
+      const maxSequenceUses = Math.max(0, int(action.max_uses_per_action_sequence));
+      if (sequence && maxSequenceUses) {
+        const key = `${slot}:${sequence}`;
+        const used = actionSequenceUses.get(key) || 0;
+        if (used + actionMultiplier > maxSequenceUses) {
+          warnings.push(String(action.action_sequence_usage_warning || `本次动作序列内该动作最多使用${maxSequenceUses}次。`));
+        }
+        actionSequenceUses.set(key, used + actionMultiplier);
       }
       const requiredBuffAnyKeys = strSet(action.required_buff_any_keys);
       asList(action.required_additional_buff_keys).forEach((key) => {
@@ -5099,11 +5765,11 @@
         && jointReactionContext.triggerSnapshot
         && !jointReactionContext.reaction
       ) {
-        mergeMods(buffModifiers, { all_dmg: 0.5 });
+        mergeMods(buffModifiers, { other_dmg: 0.5 });
         appliedBuffs.push(lingkeJointAppliedBuff(
           'character_lingke_awakening_e_joint_damage',
           '灵可E觉·无法环合增伤',
-          { all_dmg: 0.5 },
+          { other_dmg: 0.5 },
           jointSource ? jointSource.slot : slot,
         ));
       }
@@ -5117,6 +5783,7 @@
         ));
       }
       const slotResources = personalResources.get(slot) || {};
+      const trackedResourcesBeforeAction = {...slotResources};
       const consumedResources = {};
       Object.entries(resourceMap(action.personal_resource_threshold)).forEach(([key, threshold]) => {
         if ((slotResources[key] || 0) < threshold && action.personal_resource_threshold_warning === true) {
@@ -5145,13 +5812,23 @@
         slotResources[key] = 0;
       });
       Object.entries(resourceMap(action.personal_resource_gain)).forEach(([key, gain]) => {
-        if (activeResourceEffectConfigs(activeBuffs, slot, buffTick, 'block_gain', key, step, action, snapshot, isBackground).length) {
-          warnings.push(`${key} 正在持续消耗，期间无法积攒。`);
+        if (action.personal_resource_gain_on_first_hit === true && actionHitCount(action) === 0) return;
+        const gainBlockers = activeResourceEffectConfigs(activeBuffs, slot, buffTick, 'block_gain', key, step, action, snapshot, isBackground);
+        if (gainBlockers.length) {
+          if (gainBlockers.some((buff) => buff.rule.resource_effects.block_gain[key]?.warn !== false)) {
+            warnings.push(`${key} 正在持续消耗，期间无法积攒。`);
+          }
           return;
         }
         const cap = num(personalResourceCaps[String(snapshot.character?.id || '')]?.[key], Number.POSITIVE_INFINITY);
         const gainMultiplier = Math.max(0, 1 + num(personalResourceGainPct[key]));
-        slotResources[key] = Math.min(cap, (slotResources[key] || 0) + gain * gainMultiplier * actionMultiplier);
+        slotResources[key] = integerPersonalResourceValue(String(snapshot.character?.id || ''), key,
+          Math.min(cap, (slotResources[key] || 0) + gain * gainMultiplier * actionMultiplier));
+      });
+      asList(snapshot.character?.timeline_personal_resources).forEach((resource) => {
+        if (num(slotResources[resource]) !== num(trackedResourcesBeforeAction[resource])) {
+          personalResourceStateEvents.push({tick: startTick, slot, resource, value: num(slotResources[resource])});
+        }
       });
       triggeredBuffs.forEach((summary) => {
         const instance = activeBuffs.find((buff) => (
@@ -5258,11 +5935,15 @@
       const criticalHits = criticalHitsPerAction * actionMultiplier;
       const hasResolvedHit = action.interrupted_hit_count !== 0;
       const appliedEnemyDebuffs = hasResolvedHit ? applyEnemyDebuffs(enemyDebuffs, action, buffTick, enemyDebuffDurationTicks) : [];
+      appliedEnemyDebuffs.forEach((reaction) => recordSelfReaction(reaction, snapshot, buffTick, 'status', action.name, step.id));
+      const hasRankedExports = canExportRankedDamage(action, snapshot);
+      if (hasRankedExports) recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
       if (!action.periodic_damage && hasResolvedHit) {
         for (let copyIndex = 0; copyIndex < actionMultiplier; copyIndex += 1) {
           triggeredBuffs.push(...triggerBuffsForEvent('action_hit', startTick, step, action, snapshot, isBackground, {
             visual_trigger_tick: visualStartTick,
             expected_critical_hits: criticalHitsPerAction,
+            current_atk: calc.panel.atk,
             applied_enemy_debuffs: appliedEnemyDebuffs,
             enemy_debuffs: activeEnemyDebuffs(enemyDebuffs, buffTick),
           }));
@@ -5394,7 +6075,8 @@
       });
       slotEnergy = energyBySlot.get(slot) ?? slotEnergy;
       const displayedEnergyGain = plannedEnergy.get(energyActorSlot) || 0;
-      recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
+      if (!hasRankedExports) recordActionCooldown(slot, action, snapshot, startTick, durationTicks);
+      if (snapshot.character?.ranked_resource_system?.export_action) settleReactionDamage(startTick);
       if (changesForeground) {
         frontEvents.push({
           slot,
@@ -5405,7 +6087,8 @@
           order: frontEvents.length,
         });
       }
-      const reactionTick = calculationTickFromVisualIntervals(reactionTriggerTick(scheduled), qVirtualIntervals);
+      const reactionVisualTick = reactionTriggerVisualTick(scheduled);
+      const reactionTick = calculationTickFromVisualIntervals(reactionVisualTick, qVirtualIntervals);
       const reactionTrigger = triggerReaction(scheduled, reactionTick);
       const triggeredReaction = reactionTrigger.effect;
       if (triggeredReaction) {
@@ -5418,7 +6101,7 @@
           isBackground,
           {
             reaction: triggeredReaction,
-            visual_trigger_tick: reactionTriggerTick(scheduled),
+            visual_trigger_tick: reactionVisualTick,
           },
         ));
       }
@@ -5461,7 +6144,7 @@
         original_hit_count: action.original_hit_count,
         action_type: action.action_type,
         damage_type: action.damage_type,
-        damage_element: action.damage_element || snapshot.character.element || '',
+        damage_element: damageCharacterForAction(damageSnapshot, damageAction).element || '',
         damage_source: damageSource || '',
         raw_start_tick: int(step.start_tick),
         switch_gap_ticks: Math.max(0, int(scheduled.switch_loss_ticks)),
@@ -5565,6 +6248,7 @@
       });
     });
 
+    settleActionEnergy(options.loop_enabled ? loopDurationTicks : scheduledLastTick);
     if (options.loop_enabled) {
       settleReactionDamage(loopDurationTicks);
     } else {
@@ -5576,7 +6260,7 @@
       effect.visual_end_tick = visualTickFromCalculationTick(int(effect.end_tick), qVirtualIntervals);
     });
     reactionDamageEvents.forEach((event) => {
-      event.visual_tick = visualTickFromCalculationTick(int(event.tick), qVirtualIntervals);
+      event.visual_tick ??= visualTickFromCalculationTick(int(event.tick), qVirtualIntervals);
     });
     frontEvents.sort((a, b) => int(a.visual_start_tick, int(a.start_tick)) - int(b.visual_start_tick, int(b.start_tick)) || int(a.order) - int(b.order));
     const dedupedFrontEvents = [];
@@ -5788,6 +6472,7 @@
       }
       const isHarmonyDamage = !event.kind && HARMONY_DAMAGE_SOURCES.includes(String(event.reaction || ''));
       if (isHarmonyDamage) {
+        if (!harmonyDamageBySourceBySlot.has(slot)) harmonyDamageBySourceBySlot.set(slot, new Map());
         const sources = harmonyDamageBySourceBySlot.get(slot);
         sources.set(event.reaction, (sources.get(event.reaction) || 0) + num(event.damage));
         return;
@@ -5815,7 +6500,7 @@
           actionDamage.set(actionKey, current);
     });
     const sortedSlots = Array.from(snapshots.keys()).sort((a, b) => a - b);
-    const harmonyContributionsBySlot = sortedSlots.map((slot) => {
+    const harmonyContributionsBySlot = Array.from(harmonyDamageBySourceBySlot.keys()).sort((a, b) => a - b).map((slot) => {
       const rawSources = harmonyDamageBySourceBySlot.get(slot) || new Map();
       const sources = DAMAGE_SHARE_SOURCE_GROUPS.map((group) => ({
         source: group.source,
@@ -5826,8 +6511,8 @@
       const damage = sources.reduce((sum, item) => sum + item.damage, 0);
       return {
         slot,
-        character_id: snapshots.get(slot).character.id,
-        character_name: snapshots.get(slot).character.name,
+        character_id: reactionSnapshot(slot).character.id,
+        character_name: reactionSnapshot(slot).character.name,
         damage,
         percent: harmonyDamage > 0 ? damage / harmonyDamage * 100 : 0,
         sources: sources.map((item) => ({
@@ -5860,6 +6545,11 @@
         ...item,
         percent: totalDamage > 0 ? item.damage / totalDamage * 100 : 0,
       }));
+    eventBuffSummaries.forEach(({step_id, summary}) => {
+      if (num(summary.trigger_tick) < 0) return;
+      const detail = details.find((item) => String(item.step_id) === String(step_id));
+      if (detail) detail.triggered_buffs.push(summary);
+    });
     return {
       ok: true,
       summary: {
@@ -5917,6 +6607,9 @@
       harmony_contributions_by_slot: harmonyContributionsBySlot,
       other_contributions_by_slot: otherContributionsBySlot,
       stagger_contributions_by_slot: staggerContributionsBySlot,
+      initial_buffs: battleStartBuffs,
+      personal_resource_state_events: personalResourceStateEvents.filter((event) => event.tick >= 0)
+        .sort((left, right) => left.tick - right.tick),
       resources_by_slot: sortedSlots.map((slot) => ({
         slot,
         character_id: snapshots.get(slot).character.id,
@@ -5951,6 +6644,7 @@
       },
       details,
       reaction_effects: reactionEffects,
+      ...(analysisOptions.capture_self_reactions ? {self_reaction_applications: selfReactionApplications} : {}),
       dissonance_events: dissonanceStagger.events,
       reaction_damage_events: reactionDamageEvents
         .filter((event) => event.damage != null && !event.kind)
@@ -5961,6 +6655,75 @@
       healing_events: healingEvents,
       front_windows: frontWindows,
       enemy,
+    };
+  }
+
+  function analyzeCharacterEffectiveness(axisPayload, catalog, options = {}) {
+    const slot = Number(options.slot);
+    const member = asList(axisPayload?.team).find((item) => int(item.slot) === slot);
+    if (options.slot == null || !Number.isInteger(slot) || !member) {
+      throw new Error('请选择队伍中的角色分析效能。');
+    }
+    if (!asList(axisPayload?.steps).length) throw new Error('请先在动作轴中添加动作。');
+    const full = simulateAxis(axisPayload, catalog, {capture_self_reactions: true});
+    const without = simulateAxis(axisPayload, catalog, {excluded_slot: slot});
+    const baseline = characterEffectivenessMetrics(full, without, slot);
+    const applications = asList(full.self_reaction_applications).filter((entry) => (
+      int(entry.slot) === slot && int(entry.tick) <= int(full.summary.duration_ticks)
+    ));
+    const reactionTypes = Object.keys(REACTION_DURATIONS)
+      .filter((reaction) => applications.some((entry) => entry.reaction === reaction));
+    const variants = Array.from({length: 2 ** reactionTypes.length}, (_, mask) => {
+      const retained = reactionTypes.filter((_, index) => mask & (1 << index));
+      const candidate = mask === 0 ? without : simulateAxis(axisPayload, catalog, {
+        excluded_slot: slot, retained_self_reactions: retained, self_reaction_applications: applications,
+      });
+      return {retained_reactions: retained, ...characterEffectivenessMetrics(full, candidate, slot)};
+    });
+    const epsilon = Math.max(1e-8, baseline.full_dps * 1e-10);
+    const groups = [];
+    variants.forEach((variant) => {
+      const existing = groups.find((group) => ['without_dps', 'direct_contribution_dps', 'support_dps']
+        .every((key) => Math.abs(group.result[key] - variant[key]) <= epsilon));
+      if (existing) existing.combinations.push(variant.retained_reactions);
+      else groups.push({combinations: [variant.retained_reactions], result: variant});
+    });
+    return {...baseline, self_reaction_types: reactionTypes, reaction_variants: variants,
+      reaction_variant_groups: groups};
+  }
+
+  function characterEffectivenessMetrics(full, without, slot) {
+    const duration = num(full.summary.duration_seconds);
+    const divisor = Math.max(duration, 0.1);
+    const fullDps = num(full.summary.total_damage) / divisor;
+    const withoutDps = num(without.summary.total_damage) / divisor;
+    const rdps = fullDps - withoutDps;
+    // Split by damage ownership. Include the proxy's retained harmony in the
+    // baseline, rather than charging that unchanged damage to this character.
+    const selfDamage = (result) => (
+      num(asList(result.damage_by_slot).find((row) => int(row.slot) === slot)?.damage)
+      + ['harmony_contributions_by_slot', 'stagger_contributions_by_slot', 'other_contributions_by_slot']
+        .reduce((sum, key) => sum + num(asList(result[key]).find((row) => int(row.slot) === slot)?.damage), 0)
+    );
+    const fullSelfDamage = selfDamage(full);
+    const blankSelfDamage = selfDamage(without);
+    const directContributionDamage = fullSelfDamage - blankSelfDamage;
+    const supportDamage = num(full.summary.total_damage) - num(without.summary.total_damage)
+      - directContributionDamage;
+    const directContributionDps = directContributionDamage / divisor;
+    return {
+      slot, duration_seconds: duration,
+      full_dps: fullDps, without_dps: withoutDps, rdps,
+      direct_contribution_damage: directContributionDamage,
+      direct_contribution_dps: directContributionDps,
+      direct_contribution_percent: fullDps > 0 ? directContributionDps / fullDps * 100 : null,
+      support_damage: supportDamage,
+      support_dps: rdps - directContributionDps,
+      support_percent: fullDps > 0 ? (rdps - directContributionDps) / fullDps * 100 : null,
+      full_self_damage: fullSelfDamage, blank_self_damage: blankSelfDamage,
+      increase_percent: withoutDps > 0 ? rdps / withoutDps * 100 : null,
+      full_total_damage: num(full.summary.total_damage),
+      without_total_damage: num(without.summary.total_damage),
     };
   }
 
@@ -5980,16 +6743,15 @@
 
   const BASELINE_SUBSTAT_FIELDS = SUBSTAT_CONTRIBUTION_FIELDS.slice(0, 8);
 
-  function axisWithContributionSubstats(axisPayload, baseCount = 15) {
+  function axisWithContributionSubstats(axisPayload, slot, baseCount = 15) {
     const axis = JSON.parse(JSON.stringify(axisPayload || {}));
     const baseSubstats = Object.fromEntries(SUBSTAT_CONTRIBUTION_FIELDS.map((field) => [field.key, 0]));
     BASELINE_SUBSTAT_FIELDS.forEach((field) => {
       baseSubstats[field.key] = baseCount;
     });
-    axis.team = asList(axis.team).map((member) => ({
-      ...member,
-      substat_counts: { ...baseSubstats },
-    }));
+    const member = asList(axis.team).find((item) => int(item.slot) === slot);
+    if (!member) throw new Error('请选择队伍中的角色分析副词条。');
+    member.substat_counts = baseSubstats;
     return axis;
   }
 
@@ -5999,33 +6761,36 @@
     }
     const baseCount = Math.max(0, int(options.base_count, 15));
     const incrementCount = Math.max(1, int(options.increment_count, 5));
-    const baselineAxis = axisWithContributionSubstats(axisPayload, baseCount);
+    const slot = Number(options.slot);
+    if (options.slot == null || !Number.isInteger(slot)) {
+      throw new Error('请选择队伍中的角色分析副词条。');
+    }
+    const baselineAxis = axisWithContributionSubstats(axisPayload, slot, baseCount);
+    const member = baselineAxis.team.find((item) => int(item.slot) === slot);
     const baselineResult = simulateAxis(baselineAxis, catalog);
     const baselineTotalDamage = num(baselineResult?.summary?.total_damage);
     const rows = [];
 
-    asList(baselineAxis.team).forEach((member) => {
-      SUBSTAT_CONTRIBUTION_FIELDS.forEach((field) => {
-        const candidateAxis = JSON.parse(JSON.stringify(baselineAxis));
-        const candidateMember = asList(candidateAxis.team)
-          .find((item) => int(item.slot) === int(member.slot));
-        if (!candidateMember) return;
-        candidateMember.substat_counts[field.key] = num(candidateMember.substat_counts[field.key]) + incrementCount;
-        const candidateResult = simulateAxis(candidateAxis, catalog);
-        const candidateTotalDamage = num(candidateResult?.summary?.total_damage);
-        const increaseDamage = candidateTotalDamage - baselineTotalDamage;
-        const epsilon = Math.max(1e-8, Math.abs(baselineTotalDamage) * 1e-12);
-        if (increaseDamage <= epsilon) return;
-        rows.push({
-          slot: int(member.slot),
-          character_id: String(member.character_id || ''),
-          character_name: String(member.character_name || ''),
-          stat_key: field.key,
-          stat_label: field.label,
-          boosted_total_damage: candidateTotalDamage,
-          increase_damage: increaseDamage,
-          increase_percent: baselineTotalDamage > 0 ? increaseDamage / baselineTotalDamage * 100 : 0,
-        });
+    SUBSTAT_CONTRIBUTION_FIELDS.forEach((field) => {
+      const candidateAxis = JSON.parse(JSON.stringify(baselineAxis));
+      const candidateMember = asList(candidateAxis.team)
+        .find((item) => int(item.slot) === int(member.slot));
+      if (!candidateMember) return;
+      candidateMember.substat_counts[field.key] = num(candidateMember.substat_counts[field.key]) + incrementCount;
+      const candidateResult = simulateAxis(candidateAxis, catalog);
+      const candidateTotalDamage = num(candidateResult?.summary?.total_damage);
+      const increaseDamage = candidateTotalDamage - baselineTotalDamage;
+      const epsilon = Math.max(1e-8, Math.abs(baselineTotalDamage) * 1e-12);
+      if (increaseDamage <= epsilon) return;
+      rows.push({
+        slot: int(member.slot),
+        character_id: String(member.character_id || ''),
+        character_name: String(member.character_name || ''),
+        stat_key: field.key,
+        stat_label: field.label,
+        boosted_total_damage: candidateTotalDamage,
+        increase_damage: increaseDamage,
+        increase_percent: baselineTotalDamage > 0 ? increaseDamage / baselineTotalDamage * 100 : 0,
       });
     });
 
@@ -6044,6 +6809,9 @@
     ));
 
     return {
+      slot,
+      character_id: String(member.character_id || ''),
+      character_name: String(member.character_name || ''),
       base_count: baseCount,
       increment_count: incrementCount,
       baseline_total_damage: baselineTotalDamage,
@@ -6064,5 +6832,6 @@
     buildPanelProjection,
     simulateAxis,
     analyzeSubstatContributions,
+    analyzeCharacterEffectiveness,
   };
 }));

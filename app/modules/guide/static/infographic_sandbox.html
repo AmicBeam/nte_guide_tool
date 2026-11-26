@@ -1,0 +1,49 @@
+<!doctype html><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob:; worker-src blob:; connect-src 'none'; img-src 'none'; style-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<script id="worker-source" type="text/plain">
+'use strict';
+const waiting=new Map();let serial=0;
+self.window=self;
+self.__igLoadImage=src=>new Promise((resolve,reject)=>{const id=++serial;waiting.set(id,{resolve,reject});postMessage({type:'asset',id,src});});
+self.onmessage=async event=>{
+ const message=event.data;
+ if(message.type==='asset'){
+   const job=waiting.get(message.id);if(!job)return;waiting.delete(message.id);message.error?job.reject(new Error(message.error)):job.resolve(message.bitmap);return;
+ }
+ if(message.type!=='run')return;
+ try{
+   const canvas=new OffscreenCanvas(1000,800);
+   new Function(message.source)();
+   if(typeof self.GuideInfographicCanvas?.render!=='function')throw new Error('脚本未定义 GuideInfographicCanvas.render。');
+   const result=await self.GuideInfographicCanvas.render(canvas,message.config,message.data,message.config.script_params);
+   if(!Number.isInteger(canvas.width)||!Number.isInteger(canvas.height)||canvas.width<1||canvas.height<1||canvas.width>16000||canvas.height>16000||canvas.width*canvas.height>24000000)throw new Error('画布尺寸超过允许范围。');
+   const bitmap=canvas.transferToImageBitmap();
+   postMessage({type:'result',width:canvas.width,height:canvas.height,scene:result?.scene||{},failed:result?.failed||0,bitmap},[bitmap]);
+ }catch(error){postMessage({type:'error',message:String(error.message||error).slice(0,300)});}
+};
+</script>
+<script>
+'use strict';
+let worker=null,channel='',started=false;
+const send=(message,transfer=[])=>parent.postMessage({...message,channel},'*',transfer);
+addEventListener('message',event=>{
+ if(event.source!==parent)return;
+ const message=event.data;
+ if(message?.type==='start'&&!started){
+  started=true;channel=message.channel;
+  const url=URL.createObjectURL(new Blob([document.getElementById('worker-source').textContent],{type:'text/javascript'}));
+  worker=new Worker(url);URL.revokeObjectURL(url);
+  worker.onmessage=event=>{
+   const m=event.data;
+   if(m?.type==='asset')send({type:'asset',id:m.id,src:m.src});
+   else if(m?.type==='result')send(m,m.bitmap instanceof ImageBitmap?[m.bitmap]:[]);
+   else if(m?.type==='error')send({type:'error',message:String(m.message).slice(0,300)});
+  };
+  worker.onerror=()=>send({type:'error',message:'绘图JS执行失败，请检查语法与运行逻辑。'});
+  worker.postMessage({type:'run',source:message.source,config:message.config,data:message.data});
+ }else if(message?.channel===channel&&message.type==='asset'&&worker){
+  worker.postMessage(message,message.bitmap instanceof ImageBitmap?[message.bitmap]:[]);
+ }else if(message?.channel===channel&&message.type==='cancel'){worker?.terminate();worker=null;}
+});
+addEventListener('pagehide',()=>worker?.terminate());
+</script>

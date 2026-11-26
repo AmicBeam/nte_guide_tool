@@ -39,6 +39,21 @@ class StreetBoxerReactionTest(unittest.TestCase):
                 self.assertNotIn(self.rule, {b['rule_id'] for b in details['outside']['applied_buffs']})
                 self.assertAlmostEqual(details['inside']['panel']['crit_rate'] - details['outside']['panel']['crit_rate'], .24 if reaction == '延滞' else .14)
 
+    def test_replaced_delay_keeps_countdown_expiry_separate_from_coverage(self):
+        payload = self.payload()
+        payload['steps'][2:2] = [
+            dict(payload['steps'][0], id='switch', start_tick=35),
+            dict(payload['steps'][1], id='again', start_tick=40),
+        ]
+        result = simulate_shaft_axis(payload)['result']
+        effects = [e for e in result['reaction_effects'] if e['reaction'] == '延滞']
+        first, second = effects[:2]
+        self.assertEqual(first['end_tick'], second['start_tick'])
+        # This team includes Hathor, so delay lasts twelve seconds.
+        self.assertEqual(first['countdown_end_tick'] - first['start_tick'], 120)
+        self.assertLess(first['end_tick'], first['countdown_end_tick'])
+        self.assertEqual(second['end_tick'] - second['start_tick'], 120)
+
     def test_no_equipment_or_unrelated_pair_does_not_trigger(self):
         for payload in (self.payload(equipped=False), self.payload('灵')):
             result = simulate_shaft_axis(payload)['result']

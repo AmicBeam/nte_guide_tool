@@ -5,11 +5,12 @@
     "character_name": "主角",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 6,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.4,
-    "duration_ticks": 14,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -49,8 +50,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -179,11 +180,12 @@
     "character_name": "真红",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 8,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": true,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 2.0,
       "hp": 0,
@@ -224,8 +226,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.333,
-    "duration_ticks": 3,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "multipliers": {
       "atk": 0.182,
       "hp": 0,
@@ -267,8 +269,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.5,
-    "duration_ticks": 5,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.513,
       "hp": 0,
@@ -310,8 +312,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 1.0859999999999999,
       "hp": 0,
@@ -353,8 +355,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.667,
-    "duration_ticks": 7,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.3130000000000002,
       "hp": 0,
@@ -396,8 +398,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 1.129,
       "hp": 0,
@@ -525,8 +527,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.333,
-    "duration_ticks": 3,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "multipliers": {
       "atk": 0.626,
       "hp": 0,
@@ -568,8 +570,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.667,
-    "duration_ticks": 7,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.408,
       "hp": 0,
@@ -611,8 +613,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
       "atk": 0.644,
       "hp": 0,
@@ -654,8 +656,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.833,
-    "duration_ticks": 8,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
     "multipliers": {
       "atk": 1.2229999999999999,
       "hp": 0,
@@ -905,8 +907,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 1.2007007007007,
       "hp": 0,
@@ -948,8 +950,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.333,
-    "duration_ticks": 13,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 2.4,
       "hp": 0,
@@ -1115,11 +1117,12 @@
     "character_name": "浔",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 8,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -1280,11 +1283,12 @@
     "character_name": "小吱",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 8,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 2.1,
+    "duration_ticks": 21,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -1500,8 +1504,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 0.794,
       "hp": 0,
@@ -1529,7 +1533,6 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 26,
-    "duration_pending": true,
     "source_formula": "{0}%*2",
     "can_background_override": true,
     "source_action_name": "5a",
@@ -1626,8 +1629,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 0.9,
       "hp": 0,
@@ -1667,8 +1670,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 0.59,
       "hp": 0,
@@ -1749,8 +1752,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 1.537,
       "hp": 0,
@@ -2035,11 +2038,12 @@
     "character_name": "埃德嘉",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -2163,11 +2167,12 @@
     "character_name": "娜娜莉",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -2341,8 +2346,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.3,
-    "duration_ticks": 3,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
     "multipliers": {
       "atk": 0.38799999999999996,
       "hp": 0,
@@ -2470,8 +2475,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 1.544,
       "hp": 0,
@@ -2547,7 +2552,8 @@
     "source_action_name": "5a副手",
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2593,7 +2599,8 @@
     "source_action_name": "5a副手",
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2639,7 +2646,8 @@
     "source_action_name": "5a副手",
     "hit_count": 2,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2685,7 +2693,8 @@
     "source_action_name": "5a副手",
     "hit_count": 3,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2731,7 +2740,8 @@
     "source_action_name": "5a副手",
     "hit_count": 2,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2909,7 +2919,8 @@
     "source_action_name": "3z副手",
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -2955,7 +2966,8 @@
     "source_action_name": "3z副手",
     "hit_count": 3,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -3001,7 +3013,8 @@
     "source_action_name": "3z副手",
     "hit_count": 3,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -3013,8 +3026,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2.1,
-    "duration_ticks": 21,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 1.66,
       "hp": 0,
@@ -3087,7 +3100,8 @@
     "can_background_override": false,
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -3173,7 +3187,8 @@
     "can_background_override": false,
     "hit_count": 1,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -3185,8 +3200,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.1,
-    "duration_ticks": 11,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 5,
       "hp": 0,
@@ -3259,7 +3274,8 @@
     "can_background_override": false,
     "hit_count": 5,
     "tags": [
-      "追击"
+      "追击",
+      "召唤物"
     ]
   },
   {
@@ -3314,8 +3330,8 @@
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -3396,8 +3412,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 1.04,
       "hp": 0,
@@ -3717,8 +3733,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -3799,11 +3815,12 @@
     "character_name": "薄荷",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -4019,8 +4036,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 0.778,
       "hp": 0,
@@ -4048,7 +4065,6 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 67,
-    "duration_pending": true,
     "source_formula": "{0}%+{1}%",
     "can_background_override": true,
     "source_action_name": "5a",
@@ -4063,8 +4079,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 1.74,
       "hp": 0,
@@ -4104,8 +4120,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.8,
       "hp": 0,
@@ -4188,11 +4204,12 @@
     "character_name": "白藏",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 10,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -4410,8 +4427,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
     "multipliers": {
       "atk": 0.863,
       "hp": 0,
@@ -4439,7 +4456,6 @@
     "personal_resource_cost": {},
     "personal_resource_gain": {},
     "source_row": 72,
-    "duration_pending": true,
     "source_formula": "{0}%",
     "can_background_override": true,
     "source_action_name": "5a",
@@ -4495,8 +4511,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
     "multipliers": {
       "atk": 0.66,
       "hp": 0,
@@ -4578,8 +4594,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
       "atk": 1.44,
       "hp": 0,
@@ -4917,11 +4933,12 @@
     "character_name": "早雾",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 13,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 2.2,
+    "duration_ticks": 22,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -4961,8 +4978,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 1.9,
+    "duration_ticks": 19,
     "multipliers": {
       "atk": 4,
       "hp": 0,
@@ -5002,8 +5019,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 2.5,
+    "duration_ticks": 25,
     "multipliers": {
       "atk": 4,
       "hp": 0,
@@ -5125,6 +5142,7 @@
     "character_name": "阿德勒",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
@@ -5169,8 +5187,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
     "multipliers": {
       "atk": 0,
       "hp": 0,
@@ -5199,7 +5217,10 @@
     "personal_resource_gain": {},
     "source_row": 91,
     "can_background_override": false,
-    "hit_count": 3
+    "hit_count": 3,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_881b816d9f",
@@ -5242,12 +5263,18 @@
     "can_background_override": false,
     "hit_count": 1,
     "tags": [
-      "DOT"
+      "DOT",
+      "召唤物"
     ],
     "periodic_damage": {
       "interval_ticks": 15,
       "tick_count": 10,
-      "multipliers": {"atk": 0, "hp": 0, "def": 0.2, "flat": 0}
+      "multipliers": {
+        "atk": 0,
+        "hp": 0,
+        "def": 0.2,
+        "flat": 0
+      }
     }
   },
   {
@@ -5294,7 +5321,10 @@
     "source_row": 93,
     "source_note": "Nanoka 2026-09-01 实时核实：极轨终结「万象澄寂」冷却时间为20秒。",
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 1,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_2635f721a8",
@@ -5302,11 +5332,12 @@
     "character_name": "安魂曲",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 9,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -5535,8 +5566,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0,
-    "duration_ticks": 0,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 1.932,
       "hp": 0,
@@ -5566,7 +5597,6 @@
       "噩梦": 4
     },
     "source_row": 95,
-    "duration_pending": true,
     "source_formula": "{0}%*3+{1}%",
     "can_background_override": true,
     "nightmare_stacks": 4,
@@ -5582,8 +5612,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.3,
+    "duration_ticks": 3,
     "multipliers": {
       "atk": 0.371,
       "hp": 0,
@@ -5628,8 +5658,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.3,
+    "duration_ticks": 3,
     "multipliers": {
       "atk": 0.48,
       "hp": 0,
@@ -5720,8 +5750,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 2.411,
       "hp": 0,
@@ -5770,8 +5800,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 1.239,
       "hp": 0,
@@ -5817,8 +5847,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
       "atk": 0.79,
       "hp": 0,
@@ -5950,8 +5980,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.8,
-    "duration_ticks": 8,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -6169,11 +6199,12 @@
     "character_name": "达芙蒂尔",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -6213,8 +6244,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.7,
+    "duration_ticks": 17,
     "multipliers": {
       "atk": 3.998,
       "hp": 0,
@@ -6298,8 +6329,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -6339,8 +6370,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -6356,7 +6387,7 @@
     "self_modifiers": {
       "crit_rate": 0,
       "crit_dmg": 0,
-      "all_dmg": 0.5,
+      "action_dmg": 0.5,
       "flat_atk": 0,
       "atk_pct": 0,
       "hp_pct": 0,
@@ -6382,8 +6413,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -6399,7 +6430,7 @@
     "self_modifiers": {
       "crit_rate": 0,
       "crit_dmg": 0,
-      "all_dmg": 1,
+      "action_dmg": 1,
       "flat_atk": 0,
       "atk_pct": 0,
       "hp_pct": 0,
@@ -6465,11 +6496,12 @@
     "character_name": "法帝娅",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -6509,8 +6541,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 0,
       "hp": 0.066,
@@ -6644,6 +6676,7 @@
     "character_name": "哈尼娅",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
@@ -6730,8 +6763,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -6804,7 +6837,10 @@
     "personal_resource_gain": {},
     "source_row": 124,
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 1,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_8cadfa76a4",
@@ -6845,7 +6881,10 @@
     "personal_resource_gain": {},
     "source_row": 125,
     "can_background_override": false,
-    "hit_count": 4
+    "hit_count": 4,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_3529c3d915",
@@ -6896,11 +6935,12 @@
     "character_name": "海月",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 8,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -7023,8 +7063,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2,
-    "duration_ticks": 20,
+    "duration_seconds": 2.1,
+    "duration_ticks": 21,
     "multipliers": {
       "atk": 1.95,
       "hp": 0,
@@ -7153,8 +7193,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
     "multipliers": {
       "atk": 1,
       "hp": 0,
@@ -7234,6 +7274,7 @@
     "character_name": "卡厄斯",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
@@ -7324,8 +7365,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
       "atk": 0.541,
       "hp": 0,
@@ -7370,8 +7411,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.5,
-    "duration_ticks": 5,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.28800000000000003,
       "hp": 0,
@@ -7416,8 +7457,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1,
-    "duration_ticks": 10,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 1.3319999999999999,
       "hp": 0,
@@ -7508,8 +7549,8 @@
     "damage_type": "闪反",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
     "multipliers": {
       "atk": 1.06,
       "hp": 0,
@@ -7637,8 +7678,8 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 8,
       "hp": 0,
@@ -7678,8 +7719,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 3,
       "hp": 0,
@@ -7712,7 +7753,10 @@
     "source_formula": "{0}%+{1}%",
     "can_background_override": false,
     "sin_recovery": 100,
-    "hit_count": 2
+    "hit_count": 2,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_dbd682321e",
@@ -7763,11 +7807,12 @@
     "character_name": "哈索尔",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 6,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -7848,8 +7893,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 2.2,
-    "duration_ticks": 22,
+    "duration_seconds": 2.3,
+    "duration_ticks": 23,
     "multipliers": {
       "atk": 4.39,
       "hp": 0,
@@ -7975,8 +8020,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.3,
-    "duration_ticks": 13,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 3.003,
       "hp": 0,
@@ -8098,11 +8143,12 @@
     "character_name": "翳",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 11,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -8183,8 +8229,8 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
       "atk": 2,
       "hp": 0,
@@ -8354,12 +8400,18 @@
     "character_name": "伊洛伊",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 8,
     "damage_type": "援护",
     "extra_tag": "",
     "is_background_damage": false,
     "duration_seconds": 1.5,
     "duration_ticks": 15,
-    "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 2.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 3.9,
     "harmony": 0,
     "stagger": 2.5,
@@ -8368,11 +8420,17 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 10},
+    "personal_resource_gain": {
+      "臆想": 10
+    },
     "source_row": 42,
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["heal", "治疗"]
+    "tags": [
+      "heal",
+      "治疗",
+      "召唤物"
+    ]
   },
   {
     "id": "action_5ce7a08ca0",
@@ -8383,9 +8441,14 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.3,
-    "duration_ticks": 3,
-    "multipliers": {"atk": 0.76, "hp": 0, "def": 0, "flat": 0},
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
+    "multipliers": {
+      "atk": 0.76,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 2.431,
     "harmony": 4.048,
     "stagger": 0.484,
@@ -8394,12 +8457,17 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 2},
+    "personal_resource_gain": {
+      "臆想": 2
+    },
     "source_row": 442,
     "source_formula": "{0}% , 2",
     "source_action_name": "分工合作",
     "can_background_override": false,
-    "hit_count": 1
+    "hit_count": 1,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_d3328cde94",
@@ -8410,9 +8478,14 @@
     "damage_type": "普攻",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
-    "multipliers": {"atk": 0.477, "hp": 0, "def": 0, "flat": 0},
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
+    "multipliers": {
+      "atk": 0.477,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 0.996,
     "harmony": 1.659,
     "stagger": 0.198,
@@ -8421,12 +8494,17 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 3},
+    "personal_resource_gain": {
+      "臆想": 3
+    },
     "source_row": 443,
     "source_formula": "{0}%*3 , 3",
     "source_action_name": "分工合作",
     "can_background_override": true,
-    "hit_count": 3
+    "hit_count": 3,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_ace58eb0ce",
@@ -8439,7 +8517,12 @@
     "is_background_damage": false,
     "duration_seconds": 0.7,
     "duration_ticks": 7,
-    "multipliers": {"atk": 0.824, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 0.824,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 0.642,
     "harmony": 1.069,
     "stagger": 0.128,
@@ -8448,12 +8531,17 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 3},
+    "personal_resource_gain": {
+      "臆想": 3
+    },
     "source_row": 444,
     "source_formula": "{0}%*8 , 3",
     "source_action_name": "分工合作",
     "can_background_override": true,
-    "hit_count": 8
+    "hit_count": 8,
+    "tags": [
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_z1",
@@ -8466,7 +8554,12 @@
     "is_background_damage": false,
     "duration_seconds": 1.5,
     "duration_ticks": 15,
-    "multipliers": {"atk": 1.104, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 1.104,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 1.599,
     "harmony": 2.7,
     "stagger": 0.3,
@@ -8474,14 +8567,20 @@
     "self_modifiers": {},
     "cooldown_ticks": 0,
     "energy_cost": 0,
-    "personal_resource_cost": {"臆想": 20},
+    "personal_resource_cost": {
+      "臆想": 20
+    },
     "personal_resource_gain": {},
     "source_row": 0,
     "source_formula": "{0}%*3",
     "source_action_name": "白日梦一段",
     "can_background_override": false,
     "hit_count": 3,
-    "tags": ["蓄力", "重击"]
+    "tags": [
+      "蓄力",
+      "重击",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_lucid_dream",
@@ -8492,9 +8591,14 @@
     "damage_type": "普攻",
     "extra_tag": "蓄力重击",
     "is_background_damage": false,
-    "duration_seconds": 7,
-    "duration_ticks": 70,
-    "multipliers": {"atk": 8.295, "hp": 0, "def": 0, "flat": 0},
+    "duration_seconds": 7.2,
+    "duration_ticks": 72,
+    "multipliers": {
+      "atk": 8.295,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 26.81,
     "harmony": 7.0,
     "stagger": 6.51,
@@ -8502,14 +8606,20 @@
     "self_modifiers": {},
     "cooldown_ticks": 0,
     "energy_cost": 0,
-    "personal_resource_cost": {"臆想": 10},
+    "personal_resource_cost": {
+      "臆想": 10
+    },
     "personal_resource_gain": {},
     "source_row": 451,
     "source_formula": "{0}%*35",
     "source_action_name": "普通攻击：清明梦",
     "can_background_override": true,
     "hit_count": 35,
-    "tags": ["蓄力", "重击"]
+    "tags": [
+      "蓄力",
+      "重击",
+      "召唤物"
+    ]
   },
   {
     "id": "action_afea1e6fb2",
@@ -8520,9 +8630,14 @@
     "damage_type": "E",
     "extra_tag": "",
     "is_background_damage": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
-    "multipliers": {"atk": 4.003, "hp": 0, "def": 0, "flat": 0},
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
+    "multipliers": {
+      "atk": 4.003,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 4.798,
     "harmony": 7.998,
     "stagger": 1.003,
@@ -8531,13 +8646,22 @@
     "cooldown_ticks": 120,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 16},
+    "personal_resource_gain": {
+      "臆想": 16
+    },
     "source_row": 454,
     "source_formula": "{0}%+{1}%*7+{2}%",
     "source_action_name": "未来自我连续性假设",
     "can_background_override": false,
+    "can_detach": true,
+    "detached_duration_seconds": 0.5,
+    "detached_duration_ticks": 5,
     "hit_count": 9,
-    "tags": ["heal", "治疗"]
+    "tags": [
+      "heal",
+      "治疗",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_long_e",
@@ -8550,7 +8674,12 @@
     "is_background_damage": false,
     "duration_seconds": 0.4,
     "duration_ticks": 4,
-    "multipliers": {"atk": 4.003, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 4.003,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 4.798,
     "harmony": 7.998,
     "stagger": 1.003,
@@ -8559,13 +8688,20 @@
     "cooldown_ticks": 120,
     "energy_cost": 0,
     "personal_resource_cost": {},
-    "personal_resource_gain": {"臆想": 16},
+    "personal_resource_gain": {
+      "臆想": 16
+    },
     "source_row": 454,
     "source_formula": "{0}%+{1}%*7+{2}%",
     "source_action_name": "未来自我连续性假设（长按）",
     "can_background_override": false,
     "hit_count": 9,
-    "tags": ["heal", "治疗", "长按"]
+    "tags": [
+      "heal",
+      "治疗",
+      "长按",
+      "召唤物"
+    ]
   },
   {
     "id": "action_307ad00e8e",
@@ -8634,7 +8770,12 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 1.5, "hp": 0, "def": 0, "flat": 0},
+    "multipliers": {
+      "atk": 1.5,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8648,7 +8789,11 @@
     "required_awakening": 2,
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "被动"]
+    "tags": [
+      "协攻",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_requiem_a5_nightmare_heal",
@@ -8742,8 +8887,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 0.555, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 0.555,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8759,7 +8913,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_morpheus_2",
@@ -8772,8 +8931,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 2.08, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 1}},
+    "multipliers": {
+      "atk": 2.08,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 1
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8789,7 +8957,12 @@
     "source_formula": "{0}%*5",
     "can_background_override": false,
     "hit_count": 5,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_ikelos_1",
@@ -8802,8 +8975,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 0.892, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 0.892,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8819,7 +9001,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_ikelos_2",
@@ -8832,8 +9019,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 1.784, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 1.784,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8849,7 +9045,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_phantasus_1",
@@ -8862,8 +9063,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 0.942, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 0.942,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8879,7 +9089,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_iloy_regressed_phantasus_2",
@@ -8892,8 +9107,17 @@
     "is_background_damage": true,
     "duration_seconds": 0,
     "duration_ticks": 0,
-    "multipliers": {"atk": 1.884, "hp": 0, "def": 0, "flat": 0},
-    "multipliers_add_by_awakening_node": {"4": {"atk": 0.2}},
+    "multipliers": {
+      "atk": 1.884,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "multipliers_add_by_awakening_node": {
+      "4": {
+        "atk": 0.2
+      }
+    },
     "energy_gain": 0,
     "harmony": 0,
     "stagger": 0,
@@ -8909,7 +9133,12 @@
     "source_formula": "{0}%",
     "can_background_override": false,
     "hit_count": 1,
-    "tags": ["协攻", "退行", "被动"]
+    "tags": [
+      "协攻",
+      "退行",
+      "被动",
+      "召唤物"
+    ]
   },
   {
     "id": "action_adler_karma_1",
@@ -8964,31 +9193,31 @@
     "tags": ["个人资源", "被动"]
   },
   {
-    "id": "action_canhong_support", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "饲火", "is_background_damage": false, "duration_seconds": 1.5, "duration_ticks": 15,
+    "id": "action_canhong_support", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "援护", "action_type": "援护", "reaction_trigger_offset_ticks": 8, "damage_type": "援护", "extra_tag": "饲火", "is_background_damage": false, "duration_seconds": 1.5, "duration_ticks": 15,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "resonance_skill_level_bonus": false, "tags": ["援护", "饲火"], "source_row": 44, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 44；耗时1.5秒来自用户2026-08-06补充，无额外援护效果。"
   },
   {
-    "id": "action_canhong_a1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": false, "duration_seconds": 0.6, "duration_ticks": 6,
+    "id": "action_canhong_a1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a1", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": false, "duration_seconds": 0.4, "duration_ticks": 4,
     "multipliers": {"atk": 0.432, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%", "hit_count": 2, "energy_gain": 1.444, "harmony": 2.405, "stagger": 0.435, "tags": ["燎原", "现实形态"], "source_row": 2, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 2-3，按倍率呈现方式聚合。"
   },
   {
-    "id": "action_canhong_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.6, "duration_ticks": 6,
+    "id": "action_canhong_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a2", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.5, "duration_ticks": 5,
     "multipliers": {"atk": 0.352, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 1.176, "harmony": 1.958, "stagger": 0.355, "tags": ["燎原", "现实形态"], "source_row": 4, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 4。"
   },
   {
-    "id": "action_canhong_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.8, "duration_ticks": 8,
+    "id": "action_canhong_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a3", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1, "duration_ticks": 10,
     "multipliers": {"atk": 1.114, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.719, "harmony": 6.193, "stagger": 1.121, "tags": ["燎原", "现实形态"], "source_row": 5, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 5-7，按倍率呈现方式聚合。"
   },
   {
-    "id": "action_canhong_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.1, "duration_ticks": 11,
+    "id": "action_canhong_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a4", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
     "multipliers": {"atk": 1.782, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%+{4}%", "hit_count": 5, "energy_gain": 5.948, "harmony": 9.905, "stagger": 1.793, "tags": ["燎原", "现实形态"], "source_row": 8, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 8-12，按倍率呈现方式聚合；命中后可强化e。"
   },
   {
-    "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.2, "duration_ticks": 12,
+    "id": "action_canhong_a5", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "燎原", "can_background_override": true, "duration_seconds": 1.5, "duration_ticks": 15,
     "multipliers": {"atk": 2.579, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2+{2}%+{3}%", "hit_count": 6, "energy_gain": 8.611, "harmony": 14.339, "stagger": 2.595, "tags": ["燎原", "现实形态", "牵引"], "source_row": 590, "source_note": "腾讯文档《角色属性》tab 000003 rows 590-593，按倍率呈现方式聚合；命中后可强化e，牵引不进入单敌伤害计算。"
   },
   {
-    "id": "action_canhong_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "z", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "长按普攻", "duration_seconds": 1.0, "duration_ticks": 10,
+    "id": "action_canhong_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "z", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "长按普攻", "duration_seconds": 1.1, "duration_ticks": 11,
     "multipliers": {"atk": 2.178, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*3+{1}%", "hit_count": 4, "energy_gain": 7.301, "harmony": 12.1, "stagger": 2.25, "tags": ["z", "现实形态"], "source_row": 17, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 17-18，按倍率呈现方式聚合；对应「绰影」，仅可在a1或a2期间触发。"
   },
   {
@@ -8996,19 +9225,19 @@
     "multipliers": {"atk": 0.183, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 0.61, "harmony": 1.018, "stagger": 0.121, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 21, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 21；对应「魇舞」一段。"
   },
   {
-    "id": "action_canhong_illusion_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a2", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.7, "duration_ticks": 7,
+    "id": "action_canhong_illusion_a2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a2", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1, "duration_ticks": 10,
     "multipliers": {"atk": 0.999, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%", "hit_count": 3, "energy_gain": 3.321, "harmony": 5.544, "stagger": 0.661, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 22, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 22-24，按倍率呈现方式聚合；对应「魇舞」二段。"
   },
   {
-    "id": "action_canhong_illusion_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a3", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
+    "id": "action_canhong_illusion_a3", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a3", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1.2, "duration_ticks": 12,
     "multipliers": {"atk": 0.988, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*2", "hit_count": 4, "energy_gain": 3.288, "harmony": 5.486, "stagger": 0.654, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层", "牵引"], "source_row": 25, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 25-26，按倍率呈现方式聚合；对应「魇舞」三段。"
   },
   {
-    "id": "action_canhong_illusion_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a4", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 1.1, "duration_ticks": 11,
+    "id": "action_canhong_illusion_a4", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻a4", "action_type": "普攻", "damage_type": "追击", "extra_tag": "魔舞", "is_background_damage": false, "can_background_override": true, "duration_seconds": 0.9, "duration_ticks": 9,
     "multipliers": {"atk": 2.82, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%", "hit_count": 3, "energy_gain": 9.38, "harmony": 15.653, "stagger": 1.865, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "required_buff_placements": ["foreground"], "tags": ["魔舞", "追击", "幻境形态", "蚀心", "所有DOT+1层"], "source_row": 27, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 27-28，按倍率呈现方式聚合；对应「魇舞」四段。"
   },
   {
-    "id": "action_canhong_illusion_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻z", "action_type": "普攻", "damage_type": "追击", "extra_tag": "长按普攻", "is_background_damage": false, "duration_seconds": 1.1, "duration_ticks": 11,
+    "id": "action_canhong_illusion_z1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻z", "action_type": "普攻", "damage_type": "追击", "extra_tag": "长按普攻", "is_background_damage": false, "duration_seconds": 1.4, "duration_ticks": 14,
     "multipliers": {"atk": 2.138, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%+{1}%+{2}%+{3}%*2", "hit_count": 5, "energy_gain": 7.099, "harmony": 11.901, "stagger": 1.399, "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["幻z", "追击", "幻境形态", "蚀心"], "source_row": 29, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 29-32，按倍率呈现方式聚合；对应「落月」。"
   },
   {
@@ -9016,19 +9245,19 @@
     "multipliers": {"atk": 0.574, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.1, "harmony": 3.4, "stagger": 0.4, "tags": ["下落攻击"], "source_row": 19, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 19；对应「折枝」，随下落高度最高提升至2倍，本动作按基础倍率录入。"
   },
   {
-    "id": "action_canhong_dodge_counter", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "闪反", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "闪避反击", "duration_seconds": 1.0, "duration_ticks": 10,
+    "id": "action_canhong_dodge_counter", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "闪反", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "闪避反击", "duration_seconds": 1.1, "duration_ticks": 11,
     "multipliers": {"atk": 1.75, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 2.5, "harmony": 4.2, "stagger": 2.5, "tags": ["闪避反击", "现实形态"], "source_row": 20, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」row 20；对应「虚徊」。"
   },
   {
-    "id": "action_canhong_e1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.0, "duration_ticks": 10,
+    "id": "action_canhong_e1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.1, "duration_ticks": 11,
     "multipliers": {"atk": 1.5, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 0.8, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "tags": ["现实转幻境"], "source_row": 34, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 34-35，按倍率呈现方式聚合；与强化e、幻e共享5秒冷却。"
   },
   {
-    "id": "action_canhong_E1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "强化e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.0, "duration_ticks": 10,
+    "id": "action_canhong_E1", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "强化e", "action_type": "E", "damage_type": "E", "duration_seconds": 1.1, "duration_ticks": 11,
     "multipliers": {"atk": 1.752, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*4+{1}%", "hit_count": 5, "energy_gain": 3.8, "harmony": 6.3, "stagger": 6.0, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "force_stagger_by_awakening_node": {"5": true}, "tags": ["强化", "现实转幻境", "蚀心5层", "乱"], "source_row": 36, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 36-37，按倍率呈现方式聚合；需在燎原a4/a5、z或闪反后释放，施加5层蚀心，与e、幻e共享5秒冷却；E觉仅在非循环轴首次命中强制倾陷。"
   },
   {
-    "id": "action_canhong_E2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻e", "action_type": "E", "damage_type": "追击", "is_background_damage": false, "locks_foreground_switch": true, "duration_seconds": 2.2, "duration_ticks": 22,
+    "id": "action_canhong_E2", "character_id": "char_076a1f4e53", "character_name": "残虹", "name": "幻e", "action_type": "E", "damage_type": "追击", "is_background_damage": false, "locks_foreground_switch": true, "duration_seconds": 2.3, "duration_ticks": 23,
     "multipliers": {"atk": 4.498, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%*2+{1}%*4+{2}%", "hit_count": 7, "last_hit_atk_multiplier": 2.498, "dot_layers_applied_before_last_hit": 5, "energy_gain": 24.999, "harmony": 18.901, "stagger": 2.299, "cooldown_ticks": 50, "cooldown_group": "canhong_e", "required_buff_key": "character_canhong_illusion_state", "required_buff_name": "幻境状态", "tags": ["强化", "追击", "幻境转现实", "蚀心5层", "灭"], "source_row": 41, "source_note": "SkillDamageData_Zankou_Radio.xlsx「技能数值」rows 41-43，按强化「离魂错」的倍率呈现方式聚合；仅在幻境结束前3秒可强化，施加5层蚀心并触发灭，与e、强化e共享5秒冷却；技能时停敌人但不暂停轴计时。F觉按最后一段命中时目标DOT总层数强化该段。"
   },
   {
@@ -9073,12 +9302,12 @@
   },
   {
     "id": "action_lingke_a5", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "a5", "action_type": "普攻", "damage_type": "普攻", "extra_tag": "恶灵CQC", "display_order": 5, "is_background_damage": false, "can_background_override": true,
-    "duration_seconds": 0, "duration_ticks": 0,
-    "multipliers": {"atk": 0.74, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 4.635, "harmony": 7.703, "stagger": 0.923, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 473, "source_note": "腾讯文档《角色属性》tab 000003 row 473：1级倍率74%、1段，回能4.635、环合7.703、倾陷0.923。表格未提供动作耗时，当前0秒表示耗时待录入；可按普攻后段规则手动放到后台。"
+    "duration_seconds": 0.9, "duration_ticks": 9,
+    "multipliers": {"atk": 0.74, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 4.635, "harmony": 7.703, "stagger": 0.923, "cooldown_ticks": 0, "energy_cost": 0, "source_row": 473, "source_note": "腾讯文档《角色属性》tab 000003 row 473：1级倍率74%、1段，回能4.635、环合7.703、倾陷0.923。可按普攻后段规则手动放到后台。"
   },
   {
-    "id": "action_lingke_support", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "援护", "action_type": "援护", "damage_type": "援护", "extra_tag": "恶灵左直拳！", "is_background_damage": false,
-    "duration_seconds": 1.5, "duration_ticks": 15,
+    "id": "action_lingke_support", "character_id": "char_0846d632e0", "character_name": "灵可", "name": "援护", "action_type": "援护", "reaction_trigger_offset_ticks": 8, "damage_type": "援护", "extra_tag": "恶灵左直拳！", "is_background_damage": false,
+    "duration_seconds": 1.2, "duration_ticks": 12,
     "multipliers": {"atk": 2.0, "hp": 0, "def": 0, "flat": 0}, "source_formula": "{0}%", "hit_count": 1, "energy_gain": 5.2, "harmony": 0, "stagger": 2.5, "cooldown_ticks": 0, "energy_cost": 0, "tags": ["援护"], "source_row": 487, "source_note": "腾讯文档《角色属性》tab 000003 row 487；技能描述由Nanoka 2026-08-24实时核实。动作耗时1.5秒来自用户2026-08-24补充。"
   },
   {
@@ -9133,8 +9362,8 @@
     "display_order": 1,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
       "atk": 0.237,
       "hp": 0,
@@ -9168,8 +9397,8 @@
     "display_order": 2,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.6,
-    "duration_ticks": 6,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 0.974,
       "hp": 0,
@@ -9203,8 +9432,8 @@
     "display_order": 3,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.8,
-    "duration_ticks": 8,
+    "duration_seconds": 0.9,
+    "duration_ticks": 9,
     "multipliers": {
       "atk": 1.204,
       "hp": 0,
@@ -9238,8 +9467,8 @@
     "display_order": 4,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
     "multipliers": {
       "atk": 1.29,
       "hp": 0,
@@ -9273,8 +9502,8 @@
     "display_order": 5,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 1.82,
       "hp": 0,
@@ -9308,8 +9537,8 @@
     "display_order": 6,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
       "atk": 1.139,
       "hp": 0,
@@ -9376,8 +9605,8 @@
     "display_order": 8,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 1.275,
       "hp": 0,
@@ -9410,8 +9639,8 @@
     "display_order": 9,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0.5,
-    "duration_ticks": 5,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
       "atk": 0.65,
       "hp": 0,
@@ -9426,7 +9655,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 10,
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 用户2026-10-15指定魔a1–a4耗时为0.7/0.6/1.0/0.6秒，非Nanoka核实或逐帧实测。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9468,7 +9697,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 11,
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 用户2026-10-15指定魔a1–a4耗时为0.7/0.6/1.0/0.6秒，非Nanoka核实或逐帧实测。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9510,7 +9739,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 12,
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 用户2026-10-15最新指定魔a3耗时1.0秒，覆盖此前同日口径，非Nanoka核实或逐帧实测。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9536,8 +9765,8 @@
     "display_order": 12,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
       "atk": 1.355,
       "hp": 0,
@@ -9552,7 +9781,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 13,
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 用户2026-10-15最新指定魔a4耗时0.6秒，覆盖此前同日口径，非Nanoka核实或逐帧实测。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9580,6 +9809,10 @@
     "can_background_override": true,
     "duration_seconds": 1.4,
     "duration_ticks": 14,
+    "can_detach": true,
+    "detached_duration_seconds": 0.6,
+    "detached_duration_ticks": 6,
+    "detach_via_jump": true,
     "multipliers": {
       "atk": 2.826,
       "hp": 0,
@@ -9594,7 +9827,7 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_row": 14,
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。魔a5普通1.4秒，脱手0.6秒；完整伤害与资源不变。",
     "required_buff_key": "character_heiyu_form",
     "required_buff_name": "二形态",
     "duration_source": "user-supplied",
@@ -9607,10 +9840,7 @@
       "atk_per_point": 0.28,
       "damage_type": "普攻",
       "skill_level_category": "basic"
-    },
-    "can_detach": true,
-    "detached_duration_seconds": 0.6,
-    "detached_duration_ticks": 6
+    }
   },
   {
     "id": "action_heiyu_form_z1",
@@ -9623,8 +9853,8 @@
     "display_order": 14,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 2.16,
       "hp": 0,
@@ -9749,8 +9979,8 @@
     "display_order": 17,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
     "multipliers": {
       "atk": 1.26,
       "hp": 0,
@@ -9791,8 +10021,8 @@
     "display_order": 18,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.5,
+    "duration_ticks": 15,
     "multipliers": {
       "atk": 4.0,
       "hp": 0,
@@ -9846,7 +10076,8 @@
     "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "tags": [
       "协同攻击",
-      "后台攻击"
+      "后台攻击",
+      "召唤物"
     ],
     "required_buff_key": "character_heiyu_assist_window",
     "required_buff_name": "失乐鸟（15秒、最多5次）",
@@ -9864,8 +10095,8 @@
     "display_order": 20,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
       "atk": 4.2,
       "hp": 0,
@@ -9980,6 +10211,7 @@
     "character_name": "黑羽",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 10,
     "damage_type": "援护",
     "extra_tag": "断罪于我",
     "display_order": 23,
@@ -10015,13 +10247,14 @@
     "character_name": "黑羽",
     "name": "魔援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 9,
     "damage_type": "援护",
     "extra_tag": "断罪于我",
     "display_order": 24,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
       "atk": 2.0,
       "hp": 0,
@@ -10096,31 +10329,25 @@
     "display_order": 0,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 0.4,
-    "duration_ticks": 4,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
     "multipliers": {
-      "atk": 0.788,
+      "atk": 0.298,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "hit_count": 2,
-    "energy_gain": 1.968,
-    "harmony": 3.29,
-    "stagger": 0.4,
+    "energy_gain": 2.488,
+    "harmony": 3.56,
+    "stagger": 0.432,
     "cooldown_ticks": 0,
     "energy_cost": 0,
-    "source_rows": [
-      32
-    ],
-    "source_row": 32,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
-    "source_formula": "{0}%*2",
+    "source_formula": "14.9%*2",
     "personal_resource_gain": {
       "弦能": 1
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_a2",
@@ -10133,31 +10360,25 @@
     "display_order": 1,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.7,
-    "duration_ticks": 7,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
     "multipliers": {
-      "atk": 1.158,
+      "atk": 0.438,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "hit_count": 2,
-    "energy_gain": 2.894,
-    "harmony": 4.836,
-    "stagger": 0.586,
+    "energy_gain": 3.84,
+    "harmony": 5.496,
+    "stagger": 0.666,
     "cooldown_ticks": 0,
     "energy_cost": 0,
-    "source_rows": [
-      33
-    ],
-    "source_row": 33,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
-    "source_formula": "{0}%*2",
+    "source_formula": "21.9%*2",
     "personal_resource_gain": {
-      "弦能": 2
+      "弦能": 1
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_a3",
@@ -10170,32 +10391,25 @@
     "display_order": 2,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
     "multipliers": {
-      "atk": 2.253,
+      "atk": 0.849,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "hit_count": 7,
-    "energy_gain": 5.625,
-    "harmony": 9.404,
-    "stagger": 1.141,
+    "energy_gain": 6.356,
+    "harmony": 9.096,
+    "stagger": 1.102,
     "cooldown_ticks": 0,
     "energy_cost": 0,
-    "source_rows": [
-      34,
-      35
-    ],
-    "source_row": 34,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
-    "source_formula": "{0}%*3+{1}%*4",
+    "source_formula": "10.3%*3+13.5%*4",
     "personal_resource_gain": {
-      "弦能": 4
+      "弦能": 2
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_a4",
@@ -10208,31 +10422,25 @@
     "display_order": 3,
     "is_background_damage": false,
     "can_background_override": true,
-    "duration_seconds": 0.9,
-    "duration_ticks": 9,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
-      "atk": 1.526,
+      "atk": 4.247,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "hit_count": 1,
-    "energy_gain": 3.812,
-    "harmony": 6.371,
-    "stagger": 0.773,
+    "energy_gain": 4.016,
+    "harmony": 5.847,
+    "stagger": 0.697,
     "cooldown_ticks": 0,
     "energy_cost": 0,
-    "source_rows": [
-      36
-    ],
-    "source_row": 36,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
-    "source_formula": "{0}%",
+    "source_formula": "424.7%",
     "personal_resource_gain": {
-      "弦能": 3
+      "弦能": 6
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_plunge",
@@ -10259,17 +10467,11 @@
     "stagger": 0.6,
     "cooldown_ticks": 0,
     "energy_cost": 0,
-    "source_rows": [
-      37
-    ],
-    "source_row": 37,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "source_formula": "{0}%",
     "personal_resource_gain": {
-      "弦能": 4
+      "弦能": 1
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_counter",
@@ -10285,15 +10487,15 @@
     "duration_seconds": 1.0,
     "duration_ticks": 10,
     "multipliers": {
-      "atk": 0.25,
+      "atk": 1.375,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "hit_count": 1,
-    "energy_gain": 0.0,
-    "harmony": 0.0,
-    "stagger": 1.5,
+    "energy_gain": 2.5,
+    "harmony": 4.2,
+    "stagger": 2.5,
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_rows": [
@@ -10301,12 +10503,12 @@
     ],
     "source_row": 45,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%由本轮用户明确补充。未列入本次更新的资源仍沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 用户2026-10-10授权仅更新五项资源：SkillDamageData_Akane.xlsx / SkillDamage / M8,N8；新资源值按伤害段数聚合。 用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。 用户2026-10-11：弦能为整数，首段命中即一次获得动作完整弦能，后续段不重复增加；0命中不获得，不按保留伤害比例缩减。",
     "source_formula": "{0}%",
     "personal_resource_gain": {
       "弦能": 2
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_support",
@@ -10314,23 +10516,24 @@
     "character_name": "明音凛",
     "name": "援护",
     "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
     "damage_type": "援护",
     "extra_tag": "",
     "display_order": 6,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.5,
-    "duration_ticks": 15,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
     "multipliers": {
-      "atk": 1.29,
+      "atk": 2.0,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "hit_count": 1,
-    "energy_gain": 0.0,
+    "energy_gain": 6.5,
     "harmony": 0.0,
-    "stagger": 1.5,
+    "stagger": 2.5,
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "source_rows": [
@@ -10338,13 +10541,13 @@
     ],
     "source_row": 44,
     "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。 用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。 用户2026-10-11：弦能为整数，首段命中即一次获得动作完整弦能，后续段不重复增加；0命中不获得，不按保留伤害比例缩减。",
     "source_formula": "{0}%",
     "resonance_skill_level_bonus": false,
     "personal_resource_gain": {
       "弦能": 4
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_e",
@@ -10357,32 +10560,31 @@
     "display_order": 7,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
+    "duration_seconds": 1,
     "duration_ticks": 10,
     "multipliers": {
-      "atk": 5.0,
+      "atk": 3.6,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "hit_count": 1,
-    "energy_gain": 1.7,
-    "harmony": 2.8,
-    "stagger": 0.3,
+    "energy_gain": 4.2,
+    "harmony": 6.0,
+    "stagger": 0.7,
     "cooldown_ticks": 160,
     "energy_cost": 0,
-    "source_rows": [
-      39
-    ],
-    "source_row": 39,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
-    "source_formula": "{0}%",
+    "source_formula": "360%",
     "cooldown_group": "akane_e",
     "personal_resource_gain": {
       "弦能": 6
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "final_multipliers_add_by_awakening_node": {
+      "3": {
+        "atk": 10
+      }
+    },
+    "personal_resource_gain_on_first_hit": true
   },
   {
     "id": "action_akane_hold_e",
@@ -10395,49 +10597,43 @@
     "display_order": 8,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.2,
-    "duration_ticks": 12,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
     "multipliers": {
-      "atk": 4.0,
+      "atk": 3.24,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
     "hit_count": 2,
-    "energy_gain": 4.9,
+    "energy_gain": 5.7,
     "harmony": 8.2,
     "stagger": 1.0,
     "cooldown_ticks": 160,
     "energy_cost": 0,
-    "source_rows": [
-      39,
-      40
-    ],
-    "source_row": 39,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
-    "source_formula": "{0}%*2",
+    "source_formula": "162%*2",
     "cooldown_group": "akane_e",
     "personal_resource_gain": {
       "弦能": 6
     },
-    "personal_resource_scale_with_damage_ratio": true
+    "personal_resource_gain_on_first_hit": true
   },
   {
-    "id": "action_akane_enhanced_e",
+    "id": "action_akane_short_enhanced_e",
     "character_id": "char_akane",
     "character_name": "明音凛",
-    "name": "同调共振",
+    "name": "短强E",
     "action_type": "E",
     "damage_type": "E",
     "extra_tag": "",
     "display_order": 9,
     "is_background_damage": false,
     "can_background_override": false,
-    "duration_seconds": 1.0,
-    "duration_ticks": 10,
+    "locks_foreground_switch": true,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
     "multipliers": {
-      "atk": 8.0,
+      "atk": 11.25,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10452,18 +10648,71 @@
       41
     ],
     "source_row": 41,
-    "duration_source": "user-authorized-estimate",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
-    "source_formula": "{0}%",
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "用户2026-10-10要求拆为两个手动动作：短强E1250%/0.7秒，长强E1125%/1.5秒；三觉共鸣在等级换算后各追加750%，均需30弦能，不能切人，不占普通E冷却、不刷新形态。倍率沿用现行用户文档，名称与长强E耗时为本轮用户指定，不冒充新解包验证。 用户2026-10-12确认10月11日调整：强化技能追加倍率仍属三觉共鸣，750%改为800%，在技能等级换算后加算；基础倍率下调未给新值，保留现值。 用户2026-10-12提供的腾讯文档《明音凛资料汇总》括号内10月11日新倍率；仅同步基础倍率及其逐段伤害，资源、耗时、已确认被动/觉醒不由文档旧正文覆盖。非Nanoka/NTEData新版本核实。",
+    "foreground_lock_source": "用户2026-10-10：短强E与长强E均沿用前台锁定；锁定覆盖各自实际动作时长。",
+    "source_formula": "1125%",
     "personal_resource_cost": {
       "弦能": 30
     },
     "personal_resource_cost_on_hit": true,
-    "required_buff_key": "character_akane_mode",
-    "required_buff_name": "泛音列或音域"
+    "required_buff_key": "character_akane_single",
+    "required_buff_name": "泛音列",
+    "final_multipliers_add_by_awakening_resonance": {
+      "3": {
+        "atk": 8
+      }
+    }
+  },
+  {
+    "id": "action_akane_long_enhanced_e",
+    "character_id": "char_akane",
+    "character_name": "明音凛",
+    "name": "长强E",
+    "action_type": "E",
+    "damage_type": "E",
+    "extra_tag": "",
+    "display_order": 10,
+    "is_background_damage": false,
+    "can_background_override": false,
+    "locks_foreground_switch": true,
+    "duration_seconds": 1.4,
+    "duration_ticks": 14,
+    "multipliers": {
+      "atk": 10.125,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "hit_count": 1,
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 0.0,
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "source_rows": [
+      41
+    ],
+    "source_row": 41,
+    "duration_source": "user-provided-2026-10-10",
+    "source_note": "用户2026-10-10要求拆为两个手动动作：短强E1250%/0.7秒，长强E1125%/1.5秒；三觉共鸣在等级换算后各追加750%，均需30弦能，不能切人，不占普通E冷却、不刷新形态。倍率沿用现行用户文档，名称与长强E耗时为本轮用户指定，不冒充新解包验证。 用户2026-10-12确认10月11日调整：强化技能追加倍率仍属三觉共鸣，750%改为800%，在技能等级换算后加算；基础倍率下调未给新值，保留现值。 用户2026-10-12提供的腾讯文档《明音凛资料汇总》括号内10月11日新倍率；仅同步基础倍率及其逐段伤害，资源、耗时、已确认被动/觉醒不由文档旧正文覆盖。非Nanoka/NTEData新版本核实。 用户本轮纠正文档1012.5%×2笔误，按单次1012.5%/1段。",
+    "foreground_lock_source": "用户2026-10-10：短强E与长强E均沿用前台锁定；锁定覆盖各自实际动作时长。",
+    "source_formula": "1012.5%",
+    "personal_resource_cost": {
+      "弦能": 30
+    },
+    "personal_resource_cost_on_hit": true,
+    "required_buff_key": "character_akane_area",
+    "required_buff_name": "音域",
+    "final_multipliers_add_by_awakening_resonance": {
+      "3": {
+        "atk": 8
+      }
+    }
   },
   {
     "id": "action_akane_q1",
+    "starts_action_sequence": "akane_ultra",
     "character_id": "char_akane",
     "character_name": "明音凛",
     "name": "q1",
@@ -10476,24 +10725,24 @@
     "duration_seconds": 0.0,
     "duration_ticks": 0,
     "multipliers": {
-      "atk": 1.2,
+      "atk": 6.48,
       "hp": 0,
       "def": 0,
       "flat": 0
     },
-    "hit_count": 1,
+    "hit_count": 10,
     "energy_gain": 0.0,
     "harmony": 0.0,
-    "stagger": 0.15,
-    "cooldown_ticks": 250,
-    "energy_cost": 120,
+    "stagger": 1.5,
+    "cooldown_ticks": 200,
+    "energy_cost": 100,
     "source_rows": [
       42
     ],
     "source_row": 42,
     "duration_source": "existing-time-stop",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
-    "source_formula": "{0}%",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%由本轮用户明确补充。未列入本次更新的资源仍沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 Q1改为10段、总倍率720%，原聚合倾陷0.15由本次解包逐段聚合值覆盖。 Q1/Q2的0秒耗时由用户2026-10-10再次确认。 用户2026-10-10授权仅更新五项资源：SkillDamageData_Akane.xlsx / SkillDamage / O14；Q1倾陷按每段0.15×10=1.5聚合。 用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。 用户2026-10-12提供的腾讯文档《明音凛资料汇总》括号内10月11日新倍率；仅同步基础倍率及其逐段伤害，资源、耗时、已确认被动/觉醒不由文档旧正文覆盖。非Nanoka/NTEData新版本核实。",
+    "source_formula": "64.8%*10",
     "is_time_stop_zero": true
   },
   {
@@ -10510,7 +10759,7 @@
     "duration_seconds": 0.0,
     "duration_ticks": 0,
     "multipliers": {
-      "atk": 10.0,
+      "atk": 9.18,
       "hp": 0,
       "def": 0,
       "flat": 0
@@ -10522,11 +10771,2310 @@
     "cooldown_ticks": 0,
     "energy_cost": 0,
     "duration_source": "existing-time-stop",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。 第二段需在华彩连段后半手动释放，不在状态结束时自动结算。",
-    "source_formula": "{0}%",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导60%/90%由本轮用户明确补充。回能、环合、倾陷沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 三觉共鸣额外增加1000%攻击倍率，读取独立共鸣开关。 Q1/Q2的0秒耗时由用户2026-10-10再次确认。 用户2026-10-10明确：觉醒追加1000%在技能等级换算后的最终倍率中加算，追加部分不乘等级系数。 用户2026-10-10提供的10月9日调整公告：覆盖旧觉醒数值，非NTEData/Nanoka新版本核实；未给出新数值的回能保留现值，弧盘与六觉按用户本轮要求实装公告数值。 用户2026-10-12提供的腾讯文档《明音凛资料汇总》括号内10月11日新倍率；仅同步基础倍率及其逐段伤害，资源、耗时、已确认被动/觉醒不由文档旧正文覆盖。非Nanoka/NTEData新版本核实。",
+    "source_formula": "918%",
     "is_time_stop_zero": true,
-    "required_buff_key": "character_akane_cadenza",
-    "required_buff_name": "华彩连段",
-    "forbidden_buff_key": "character_akane_cadenza_front"
+    "action_sequence": "akane_ultra",
+    "max_uses_per_action_sequence": 1,
+    "action_sequence_usage_warning": "同一次音障爆鸣的第二段只能布置1次。",
+    "final_multipliers_add_by_awakening_resonance": {
+      "3": {
+        "atk": 10
+      }
+    }
+  },
+  {
+    "id": "action_elyms_melee1",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "a1",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.224,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 1.408,
+    "harmony": 2.34,
+    "stagger": 0.278,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 2,
+    "display_order": 0,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "forbidden_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
+  },
+  {
+    "id": "action_elyms_melee2",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "a2",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.314,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 1.964,
+    "harmony": 3.266,
+    "stagger": 0.388,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 2,
+    "display_order": 1,
+    "can_background_override": true,
+    "resonance_skill_level_bonus": true,
+    "forbidden_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
+  },
+  {
+    "id": "action_elyms_melee3",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "a3",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 1.2,
+    "duration_ticks": 12,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.834,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 5.227,
+    "harmony": 8.692,
+    "stagger": 1.034,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 3,
+    "display_order": 2,
+    "can_background_override": true,
+    "resonance_skill_level_bonus": true,
+    "forbidden_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
+  },
+  {
+    "id": "action_elyms_melee4",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "a4",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.6,
+    "duration_ticks": 6,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.698,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 4.371,
+    "harmony": 7.266,
+    "stagger": 0.865,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 5,
+    "display_order": 3,
+    "can_background_override": true,
+    "resonance_skill_level_bonus": true,
+    "forbidden_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
+  },
+  {
+    "id": "action_elyms_melee5",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "a5",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.915,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 5.733,
+    "harmony": 9.534,
+    "stagger": 1.134,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 4,
+    "can_background_override": true,
+    "resonance_skill_level_bonus": true,
+    "forbidden_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
+  },
+  {
+    "id": "action_elyms_meleeb1",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "强a1",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.259,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 1.62,
+    "harmony": 2.695,
+    "stagger": 0.328,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 2,
+    "display_order": 5,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "validation_note": "",
+    "required_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "required_buff_name": "中等信号或强信号",
+    "duration_implemented": true,
+    "duration_estimated": false
+  },
+  {
+    "id": "action_elyms_meleeb2",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "强a2",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.4,
+    "duration_ticks": 4,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.376,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 2.352,
+    "harmony": 3.912,
+    "stagger": 0.476,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 4,
+    "display_order": 6,
+    "can_background_override": true,
+    "resonance_skill_level_bonus": true,
+    "validation_note": "",
+    "required_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "required_buff_name": "中等信号或强信号",
+    "duration_implemented": true,
+    "duration_estimated": false
+  },
+  {
+    "id": "action_elyms_meleeb3",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "强a3",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 1,
+    "duration_ticks": 10,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.788,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 4.928,
+    "harmony": 8.194,
+    "stagger": 0.996,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 4,
+    "display_order": 7,
+    "can_background_override": true,
+    "resonance_skill_level_bonus": true,
+    "validation_note": "",
+    "required_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "required_buff_name": "中等信号或强信号",
+    "duration_implemented": true,
+    "duration_estimated": false
+  },
+  {
+    "id": "action_elyms_branch1",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "重击",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.449,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 2.801,
+    "harmony": 4.7,
+    "stagger": 0.6,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 4,
+    "display_order": 8,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "forbidden_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "duration_implemented": true,
+    "duration_estimated": true
+  },
+  {
+    "id": "action_elyms_airattack",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "下落",
+    "action_type": "下落",
+    "damage_type": "下落",
+    "is_background_damage": false,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.296,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 1.9,
+    "harmony": 3.1,
+    "stagger": 0.4,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 10,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "duration_implemented": true,
+    "duration_estimated": true
+  },
+  {
+    "id": "action_elyms_perfectevadeattack",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "闪反",
+    "action_type": "闪反",
+    "damage_type": "闪反",
+    "is_background_damage": false,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 1.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 2.5,
+    "harmony": 4.2,
+    "stagger": 2.5,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 11,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "duration_implemented": true,
+    "duration_estimated": true
+  },
+  {
+    "id": "action_elyms_skill1",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "e1",
+    "action_type": "E",
+    "damage_type": "E",
+    "is_background_damage": false,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 1.701,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 5.1,
+    "harmony": 8.399,
+    "stagger": 1.001,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 160,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 6,
+    "display_order": 12,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "harmony_on_start": 100,
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "multiplier_level": 1
+  },
+  {
+    "id": "action_elyms_skill2",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "e2",
+    "action_type": "E",
+    "damage_type": "E",
+    "is_background_damage": false,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 0.998,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 8.3,
+    "harmony": 0.0,
+    "stagger": 0.0,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 6,
+    "display_order": 13,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "validation_note": "",
+    "duration_implemented": true,
+    "is_time_stop_zero": true,
+    "locks_foreground_switch": true,
+    "duration_estimated": false
+  },
+  {
+    "id": "action_elyms_goodbye",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "e3",
+    "action_type": "E",
+    "damage_type": "E",
+    "is_background_damage": false,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 1.277,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 8.3,
+    "harmony": 0.0,
+    "stagger": 0.0,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 6,
+    "display_order": 14,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "validation_note": "",
+    "duration_implemented": true,
+    "is_time_stop_zero": true,
+    "locks_foreground_switch": true,
+    "duration_estimated": false,
+    "multiplier_level": 1
+  },
+  {
+    "id": "action_elyms_ultraskilla1",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "q群",
+    "action_type": "Q",
+    "damage_type": "Q",
+    "is_background_damage": false,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 4.05,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 1.501,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 200,
+    "energy_cost": 100,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 4,
+    "display_order": 15,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "cooldown_group": "elyms_q",
+    "starts_action_sequence": "elyms_follow",
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "is_time_stop_zero": true,
+    "locks_foreground_switch": true,
+    "multiplier_level": 1
+  },
+  {
+    "id": "action_elyms_ultraskillb1",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "q单",
+    "action_type": "Q",
+    "damage_type": "Q",
+    "is_background_damage": false,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 4.5,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 1.502,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 200,
+    "energy_cost": 100,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 8,
+    "display_order": 16,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "cooldown_group": "elyms_q",
+    "starts_action_sequence": "elyms_follow",
+    "required_buff_any_keys": [
+      "character_elyms_medium",
+      "character_elyms_strong"
+    ],
+    "required_buff_name": "中等信号或强信号",
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "is_time_stop_zero": true,
+    "locks_foreground_switch": true,
+    "multiplier_level": 1
+  },
+  {
+    "id": "action_elyms_xietongskilla1",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "追忆群",
+    "action_type": "被动",
+    "damage_type": "Q",
+    "is_background_damage": true,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 1.08,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 1.7,
+    "harmony": 2.8,
+    "stagger": 0.3,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 30,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 4,
+    "display_order": 17,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "validation_note": "",
+    "duration_implemented": true,
+    "extra_tag": "追击",
+    "tags": [
+      "追击"
+    ],
+    "skill_level_category": "ultimate",
+    "cooldown_group": "elyms_follow",
+    "required_buff_key": "character_elyms_backend",
+    "required_buff_name": "后台连线",
+    "consume_buff_stack_key": "character_elyms_backend",
+    "requires_off_field": true,
+    "action_sequence": "elyms_follow",
+    "max_uses_per_action_sequence": 6,
+    "required_additional_buff_keys": [
+      "character_elyms_follow_group"
+    ],
+    "duration_estimated": false,
+    "multiplier_level": 1
+  },
+  {
+    "id": "action_elyms_xietongskillb1",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "追忆单",
+    "action_type": "被动",
+    "damage_type": "Q",
+    "is_background_damage": true,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 1.2,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 1.7,
+    "harmony": 2.8,
+    "stagger": 0.3,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 30,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 4,
+    "display_order": 18,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": true,
+    "validation_note": "",
+    "duration_implemented": true,
+    "extra_tag": "追击",
+    "tags": [
+      "追击"
+    ],
+    "skill_level_category": "ultimate",
+    "cooldown_group": "elyms_follow",
+    "required_buff_key": "character_elyms_backend",
+    "required_buff_name": "后台连线",
+    "consume_buff_stack_key": "character_elyms_backend",
+    "requires_off_field": true,
+    "action_sequence": "elyms_follow",
+    "max_uses_per_action_sequence": 6,
+    "required_additional_buff_keys": [
+      "character_elyms_follow_single"
+    ],
+    "duration_estimated": false,
+    "multiplier_level": 1
+  },
+  {
+    "id": "action_elyms_qte",
+    "character_id": "char_elyms",
+    "character_name": "曳尔沐",
+    "name": "援护",
+    "action_type": "援护",
+    "reaction_trigger_offset_ticks": 7,
+    "damage_type": "援护",
+    "is_background_damage": false,
+    "duration_seconds": 1.1,
+    "duration_ticks": 11,
+    "duration_pending": false,
+    "multipliers": {
+      "atk": 2.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "energy_gain": 5.2,
+    "harmony": 0.0,
+    "stagger": 2.5,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 19,
+    "can_background_override": false,
+    "resonance_skill_level_bonus": false,
+    "duration_implemented": true,
+    "duration_estimated": true
+  },
+  {
+    "id": "action_exe_a1",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a1",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.5,
+    "duration_ticks": 5,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 0.406,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.406,
+      0.438,
+      0.474,
+      0.511,
+      0.552,
+      0.597,
+      0.644,
+      0.696,
+      0.751,
+      0.812,
+      0.877,
+      0.947,
+      1.022
+    ],
+    "energy_gain": 2.093,
+    "harmony": 2.901,
+    "stagger": 0.35,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 0,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.4,
+        "score": 5.0,
+        "atk_levels": [
+          0.406,
+          0.438,
+          0.474,
+          0.511,
+          0.552,
+          0.597,
+          0.644,
+          0.696,
+          0.751,
+          0.812,
+          0.877,
+          0.947,
+          1.022
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_a2",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a2",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 0.692,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.692,
+      0.748,
+      0.808,
+      0.872,
+      0.942,
+      1.016,
+      1.098,
+      1.186,
+      1.28,
+      1.384,
+      1.494,
+      1.614,
+      1.742
+    ],
+    "energy_gain": 3.574,
+    "harmony": 4.954,
+    "stagger": 0.598,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 2,
+    "display_order": 1,
+    "can_background_override": true,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.346,
+          0.374,
+          0.404,
+          0.436,
+          0.471,
+          0.508,
+          0.549,
+          0.593,
+          0.64,
+          0.692,
+          0.747,
+          0.807,
+          0.871
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.346,
+          0.374,
+          0.404,
+          0.436,
+          0.471,
+          0.508,
+          0.549,
+          0.593,
+          0.64,
+          0.692,
+          0.747,
+          0.807,
+          0.871
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_a3",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a3",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 0.792,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.792,
+      0.855,
+      0.924,
+      0.999,
+      1.077,
+      1.164,
+      1.257,
+      1.356,
+      1.467,
+      1.584,
+      1.71,
+      1.848,
+      1.995
+    ],
+    "energy_gain": 4.086,
+    "harmony": 5.664,
+    "stagger": 0.684,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 3,
+    "display_order": 2,
+    "can_background_override": true,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.264,
+          0.285,
+          0.308,
+          0.333,
+          0.359,
+          0.388,
+          0.419,
+          0.452,
+          0.489,
+          0.528,
+          0.57,
+          0.616,
+          0.665
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.264,
+          0.285,
+          0.308,
+          0.333,
+          0.359,
+          0.388,
+          0.419,
+          0.452,
+          0.489,
+          0.528,
+          0.57,
+          0.616,
+          0.665
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 5.0,
+        "atk_levels": [
+          0.264,
+          0.285,
+          0.308,
+          0.333,
+          0.359,
+          0.388,
+          0.419,
+          0.452,
+          0.489,
+          0.528,
+          0.57,
+          0.616,
+          0.665
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_a4",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a4",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 1.684,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      1.684,
+      1.819,
+      1.964,
+      2.121,
+      2.292,
+      2.475,
+      2.672,
+      2.886,
+      3.116,
+      3.368,
+      3.636,
+      3.926,
+      4.24
+    ],
+    "energy_gain": 8.69,
+    "harmony": 12.044,
+    "stagger": 1.456,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 7,
+    "display_order": 3,
+    "can_background_override": true,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.186,
+          0.201,
+          0.217,
+          0.234,
+          0.253,
+          0.273,
+          0.295,
+          0.319,
+          0.344,
+          0.372,
+          0.402,
+          0.434,
+          0.468
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.186,
+          0.201,
+          0.217,
+          0.234,
+          0.253,
+          0.273,
+          0.295,
+          0.319,
+          0.344,
+          0.372,
+          0.402,
+          0.434,
+          0.468
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.257,
+          0.278,
+          0.3,
+          0.324,
+          0.35,
+          0.378,
+          0.408,
+          0.44,
+          0.476,
+          0.514,
+          0.555,
+          0.599,
+          0.647
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.257,
+          0.278,
+          0.3,
+          0.324,
+          0.35,
+          0.378,
+          0.408,
+          0.44,
+          0.476,
+          0.514,
+          0.555,
+          0.599,
+          0.647
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.266,
+          0.287,
+          0.31,
+          0.335,
+          0.362,
+          0.391,
+          0.422,
+          0.456,
+          0.492,
+          0.532,
+          0.574,
+          0.62,
+          0.67
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.266,
+          0.287,
+          0.31,
+          0.335,
+          0.362,
+          0.391,
+          0.422,
+          0.456,
+          0.492,
+          0.532,
+          0.574,
+          0.62,
+          0.67
+        ]
+      },
+      {
+        "frames": 0.8,
+        "score": 10.0,
+        "atk_levels": [
+          0.266,
+          0.287,
+          0.31,
+          0.335,
+          0.362,
+          0.391,
+          0.422,
+          0.456,
+          0.492,
+          0.532,
+          0.574,
+          0.62,
+          0.67
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_a5",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "a5",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 0.594,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.594,
+      0.642,
+      0.69,
+      0.75,
+      0.81,
+      0.87,
+      0.942,
+      1.02,
+      1.098,
+      1.188,
+      1.284,
+      1.386,
+      1.494
+    ],
+    "energy_gain": 3.054,
+    "harmony": 4.236,
+    "stagger": 0.51,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 6,
+    "display_order": 4,
+    "can_background_override": true,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.099,
+          0.107,
+          0.115,
+          0.125,
+          0.135,
+          0.145,
+          0.157,
+          0.17,
+          0.183,
+          0.198,
+          0.214,
+          0.231,
+          0.249
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.099,
+          0.107,
+          0.115,
+          0.125,
+          0.135,
+          0.145,
+          0.157,
+          0.17,
+          0.183,
+          0.198,
+          0.214,
+          0.231,
+          0.249
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.099,
+          0.107,
+          0.115,
+          0.125,
+          0.135,
+          0.145,
+          0.157,
+          0.17,
+          0.183,
+          0.198,
+          0.214,
+          0.231,
+          0.249
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.099,
+          0.107,
+          0.115,
+          0.125,
+          0.135,
+          0.145,
+          0.157,
+          0.17,
+          0.183,
+          0.198,
+          0.214,
+          0.231,
+          0.249
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.099,
+          0.107,
+          0.115,
+          0.125,
+          0.135,
+          0.145,
+          0.157,
+          0.17,
+          0.183,
+          0.198,
+          0.214,
+          0.231,
+          0.249
+        ]
+      },
+      {
+        "frames": 0.0,
+        "score": 0.0,
+        "atk_levels": [
+          0.099,
+          0.107,
+          0.115,
+          0.125,
+          0.135,
+          0.145,
+          0.157,
+          0.17,
+          0.183,
+          0.198,
+          0.214,
+          0.231,
+          0.249
+        ]
+      }
+    ],
+    "ranked_export_limit": 1,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": true
+  },
+  {
+    "id": "action_exe_z",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "z",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.7,
+    "duration_ticks": 7,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 0.78,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.78,
+      0.842,
+      0.91,
+      0.983,
+      1.061,
+      1.146,
+      1.238,
+      1.337,
+      1.444,
+      1.559,
+      1.684,
+      1.819,
+      1.964
+    ],
+    "energy_gain": 4.0,
+    "harmony": 5.6,
+    "stagger": 0.7,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 5,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 2.0,
+        "score": 100.0,
+        "atk_levels": [
+          0.78,
+          0.842,
+          0.91,
+          0.983,
+          1.061,
+          1.146,
+          1.238,
+          1.337,
+          1.444,
+          1.559,
+          1.684,
+          1.819,
+          1.964
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_air",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "下落",
+    "action_type": "普攻",
+    "damage_type": "普攻",
+    "is_background_damage": false,
+    "duration_seconds": 0.8,
+    "duration_ticks": 8,
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "multipliers": {
+      "atk": 0.536,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      0.536,
+      0.579,
+      0.625,
+      0.675,
+      0.729,
+      0.788,
+      0.851,
+      0.919,
+      0.992,
+      1.071,
+      1.157,
+      1.25,
+      1.35
+    ],
+    "energy_gain": 2.3,
+    "harmony": 3.8,
+    "stagger": 0.5,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 1,
+    "display_order": 6,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 0.5,
+        "score": 10.0,
+        "atk_levels": [
+          0.536,
+          0.579,
+          0.625,
+          0.675,
+          0.729,
+          0.788,
+          0.851,
+          0.919,
+          0.992,
+          1.071,
+          1.157,
+          1.25,
+          1.35
+        ]
+      }
+    ],
+    "ranked_export_limit": 0,
+    "ranked_export_limit_empowered": 1,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_counter",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "闪反",
+    "action_type": "闪反",
+    "damage_type": "闪反",
+    "is_background_damage": false,
+    "duration_seconds": 1.3,
+    "duration_ticks": 13,
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "multipliers": {
+      "atk": 1.222,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      1.222,
+      1.32,
+      1.426,
+      1.54,
+      1.662,
+      1.796,
+      1.94,
+      2.094,
+      2.262,
+      2.442,
+      2.638,
+      2.85,
+      3.078
+    ],
+    "energy_gain": 3.5,
+    "harmony": 5.8,
+    "stagger": 2.5,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 2,
+    "display_order": 7,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 5.0,
+        "score": 150.0,
+        "atk_levels": [
+          0.611,
+          0.66,
+          0.713,
+          0.77,
+          0.831,
+          0.898,
+          0.97,
+          1.047,
+          1.131,
+          1.221,
+          1.319,
+          1.425,
+          1.539
+        ]
+      },
+      {
+        "frames": 5.0,
+        "score": 150.0,
+        "atk_levels": [
+          0.611,
+          0.66,
+          0.713,
+          0.77,
+          0.831,
+          0.898,
+          0.97,
+          1.047,
+          1.131,
+          1.221,
+          1.319,
+          1.425,
+          1.539
+        ]
+      }
+    ],
+    "ranked_export_limit": 1,
+    "ranked_export_limit_empowered": 3,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_e",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "e",
+    "action_type": "E",
+    "damage_type": "E",
+    "is_background_damage": false,
+    "duration_seconds": 1.6,
+    "duration_ticks": 16,
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "multipliers": {
+      "atk": 2.91,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      2.91,
+      3.141,
+      3.396,
+      3.666,
+      3.96,
+      4.275,
+      4.617,
+      4.989,
+      5.388,
+      5.817,
+      6.282,
+      6.786,
+      7.326
+    ],
+    "energy_gain": 5.601,
+    "harmony": 7.8,
+    "stagger": 0.9,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 150,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 6,
+    "display_order": 8,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.365,
+          0.394,
+          0.426,
+          0.46,
+          0.497,
+          0.536,
+          0.579,
+          0.626,
+          0.676,
+          0.73,
+          0.788,
+          0.851,
+          0.919
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.365,
+          0.394,
+          0.426,
+          0.46,
+          0.497,
+          0.536,
+          0.579,
+          0.626,
+          0.676,
+          0.73,
+          0.788,
+          0.851,
+          0.919
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.365,
+          0.394,
+          0.426,
+          0.46,
+          0.497,
+          0.536,
+          0.579,
+          0.626,
+          0.676,
+          0.73,
+          0.788,
+          0.851,
+          0.919
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.605,
+          0.653,
+          0.706,
+          0.762,
+          0.823,
+          0.889,
+          0.96,
+          1.037,
+          1.12,
+          1.209,
+          1.306,
+          1.411,
+          1.523
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.605,
+          0.653,
+          0.706,
+          0.762,
+          0.823,
+          0.889,
+          0.96,
+          1.037,
+          1.12,
+          1.209,
+          1.306,
+          1.411,
+          1.523
+        ]
+      },
+      {
+        "frames": 1.67,
+        "score": 50.0,
+        "atk_levels": [
+          0.605,
+          0.653,
+          0.706,
+          0.762,
+          0.823,
+          0.889,
+          0.96,
+          1.037,
+          1.12,
+          1.209,
+          1.306,
+          1.411,
+          1.523
+        ]
+      }
+    ],
+    "ranked_export_limit": 5,
+    "ranked_export_limit_empowered": 10,
+    "ranked_export_last_hit": false
+  },
+  {
+    "id": "action_exe_q",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "q",
+    "action_type": "Q",
+    "damage_type": "Q",
+    "is_background_damage": false,
+    "duration_seconds": 0,
+    "duration_ticks": 0,
+    "duration_implemented": true,
+    "duration_estimated": false,
+    "multipliers": {
+      "atk": 5.822,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      5.822,
+      6.29,
+      6.789,
+      7.332,
+      7.925,
+      8.555,
+      9.235,
+      9.978,
+      10.783,
+      11.644,
+      12.574,
+      13.572,
+      14.658
+    ],
+    "energy_gain": 0.0,
+    "harmony": 0.0,
+    "stagger": 2.496,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 200,
+    "energy_cost": 120,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 19,
+    "display_order": 9,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.0,
+        "score": 25.0,
+        "atk_levels": [
+          0.224,
+          0.242,
+          0.261,
+          0.282,
+          0.305,
+          0.329,
+          0.355,
+          0.384,
+          0.415,
+          0.448,
+          0.484,
+          0.522,
+          0.564
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.485,
+          0.524,
+          0.566,
+          0.611,
+          0.66,
+          0.713,
+          0.77,
+          0.831,
+          0.898,
+          0.97,
+          1.047,
+          1.131,
+          1.221
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.485,
+          0.524,
+          0.566,
+          0.611,
+          0.66,
+          0.713,
+          0.77,
+          0.831,
+          0.898,
+          0.97,
+          1.047,
+          1.131,
+          1.221
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.485,
+          0.524,
+          0.566,
+          0.611,
+          0.66,
+          0.713,
+          0.77,
+          0.831,
+          0.898,
+          0.97,
+          1.047,
+          1.131,
+          1.221
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.485,
+          0.524,
+          0.566,
+          0.611,
+          0.66,
+          0.713,
+          0.77,
+          0.831,
+          0.898,
+          0.97,
+          1.047,
+          1.131,
+          1.221
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.485,
+          0.524,
+          0.566,
+          0.611,
+          0.66,
+          0.713,
+          0.77,
+          0.831,
+          0.898,
+          0.97,
+          1.047,
+          1.131,
+          1.221
+        ]
+      },
+      {
+        "frames": 1.2,
+        "score": 30.0,
+        "atk_levels": [
+          0.485,
+          0.524,
+          0.566,
+          0.611,
+          0.66,
+          0.713,
+          0.77,
+          0.831,
+          0.898,
+          0.97,
+          1.047,
+          1.131,
+          1.221
+        ]
+      }
+    ],
+    "ranked_export_limit": 10,
+    "ranked_export_limit_empowered": 10,
+    "ranked_export_last_hit": false,
+    "is_time_stop_zero": true
+  },
+  {
+    "id": "action_exe_support",
+    "character_id": "char_exe",
+    "character_name": "Exe",
+    "name": "援护",
+    "action_type": "援护",
+    "reaction_trigger_offset_ticks": 0,
+    "damage_type": "援护",
+    "is_background_damage": false,
+    "duration_seconds": 1.8,
+    "duration_ticks": 18,
+    "duration_implemented": true,
+    "duration_estimated": true,
+    "multipliers": {
+      "atk": 2.0,
+      "hp": 0,
+      "def": 0,
+      "flat": 0
+    },
+    "atk_multipliers_by_level": [
+      2.0,
+      2.16,
+      2.332,
+      2.52,
+      2.721,
+      2.939,
+      3.173,
+      3.428,
+      3.701,
+      3.998,
+      4.318,
+      4.663,
+      5.037
+    ],
+    "energy_gain": 5.0,
+    "harmony": 0.0,
+    "stagger": 2.5,
+    "energy_return": 0,
+    "self_modifiers": {},
+    "cooldown_ticks": 0,
+    "energy_cost": 0,
+    "personal_resource_cost": {},
+    "personal_resource_gain": {},
+    "hit_count": 3,
+    "display_order": 10,
+    "can_background_override": false,
+    "tags": [
+      "召唤物"
+    ],
+    "ranked_resource_hits": [
+      {
+        "frames": 4.0,
+        "score": 100.0,
+        "atk_levels": [
+          0.2,
+          0.216,
+          0.233,
+          0.252,
+          0.272,
+          0.294,
+          0.317,
+          0.343,
+          0.37,
+          0.4,
+          0.432,
+          0.466,
+          0.504
+        ]
+      },
+      {
+        "frames": 4.0,
+        "score": 100.0,
+        "atk_levels": [
+          0.2,
+          0.216,
+          0.233,
+          0.252,
+          0.272,
+          0.294,
+          0.317,
+          0.343,
+          0.37,
+          0.4,
+          0.432,
+          0.466,
+          0.504
+        ]
+      },
+      {
+        "frames": 3.0,
+        "score": 100.0,
+        "atk_levels": [
+          1.6,
+          1.728,
+          1.866,
+          2.016,
+          2.177,
+          2.351,
+          2.539,
+          2.742,
+          2.961,
+          3.198,
+          3.454,
+          3.731,
+          4.029
+        ]
+      }
+    ],
+    "ranked_export_limit": 1,
+    "ranked_export_limit_empowered": 3,
+    "ranked_export_last_hit": false,
+    "resonance_skill_level_bonus": false
   }
 ]

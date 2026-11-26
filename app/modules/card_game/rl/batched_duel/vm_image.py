@@ -171,11 +171,39 @@ class _Lower:
         elif kind=='enum':
             # Metadata children: class, scalar value, member name, exact str(enum).
             self.sequence([d['class'],d['value'],d['name'],d['str']],ENUM,ref)
+            # Scalar Enum subclasses share their scalar's mapping-key equality.
+            classes={item['id']:item for item in self.data['classes']}
+            def scalar_base(value,seen):
+                if value.get('kind')=='intrinsic':
+                    return {'str':1,'int':2}.get(value.get('name'),0)
+                if value.get('kind')!='class' or value['id'] in seen:return 0
+                seen=seen|{value['id']}
+                for base in classes[value['id']]['bases']:
+                    result=scalar_base(base,seen)
+                    if result:return result
+                return 0
+            self.nodes[-1-ref][3]=scalar_base(d['class'],set())
         elif kind=='ContextVar':self.sequence([d['name'],d.get('default')],CONTEXT_VAR,ref)
         elif kind=='object':
             self.sequence([{'kind':'class','id':d['class_id']},d['attributes']],OBJECT,ref)
         else:raise ImageError('Unsupported source constant kind '+kind)
         return ref
+
+    def _function_package(self,function):
+        module=function.get('module','')
+        return module if module.replace('.','/')+'/__init__.py' in self.data['source_hashes'] else module.rpartition('.')[0]
+
+    def _resolve_import_name(self,function,position):
+        insts=function['instructions'];inst=insts[position]
+        prior=insts[max(0,position-2):position]
+        if len(prior)!=2 or any(item['op']!='LOAD_CONST' for item in prior):raise ImageError('Static import operands required')
+        level=prior[0]['argval'];fromlist=prior[1]['argval']
+        if type(level) is not int or isinstance(level,bool) or level<0:raise ImageError('Invalid static import level')
+        package=self._function_package(function)
+        absolute=importlib.util.resolve_name('.'*level+(inst['argval'] or ''),package) if level else inst['argval']
+        if not isinstance(absolute,str) or not absolute:raise ImageError('Frozen import module missing')
+        if not fromlist:absolute=absolute.split('.')[0]
+        return absolute,fromlist
 
     def reachable(self,entry):
         visited=set();ops=set();native=set()
@@ -189,6 +217,20 @@ class _Lower:
                     if kind in ('function','code'):
                         f=fs[v['id']];ops.update(i['op'] for i in f['instructions'])
                         for k in ('globals','constants','defaults','kwdefaults','closure'):walk(f.get(k,{}))
+                        imported=None
+                        for position,inst in enumerate(f['instructions']):
+                            if inst['op']=='IMPORT_NAME':
+                                imported,fromlist=self._resolve_import_name(f,position)
+                                if imported not in self.midx:raise ImageError('Frozen import module missing: '+imported)
+                                walk({'kind':'module','name':imported})
+                                if not fromlist:
+                                    walk(self.data['modules'].get(imported,{}))
+                            elif inst['op']=='IMPORT_FROM':
+                                if imported is None:raise ImageError('IMPORT_FROM without IMPORT_NAME')
+                                name=inst['argval']
+                                table=self.data['modules'].get(imported,{})
+                                if name not in table:raise ImageError('Frozen import symbol missing: '+imported+'.'+str(name))
+                                walk(table[name])
                     elif kind=='class':walk(cs[v['id']])
                     elif kind=='constant':walk(self.cdesc[v['id']])
                     else:walk(self.data['modules'].get(v['name'],{}))
@@ -210,12 +252,7 @@ class _Lower:
                 if type(arg) is not int or not -1<=arg<2**31:raise ImageError('Opcode arg overflow')
                 if i['op']=='LOAD_CONST':operand=self.reference(consts[arg])
                 elif i['op']=='IMPORT_NAME':
-                    prior=f['instructions'][max(0,position-2):position]
-                    if len(prior)!=2 or any(x['op']!='LOAD_CONST' for x in prior):raise ImageError('Static import operands required')
-                    level=prior[0]['argval'];fromlist=prior[1]['argval']
-                    module=f.get('module','');package=module if module.replace('.','/')+'/__init__.py' in self.data['source_hashes'] else module.rpartition('.')[0]
-                    absolute=importlib.util.resolve_name('.'*level+(i['argval'] or ''),package) if level else i['argval']
-                    if not fromlist:absolute=absolute.split('.')[0]
+                    absolute,_fromlist=self._resolve_import_name(f,position)
                     if absolute not in self.midx:raise ImageError('Frozen import module missing: '+absolute)
                     operand=self.reference({'kind':'module','name':absolute})
                 elif i['op'] in ('LOAD_DEREF' ,'STORE_DEREF','LOAD_CLOSURE'):
@@ -227,8 +264,7 @@ class _Lower:
                 target=-1 if i['target'] is None else start+i['target']
                 if target!=-1 and not start<=target<start+n:raise ImageError('Jump outside function')
                 instructions.append([self.opidx[i['op']],arg,operand,target])
-            module=f.get('module','')
-            package=module if module.replace('.','/')+'/__init__.py' in self.data['source_hashes'] else module.rpartition('.')[0]
+            package=self._function_package(f)
             refs=[self.value(f.get(k,{} if k in ('globals','kwdefaults') else [])) for k in
                 ('globals','constants','varnames','cellvars','freevars','defaults','kwdefaults','closure')]
             functions.append([start,n,f['argcount'],f['posonlyargcount'],f['kwonlyargcount'],f['nlocals'],

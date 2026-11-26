@@ -1,4 +1,45 @@
 {
+  "action_d99994f07b": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.397, "energy": 1.987, "harmony": 3.303, "stagger": 0.402},
+      {"hit_count": 2, "damage": 0.794, "energy": 3.974, "harmony": 6.606, "stagger": 0.804}
+    ]
+  },
+  "action_3705623d51": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.255, "energy": 1.417, "harmony": 2.366, "stagger": 0.283},
+      {"hit_count": 2, "damage": 0.778, "energy": 4.324, "harmony": 7.219, "stagger": 0.864}
+    ]
+  },
+  "action_208b8ec7c2": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.863, "energy": 4.099, "harmony": 6.846, "stagger": 0.815}
+    ]
+  },
+  "action_a7443f657f": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.233, "energy": 0.896, "harmony": 1.493, "stagger": 0.179},
+      {"hit_count": 2, "damage": 0.466, "energy": 1.792, "harmony": 2.986, "stagger": 0.358},
+      {"hit_count": 3, "damage": 0.699, "energy": 2.688, "harmony": 4.479, "stagger": 0.537},
+      {"hit_count": 4, "damage": 1.932, "energy": 7.434, "harmony": 12.39, "stagger": 1.486}
+    ]
+  },
+  "action_lingke_a5": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 0.74, "energy": 4.635, "harmony": 7.703, "stagger": 0.923}
+    ]
+  },
+  "action_4f1cc1b94f": {
+    "cumulative": [
+      {"hit_count": 0, "damage": 0, "energy": 0, "harmony": 0, "stagger": 0},
+      {"hit_count": 1, "damage": 1.04, "energy": 2.6, "harmony": 4.3, "stagger": 2.5}
+    ]
+  },
   "action_982c67944f": {
     "source": "tencent-sheet",
     "harmony_source": "用户2026-09-19补充逐段0.973/0.973/6.11/6.543；释放时额外100不计入曲线，非Nanoka数值。",
@@ -4734,144 +4775,136 @@
     ]
   },
   "action_akane_a1": {
-    "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0.0,
-        "energy": 0.0,
+        "damage": 0,
+        "energy": 0,
         "harmony": 0.0,
         "stagger": 0.0
       },
       {
         "hit_count": 1,
-        "damage": 0.394,
-        "energy": 0.984,
-        "harmony": 1.645,
-        "stagger": 0.2
+        "damage": 0.149,
+        "energy": 1.244,
+        "harmony": 1.78,
+        "stagger": 0.216
       },
       {
         "hit_count": 2,
-        "damage": 0.788,
-        "energy": 1.968,
-        "harmony": 3.29,
-        "stagger": 0.4
+        "damage": 0.298,
+        "energy": 2.488,
+        "harmony": 3.56,
+        "stagger": 0.432
       }
     ]
   },
   "action_akane_a2": {
-    "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0.0,
-        "energy": 0.0,
+        "damage": 0,
+        "energy": 0,
         "harmony": 0.0,
         "stagger": 0.0
       },
       {
         "hit_count": 1,
-        "damage": 0.579,
-        "energy": 1.447,
-        "harmony": 2.418,
-        "stagger": 0.293
+        "damage": 0.219,
+        "energy": 1.92,
+        "harmony": 2.748,
+        "stagger": 0.333
       },
       {
         "hit_count": 2,
-        "damage": 1.158,
-        "energy": 2.894,
-        "harmony": 4.836,
-        "stagger": 0.586
+        "damage": 0.438,
+        "energy": 3.84,
+        "harmony": 5.496,
+        "stagger": 0.666
       }
     ]
   },
   "action_akane_a3": {
-    "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0.0,
-        "energy": 0.0,
+        "damage": 0,
+        "energy": 0,
         "harmony": 0.0,
         "stagger": 0.0
       },
       {
         "hit_count": 1,
-        "damage": 0.275,
-        "energy": 0.687,
-        "harmony": 1.148,
-        "stagger": 0.139
+        "damage": 0.103,
+        "energy": 0.796,
+        "harmony": 1.14,
+        "stagger": 0.138
       },
       {
         "hit_count": 2,
-        "damage": 0.55,
-        "energy": 1.374,
-        "harmony": 2.296,
-        "stagger": 0.278
+        "damage": 0.206,
+        "energy": 1.592,
+        "harmony": 2.28,
+        "stagger": 0.276
       },
       {
         "hit_count": 3,
-        "damage": 0.825,
-        "energy": 2.061,
-        "harmony": 3.444,
-        "stagger": 0.417
+        "damage": 0.309,
+        "energy": 2.388,
+        "harmony": 3.42,
+        "stagger": 0.414
       },
       {
         "hit_count": 4,
-        "damage": 1.182,
-        "energy": 2.952,
-        "harmony": 4.934,
-        "stagger": 0.598
+        "damage": 0.444,
+        "energy": 3.38,
+        "harmony": 4.839,
+        "stagger": 0.586
       },
       {
         "hit_count": 5,
-        "damage": 1.539,
-        "energy": 3.843,
-        "harmony": 6.424,
-        "stagger": 0.779
+        "damage": 0.579,
+        "energy": 4.372,
+        "harmony": 6.258,
+        "stagger": 0.758
       },
       {
         "hit_count": 6,
-        "damage": 1.896,
-        "energy": 4.734,
-        "harmony": 7.914,
-        "stagger": 0.96
+        "damage": 0.714,
+        "energy": 5.364,
+        "harmony": 7.677,
+        "stagger": 0.93
       },
       {
         "hit_count": 7,
-        "damage": 2.253,
-        "energy": 5.625,
-        "harmony": 9.404,
-        "stagger": 1.141
+        "damage": 0.849,
+        "energy": 6.356,
+        "harmony": 9.096,
+        "stagger": 1.102
       }
     ]
   },
   "action_akane_a4": {
-    "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0.0,
-        "energy": 0.0,
+        "damage": 0,
+        "energy": 0,
         "harmony": 0.0,
         "stagger": 0.0
       },
       {
         "hit_count": 1,
-        "damage": 1.526,
-        "energy": 3.812,
-        "harmony": 6.371,
-        "stagger": 0.773
+        "damage": 4.247,
+        "energy": 4.016,
+        "harmony": 5.847,
+        "stagger": 0.697
       }
     ]
   },
   "action_akane_plunge": {
     "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source_note": "NTEData d7fe705451f189cec8447d876e6c31db7ed3d9df（1.4.10.566418），2026-10-09核对；技能1级，多段按技能描述聚合，耗时沿用用户授权经验值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4890,8 +4923,8 @@
     ]
   },
   "action_akane_counter": {
-    "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+    "source": "tencent-document",
+    "source_note": "用户更新的腾讯文档《明音凛资料汇总》最新倍率与弦能；E觉传导70%/90%由本轮用户明确补充。未列入本次更新的资源仍沿用NTEData d7fe705原值；耗时沿用经验值，不标为新表逐段实测。 用户2026-10-10：SkillDamageData_Akane.xlsx / SkillDamage 第8行，仅同步指定资源的逐段累计值。",
     "cumulative": [
       {
         "hit_count": 0,
@@ -4902,77 +4935,772 @@
       },
       {
         "hit_count": 1,
-        "damage": 0.25,
-        "energy": 0.0,
-        "harmony": 0.0,
-        "stagger": 1.5
+        "damage": 1.375,
+        "energy": 2.5,
+        "harmony": 4.2,
+        "stagger": 2.5
       }
     ]
   },
   "action_akane_e": {
-    "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0.0,
-        "energy": 0.0,
+        "damage": 0,
+        "energy": 0,
         "harmony": 0.0,
         "stagger": 0.0
       },
       {
         "hit_count": 1,
-        "damage": 5.0,
-        "energy": 1.7,
-        "harmony": 2.8,
-        "stagger": 0.3
+        "damage": 3.6,
+        "energy": 4.2,
+        "harmony": 6.0,
+        "stagger": 0.7
       }
     ]
   },
   "action_akane_hold_e": {
-    "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0.0,
-        "energy": 0.0,
+        "damage": 0,
+        "energy": 0,
         "harmony": 0.0,
         "stagger": 0.0
       },
       {
         "hit_count": 1,
-        "damage": 2.0,
-        "energy": 2.45,
+        "damage": 1.62,
+        "energy": 2.85,
         "harmony": 4.1,
         "stagger": 0.5
       },
       {
         "hit_count": 2,
-        "damage": 4.0,
-        "energy": 4.9,
+        "damage": 3.24,
+        "energy": 5.7,
         "harmony": 8.2,
         "stagger": 1.0
       }
     ]
   },
-  "action_akane_enhanced_e": {
-    "source": "ntedata",
-    "source_note": "NTEData提交43dd106（版本1.4.6.564202）技能描述与DT_SkillDamageData、角色EffectFigure的1级值；多段按技能描述的倍率式聚合。动作耗时仍沿用既有经验值。",
+  "action_akane_short_enhanced_e": {
+    "source": "tencent-document",
+    "source_note": "用户2026-10-12提供的腾讯文档《明音凛资料汇总》括号内10月11日新倍率；仅同步基础倍率及其逐段伤害，资源、耗时、已确认被动/觉醒不由文档旧正文覆盖。非Nanoka/NTEData新版本核实。",
     "cumulative": [
       {
         "hit_count": 0,
-        "damage": 0.0,
+        "damage": 0,
         "energy": 0.0,
         "harmony": 0.0,
         "stagger": 0.0
       },
       {
         "hit_count": 1,
-        "damage": 8.0,
+        "damage": 11.25,
         "energy": 0.0,
         "harmony": 0.0,
         "stagger": 0.0
+      }
+    ]
+  },
+  "action_akane_long_enhanced_e": {
+    "source": "tencent-document",
+    "source_note": "用户2026-10-12提供的腾讯文档《明音凛资料汇总》括号内10月11日新倍率；仅同步基础倍率及其逐段伤害，资源、耗时、已确认被动/觉醒不由文档旧正文覆盖。非Nanoka/NTEData新版本核实。 用户纠正×2笔误，单次1012.5%。",
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      },
+      {
+        "hit_count": 1,
+        "damage": 10.125,
+        "energy": 0.0,
+        "harmony": 0.0,
+        "stagger": 0.0
+      }
+    ]
+  },
+  "action_elyms_meleeb1": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.124,
+        "energy": 0.775,
+        "harmony": 1.289,
+        "stagger": 0.157
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.259,
+        "energy": 1.62,
+        "harmony": 2.695,
+        "stagger": 0.328
+      }
+    ]
+  },
+  "action_elyms_meleeb2": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.093,
+        "energy": 0.58,
+        "harmony": 0.964,
+        "stagger": 0.117
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.186,
+        "energy": 1.16,
+        "harmony": 1.928,
+        "stagger": 0.234
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.281,
+        "energy": 1.756,
+        "harmony": 2.92,
+        "stagger": 0.355
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.376,
+        "energy": 2.352,
+        "harmony": 3.912,
+        "stagger": 0.476
+      }
+    ]
+  },
+  "action_elyms_meleeb3": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.106,
+        "energy": 0.664,
+        "harmony": 1.104,
+        "stagger": 0.134
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.212,
+        "energy": 1.328,
+        "harmony": 2.208,
+        "stagger": 0.268
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.318,
+        "energy": 1.992,
+        "harmony": 3.312,
+        "stagger": 0.402
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.788,
+        "energy": 4.928,
+        "harmony": 8.194,
+        "stagger": 0.996
+      }
+    ]
+  },
+  "action_elyms_melee1": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.112,
+        "energy": 0.704,
+        "harmony": 1.17,
+        "stagger": 0.139
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.224,
+        "energy": 1.408,
+        "harmony": 2.34,
+        "stagger": 0.278
+      }
+    ]
+  },
+  "action_elyms_melee2": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.157,
+        "energy": 0.982,
+        "harmony": 1.633,
+        "stagger": 0.194
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.314,
+        "energy": 1.964,
+        "harmony": 3.266,
+        "stagger": 0.388
+      }
+    ]
+  },
+  "action_elyms_melee3": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.334,
+        "energy": 2.094,
+        "harmony": 3.482,
+        "stagger": 0.414
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.668,
+        "energy": 4.188,
+        "harmony": 6.964,
+        "stagger": 0.828
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.834,
+        "energy": 5.227,
+        "harmony": 8.692,
+        "stagger": 1.034
+      }
+    ]
+  },
+  "action_elyms_melee4": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.138,
+        "energy": 0.865,
+        "harmony": 1.438,
+        "stagger": 0.171
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.276,
+        "energy": 1.73,
+        "harmony": 2.876,
+        "stagger": 0.342
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.414,
+        "energy": 2.595,
+        "harmony": 4.314,
+        "stagger": 0.513
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.556,
+        "energy": 3.483,
+        "harmony": 5.79,
+        "stagger": 0.689
+      },
+      {
+        "hit_count": 5,
+        "damage": 0.698,
+        "energy": 4.371,
+        "harmony": 7.266,
+        "stagger": 0.865
+      }
+    ]
+  },
+  "action_elyms_melee5": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.915,
+        "energy": 5.733,
+        "harmony": 9.534,
+        "stagger": 1.134
+      }
+    ]
+  },
+  "action_elyms_branch1": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.107,
+        "energy": 0.667,
+        "harmony": 1.119,
+        "stagger": 0.143
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.214,
+        "energy": 1.334,
+        "harmony": 2.238,
+        "stagger": 0.286
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.321,
+        "energy": 2.001,
+        "harmony": 3.357,
+        "stagger": 0.429
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.449,
+        "energy": 2.801,
+        "harmony": 4.7,
+        "stagger": 0.6
+      }
+    ]
+  },
+  "action_elyms_airattack": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.296,
+        "energy": 1.9,
+        "harmony": 3.1,
+        "stagger": 0.4
+      }
+    ]
+  },
+  "action_elyms_perfectevadeattack": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 1.0,
+        "energy": 2.5,
+        "harmony": 4.2,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_elyms_skill1": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.269,
+        "energy": 0.808,
+        "harmony": 1.331,
+        "stagger": 0.158
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.505,
+        "energy": 1.515,
+        "harmony": 2.495,
+        "stagger": 0.297
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.741,
+        "energy": 2.222,
+        "harmony": 3.659,
+        "stagger": 0.436
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.977,
+        "energy": 2.929,
+        "harmony": 4.823,
+        "stagger": 0.575
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.213,
+        "energy": 3.636,
+        "harmony": 5.987,
+        "stagger": 0.714
+      },
+      {
+        "hit_count": 6,
+        "damage": 1.701,
+        "energy": 5.1,
+        "harmony": 8.399,
+        "stagger": 1.001
+      }
+    ]
+  },
+  "action_exe_a1": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.406,
+        "energy": 2.093,
+        "harmony": 2.901,
+        "stagger": 0.35
+      }
+    ]
+  },
+  "action_exe_a2": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.346,
+        "energy": 1.787,
+        "harmony": 2.477,
+        "stagger": 0.299
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.692,
+        "energy": 3.574,
+        "harmony": 4.954,
+        "stagger": 0.598
+      }
+    ]
+  },
+  "action_exe_a3": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.264,
+        "energy": 1.362,
+        "harmony": 1.888,
+        "stagger": 0.228
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.528,
+        "energy": 2.724,
+        "harmony": 3.776,
+        "stagger": 0.456
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.792,
+        "energy": 4.086,
+        "harmony": 5.664,
+        "stagger": 0.684
+      }
+    ]
+  },
+  "action_exe_a4": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.186,
+        "energy": 0.961,
+        "harmony": 1.331,
+        "stagger": 0.161
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.372,
+        "energy": 1.922,
+        "harmony": 2.662,
+        "stagger": 0.322
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.629,
+        "energy": 3.248,
+        "harmony": 4.5,
+        "stagger": 0.544
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.886,
+        "energy": 4.574,
+        "harmony": 6.338,
+        "stagger": 0.766
+      },
+      {
+        "hit_count": 5,
+        "damage": 1.152,
+        "energy": 5.946,
+        "harmony": 8.24,
+        "stagger": 0.996
+      },
+      {
+        "hit_count": 6,
+        "damage": 1.418,
+        "energy": 7.318,
+        "harmony": 10.142,
+        "stagger": 1.226
+      },
+      {
+        "hit_count": 7,
+        "damage": 1.684,
+        "energy": 8.69,
+        "harmony": 12.044,
+        "stagger": 1.456
+      }
+    ]
+  },
+  "action_exe_a5": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.099,
+        "energy": 0.509,
+        "harmony": 0.706,
+        "stagger": 0.085
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.198,
+        "energy": 1.018,
+        "harmony": 1.412,
+        "stagger": 0.17
+      },
+      {
+        "hit_count": 3,
+        "damage": 0.297,
+        "energy": 1.527,
+        "harmony": 2.118,
+        "stagger": 0.255
+      },
+      {
+        "hit_count": 4,
+        "damage": 0.396,
+        "energy": 2.036,
+        "harmony": 2.824,
+        "stagger": 0.34
+      },
+      {
+        "hit_count": 5,
+        "damage": 0.495,
+        "energy": 2.545,
+        "harmony": 3.53,
+        "stagger": 0.425
+      },
+      {
+        "hit_count": 6,
+        "damage": 0.594,
+        "energy": 3.054,
+        "harmony": 4.236,
+        "stagger": 0.51
+      }
+    ]
+  },
+  "action_exe_z": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.78,
+        "energy": 4.0,
+        "harmony": 5.6,
+        "stagger": 0.7
+      }
+    ]
+  },
+  "action_exe_air": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.536,
+        "energy": 2.3,
+        "harmony": 3.8,
+        "stagger": 0.5
+      }
+    ]
+  },
+  "action_exe_counter": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.611,
+        "energy": 1.75,
+        "harmony": 2.9,
+        "stagger": 1.25
+      },
+      {
+        "hit_count": 2,
+        "damage": 1.222,
+        "energy": 3.5,
+        "harmony": 5.8,
+        "stagger": 2.5
+      }
+    ]
+  },
+  "action_exe_e": {
+    "cumulative": [
+      {
+        "hit_count": 0,
+        "damage": 0,
+        "energy": 0,
+        "harmony": 0,
+        "stagger": 0
+      },
+      {
+        "hit_count": 1,
+        "damage": 0.365,
+        "energy": 0.703,
+        "harmony": 0.978,
+        "stagger": 0.113
+      },
+      {
+        "hit_count": 2,
+        "damage": 0.73,
+        "energy": 1.406,
+        "harmony": 1.956,
+        "stagger": 0.226
+      },
+      {
+        "hit_count": 3,
+        "damage": 1.095,
+        "energy": 2.109,
+        "harmony": 2.934,
+        "stagger": 0.339
+      },
+      {
+        "hit_count": 4,
+        "damage": 1.7,
+        "energy": 3.273,
+        "harmony": 4.556,
+        "stagger": 0.526
+      },
+      {
+        "hit_count": 5,
+        "damage": 2.305,
+        "energy": 4.437,
+        "harmony": 6.178,
+        "stagger": 0.713
+      },
+      {
+        "hit_count": 6,
+        "damage": 2.91,
+        "energy": 5.601,
+        "harmony": 7.8,
+        "stagger": 0.9
       }
     ]
   }

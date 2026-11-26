@@ -134,6 +134,12 @@
       if (!effect || typeof effect !== 'object' || effect?.source_reaction) return;
       const reaction = String(effect?.reaction || '');
       if (!configuredByReaction.has(reaction)) return;
+      // A gated passive reapplies the same carrier's unlocked reaction; it does
+      // not represent another independently configured or active trigger.
+      if (effect.is_reapplication === true && configuredByReaction.get(reaction).some((carrier) => (
+        carrier.character_id === String(effect.contributor_character_id || '')
+      ))) return;
+      if (effect.is_echo === true) return;
       if (!axisEffectsByReaction.has(reaction)) axisEffectsByReaction.set(reaction, []);
       axisEffectsByReaction.get(reaction).push(effect);
     }
@@ -172,6 +178,69 @@
     return warnings;
   }
 
+  function activationWarnings(axis, catalog, resultDetails, durationTicks = 0) {
+    const warnings = [];
+    const actions = new Map((catalog?.actions || []).map((action) => [String(action.id), action]));
+    const characters = new Map((catalog?.characters || []).map((character) => [String(character.id), character]));
+    const details = new Map((resultDetails || []).map((detail) => [String(detail.step_id), detail]));
+    const team = new Map((axis?.team || []).map((member) => [Number(member.slot), member]));
+    const events = [];
+    (axis?.steps || []).forEach((step, order) => {
+      const member = team.get(Number(step.slot));
+      const character = characters.get(String(member?.character_id || ''));
+      const action = actions.get(String(step.action_id));
+      if (!character || !action) return;
+      const detail = details.get(String(step.id)) || {};
+      const start = Number(detail.start_tick ?? step.start_tick ?? 0);
+      const end = Number(detail.end_tick ?? start + Number(action.duration_ticks || 0));
+      const keys = new Set((detail.applied_buffs || [])
+        .filter((buff) => Number(buff.owner_slot) === Number(step.slot))
+        .map((buff) => String(buff.definition_id || buff.rule_id || '')));
+      const nodes = Array.isArray(member.awakening_nodes) ? new Set(member.awakening_nodes).size : Number(member.awakening || 0);
+      const hasResonance = (level) => Array.isArray(member.awakening_resonances)
+        ? member.awakening_resonances.includes(level) : nodes >= level;
+      (character.self_check_activations || []).forEach((rule) => {
+        const base = {slot: Number(step.slot), rule, order, character, action};
+        if ((rule.action_ids || []).includes(action.id)) {
+          const formAllowed = !(rule.absent_buff_keys || []).some((key) => keys.has(key)) &&
+            (!rule.any_buff_keys?.length || rule.any_buff_keys.some((key) => keys.has(key)));
+          events.push({...base, kind: 'use', formAllowed, tick: start, sequence: Number(detail.calculation_start_sequence || 0)});
+        }
+        const grants = (rule.grants || []).some((grant) => {
+          const actionMatch = (grant.action_ids || []).includes(action.id);
+          const triggerMatch = (detail.triggered_buffs || []).some((buff) => (grant.triggered_rule_ids || []).includes(buff.rule_id));
+          if (!actionMatch && !triggerMatch) return false;
+          if (grant.awakening_resonance && !hasResonance(grant.awakening_resonance)) return false;
+          if ((grant.absent_buff_keys || []).some((key) => keys.has(key))) return false;
+          if (grant.any_buff_keys?.length && !grant.any_buff_keys.some((key) => keys.has(key))) return false;
+          const fullHits = Number(detail.original_hit_count ?? action.hit_count ?? 0);
+          const actualHits = Number(detail.hit_count ?? step.interrupt_hit_count ?? fullHits);
+          return !grant.last_hit_required || (fullHits > 0 && actualHits >= fullHits);
+        });
+        if (grants) events.push({...base, kind: 'grant', tick: end, sequence: Number(detail.calculation_end_sequence || 0)});
+      });
+    });
+    const loopTicks = axis?.options?.loop_enabled ? Math.max(0, Number(durationTicks || 0)) : 0;
+    const replay = loopTicks > 0
+      ? [...events.map((event) => ({...event, tick: event.tick - loopTicks, previous: true})), ...events]
+      : events;
+    replay.sort((left, right) => left.tick - right.tick || left.sequence - right.sequence || Number(!left.previous) - Number(!right.previous) || left.order - right.order ||
+      (left.kind === 'use' ? 0 : 1) - (right.kind === 'use' ? 0 : 1));
+    const expires = new Map();
+    replay.forEach((event) => {
+      const key = `${event.slot}:${event.rule.id}`;
+      if (event.kind === 'grant') {
+        expires.set(key, event.tick + Number(event.rule.duration_ticks || 0));
+      } else {
+        if (!event.previous && (!event.formAllowed || !(event.tick < (expires.get(key) ?? Number.NEGATIVE_INFINITY)))) {
+          warnings.push(`${event.character.name}「${event.action.name}」：${event.rule.name}尚未激活或激活已过期。`);
+        }
+        expires.delete(key);
+      }
+    });
+    return warnings;
+  }
+
   function inspectAxis(axis, catalog, simulationResult = {}) {
     const resultDetails = Array.isArray(simulationResult)
       ? simulationResult
@@ -201,8 +270,16 @@
     const abnormalCharacters = new Set();
     const missingDurationActions = new Set();
 
+    const teamCharacterIds = new Set((axis?.team || []).map((member) => String(member.character_id || '')));
+    (catalog?.characters || []).forEach((character) => {
+      if (teamCharacterIds.has(String(character.id || '')) && character.data_note) {
+        warnings.push(`${character.name}：${character.data_note}`);
+      }
+    });
+
     warnings.push(...foregroundReturnWarnings(orderedSteps));
     warnings.push(...loopInitialReactionWarnings(axis, catalog, Array.isArray(simulationResult) ? {} : simulationResult));
+    warnings.push(...activationWarnings(axis, catalog, resultDetails, simulationResult?.summary?.duration_ticks));
 
     orderedSteps.forEach(({ step, action }) => {
       if (!hasUnimplementedForegroundDuration(step, action)) {

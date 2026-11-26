@@ -27,16 +27,37 @@ from app.modules.card_game.rl.rule_ir.pack_row import pack_python_row
 
 _CACHE = {}
 _LOCK = threading.RLock()
-PRESETS = ('starter', 'weave-rush', 'quick-rush', 'zhenhong', 'murk')
+PRESETS = ('starter', 'murk', 'zhenhong')
 RANDOM_PRESETS = PRESETS
-UNTRAINED_STRATEGIES = {}
-PENDING_PRESETS = frozenset()
+UNTRAINED_STRATEGIES = {key: '该高级人机暂不开放，当前仅开放创生、浊燃和真红。'
+                        for key in ('weave-rush', 'quick-rush', 'collapse', 'lingke')}
+PENDING_PRESETS = frozenset(PRESETS)
 
 
 def preset(deck_id):
+    if deck_id in UNTRAINED_STRATEGIES:
+        raise RuleValidationError(UNTRAINED_STRATEGIES[deck_id])
     if deck_id not in PRESETS:
         raise RuleValidationError('高级人机策略不存在。')
     return next(d for d in STARTER_DECKS if d['id'] == deck_id)
+
+
+def strategy_suspended(key):
+    """Availability is explicit and cannot be reopened by old model files."""
+    return key in UNTRAINED_STRATEGIES
+
+
+def pending_strategy_options():
+    """Resolve actual authorization, including invalid or incomplete releases."""
+    options = []
+    for key in sorted(PENDING_PRESETS):
+        item = dict(id=key, name=preset(key)['name'], pending=False)
+        try:
+            load_model(key)
+        except RuleValidationError as exc:
+            item.update(pending=True, unavailable_reason=str(exc))
+        options.append(item)
+    return options
 
 
 def serving_deck(model, deck_id):
@@ -237,26 +258,38 @@ class FrozenModel:
 
 def load_model(deck_id):
     preset(deck_id)
+    if strategy_suspended(deck_id):
+        raise RuleValidationError(UNTRAINED_STRATEGIES[deck_id])
     from .experimental_cross_model import ARCHIVE, EXPERIMENTAL, ExperimentalCrossModel
     from .recovery_model import RELEASE, RecoveryServingModel
     configured = Path(config.DUEL_AI_MODEL_DIR).resolve()
     recovery = configured / RELEASE
+    from .seven_model import RELEASE as SEVEN_RELEASE, ADOPTED, load_serving_model
+    seven = configured / SEVEN_RELEASE
     root = recovery if recovery.is_dir() else (ARCHIVE if deck_id in EXPERIMENTAL else configured)
-    if deck_id in PENDING_PRESETS and not (root / f'{deck_id}.json').is_file():
-        raise RuleValidationError('吱零薄海高级人机尚待训练与验收，请先使用普通人机。')
+    if deck_id in ADOPTED:
+        root = seven
+    if deck_id in PENDING_PRESETS and not all((root / f'{deck_id}{suffix}').is_file() for suffix in ('.json', '.npz')):
+        raise RuleValidationError(f'{preset(deck_id)["name"]}高级人机尚待训练与模型验收，请先使用普通人机。')
     key = (str(root), deck_id)
     with _LOCK:
         try:
             signature=tuple((path.stat().st_mtime_ns,path.stat().st_size)
                             for path in ([root/f'{deck_id}.json',root/f'{deck_id}.npz']
-                                         + ([root/'serving.json'] if root == recovery else [])))
-            if root == recovery:
+                                         + ([root/'serving.json'] if root in (recovery, seven) else [])))
+            if root == seven:
+                from app.modules.card_game.rl.seven_lineup import identity
+                from app.modules.card_game.rl.phase_policy import fingerprint as phase_fingerprint
+                signature += (identity(), phase_fingerprint())
+            elif root == recovery:
                 from app.modules.card_game.rl.cross_lineup import identity
                 signature += (identity(),)
             if key not in _CACHE or getattr(_CACHE[key], '_file_signature', None) != signature:
                 manifest = json.loads((root / f'{deck_id}.json').read_text(encoding='utf-8'))
                 from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-                if root == recovery:
+                if root == seven:
+                    candidate = load_serving_model(root, deck_id)
+                elif root == recovery:
                     candidate = RecoveryServingModel(root, deck_id)
                 elif deck_id in EXPERIMENTAL:
                     candidate = ExperimentalCrossModel(deck_id)
@@ -291,12 +324,13 @@ def choose_action(state, side='b'):
         raise RuleValidationError('高级人机没有可执行动作。')
     from app.modules.card_game.rl.opening_observation import OPENING_SCHEMA
     from .recovery_model import SCHEMAS as RECOVERY_SCHEMAS
-    if state['phase'] == 'mulligan' and getattr(model,'schema',None) not in (OPENING_SCHEMA, 'official_public_v5', 'fixed_ten_v1', *RECOVERY_SCHEMAS):
+    from .seven_model import SCHEMAS as SEVEN_SCHEMAS
+    if state['phase'] == 'mulligan' and getattr(model,'schema',None) not in (OPENING_SCHEMA, 'official_public_v5', 'fixed_ten_v1', *RECOVERY_SCHEMAS, *SEVEN_SCHEMAS):
         # The model was trained with the initial hand retained.
         return next(a for a in actions if not a.get('card_ids'))
     from app.modules.card_game.rl.public_schema import SCHEMA as PUBLIC_SCHEMA
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA
-    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS):
+    if model.schema in (PUBLIC_SCHEMA,OPENING_SCHEMA,LEAGUE_SCHEMA,'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS, *SEVEN_SCHEMAS):
         from app.modules.card_game.engine.duel_v2 import observe
         fallback = actions[model.select_public_action(observe(state, side, include_previews=False), actions)]
         from .advanced_search import choose
@@ -311,4 +345,5 @@ def choose_action(state, side='b'):
 def model_build_hash(model, build):
     from app.modules.card_game.rl.league_schema import SCHEMA as LEAGUE_SCHEMA, build_hash
     from .recovery_model import SCHEMAS as RECOVERY_SCHEMAS
-    return build_hash(build) if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS) else serving_deck_hash(build)
+    from .seven_model import SCHEMAS as SEVEN_SCHEMAS
+    return build_hash(build) if getattr(model, 'schema', None) in (LEAGUE_SCHEMA, 'fixed_ten_v1', 'cross_five_grounded_wdl_v1', *RECOVERY_SCHEMAS, *SEVEN_SCHEMAS) else serving_deck_hash(build)

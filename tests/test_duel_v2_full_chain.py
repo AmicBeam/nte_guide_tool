@@ -43,7 +43,7 @@ class ReportTelemetryTest(unittest.TestCase):
         after=deepcopy(state);seq=state['event_seq']
         after['events'] += [
             {'seq':seq+1,'type':'draw','side':'a','private_card':card,'patch':{'turn':0}},
-            {'seq':seq+2,'type':'play','side':'a','card':card,'patch':{'turn':3}},
+            {'seq':seq+2,'type':'play','side':'a','card':card,'response':True,'patch':{'turn':3}},
             {'seq':seq+3,'type':'harmony','side':'a','actor':'a:nanali','target':'a:zero',
              'before':{'harmony':2},'after':{'harmony':0},'text':'入场，触发创生。','patch':{'turn':3}},
             {'seq':seq+4,'type':'harmony','side':'a','text':'创生后续效果'}]
@@ -56,6 +56,95 @@ class ReportTelemetryTest(unittest.TestCase):
         self.assertEqual(len(t.mechanisms),1)
         self.assertEqual(t.mechanisms[0]['provider'],'a:zero')
         self.assertEqual(t.mechanisms[0]['harmony_type'],'创生')
+
+    def test_release_and_response_capability_do_not_count_as_card_use(self):
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        state=new_game(seed=1,skip_mulligan=False)
+        telemetry=GameTelemetry(state)
+        card=deepcopy(state['sides']['a']['hand'][0]);card['response']='self_attacked'
+        after=deepcopy(state);seq=state['event_seq']
+        after['events'] += [
+            {'seq':seq+1,'type':'play','side':'a','card':card,'release_only':True,'patch':{'turn':3}},
+            {'seq':seq+2,'type':'play','side':'a','card':card,'response':False,'patch':{'turn':4}},
+            {'seq':seq+3,'type':'play','side':'a','card':card,'response':True,'patch':{'turn':5}}]
+        telemetry.after(state,after,{'type':'play_card','card_id':card['instance_id']},'a')
+        bucket=telemetry.cards['a'][card['card_id']]
+        self.assertEqual(bucket['plays'],2)
+        self.assertEqual(bucket['original_plays'],2)
+        self.assertEqual(bucket['response_plays'],1)
+        self.assertEqual(bucket['first_original_play_turn'],4)
+        self.assertEqual(telemetry.finish(after)['releases'],[
+            dict(side='a',card_id=card['card_id'],turn=3,seq=seq+1,actor=None)])
+
+    def test_generated_normal_card_is_not_an_original_deck_instance(self):
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.engine.duel_v2.state import card_instance
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        state=new_game(seed=1,skip_mulligan=False)
+        telemetry=GameTelemetry(state);cid=state['sides']['a']['hand'][0]['card_id']
+        after=deepcopy(state);card=card_instance(after,cid,'a')
+        # Legacy card labels do not establish entity identity.
+        card['instance_id']=state['sides']['a']['hand'][0]['instance_id']
+        self.assertFalse(card.get('copy'))
+        self.assertFalse(card.get('derived'))
+        after['events'] += [
+            {'seq':state['event_seq']+1,'type':'draw','side':'a','private_card':card},
+            {'seq':state['event_seq']+2,'type':'play','side':'a','card':card}]
+        telemetry.after(state,after,{'type':'end_turn'},'a')
+        bucket=telemetry.cards['a'][cid]
+        self.assertEqual(bucket['sources']['generated'],1)
+        self.assertNotIn('draw',bucket['sources'])
+        self.assertEqual(bucket['original_plays'],0)
+        self.assertEqual(bucket['derived_plays'],1)
+
+    def test_other_players_original_card_is_not_own_deck_or_generated(self):
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        state=new_game(seed=1,skip_mulligan=False);telemetry=GameTelemetry(state)
+        after=deepcopy(state);card=deepcopy(state['sides']['b']['hand'][0])
+        after['events'] += [
+            {'seq':state['event_seq']+1,'type':'gain','side':'a','card':card},
+            {'seq':state['event_seq']+2,'type':'play','side':'a','card':card}]
+        telemetry.after(state,after,{'type':'end_turn'},'a')
+        bucket=telemetry.cards['a'][card['card_id']]
+        self.assertEqual(bucket['sources']['foreign_original'],1)
+        self.assertEqual(bucket['foreign_original_plays'],1)
+        self.assertEqual(bucket['original_plays'],0)
+        self.assertEqual(bucket['derived_plays'],0)
+
+    def test_changed_hand_face_preserves_original_physical_card_source(self):
+        from app.modules.card_game.engine.duel_v2 import new_game
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        state=new_game(seed=1,skip_mulligan=False);telemetry=GameTelemetry(state)
+        after=deepcopy(state);card=deepcopy(state['sides']['a']['hand'][0]);physical_id=card['card_id']
+        card.update(card_id='RF01',derived=True)
+        after['events'].append({'seq':state['event_seq']+1,'type':'play','side':'a','card':card,'patch':{'turn':4}})
+        telemetry.after(state,after,{'type':'play_card','card_id':card['instance_id']},'a')
+        bucket=telemetry.cards['a'][physical_id]
+        self.assertEqual(bucket['original_plays'],1)
+        self.assertEqual(bucket['derived_plays'],0)
+        self.assertNotIn('RF01',telemetry.cards['a'])
+        self.assertEqual(bucket['native_effect_plays'],0)
+        self.assertEqual(bucket['converted_plays'],1)
+        self.assertEqual(telemetry.finish(after)['card_uses'][0]['card_id'],'RF01')
+        self.assertEqual(telemetry.finish(after)['card_uses'][0]['physical_card_id'],physical_id)
+
+    def test_harmony_opportunity_uses_the_effective_battle_character(self):
+        from unittest.mock import patch
+        from app.modules.card_game.engine.duel_v2 import new_game,apply_action
+        from app.modules.card_game.content.duel_v2 import STARTER_DECKS
+        from app.modules.card_game.rl.report_telemetry import GameTelemetry
+        deck=next(d for d in STARTER_DECKS if d['id']=='zhenhong')
+        state=new_game(seed=2,decks={'a':deck,'b':deck},first_side='a')
+        for side in('a','b'):state=apply_action(state,side,{'type':'mulligan','card_ids':[]})
+        state['sides']['a']['characters']['zhenhong']['awakened']=True
+        card=next(c for c in state['sides']['a']['hand']if c['character_id']!='zhenhong')
+        telemetry=GameTelemetry(state)
+        with patch('app.modules.card_game.engine.duel_v2.combat.resolved_harmony_kind',return_value='weave') as resolve:
+            telemetry.before(state,'a',[{'type':'play_card','card_id':card['instance_id']}])
+        self.assertEqual(resolve.call_args.args[2],'zhenhong')
+        self.assertIn(('harmony','a','zhenhong',state['turn']),telemetry.opportunities)
 
     def test_extra_report_keeps_telemetry_private(self):
         from app.modules.card_game.rl.offline_analysis import run_offline_analysis

@@ -20,10 +20,9 @@ from app.modules.card_game.engine.game_service import (
 )
 from app.modules.card_game.engine.application.analytics_service import get_duel_analytics_payload
 from app.modules.kongmu.service import get_kongmu_catalog_payload, plan_kongmu_layout
-from app.modules.preteam.catalog import MAIN_CANDIDATES as PRETEAM_MAIN_CANDIDATES
-from app.modules.preteam.catalog import TEAMMATES as PRETEAM_TEAMMATES
 from app.modules.shaft.service import (
     ShaftAxisNameConflictError,
+    ShaftAxisVersionConflictError,
     backup_shaft_axis,
     create_shaft_axis_share,
     delete_shaft_axis,
@@ -196,6 +195,14 @@ def shaft_page(page: str = 'rotation'):
             allow_anonymous_shaft_share = True
         except AppError:
             pass
+    preview_id = str(request.args.get('preview') or '').strip()
+    if preview_id.isdigit():
+        try:
+            # Anonymous preview keeps the existing public-axis visibility checks.
+            get_shaft_axis(int(preview_id), player=None)
+            allow_anonymous_shaft_share = True
+        except AppError:
+            pass
     return render_template(
         'shaft/index.html',
         active_shaft_page=page,
@@ -212,15 +219,6 @@ def table_page():
 @main_bp.get('/replays')
 def replays_page():
     return render_template('card_game/v2_replays.html')
-
-
-@main_bp.get('/preteam')
-def preteam_page():
-    return render_template(
-        'preteam/index.html',
-        main_candidates=PRETEAM_MAIN_CANDIDATES,
-        teammates=PRETEAM_TEAMMATES,
-    )
 
 
 @main_bp.post('/api/auth/login')
@@ -336,7 +334,7 @@ def api_balance_analytics():
 @main_bp.get('/api/kongmu/catalog')
 def api_kongmu_catalog():
     try:
-        return jsonify(get_kongmu_catalog_payload())
+        return jsonify(get_kongmu_catalog_payload(player=_optional_current_player()))
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400
     except Exception:
@@ -355,6 +353,7 @@ def api_kongmu_plan():
         return jsonify(plan_kongmu_layout(
             str(payload.get('character_id', '')),
             str(payload.get('cartridge_id', '')),
+            player=_optional_current_player(),
         ))
     except AppError as exc:
         return jsonify({'error': str(exc)}), 400
@@ -463,6 +462,8 @@ def api_shaft_update_axis(axis_id: int):
     payload = request.get_json(silent=True) or {}
     try:
         return jsonify(save_shaft_axis(g.current_player, payload, axis_id=axis_id))
+    except ShaftAxisVersionConflictError as exc:
+        return jsonify({'error': str(exc), 'code': 'axis_version_conflict'}), 409
     except ShaftAxisNameConflictError as exc:
         return jsonify({
             'error': str(exc),

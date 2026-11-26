@@ -1,0 +1,375 @@
+"""Marginal team DPS keeps the original compiled clock, including removed masks."""
+import json
+import subprocess
+import unittest
+from copy import deepcopy
+from pathlib import Path
+
+from app.modules.shaft.domain.catalog import load_shaft_catalog
+from tests import test_shaft_lingke_support as lingke_tests
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class ShaftEffectivenessTest(unittest.TestCase):
+    def evaluate(self, axis, slot, catalog=None, inspect_variants=False):
+        script = """
+          const e = require('./app/modules/shaft/static/js/shaft_engine.js');
+          const {axis, catalog, slot, inspect_variants} = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+          const before = JSON.stringify({axis, catalog});
+          const full = e.simulateAxis(axis, catalog);
+          const without = e.simulateAxis(axis, catalog, {excluded_slot: slot});
+          const analysis = e.analyzeCharacterEffectiveness(axis, catalog, {slot});
+          const captured = inspect_variants ? e.simulateAxis(axis, catalog, {capture_self_reactions: true}) : null;
+          const variant_results = inspect_variants ? analysis.reaction_variants.map(row => ({
+            retained: row.retained_reactions,
+            result: e.simulateAxis(axis, catalog, {excluded_slot: slot,
+              retained_self_reactions: row.retained_reactions,
+              self_reaction_applications: captured.self_reaction_applications.filter(item => item.slot === slot
+                && item.tick <= captured.summary.duration_ticks)}),
+          })) : [];
+          console.log(JSON.stringify({full, without, analysis, variant_results,
+            unchanged: before === JSON.stringify({axis, catalog})}));
+        """
+        return json.loads(subprocess.check_output(
+            ['node', '-e', script], cwd=ROOT, text=True, timeout=30,
+            input=json.dumps(dict(axis=axis, catalog=catalog or load_shaft_catalog(), slot=slot,
+                                 inspect_variants=inspect_variants))))
+
+    def assert_fixed_clock(self, result):
+        full, without, analysis = (result[k] for k in ('full', 'without', 'analysis'))
+        self.assertTrue(result['unchanged'])
+        self.assertEqual(full['time_axis'], without['time_axis'])
+        self.assertEqual(full['summary']['duration_seconds'], without['summary']['duration_seconds'])
+        for detail in without['details']:
+            original = next(d for d in full['details'] if d['step_id'] == detail['step_id'])
+            for key in ('start_tick', 'end_tick', 'duration_ticks'):
+                self.assertEqual(original[key], detail[key])
+        self.assertAlmostEqual(analysis['rdps'], full['summary']['dps'] - without['summary']['dps'])
+        self.assertAlmostEqual(analysis['direct_contribution_dps'] + analysis['support_dps'], analysis['rdps'])
+        self.assertAlmostEqual(analysis['direct_contribution_damage'] + analysis['support_damage'],
+                               full['summary']['total_damage'] - without['summary']['total_damage'])
+        self.assertAlmostEqual(analysis['direct_contribution_damage'],
+                               analysis['full_self_damage'] - analysis['blank_self_damage'])
+        if analysis['full_dps'] > 0:
+            self.assertAlmostEqual(analysis['direct_contribution_percent'],
+                                   analysis['direct_contribution_dps'] / analysis['full_dps'] * 100)
+            self.assertAlmostEqual(analysis['support_percent'],
+                                   analysis['support_dps'] / analysis['full_dps'] * 100)
+        else:
+            self.assertIsNone(analysis['direct_contribution_percent'])
+            self.assertIsNone(analysis['support_percent'])
+
+
+
+    def test_removed_mask_and_tail_keep_damage_timing_and_loop_period(self):
+        catalog = deepcopy(load_shaft_catalog())
+        template = catalog['characters'][0]
+        catalog['characters'] = [{**template, 'id': 'test_a', 'name': 'A'},
+                                 {**template, 'id': 'test_b', 'name': 'B'}]
+        catalog['buffs'] = []
+        catalog['actions'] = [
+            dict(id='hit', character_id='test_a', name='hit', action_type='普攻',
+                 damage_type='普攻', duration_ticks=40, hit_count=1, multipliers={'atk': 1}),
+            dict(id='mask', character_id='test_b', name='mask', action_type='Q',
+                 damage_type='Q', duration_ticks=0, is_time_stop_zero=True, hit_count=0),
+            dict(id='tail', character_id='test_b', name='tail', action_type='普攻',
+                 damage_type='普攻', duration_ticks=20, hit_count=1, multipliers={'atk': 1}),
+        ]
+        axis = dict(team=[dict(slot=1, character_id='test_a', arc_id='', cartridge_id=''),
+                          dict(slot=3, character_id='test_b', arc_id='', cartridge_id='')],
+                    steps=[dict(id='a', slot=1, action_id='hit', start_tick=0),
+                           dict(id='b', slot=3, action_id='mask', start_tick=5),
+                           dict(id='c', slot=3, action_id='tail', start_tick=50)])
+        for loop in (False, True):
+            axis['options'] = {'loop_enabled': loop}
+            result = self.evaluate(axis, 3, catalog)
+            self.assert_fixed_clock(result)
+            self.assertTrue(result['full']['time_axis']['frozen_intervals'])
+            self.assertLess(result['full']['details'][0]['duration_ticks'], 40)
+            self.assertEqual(len(result['without']['details']), 1)
+            self.assertAlmostEqual(result['without']['summary']['total_damage'],
+                                   result['full']['details'][0]['direct_damage'])
+            analysis = result['analysis']
+            self.assertAlmostEqual(analysis['increase_percent'],
+                                   analysis['rdps'] / analysis['without_dps'] * 100)
+
+    def test_lingke_joint_supports_removed_including_variant_and_side_effects(self):
+        for window in ('e', 'q'):
+            for variant in (False, True):
+                axis = lingke_tests.LingkeSupportTest().axis(window=window, variant=variant)
+                # A teammate's later ordinary assist must survive outside the joint window.
+                assist_id = axis['steps'][1]['action_id']
+                axis['steps'].append(dict(id='ordinary', slot=1, action_id=assist_id, start_tick=200))
+                for loop in (False, True):
+                    axis['options'] = {'loop_enabled': loop}
+                    result = self.evaluate(axis, 0)
+                    self.assert_fixed_clock(result)
+                    self.assertEqual(next(d for d in result['full']['details']
+                                          if d['step_id'] == 'assist')['lingke_joint_source_slot'], 0)
+                    self.assertEqual([d['step_id'] for d in result['without']['details']], ['ordinary'])
+                    self.assertFalse(any(e.get('source_step_id') == 'assist'
+                                         for e in result['without']['energy_events']))
+
+    def test_passive_support_without_actions_and_zero_denominator(self):
+        catalog = load_shaft_catalog()
+        axis = lingke_tests.LingkeSupportTest().axis()
+        elyms = next(c for c in catalog['characters'] if c['name'] == '曳尔沐')
+        axis['team'][0] = dict(slot=0, character_id=elyms['id'], awakening_nodes=[4],
+                               arc_id='', cartridge_id='')
+        axis['steps'] = [axis['steps'][1]]
+        result = self.evaluate(axis, 0)
+        self.assert_fixed_clock(result)
+        self.assertGreater(result['analysis']['rdps'], 0)
+        result = self.evaluate(axis, 1)
+        self.assert_fixed_clock(result)
+        self.assertEqual(result['analysis']['without_dps'], 0)
+        self.assertIsNone(result['analysis']['increase_percent'])
+
+    def test_removed_support_retains_harmony_with_level80_zero_strength_proxy(self):
+        catalog = deepcopy(load_shaft_catalog())
+        template = catalog['characters'][0]
+        catalog['characters'] = [{**template, 'id': 'test_a', 'name': 'A', 'element': '光', 'level': 80},
+                                 {**template, 'id': 'test_b', 'name': 'B', 'element': '灵', 'level': 80}]
+        catalog['buffs'] = []
+        catalog['actions'] = [
+            dict(id='hit', character_id='test_a', name='hit', action_type='普攻',
+                 damage_type='普攻', duration_ticks=10, harmony=100, hit_count=1, multipliers={'atk': 1}),
+            dict(id='support', character_id='test_b', name='support', action_type='援护',
+                 damage_type='援护', duration_ticks=15, hit_count=1, multipliers={'atk': 2},
+                 reaction_trigger_offset_ticks=7),
+            dict(id='tail', character_id='test_a', name='tail', action_type='无',
+                 is_instant_switch=True, duration_ticks=0, hit_count=0),
+        ]
+        from tests.test_shaft_simulator import ShaftSimulatorValidationTestCase
+        bonus = deepcopy(ShaftSimulatorValidationTestCase.ZERO_TEAM_PANEL_BONUS)
+        # A same-strength tie chooses the support, allowing the proxy's stats to be inspected.
+        axis = dict(team=[dict(slot=1, character_id='test_a', arc_id='', cartridge_id=''),
+                          dict(slot=3, character_id='test_b', arc_id='', cartridge_id='',
+                               substat_counts={'harmony_strength': 100})],
+                    team_panel_bonus=bonus,
+                    steps=[dict(id='a', slot=1, action_id='hit', start_tick=0),
+                           dict(id='b', slot=3, action_id='support', start_tick=20),
+                           dict(id='c', slot=1, action_id='tail', start_tick=200)])
+        for loop in (False, True):
+            axis['options'] = {'loop_enabled': loop}
+            result = self.evaluate(axis, 3, catalog)
+            self.assert_fixed_clock(result)
+            without = result['without']
+            effects = [e for e in without['reaction_effects'] if e['source_step_id'] == 'b']
+            self.assertTrue(effects)
+            self.assertEqual(effects[0]['reaction'], '创生')
+            self.assertEqual(
+                next(e for e in effects if not e['loop_primed'])['start_tick'], 27,
+            )
+            self.assertEqual(effects[0]['contributor_slot'], 3)
+            events = [e for e in without['reaction_damage_events'] if e['damage'] > 0]
+            self.assertTrue(events)
+            self.assertTrue(all(e['formula_parts']['harmony_strength'] == 0 for e in events))
+            self.assertTrue(all(e['formula_parts']['base'] == 9000 for e in events))
+            costs = [e for e in without['harmony_events'] if e['kind'] == 'reaction_cost']
+            self.assertEqual(costs[0]['slot'], 1)
+            self.assertAlmostEqual(costs[0]['amount'], -100)
+            self.assertNotIn('b', [d['step_id'] for d in without['details']])
+            self.assertGreater(without['summary']['harmony_damage'], 0)
+            self.assertGreater(result['analysis']['blank_self_damage'], 0)
+            self.assertGreater(result['full']['summary']['harmony_damage'], without['summary']['harmony_damage'])
+            stronger_teammate = deepcopy(axis)
+            stronger_teammate['team'][0]['substat_counts'] = {'harmony_strength': 20}
+            shared = self.evaluate(stronger_teammate, 3, catalog)['without']
+            effect = next(e for e in shared['reaction_effects'] if e['source_step_id'] == 'b')
+            self.assertEqual(effect['contributor_slot'], 1)
+            event = next(e for e in shared['reaction_damage_events'] if e['damage'] > 0)
+            self.assertEqual(event['formula_parts']['harmony_strength'], 120)
+            for first, second, reaction in [('光', '相', '延滞'), ('灵', '咒', '覆纹'),
+                                            ('咒', '暗', '浊燃'), ('暗', '魂', '黯星'),
+                                            ('魂', '相', '浸染')]:
+                pair_catalog = deepcopy(catalog)
+                pair_catalog['characters'][0]['element'] = first
+                pair_catalog['characters'][1]['element'] = second
+                pair_result = self.evaluate(axis, 3, pair_catalog)
+                self.assert_fixed_clock(pair_result)
+                retained = next(e for e in pair_result['without']['reaction_effects']
+                                if e['source_step_id'] == 'b')
+                self.assertEqual(retained['reaction'], reaction)
+                if reaction in ('浊燃', '黯星'):
+                    event = next(e for e in pair_result['without']['reaction_damage_events']
+                                 if e['damage'] > 0)
+                    self.assertEqual(event['formula_parts']['harmony_strength'], 0)
+
+
+
+    def test_negative_team_effect_is_not_clamped(self):
+        catalog = deepcopy(load_shaft_catalog())
+        axis = lingke_tests.LingkeSupportTest().axis()
+        axis['steps'] = [axis['steps'][1]]
+        provider_id = axis['team'][0]['character_id']
+        catalog['buffs'] = [dict(
+            id='test_penalty', name='negative marginal test',
+            providers=[dict(kind='character', id=provider_id)],
+            trigger=dict(event='passive'), target=dict(scope='team'),
+            duration=dict(type='permanent'), effects=dict(all_dmg=-0.5))]
+        # No reactions or personal resources in this fixture: only the team penalty changes.
+        support = next(a for a in catalog['actions'] if a['id'] == axis['steps'][0]['action_id'])
+        support['stagger'] = 0
+        result = self.evaluate(axis, 0, catalog)
+        self.assert_fixed_clock(result)
+        self.assertLess(result['analysis']['rdps'], 0)
+        self.assertLess(result['analysis']['increase_percent'], 0)
+
+    def test_direct_and_support_split_own_damage_and_teammate_buff(self):
+        catalog = deepcopy(load_shaft_catalog())
+        template = catalog['characters'][0]
+        catalog['characters'] = [{**template, 'id': 'self', 'name': 'self'},
+                                 {**template, 'id': 'peer', 'name': 'peer'}]
+        catalog['actions'] = [dict(id=name, character_id=name, name=name, action_type='普攻',
+                                   damage_type='普攻', duration_ticks=10, hit_count=1,
+                                   multipliers={'atk': 1}) for name in ('self', 'peer')]
+        axis = dict(team=[dict(slot=0, character_id='self', arc_id='', cartridge_id=''),
+                          dict(slot=1, character_id='peer', arc_id='', cartridge_id='')],
+                    steps=[dict(id='self', slot=0, action_id='self', start_tick=0),
+                           dict(id='peer', slot=1, action_id='peer', start_tick=20)])
+        for modifier in (0, 1, -0.5):
+            catalog['buffs'] = [dict(id='team_bonus', name='team bonus',
+                                    providers=[dict(kind='character', id='self')],
+                                    trigger=dict(event='passive'), target=dict(scope='team'),
+                                    duration=dict(type='permanent'), effects=dict(final_dmg=modifier))]
+            for acts in (True, False):
+                candidate = deepcopy(axis)
+                if not acts:
+                    candidate['steps'] = candidate['steps'][1:]
+                result = self.evaluate(candidate, 0, catalog)
+                self.assert_fixed_clock(result)
+                analysis = result['analysis']
+                own = next((d['direct_damage'] for d in result['full']['details'] if d['slot'] == 0), 0)
+                peer_baseline = result['without']['details'][0]['direct_damage']
+                self.assertAlmostEqual(analysis['direct_contribution_damage'], own)
+                self.assertAlmostEqual(analysis['support_damage'], peer_baseline * modifier)
+                self.assertAlmostEqual(analysis['support_dps'], peer_baseline * modifier /
+                                       result['full']['summary']['duration_seconds'])
+
+    def test_zero_original_dps_has_no_contribution_percentages(self):
+        axis = lingke_tests.LingkeSupportTest().axis()
+        axis['steps'] = [dict(id='selection', slot=0, action_id='action_lingke_time_stop_select', start_tick=0)]
+        result = self.evaluate(axis, 0)
+        self.assert_fixed_clock(result)
+        self.assertEqual(result['analysis']['full_dps'], 0)
+        self.assertIsNone(result['analysis']['direct_contribution_percent'])
+        self.assertIsNone(result['analysis']['support_percent'])
+
+    def test_all_self_reaction_combinations_include_attack_and_passive_sources(self):
+        catalog = deepcopy(load_shaft_catalog())
+        template = catalog['characters'][0]
+        catalog['characters'] = [{**template, 'id': 'self', 'name': 'self', 'element': '光'},
+                                 {**template, 'id': 'peer', 'name': 'peer', 'element': '魂'}]
+        catalog['actions'] = [
+            dict(id='self', character_id='self', name='self attack', action_type='普攻',
+                 damage_type='普攻', duration_ticks=10, hit_count=1, tags=['延滞'], multipliers={'atk': 1}),
+            dict(id='peer', character_id='peer', name='peer attack', action_type='普攻',
+                 damage_type='普攻', duration_ticks=10, hit_count=1, multipliers={'atk': 1}),
+            dict(id='tail', character_id='peer', name='tail', action_type='无', duration_ticks=0,
+                 is_instant_switch=True, hit_count=0),
+        ]
+        catalog['buffs'] = [dict(
+            id='pulse_'+reaction, name='pulse '+reaction,
+            providers=[dict(kind='character', id='self')],
+            trigger=dict(event='action_start', source=dict(scope='registrar', action_types=['普攻'])),
+            target=dict(scope='self'), duration=dict(type='time', ticks=100, loop_carry=True),
+            effects={}, reaction_pulse=dict(reaction=reaction, interval_ticks=10))
+            for reaction in ('创生', '浸染')]
+        axis = dict(team=[dict(slot=0, character_id='self', arc_id='', cartridge_id='',
+                               substat_counts={'harmony_strength': 100}),
+                          dict(slot=1, character_id='peer', arc_id='', cartridge_id='')],
+                    steps=[dict(id='self', slot=0, action_id='self', start_tick=0),
+                           dict(id='peer', slot=1, action_id='peer', start_tick=30),
+                           dict(id='tail', slot=1, action_id='tail', start_tick=100)])
+        for loop in (False, True):
+            axis['options'] = {'loop_enabled': loop}
+            result = self.evaluate(axis, 0, catalog, inspect_variants=True)
+            self.assert_fixed_clock(result)
+            analysis = result['analysis']
+            self.assertEqual(set(analysis['self_reaction_types']), {'创生', '延滞', '浸染'})
+            self.assertEqual(len(analysis['reaction_variants']), 8)
+            combinations = [frozenset(row['retained_reactions']) for row in analysis['reaction_variants']]
+            self.assertEqual(len(set(combinations)), 8)
+            self.assertEqual(sum(len(g['combinations']) for g in analysis['reaction_variant_groups']), 8)
+            self.assertGreater(len(analysis['reaction_variant_groups']), 1)
+            self.assertLess(len(analysis['reaction_variant_groups']), 8)
+            by_combination = {frozenset(row['retained_reactions']): row for row in analysis['reaction_variants']}
+            self.assertGreater(by_combination[frozenset({'创生'})]['without_dps'], analysis['without_dps'])
+            self.assertGreater(by_combination[frozenset({'浸染'})]['without_dps'], analysis['without_dps'])
+            for variant in result['variant_results']:
+                candidate = variant['result']
+                self.assertEqual(candidate['time_axis'], result['full']['time_axis'])
+                self.assertFalse(any(d['slot'] == 0 for d in candidate['details']))
+                expected = by_combination[frozenset(variant['retained'])]
+                self.assertAlmostEqual(expected['without_dps'], candidate['summary']['dps'])
+                events = [e for e in candidate['reaction_damage_events'] if e['damage'] > 0]
+                self.assertTrue(all(e['panel']['harmony_strength'] == 0 for e in events))
+
+    def test_loop_initial_self_reaction_enumeration(self):
+        axis = lingke_tests.LingkeSupportTest().axis()
+        axis['steps'] = [dict(id='tail', slot=1,
+                              action_id=axis['steps'][1]['action_id'], start_tick=150)]
+        axis['options'] = dict(loop_enabled=True, loop_initial_resources={
+            axis['team'][0]['character_id']: {'reaction': '创生'}})
+        result = self.evaluate(axis, 0, inspect_variants=True)
+        self.assertEqual(result['analysis']['self_reaction_types'], ['创生'])
+        self.assertEqual(len(result['analysis']['reaction_variants']), 2)
+        self.assertGreater(result['analysis']['reaction_variants'][1]['without_dps'],
+                           result['analysis']['reaction_variants'][0]['without_dps'])
+        retained = result['variant_results'][1]['result']
+        self.assertEqual(retained['time_axis'], result['full']['time_axis'])
+        self.assertTrue(any(e['contributor_slot'] == 0 for e in retained['reaction_damage_events']))
+
+    def test_real_echo_pulse_and_creation_clone_providers_are_enumerated(self):
+        catalog = load_shaft_catalog()
+        def char(name):
+            return next(c['id'] for c in catalog['characters'] if c['name'] == name)
+        def action(name, move):
+            return next(a['id'] for a in catalog['actions'] if a['character_id'] == char(name) and a['name'] == move)
+        cartridge = next(c['id'] for c in catalog['cartridges'] if c['name'] == '街头拳王')
+        fixtures = [
+            (['曳尔沐', '哈索尔'], [('曳尔沐', 'e1', 0), ('哈索尔', '援护', 20), ('哈索尔', 'e', 200)], '延滞'),
+            (['明音凛', '主角'], [('明音凛', 'e', 0), ('主角', '援护', 20), ('主角', 'e', 300)], '延滞'),
+            (['伊洛伊', '主角', '薄荷'], [('主角', 'e', 0), ('薄荷', '援护', 20), ('主角', 'e', 200)], '创生'),
+            (['黑羽', '安魂曲', '海月'], [('安魂曲', 'e', 0), ('海月', '援护', 20), ('海月', 'e', 200)], '黯星'),
+        ]
+        for names, moves, reaction in fixtures:
+            axis = dict(team=[dict(slot=i, character_id=char(name), arc_id='',
+                                   cartridge_id=cartridge if i == 1 else '') for i, name in enumerate(names)],
+                        steps=[dict(id=str(i), slot=names.index(name), action_id=action(name, move), start_tick=tick)
+                               for i, (name, move, tick) in enumerate(moves)])
+            result = self.evaluate(axis, 0, inspect_variants=True)
+            self.assertIn(reaction, result['analysis']['self_reaction_types'])
+            retained = next(v for v in result['variant_results'] if v['retained'] == [reaction])['result']
+            self.assertEqual(retained['time_axis'], result['full']['time_axis'])
+            if reaction == '创生':
+                copies = [e for e in retained['reaction_effects'] if e['reaction'] == '创生复制体']
+                self.assertTrue(copies)
+                original = next(e for e in result['full']['reaction_effects'] if e['reaction'] == '创生复制体')
+                self.assertEqual(copies[0]['contributor_slot'], original['contributor_slot'])
+                full_copy_damage = sum(e['damage'] for e in result['full']['reaction_damage_events']
+                                       if e['reaction'] == '创生复制体')
+                kept_copy_damage = sum(e['damage'] for e in retained['reaction_damage_events']
+                                       if e['reaction'] == '创生复制体')
+                self.assertAlmostEqual(full_copy_damage, kept_copy_damage)
+            elif reaction == '黯星':
+                original = next(e for e in result['full']['reaction_effects'] if e.get('heiyu_extra'))
+                recreated = next(e for e in retained['reaction_effects']
+                                 if e['reaction'] == '黯星' and e['start_tick'] == original['start_tick'])
+                self.assertEqual(recreated['contributor_slot'], original['contributor_slot'])
+                self.assertGreater(sum(e['damage'] for e in retained['reaction_damage_events']), 0)
+            else:
+                self.assertTrue(any(e['contributor_slot'] == 0 for e in retained['reaction_effects']))
+
+    def test_unknown_slot_and_empty_axis_rejected(self):
+        script = """
+          const e = require('./app/modules/shaft/static/js/shaft_engine.js');
+          const cases = [{}, {slot: 8}, {slot: 'bad'}, {slot: 0.5}, {slot: 0}];
+          console.log(JSON.stringify(cases.map(options => {
+            try { e.analyzeCharacterEffectiveness({team: [{slot: 0}], steps: []}, {}, options); return false; }
+            catch (_) { return true; }
+          })));
+        """
+        self.assertTrue(all(json.loads(subprocess.check_output(['node', '-e', script], text=True))))

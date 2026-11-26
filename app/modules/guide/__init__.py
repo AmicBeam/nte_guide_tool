@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from flask import Blueprint, Response, redirect, jsonify, render_template, request, send_file
+from flask import Blueprint, Response, abort, redirect, jsonify, render_template, request, send_file
 from . import service, cultivation, presentation, arc_cultivation
 from .challenge_calendar import is_current_challenge, is_current_period
 from .rich_text import description_html
@@ -272,16 +272,23 @@ def cli_download():
                      download_name='nte-guide.py')
 
 
-@blueprint.get('/guide/skills/nte-wiki-cli.zip')
-def cli_skill_download():
+@blueprint.get('/guide/skills/<name>.zip')
+def cli_skill_download(name):
+    skills = {
+        'nte-wiki-cli': ('SKILL.md',),
+        'shaft-axis-workflow': ('SKILL.md', 'examples/move-step.js'),
+    }
+    if name not in skills:
+        abort(404)
     directory = Path(__file__).parent
     bundle = BytesIO()
     with ZipFile(bundle, 'w', compression=ZIP_DEFLATED) as archive:
-        archive.write(directory / 'skills' / 'nte-wiki-cli' / 'SKILL.md', 'nte-wiki-cli/SKILL.md')
-        archive.write(directory / 'cli.py', 'nte-wiki-cli/nte-guide.py')
+        for file in skills[name]:
+            archive.write(directory / 'skills' / name / file, f'{name}/{file}')
+        archive.write(directory / 'cli.py', f'{name}/nte-guide.py')
     bundle.seek(0)
     return send_file(bundle, mimetype='application/zip', as_attachment=True,
-                     download_name='nte-wiki-cli.zip')
+                     download_name=f'{name}.zip')
 
 
 @blueprint.get('/llms.txt')
@@ -305,6 +312,7 @@ def llms():
 - [自建攻略](/api/guide/articles)
 - [CLI 下载](/guide/cli.py)
 - [Wiki CLI 基础技能（ZIP，含 CLI）](/guide/skills/nte-wiki-cli.zip)
+- [排轴模拟器技能（ZIP，排轴命令须登录）](/guide/skills/shaft-axis-workflow.zip)
 
 检索：GET /api/guide/search?q=关键词&limit=20&offset=0
 详情：GET /api/guide/{characters|arcs|foods|permanent|dungeons|challenges|endless|diyboss|beginner|articles}/{id}

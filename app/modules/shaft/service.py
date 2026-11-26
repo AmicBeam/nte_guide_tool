@@ -152,6 +152,10 @@ class ShaftAxisNameConflictError(RuleValidationError):
         self.axis_id = axis_id
 
 
+class ShaftAxisVersionConflictError(RuleValidationError):
+    pass
+
+
 def _ensure_private_axis_capacity(player: Player) -> None:
     private_axis_count = ShaftAxis.select().where(
         (ShaftAxis.owner == player) &
@@ -1417,6 +1421,9 @@ def save_shaft_axis(player: Player, payload: dict[str, Any], axis_id: int | None
             record = _private_axis_query_for_player(axis_id, player)
             if record is None:
                 raise RuleValidationError('没有保存这个排轴的权限。')
+            expected = payload.get('expected_updated_at')
+            if expected is not None and expected != record.updated_at.isoformat():
+                raise ShaftAxisVersionConflictError('排轴已修改，请重新读取后再更新。')
         elif source_axis is not None:
             record = ShaftAxis.select().where(
                 (ShaftAxis.owner == player) &

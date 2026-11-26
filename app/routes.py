@@ -22,6 +22,7 @@ from app.modules.card_game.engine.application.analytics_service import get_duel_
 from app.modules.kongmu.service import get_kongmu_catalog_payload, plan_kongmu_layout
 from app.modules.shaft.service import (
     ShaftAxisNameConflictError,
+    ShaftAxisVersionConflictError,
     backup_shaft_axis,
     create_shaft_axis_share,
     delete_shaft_axis,
@@ -461,6 +462,8 @@ def api_shaft_update_axis(axis_id: int):
     payload = request.get_json(silent=True) or {}
     try:
         return jsonify(save_shaft_axis(g.current_player, payload, axis_id=axis_id))
+    except ShaftAxisVersionConflictError as exc:
+        return jsonify({'error': str(exc), 'code': 'axis_version_conflict'}), 409
     except ShaftAxisNameConflictError as exc:
         return jsonify({
             'error': str(exc),

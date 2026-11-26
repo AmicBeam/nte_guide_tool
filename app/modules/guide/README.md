@@ -20,9 +20,13 @@
 
 ## CLI
 
-下载 `/guide/cli.py` 为 `nte-guide.py`，只需 Python 3.10+ 标准库；不会导入 Flask、初始化数据库或要求登录。
+下载 `/guide/cli.py` 为 `nte-guide.py`。普通 Wiki 查询只需 Python 3.10+ 标准库，公开资料可匿名访问。
+
+用 `python3 nte-guide.py --version` 查看客户端版本。两个技能包与单文件下载共用同一份 CLI。
 
 基础技能包从 `/guide/skills/nte-wiki-cli.zip` 下载，包含 `nte-wiki-cli/SKILL.md` 和同版 `nte-wiki-cli/nte-guide.py`。将解压后的目录安装到 Agent 的技能目录，或直接读取说明并运行其中的 CLI。CLI 帮助与 `/guide/llms.txt` 都提供下载路径。CLI 作为独立命令运行，技能由 Agent 读取。
+
+排轴模拟器使用独立的 [排轴技能包](/guide/skills/shaft-axis-workflow.zip) 和同一 CLI 的 `shaft` 子命令。每个 `shaft` 操作先用 `NTE_GUIDE_TOKEN` 验证目标站点的登录。普通 Wiki 的 `axes`、`axis` 保留原有查询权限。
 
 ```bash
 python nte-guide.py --base-url http://127.0.0.1:5001 search 黑羽
